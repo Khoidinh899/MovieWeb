@@ -1,0 +1,20 @@
+@model Newtonsoft.Json.Linq.JArray
+
+<div class="swiper mySwiper" style="width:100%; max-width:1000px; margin:auto; position:relative;">
+    <div class="swiper-wrapper">
+        @foreach (var movie in Model)
+        {
+            <div class="swiper-slide" style="position:relative;">
+                <img src="@movie["thumb_url"]" 
+                     alt="@movie["name"]" 
+                     style="width:100%; height:400px; object-fit:cover; border-radius:10px;" />
+                <div class="caption" 
+                     style="position:absolute; bottom:20px; left:20px; color:white; background:rgba(0,0,0,0.5); padding:10px; border-radius:5px;">
+                    <h3>@movie["name"]</h3>
+                    <p>@movie["origin_name"]</p>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="swiper-pagination"></div>
+</div>

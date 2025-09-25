@@ -1,0 +1,322 @@
+﻿@using MovieWeb.Helpers
+@model MovieWeb.Models.HomeViewModel
+@{
+    ViewData["Title"] = "Trang Chủ - Xem Phim Online";
+}
+
+@functions {
+    public string GetMoviePosterUrl(MovieWeb.Models.Movie movie)
+    {
+        if (!string.IsNullOrEmpty(movie.PosterUrl) && movie.PosterUrl.StartsWith("http"))
+        {
+            return movie.PosterUrl;
+        }
+        if (!string.IsNullOrEmpty(movie.PosterUrl))
+        {
+            return "https://img.ophim.live/uploads/movies/" + movie.PosterUrl.TrimStart('/');
+        }
+        if (!string.IsNullOrEmpty(movie.ThumbUrl) && movie.ThumbUrl.StartsWith("http"))
+        {
+            return movie.ThumbUrl;
+        }
+        if (!string.IsNullOrEmpty(movie.ThumbUrl))
+        {
+            return "https://img.ophim.live/uploads/movies/" + movie.ThumbUrl.TrimStart('/');
+        }
+        return "https://via.placeholder.com/400x600/333333/ffffff?text=" + Uri.EscapeDataString(movie.Name ?? "Movie");
+    }
+}
+
+<div class="container-fluid px-0">
+    <!-- Hero Banner Carousel -->
+    <div class="hero-carousel mb-5">
+        <div id="movieCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+            <div class="carousel-indicators">
+                @for (int i = 0; i < Model.HotMovies.Take(5).Count(); i++)
+                {
+                    <button type="button" data-bs-target="#movieCarousel" data-bs-slide-to="@i" 
+                            class="@(i == 0 ? "active" : "")" aria-current="@(i == 0 ? "true" : "false")" 
+                            aria-label="Slide @(i + 1)"></button>
+                }
+            </div>
+            
+            <div class="carousel-inner">
+                @foreach (var (movie, index) in Model.HotMovies.Take(5).Select((movie, index) => (movie, index)))
+                {
+                    <div class="carousel-item @(index == 0 ? "active" : "")">
+                        <div class="hero-slide" style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7)), url('@GetMoviePosterUrl(movie)') center/cover;">
+                            <div class="container h-100">
+                                <div class="row h-100 align-items-center">
+                                    <div class="col-lg-6">
+                                        <div class="hero-content">
+                                            <h1 class="hero-title">@movie.Name</h1>
+                                            <p class="hero-subtitle mb-3">@movie.OriginName</p>
+                                            
+                                            <div class="hero-meta mb-4">
+                                                <span class="badge badge-warning me-3">
+                                                    <i class="fas fa-star"></i> @movie.Year
+                                                </span>
+                                                <span class="badge badge-success me-3">@movie.Quality</span>
+                                                <span class="badge badge-info me-3">@movie.Lang</span>
+                                                <span class="text-light">
+                                                    <i class="fas fa-eye me-1"></i> @movie.View.ToString("N0") lượt xem
+                                                </span>
+                                            </div>
+                                        
+                                            <p class="hero-description">
+                                                @MovieHelper.GetDescription(movie.Content)
+                                            </p>
+                                            
+                                            <div class="hero-buttons">
+                                                <a href="/phim/@movie.Slug" class="btn btn-primary btn-lg me-3">
+                                                    <i class="fas fa-play me-2"></i> Xem Ngay
+                                                </a>
+                                                <a href="/phim/@movie.Slug" class="btn btn-outline-light btn-lg">
+                                                    <i class="fas fa-info-circle me-2"></i> Chi Tiết
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="hero-poster">
+                                            @{
+                                                var heroPosterUrl = !string.IsNullOrEmpty(movie.PosterUrl) && movie.PosterUrl.StartsWith("http") 
+                                                    ? movie.PosterUrl 
+                                                    : !string.IsNullOrEmpty(movie.PosterUrl) 
+                                                        ? "https://img.ophim.live/uploads/movies/" + movie.PosterUrl.TrimStart('/') 
+                                                        : "https://via.placeholder.com/400x600/333333/ffffff?text=" + Uri.EscapeDataString(movie.Name ?? "Hot Movie");
+                                            }
+                                            <img src="@heroPosterUrl" alt="@movie.Name" class="img-fluid rounded shadow-lg">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            
+            <button class="carousel-control-prev" type="button" data-bs-target="#movieCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#movieCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Latest Movies Section -->
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title">
+                <i class="fas fa-fire text-danger"></i> Phim Mới Cập Nhật
+            </h2>
+            <a href="/the-loai/phim-moi-cap-nhat" class="btn btn-outline-primary">Xem tất cả</a>
+        </div>
+        
+        <div class="row">
+            @foreach (var movie in Model.LatestMovies.Take(12))
+            {
+                <div class="col-lg-2 col-md-3 col-sm-4 col-6 mb-4">
+                    <div class="movie-card">
+                        <div class="movie-poster">
+                            <a href="/phim/@movie.Slug">
+                                @{
+                                    var posterUrl = !string.IsNullOrEmpty(movie.PosterUrl) && movie.PosterUrl.StartsWith("http") 
+                                        ? movie.PosterUrl 
+                                        : !string.IsNullOrEmpty(movie.PosterUrl) 
+                                            ? "https://img.ophim.live/uploads/movies/" + movie.PosterUrl.TrimStart('/') 
+                                            : "https://via.placeholder.com/300x450/333333/ffffff?text=" + Uri.EscapeDataString(movie.Name ?? "No Image");
+                                }
+                                <img src="@posterUrl" 
+                                     alt="@movie.Name" 
+                                     class="img-fluid rounded"
+                                     loading="lazy"
+                                     onerror="this.src='https://via.placeholder.com/300x450/444444/ffffff?text=Loading...'" 
+                                     alt="@movie.Name" class="img-fluid rounded">
+                                <div class="movie-overlay">
+                                    <div class="play-button">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="movie-info mt-2">
+                            <h6 class="movie-title">
+                                <a href="/phim/@movie.Slug" class="text-decoration-none">@movie.Name</a>
+                            </h6>
+                            <div class="movie-meta">
+                                <small class="text-muted">@movie.Year</small>
+                                @{
+                                    var badgeClass = movie.Quality?.ToLower() switch
+                                    {
+                                        "hd" => "badge-success",
+                                        "full hd" => "badge-primary", 
+                                        "4k" => "badge-warning",
+                                        "cam" => "badge-secondary",
+                                        _ => "badge-info"
+                                    };
+                                }
+                                <span class="badge @badgeClass ml-2">@movie.Quality</span>
+                            </div>
+                            <div class="movie-episode">
+                                <small class="text-warning">@movie.EpisodeCurrent</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <!-- Single Movies Section -->
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title">
+                <i class="fas fa-film text-primary"></i> Phim Lẻ Mới
+            </h2>
+            <a href="/the-loai/phim-le" class="btn btn-outline-primary">Xem tất cả</a>
+        </div>
+        
+        <div class="row">
+            @foreach (var movie in Model.SingleMovies.Take(8))
+            {
+                <div class="col-lg-3 col-md-4 col-sm-6 col-6 mb-4">
+                    <div class="movie-card">
+                        <div class="movie-poster">
+                            <a href="/phim/@movie.Slug">
+                                @{
+                                    var posterUrl2 = !string.IsNullOrEmpty(movie.PosterUrl) && movie.PosterUrl.StartsWith("http") 
+                                        ? movie.PosterUrl 
+                                        : !string.IsNullOrEmpty(movie.PosterUrl) 
+                                            ? "https://img.ophim.live/uploads/movies/" + movie.PosterUrl.TrimStart('/') 
+                                            : "https://via.placeholder.com/300x450/333333/ffffff?text=" + Uri.EscapeDataString(movie.Name ?? "No Image");
+                                }
+                                <img src="@posterUrl2" 
+                                     alt="@movie.Name" 
+                                     class="img-fluid rounded"
+                                     loading="lazy"
+                                     onerror="this.src='https://via.placeholder.com/300x450/444444/ffffff?text=Loading...'" 
+                                     alt="@movie.Name" class="img-fluid rounded">
+                                <div class="movie-overlay">
+                                    <div class="play-button">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="movie-info mt-2">
+                            <h6 class="movie-title">
+                                <a href="/phim/@movie.Slug" class="text-decoration-none">@movie.Name</a>
+                            </h6>
+                            <div class="movie-meta">
+                                <small class="text-muted">@movie.Year</small>
+                                @{
+                                    var badgeClass2 = movie.Quality?.ToLower() switch
+                                    {
+                                        "hd" => "badge-success",
+                                        "full hd" => "badge-primary", 
+                                        "4k" => "badge-warning",
+                                        "cam" => "badge-secondary",
+                                        _ => "badge-info"
+                                    };
+                                }
+                                <span class="badge @badgeClass2 ml-2">@movie.Quality</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <!-- TV Series Section -->
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title">
+                <i class="fas fa-tv text-success"></i> Phim Bộ Hot
+            </h2>
+            <a href="/the-loai/phim-bo" class="btn btn-outline-primary">Xem tất cả</a>
+        </div>
+        
+        <div class="row">
+            @foreach (var movie in Model.TvSeries.Take(8))
+            {
+                <div class="col-lg-3 col-md-4 col-sm-6 col-6 mb-4">
+                    <div class="movie-card">
+                        <div class="movie-poster">
+                            <a href="/phim/@movie.Slug">
+                                @{
+                                    var posterUrl3 = !string.IsNullOrEmpty(movie.PosterUrl) && movie.PosterUrl.StartsWith("http") 
+                                        ? movie.PosterUrl 
+                                        : !string.IsNullOrEmpty(movie.PosterUrl) 
+                                            ? "https://img.ophim.live/uploads/movies/" + movie.PosterUrl.TrimStart('/') 
+                                            : "https://via.placeholder.com/300x450/333333/ffffff?text=" + Uri.EscapeDataString(movie.Name ?? "No Image");
+                                }
+                                <img src="@posterUrl3" 
+                                     alt="@movie.Name" 
+                                     class="img-fluid rounded"
+                                     loading="lazy"
+                                     onerror="this.src='https://via.placeholder.com/300x450/444444/ffffff?text=Loading...'" 
+                                     alt="@movie.Name" class="img-fluid rounded">
+                                <div class="movie-overlay">
+                                    <div class="play-button">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="movie-info mt-2">
+                            <h6 class="movie-title">
+                                <a href="/phim/@movie.Slug" class="text-decoration-none">@movie.Name</a>
+                            </h6>
+                            <div class="movie-meta">
+                                <small class="text-muted">@movie.Year</small>
+                                <span class="badge badge-warning ml-2">@movie.EpisodeCurrent/@movie.EpisodeTotal</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+</div>
+<!-- End Main Content -->
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/home.css" />
+}
+
+@section Scripts {
+    <script>
+        // Xử lý lỗi ảnh
+        document.addEventListener('DOMContentLoaded', function() {
+            const images = document.querySelectorAll('.movie-poster img');
+            
+            images.forEach(function(img) {
+                img.addEventListener('error', function() {
+                    const movieName = this.alt || 'Phim';
+                    const fallbackUrl = `https://via.placeholder.com/300x450/444444/ffffff?text=${encodeURIComponent(movieName)}`;
+                    
+                    // Tránh infinite loop
+                    if (this.src !== fallbackUrl) {
+                        this.src = fallbackUrl;
+                    }
+                });
+                
+                // Thêm loading placeholder
+                img.addEventListener('loadstart', function() {
+                    this.style.backgroundColor = '#f8f9fa';
+                });
+                
+                img.addEventListener('load', function() {
+                    this.style.backgroundColor = 'transparent';
+                });
+            });
+        });
+    </script>
+}

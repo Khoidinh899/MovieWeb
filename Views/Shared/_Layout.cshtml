@@ -1,50 +1,303 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - MovieWeb</title>
-    <script type="importmap"></script>
+    <title>@ViewData["Title"] - MoonPhim</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/MovieWeb.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico">
+    @await RenderSectionAsync("Styles", required: false)
 </head>
+
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">MovieWeb</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+                <!-- Logo -->
+                <a class="navbar-brand d-flex align-items-center" href="/">
+                    <img src="~/images/iconmoon.png" alt="MoonPhim Logo" style="height:60px; margin-right:8px;">
+                    <div style="display:flex; flex-direction:column; line-height:1.2;">
+                        <span style="font-weight:bold; font-size:28px; color:white;">MoonPhim</span>
+                        <span style="font-size:14px; color:gray;">Bay bổng cùng điện ảnh</span>
+                    </div>
+                </a>
+
+                <!-- Search icon + Notification (Mobile Only) -->
+                <div class="d-lg-none d-flex align-items-center">
+                    <button class="btn btn-link text-white me-2" id="mobileSearchBtn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                </div>
+
+                <!-- Menu -->
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item"><a class="nav-link" href="/">Trang chủ</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/the-loai/phim-le">Phim lẻ</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/the-loai/phim-bo">Phim bộ</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/the-loai/hoat-hinh">Hoạt hình</a></li>
                     </ul>
+
+                    <!-- Search box desktop -->
+                    <form class="search-box d-none d-lg-flex" action="/tim-kiem" method="get">
+                        <div class="search-input-wrapper">
+                            <input type="search" name="keyword" placeholder="Tìm kiếm phim..." aria-label="Search">
+                            <button type="submit"><i class="fas fa-search"></i></button>
+                        </div>
+                    </form>
+
+                    <!-- Desktop Avatar dropdown -->
+                    <div class="dropdown ms-3 position-relative d-none d-lg-block">
+                        <a href="/tai-khoan" class="d-flex align-items-center text-decoration-none dropdown-toggle"
+                            id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img src="~/images/nouser.png" alt="Avatar" class="avatar-circle">
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="/tai-khoan"><i class="bi bi-person me-2"></i>Quản lý tài
+                                    khoản</a></li>
+                            <li><a class="dropdown-item" href="/yeu-thich"><i class="bi bi-heart me-2"></i>Yêu thích</a>
+                            </li>
+                            <li><a class="dropdown-item" href="/thong-bao"><i class="bi bi-bell me-2"></i>Thông báo</a>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item text-danger" href="/dang-xuat"><i
+                                        class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Mobile Avatar (trong collapse menu) -->
+                    <div class="d-lg-none mt-3 pt-3 border-top border-secondary">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="~/images/nouser.png" alt="Avatar" class="avatar-circle me-3">
+                            <div>
+                                <div class="text-white fw-bold">Tên người dùng</div>
+                                <small class="text-muted">user@example.com</small>
+                            </div>
+                        </div>
+                        <ul class="navbar-nav">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/tai-khoan">
+                                    <i class="bi bi-person me-2"></i>Quản lý tài khoản
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/yeu-thich">
+                                    <i class="bi bi-heart me-2"></i>Yêu thích
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/thong-bao">
+                                    <i class="bi bi-bell me-2"></i>Thông báo
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-danger" href="/dang-xuat">
+                                    <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - MovieWeb - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        <!-- Mobile Search Overlay (che toàn bộ navbar) -->
+        <div id="mobileSearchOverlay" class="mobile-search-overlay d-lg-none">
+            <div class="mobile-search-container">
+                <button class="mobile-search-close" id="mobileSearchClose">
+                    <i class="fas fa-times"></i>
+                </button>
+                <form action="/tim-kiem" method="get" class="mobile-search-form">
+                    <div class="mobile-search-input-wrapper">
+                        <input type="search" name="keyword" placeholder="Tìm kiếm phim..." id="mobileSearchInput"
+                            autocomplete="off">
+                        <button type="submit" class="mobile-search-submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Search suggestions (tùy chọn) -->
+                <div class="mobile-search-suggestions">
+                    <div class="suggestion-title">Tìm kiếm phổ biến</div>
+                    <div class="suggestion-tags">
+                        <span class="suggestion-tag">Phim hành động</span>
+                        <span class="suggestion-tag">Phim tình cảm</span>
+                        <span class="suggestion-tag">Phim kinh dị</span>
+                        <span class="suggestion-tag">Anime</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main role="main">
+        @RenderBody()
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white pt-5 pb-4 mt-5">
+        <div class="container text-md-left">
+            <div class="row text-md-left">
+                <!-- Logo + mô tả -->
+                <div class="col-md-4 col-lg-4 mb-4">
+                    <a class="navbar-brand d-flex align-items-center" href="/">
+                        <img src="~/images/iconmoon.png" alt="MoonPhim Logo" style="height:80px; margin-right:8px;">
+                        <div style="display:flex; flex-direction:column; line-height:1;">
+                            <span style="font-weight:bold; font-size:40px; color:white;">MoonPhim</span>
+                            <span style="font-size:20px; color:gray;">Bay bổng cùng điện ảnh</span>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Danh mục -->
+                <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mt-3">
+                    <h5 class="text-uppercase mb-4 font-weight-bold">Danh mục</h5>
+                    <p><a href="/" class="text-white text-decoration-none">Trang chủ</a></p>
+                    <p><a href="/the-loai/phim-moi" class="text-white text-decoration-none">Phim mới</a></p>
+                    <p><a href="/the-loai/phim-le" class="text-white text-decoration-none">Phim lẻ</a></p>
+                    <p><a href="/the-loai/phim-bo" class="text-white text-decoration-none">Phim bộ</a></p>
+                </div>
+
+                <!-- Liên kết -->
+                <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3">
+                    <h5 class="text-uppercase mb-4 font-weight-bold">Liên kết</h5>
+                    <p><a href="/about" class="text-white text-decoration-none">Giới thiệu</a></p>
+                    <p><a href="/privacy" class="text-white text-decoration-none">Chính sách</a></p>
+                    <p><a href="/contact" class="text-white text-decoration-none">Liên hệ</a></p>
+                </div>
+
+                <!-- Mạng xã hội -->
+                <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3">
+                    <h5 class="text-uppercase mb-4 font-weight-bold">Theo dõi chúng tôi</h5>
+                    <a href="https://facebook.com" target="_blank" class="text-white me-3 fs-4"><i
+                            class="bi bi-facebook"></i></a>
+                    <a href="https://youtube.com" target="_blank" class="text-white me-3 fs-4"><i
+                            class="bi bi-youtube"></i></a>
+                    <a href="https://github.com" target="_blank" class="text-white me-3 fs-4"><i
+                            class="bi bi-github"></i></a>
+                    <a href="https://t.me" target="_blank" class="text-white fs-4"><i class="bi bi-telegram"></i></a>
+                </div>
+            </div>
+
+            <hr class="mb-4 mt-4 border-secondary" />
+
+            <!-- Copyright -->
+            <div class="row align-items-center">
+                <div class="col-md-8 col-lg-8">
+                    <p class="mb-0">© 2025 <strong>MoonPhim</strong>. All rights reserved.</p>
+                </div>
+                <button id="scrollTopBtn" title="Lên đầu trang">↑</button>
+            </div>
         </div>
     </footer>
+
+    <!-- Scripts -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Mobile search functionality
+            const mobileSearchBtn = document.getElementById("mobileSearchBtn");
+            const mobileSearchOverlay = document.getElementById("mobileSearchOverlay");
+            const mobileSearchClose = document.getElementById("mobileSearchClose");
+            const mobileSearchInput = document.getElementById("mobileSearchInput");
+
+            if (mobileSearchBtn && mobileSearchOverlay) {
+                mobileSearchBtn.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    mobileSearchOverlay.classList.add("active");
+                    document.body.classList.add("search-overlay-active");
+                    setTimeout(() => {
+                        mobileSearchInput.focus();
+                    }, 300);
+                });
+
+                mobileSearchClose.addEventListener("click", closeMobileSearch);
+
+                mobileSearchOverlay.addEventListener("click", function (e) {
+                    if (e.target === mobileSearchOverlay) {
+                        closeMobileSearch();
+                    }
+                });
+
+                document.addEventListener("keydown", function (e) {
+                    if (e.key === "Escape" && mobileSearchOverlay.classList.contains("active")) {
+                        closeMobileSearch();
+                    }
+                });
+
+                function closeMobileSearch() {
+                    mobileSearchOverlay.classList.remove("active");
+                    document.body.classList.remove("search-overlay-active");
+                }
+            }
+
+            // Navbar scroll effect
+            const navbar = document.querySelector('.navbar-custom');
+            let lastScrollTop = 0;
+            let ticking = false;
+
+            function updateNavbar() {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                if (scrollTop > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+                lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+                ticking = false;
+            }
+
+            function requestTick() {
+                if (!ticking) {
+                    requestAnimationFrame(updateNavbar);
+                    ticking = true;
+                }
+            }
+
+            window.addEventListener('scroll', requestTick);
+
+            // Suggestion tags click
+            const suggestionTags = document.querySelectorAll('.suggestion-tag');
+            suggestionTags.forEach(tag => {
+                tag.addEventListener('click', function () {
+                    mobileSearchInput.value = this.textContent;
+                    mobileSearchInput.focus();
+                });
+            });
+
+            // Scroll to top button
+            const scrollBtn = document.getElementById("scrollTopBtn");
+
+            window.addEventListener("scroll", function () {
+                if (window.scrollY > 1000) {
+                    scrollBtn.style.display = "block";
+                } else {
+                    scrollBtn.style.display = "none";
+                }
+            });
+
+            scrollBtn.addEventListener("click", function () {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+
+        });
+    </script>
+
 </body>
+
 </html>
