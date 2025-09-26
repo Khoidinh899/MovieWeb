@@ -1,6 +1,14 @@
 using MovieWeb.Services;
+using MovieWeb.Repositories; // Thêm using này
+using Microsoft.EntityFrameworkCore;
+using MovieWeb.Models.Entities;
+using MovieWeb.Data;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Kết nối DbContext với SQL Server
+builder.Services.AddDbContext<MovieWebDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -8,8 +16,15 @@ builder.Services.AddControllersWithViews();
 // Thêm HttpClient
 builder.Services.AddHttpClient();
 
-// Đăng ký OPhimService
+// Đăng ký Services
 builder.Services.AddScoped<IOPhimService, OPhimService>();
+builder.Services.AddScoped<IMovieSyncService, MovieSyncService>();
+
+// Đăng ký Repositories - THÊM DÒNG NÀY
+builder.Services.AddScoped<IMovieRepository, MovieRepository>();
+
+// Đăng ký BackgroundSyncService
+builder.Services.AddHostedService<BackgroundSyncService>();
 
 // Thêm Memory Cache để cache dữ liệu
 builder.Services.AddMemoryCache();
@@ -52,5 +67,22 @@ app.MapControllerRoute(
     name: "category",
     pattern: "the-loai/{type}",
     defaults: new { controller = "Movie", action = "Category" });
+// Route cho danh sách phim hoạt hình
+app.MapControllerRoute(
+    name: "hoathinh",
+    pattern: "phim/hoathinh/{page?}",
+    defaults: new { controller = "Movie", action = "ByType", type = "hoathinh" });
+
+// Route cho danh sách phim bộ
+app.MapControllerRoute(
+    name: "series",
+    pattern: "phim/series/{page?}",
+    defaults: new { controller = "Movie", action = "ByType", type = "series" });
+
+// Route cho danh sách phim lẻ
+app.MapControllerRoute(
+    name: "single",
+    pattern: "phim/single/{page?}",
+    defaults: new { controller = "Movie", action = "ByType", type = "single" });
 
 app.Run();

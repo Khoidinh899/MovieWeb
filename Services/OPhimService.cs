@@ -1,5 +1,5 @@
 // Services/OPhimService.cs
-using MovieWeb.Models;
+using MovieWeb.Models.API;
 using Newtonsoft.Json;
 
 namespace MovieWeb.Services

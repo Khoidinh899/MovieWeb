@@ -1,11 +1,11 @@
 ﻿@using MovieWeb.Helpers
-@model MovieWeb.Models.HomeViewModel
+@model MovieWeb.Models.API.HomeViewModel
 @{
     ViewData["Title"] = "Trang Chủ - Xem Phim Online";
 }
 
 @functions {
-    public string GetMoviePosterUrl(MovieWeb.Models.Movie movie)
+    public string GetMoviePosterUrl(MovieWeb.Models.API.Movie movie)
     {
         if (!string.IsNullOrEmpty(movie.PosterUrl) && movie.PosterUrl.StartsWith("http"))
         {
@@ -277,6 +277,66 @@
                             <div class="movie-meta">
                                 <small class="text-muted">@movie.Year</small>
                                 <span class="badge badge-warning ml-2">@movie.EpisodeCurrent/@movie.EpisodeTotal</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+        <!-- Cartoon Movies Section -->
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title">
+                <i class="fas fa-dragon text-warning"></i> Phim Hoạt Hình
+            </h2>
+            <a href="/the-loai/hoat-hinh" class="btn btn-outline-primary">Xem tất cả</a>
+        </div>
+        
+        <div class="row">
+            @foreach (var movie in Model.HoatHinhMovies.Take(8))
+            {
+                <div class="col-lg-3 col-md-4 col-sm-6 col-6 mb-4">
+                    <div class="movie-card">
+                        <div class="movie-poster">
+                            <a href="/phim/@movie.Slug">
+                                @{
+                                    var posterUrl4 = !string.IsNullOrEmpty(movie.PosterUrl) && movie.PosterUrl.StartsWith("http") 
+                                        ? movie.PosterUrl 
+                                        : !string.IsNullOrEmpty(movie.PosterUrl) 
+                                            ? "https://img.ophim.live/uploads/movies/" + movie.PosterUrl.TrimStart('/') 
+                                            : "https://via.placeholder.com/300x450/333333/ffffff?text=" + Uri.EscapeDataString(movie.Name ?? "No Image");
+                                }
+                                <img src="@posterUrl4" 
+                                     alt="@movie.Name" 
+                                     class="img-fluid rounded"
+                                     loading="lazy"
+                                     onerror="this.src='https://via.placeholder.com/300x450/444444/ffffff?text=Loading...'" 
+                                     alt="@movie.Name" class="img-fluid rounded">
+                                <div class="movie-overlay">
+                                    <div class="play-button">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="movie-info mt-2">
+                            <h6 class="movie-title">
+                                <a href="/phim/@movie.Slug" class="text-decoration-none">@movie.Name</a>
+                            </h6>
+                            <div class="movie-meta">
+                                <small class="text-muted">@movie.Year</small>
+                                @{
+                                    var badgeClass4 = movie.Quality?.ToLower() switch
+                                    {
+                                        "hd" => "badge-success",
+                                        "full hd" => "badge-primary", 
+                                        "4k" => "badge-warning",
+                                        "cam" => "badge-secondary",
+                                        _ => "badge-info"
+                                    };
+                                }
+                                <span class="badge @badgeClass4 ml-2">@movie.Quality</span>
                             </div>
                         </div>
                     </div>

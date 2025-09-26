@@ -1,7 +1,7 @@
 // Models/MovieModels.cs
 using Newtonsoft.Json;
 
-namespace MovieWeb.Models
+namespace MovieWeb.Models.API
 {
     public class OPhimResponse
     {

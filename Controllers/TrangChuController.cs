@@ -1,133 +1,153 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
-using MovieWeb.Models;
-using MovieWeb.Services;
+using MovieWeb.Models.API;
+using MovieWeb.Repositories;
+using MovieWeb.Extensions;
 
 namespace MovieWeb.Controllers
 {
     public class TrangChuController : Controller
     {
         private readonly ILogger<TrangChuController> _logger;
-        private readonly IOPhimService _oPhimService;
+        private readonly IMovieRepository _movieRepository;
         private readonly IMemoryCache _cache;
 
-        public TrangChuController(ILogger<TrangChuController> logger, IOPhimService oPhimService, IMemoryCache cache)
+        public TrangChuController(ILogger<TrangChuController> logger, IMovieRepository movieRepository, IMemoryCache cache)
         {
             _logger = logger;
-            _oPhimService = oPhimService;
+            _movieRepository = movieRepository;
             _cache = cache;
         }
 
         public async Task<IActionResult> TrangChu()
-{
-    try
-    {
-        var viewModel = new HomeViewModel();
-
-        var cacheKeyBanner = "banner_movies_with_content";
-        if (!_cache.TryGetValue(cacheKeyBanner, out List<Movie> bannerMovies))
         {
-            var singleMoviesResponse = await _oPhimService.GetMoviesByTypeAsync("phim-le", 1);
-            if (singleMoviesResponse != null && singleMoviesResponse.Status == "success")
+            try
             {
-                var movies = singleMoviesResponse.Data?.Items?.Take(6).ToList() ?? new List<Movie>();
-                bannerMovies = new List<Movie>();
+                var viewModel = new HomeViewModel();
 
-                // Lấy chi tiết cho từng phim để có content
-                foreach (var movie in movies)
+                // CDN Domain cho ảnh
+                viewModel.CdnImageDomain = "https://img.ophim.live/uploads/movies/";
+
+                // Lấy phim hot cho banner với cache
+                var cacheKeyBanner = "banner_movies_with_content";
+                if (!_cache.TryGetValue(cacheKeyBanner, out List<Movie> bannerMovies))
                 {
-                    try
+                    _logger.LogInformation("Loading banner movies from database...");
+
+                    // Lấy phim hot từ database (theo view count và rating)
+                    var hotMoviesFromDb = await _movieRepository.GetHotMoviesAsync(6);
+
+                    if (hotMoviesFromDb != null && hotMoviesFromDb.Any())
                     {
-                        if (!string.IsNullOrEmpty(movie.Slug))
+                        bannerMovies = hotMoviesFromDb.ToApiModelList();
+                        _logger.LogInformation($"Loaded {bannerMovies.Count} banner movies from database");
+
+                        // Log content để debug
+                        foreach (var movie in bannerMovies.Take(3))
                         {
-                            _logger.LogInformation($"Getting detail for movie: {movie.Name} - Slug: {movie.Slug}");
-                            
-                            var movieDetail = await _oPhimService.GetMovieDetailAsync(movie.Slug);
-                            if (movieDetail != null && !string.IsNullOrEmpty(movieDetail.Content))
+                            if (!string.IsNullOrEmpty(movie.Content))
                             {
-                                // Cập nhật content từ API chi tiết
-                                movie.Content = movieDetail.Content;
-                                _logger.LogInformation($"Got content for {movie.Name}: {movie.Content.Substring(0, Math.Min(50, movie.Content.Length))}...");
+                                _logger.LogInformation($"Movie {movie.Name} has content: {movie.Content.Substring(0, Math.Min(50, movie.Content.Length))}...");
                             }
                             else
                             {
-                                _logger.LogWarning($"No content found for movie: {movie.Name}");
+                                _logger.LogWarning($"Movie {movie.Name} has no content");
                             }
                         }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        _logger.LogError(ex, $"Error getting detail for movie: {movie.Name}");
+                        bannerMovies = new List<Movie>();
+                        _logger.LogWarning("No hot movies found in database");
                     }
-                    
-                    bannerMovies.Add(movie);
+
+                    _cache.Set(cacheKeyBanner, bannerMovies, TimeSpan.FromMinutes(30));
                 }
 
-                _cache.Set(cacheKeyBanner, bannerMovies, TimeSpan.FromMinutes(30));
+                viewModel.HotMovies = bannerMovies;
+                viewModel.BannerMovies = bannerMovies; // Dùng cho banner
+
+                // Lấy phim mới cập nhật với cache
+                var cacheKey = "latest_movies_page_1_db";
+                if (!_cache.TryGetValue(cacheKey, out List<Movie> latestMovies))
+                {
+                    _logger.LogInformation("Loading latest movies from database...");
+
+                    var latestResult = await _movieRepository.GetLatestMoviesAsync(1, 12);
+                    latestMovies = latestResult.Items.ToApiModelList();
+
+                    _logger.LogInformation($"Loaded {latestMovies.Count} latest movies from database");
+                    _cache.Set(cacheKey, latestMovies, TimeSpan.FromMinutes(10));
+                }
+
+                viewModel.LatestMovies = latestMovies;
+
+                // Lấy phim lẻ
+                var cacheKeyMovies = "single_movies_page_1_db";
+                if (!_cache.TryGetValue(cacheKeyMovies, out List<Movie> singleMovies))
+                {
+                    _logger.LogInformation("Loading single movies from database...");
+
+                    var singleResult = await _movieRepository.GetMoviesByTypeAsync("single", 1, 12);
+                    singleMovies = singleResult.Items.ToApiModelList();
+
+                    _logger.LogInformation($"Loaded {singleMovies.Count} single movies from database");
+                    _cache.Set(cacheKeyMovies, singleMovies, TimeSpan.FromMinutes(10));
+                }
+
+                viewModel.SingleMovies = singleMovies;
+
+                // Lấy phim bộ
+                var cacheKeySeries = "tv_series_page_1_db";
+                if (!_cache.TryGetValue(cacheKeySeries, out List<Movie> tvSeries))
+                {
+                    _logger.LogInformation("Loading TV series from database...");
+
+                    var tvResult = await _movieRepository.GetMoviesByTypeAsync("series", 1, 12);
+                    tvSeries = tvResult.Items.ToApiModelList();
+
+                    _logger.LogInformation($"Loaded {tvSeries.Count} TV series from database");
+                    _cache.Set(cacheKeySeries, tvSeries, TimeSpan.FromMinutes(10));
+                }
+
+                viewModel.TvSeries = tvSeries;
+                // Lấy phim hoạt hình
+                var cacheKeyHoatHinh = "hoathinh_movies_page_1_db";
+                if (!_cache.TryGetValue(cacheKeyHoatHinh, out List<Movie> hoatHinhMovies))
+                {
+                    _logger.LogInformation("Loading animation movies from database...");
+
+                    var hoatHinhResult = await _movieRepository.GetMoviesByTypeAsync("hoathinh", 1, 12);
+                    hoatHinhMovies = hoatHinhResult.Items.ToApiModelList();
+
+                    _logger.LogInformation($"Loaded {hoatHinhMovies.Count} animation movies from database");
+                    _cache.Set(cacheKeyHoatHinh, hoatHinhMovies, TimeSpan.FromMinutes(10));
+                }
+
+                viewModel.HoatHinhMovies = hoatHinhMovies;
+
+                _logger.LogInformation($"TrangChu loaded successfully: {viewModel.HotMovies.Count} hot, {viewModel.LatestMovies.Count} latest, {viewModel.SingleMovies.Count} single, {viewModel.TvSeries.Count} series");
+
+                return View("~/Views/Home/TrangChu.cshtml", viewModel);
             }
-            else
+            catch (Exception ex)
             {
-                bannerMovies = new List<Movie>();
+                _logger.LogError(ex, "Error loading TrangChu page from database");
+
+                var viewModel = new HomeViewModel
+                {
+                    HotMovies = new List<Movie>(),
+                    LatestMovies = new List<Movie>(),
+                    SingleMovies = new List<Movie>(),
+                    TvSeries = new List<Movie>(),
+                    BannerMovies = new List<Movie>(),
+                    CdnImageDomain = "https://img.ophim.live/uploads/movies/"
+                };
+
+                return View("~/Views/Home/TrangChu.cshtml", viewModel);
             }
         }
-
-        viewModel.HotMovies = bannerMovies;
-
-        // Lấy phim mới cập nhật với cache
-        var cacheKey = "latest_movies_page_1";
-        if (!_cache.TryGetValue(cacheKey, out OPhimResponse latestMovies))
-        {
-            latestMovies = await _oPhimService.GetLatestMoviesAsync(1);
-            if (latestMovies != null && latestMovies.Status == "success")
-            {
-                _cache.Set(cacheKey, latestMovies, TimeSpan.FromMinutes(10));
-            }
-        }
-
-        viewModel.LatestMovies = latestMovies?.Data?.Items ?? new List<Movie>();
-
-        // Lấy phim lẻ
-        var cacheKeyMovies = "single_movies_page_1";
-        if (!_cache.TryGetValue(cacheKeyMovies, out OPhimResponse singleMovies))
-        {
-            singleMovies = await _oPhimService.GetMoviesByTypeAsync("phim-le", 1);
-            if (singleMovies != null && singleMovies.Status == "success")
-            {
-                _cache.Set(cacheKeyMovies, singleMovies, TimeSpan.FromMinutes(10));
-            }
-        }
-
-        viewModel.SingleMovies = singleMovies?.Data?.Items ?? new List<Movie>();
-
-        // Lấy phim bộ
-        var cacheKeySeries = "tv_series_page_1";
-        if (!_cache.TryGetValue(cacheKeySeries, out OPhimResponse tvSeries))
-        {
-            tvSeries = await _oPhimService.GetMoviesByTypeAsync("phim-bo", 1);
-            if (tvSeries != null && tvSeries.Status == "success")
-            {
-                _cache.Set(cacheKeySeries, tvSeries, TimeSpan.FromMinutes(10));
-            }
-        }
-
-        viewModel.TvSeries = tvSeries?.Data?.Items ?? new List<Movie>();
-
-        return View("~/Views/Home/TrangChu.cshtml", viewModel);
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error loading home page");
-        var viewModel = new HomeViewModel
-        {
-            HotMovies = new List<Movie>(),
-            LatestMovies = new List<Movie>(),
-            SingleMovies = new List<Movie>(),
-            TvSeries = new List<Movie>()
-        };
-        return View("~/Views/Home/TrangChu.cshtml", viewModel);
-    }
-}
 
         public IActionResult Privacy()
         {
@@ -139,5 +159,11 @@ namespace MovieWeb.Controllers
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
+    }
+
+    public class ErrorViewModel
+    {
+        public string? RequestId { get; set; }
+        public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
     }
 }
