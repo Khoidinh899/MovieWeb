@@ -23,13 +23,15 @@
                         </div>
                         <div class="mb-3">
                             <label for="loginPassword" class="form-label text-white">Mật khẩu</label>
-                            <input type="password" class="form-control auth-input" id="loginPassword" name="Password" required>
+                            <input type="password" class="form-control auth-input" id="loginPassword" name="Password"
+                                required>
                         </div>
-                        
+
                         <!-- Email verification alert -->
                         <div id="emailVerificationAlert" class="alert alert-warning d-none">
                             <i class="bi bi-exclamation-triangle me-2"></i>
-                            Email chưa được xác thực. <a href="#" id="resendVerification" class="alert-link">Gửi lại email xác thực</a>
+                            Email chưa được xác thực. <a href="#" id="resendVerification" class="alert-link">Gửi lại
+                                email xác thực</a>
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100 mb-3 auth-btn">
@@ -39,13 +41,15 @@
                     </form>
 
                     <div class="text-center">
-                        <a href="@Url.Action("ForgotPassword","Auth")" id="forgotPassword" class="text-muted">Quên mật khẩu?</a>
+                        <a href="@Url.Action("ForgotPassword", "Auth")" id="forgotPassword" class="text-muted">Quên mật
+                            khẩu?</a>
                     </div>
-                    
+
                     <hr class="my-4 border-secondary">
-                    
+
                     <div class="text-center">
-                        <p class="text-muted">Nếu bạn chưa có tài khoản, <a href="#" id="showRegister" class="text-primary">đăng ký ngay</a></p>
+                        <p class="text-muted">Nếu bạn chưa có tài khoản, <a href="#" id="showRegister"
+                                class="text-primary">đăng ký ngay</a></p>
                     </div>
                 </div>
 
@@ -54,32 +58,46 @@
                     <form id="registerFormSubmit" asp-controller="Auth" asp-action="Register" method="post">
                         <div class="mb-3">
                             <label for="registerEmail" class="form-label text-white">Email</label>
-                            <input type="email" class="form-control auth-input" id="registerEmail" name="Email" required>
+                            <input type="email" class="form-control auth-input" id="registerEmail" name="Email"
+                                required>
                         </div>
+
+                        <!-- NEW: Username -->
+                        <div class="mb-3">
+                            <label for="registerUsername" class="form-label text-white">Tên đăng nhập</label>
+                            <input type="text" class="form-control auth-input" id="registerUsername" name="Username"
+                                required pattern="^[a-zA-Z0-9_.]+$">
+                            <small class="form-text text-muted">Chỉ chữ, số, dấu gạch dưới (_) hoặc chấm (.)</small>
+                        </div>
+
                         <div class="mb-3">
                             <label for="registerPassword" class="form-label text-white">Mật khẩu</label>
-                            <input type="password" class="form-control auth-input" id="registerPassword" name="Password" required minlength="6">
+                            <input type="password" class="form-control auth-input" id="registerPassword" name="Password"
+                                required minlength="6">
                             <small class="form-text text-muted">Mật khẩu tối thiểu 6 ký tự</small>
                         </div>
                         <div class="mb-3">
                             <label for="registerConfirmPassword" class="form-label text-white">Xác nhận mật khẩu</label>
-                            <input type="password" class="form-control auth-input" id="registerConfirmPassword" name="ConfirmPassword" required>
+                            <input type="password" class="form-control auth-input" id="registerConfirmPassword"
+                                name="ConfirmPassword" required>
                         </div>
                         <div class="mb-3">
                             <label for="registerFullName" class="form-label text-white">Họ và tên</label>
-                            <input type="text" class="form-control auth-input" id="registerFullName" name="FullName" required>
+                            <input type="text" class="form-control auth-input" id="registerFullName" name="FullName"
+                                required>
                         </div>
-
                         <button type="submit" class="btn btn-success w-100 mb-3 auth-btn">
                             <span id="registerBtnText">Đăng ký</span>
                             <span id="registerLoader" class="spinner-border spinner-border-sm d-none ms-2"></span>
                         </button>
                     </form>
-                    
+
                     <div class="text-center">
-                        <p class="text-muted">Đã có tài khoản? <a href="#" id="showLogin" class="text-primary">Đăng nhập</a></p>
+                        <p class="text-muted">Đã có tài khoản? <a href="#" id="showLogin" class="text-primary">Đăng
+                                nhập</a></p>
                     </div>
                 </div>
+
 
                 <!-- Email Verification Success -->
                 <div id="verificationSuccess" class="d-none text-center">

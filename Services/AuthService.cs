@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Net;
 using MovieWeb.Models.Entities;
 using MovieWeb.Models.DTOs;
 using MovieWeb.Data;
@@ -39,22 +40,29 @@ namespace MovieWeb.Services
         {
             try
             {
-                // Kiểm tra email đã tồn tại
                 if (await _userManager.FindByEmailAsync(model.Email) != null)
                     return AuthResult.Failed("Email đã được sử dụng");
 
-                // Kiểm tra username đã tồn tại
                 if (await _userManager.FindByNameAsync(model.Username) != null)
                     return AuthResult.Failed("Tên đăng nhập đã được sử dụng");
 
-                // Tạo user mới
+                // Tách họ và tên
+                string firstName = "";
+                string lastName = "";
+                if (!string.IsNullOrWhiteSpace(model.FullName))
+                {
+                    var parts = model.FullName.Trim().Split(' ');
+                    firstName = parts.Last(); // lấy từ cuối
+                    lastName = string.Join(" ", parts.Take(parts.Length - 1)); // phần còn lại
+                }
+
                 var user = new User
                 {
                     UserName = model.Username,
                     Email = model.Email,
-                    FirstName = model.FirstName,
-                    LastName = model.LastName,
-                    RoleId = 2, // Mặc định role User
+                    FirstName = firstName,
+                    LastName = lastName,
+                    RoleId = 2,
                     IsActive = true,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
@@ -62,17 +70,15 @@ namespace MovieWeb.Services
 
                 var result = await _userManager.CreateAsync(user, model.Password);
                 if (!result.Succeeded)
-                {
                     return AuthResult.Failed(result.Errors.Select(e => e.Description).ToList());
-                }
 
-                // Tạo token xác thực email
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
-                // Gửi email xác thực
+                // Build confirmation link using BaseUrl from config and encode token
                 var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:5001";
-                var confirmationLink = $"{baseUrl}/auth/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
-                await _emailService.SendEmailConfirmationAsync(user.Email!, user.FullName, confirmationLink);
+                var confirmationLink = $"{baseUrl.TrimEnd('/')}/auth/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+
+                await _emailService.SendEmailConfirmationAsync(user.Email!, model.FullName, confirmationLink);
 
                 return AuthResult.Success("Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản.");
             }
@@ -94,8 +100,17 @@ namespace MovieWeb.Services
                 if (user.IsActive != true)
                     return AuthResult.Failed("Tài khoản đã bị khóa");
 
+                // Nếu chưa xác thực email -> gửi lại mail xác thực (encode token)
                 if (!user.EmailConfirmed)
-                    return AuthResult.Failed("Tài khoản chưa được xác thực email");
+                {
+                    var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                    var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:5001";
+                    var confirmationLink = $"{baseUrl.TrimEnd('/')}/auth/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+
+                    await _emailService.SendEmailConfirmationAsync(user.Email!, user.FullName, confirmationLink);
+
+                    return AuthResult.Failed("Tài khoản chưa được xác thực. Một email xác thực mới đã được gửi.");
+                }
 
                 var result = await _signInManager.PasswordSignInAsync(
                     user.UserName!, model.Password, model.RememberMe, lockoutOnFailure: true);
@@ -140,23 +155,21 @@ namespace MovieWeb.Services
 
         public async Task<AuthResult> ConfirmEmailAsync(string userId, string token)
         {
-            try
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
             {
-                var user = await _userManager.FindByIdAsync(userId);
-                if (user == null)
-                    return AuthResult.Failed("Người dùng không tồn tại");
-
-                var result = await _userManager.ConfirmEmailAsync(user, token);
-                if (result.Succeeded)
-                    return AuthResult.Success("Xác thực email thành công");
-
-                return AuthResult.Failed("Token xác thực không hợp lệ hoặc đã hết hạn");
+                return AuthResult.Failed("Người dùng không tồn tại");
             }
-            catch (Exception ex)
+
+            var decodedToken = WebUtility.UrlDecode(token);
+            var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
+
+            if (result.Succeeded)
             {
-                _logger.LogError(ex, "Error during email confirmation");
-                return AuthResult.Failed("Có lỗi xảy ra trong quá trình xác thực");
+                await _signInManager.SignInAsync(user, isPersistent: true);
             }
+
+            return AuthResult.Failed("Token xác thực không hợp lệ hoặc đã hết hạn");
         }
 
         public async Task<bool> ForgotPasswordAsync(string email)
@@ -170,8 +183,9 @@ namespace MovieWeb.Services
                 }
 
                 var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
                 var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:5001";
-                var resetLink = $"{baseUrl}/auth/reset-password?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+                var resetLink = $"{baseUrl.TrimEnd('/')}/auth/reset-password?userId={user.Id}&token={Uri.EscapeDataString(token)}";
 
                 await _emailService.SendPasswordResetAsync(user.Email!, user.FullName, resetLink);
                 return true;
@@ -191,7 +205,10 @@ namespace MovieWeb.Services
                 if (user == null)
                     return AuthResult.Failed("Người dùng không tồn tại");
 
-                var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+                // Decode token before calling Identity
+                var decodedToken = WebUtility.UrlDecode(model.Token);
+
+                var result = await _userManager.ResetPasswordAsync(user, decodedToken, model.NewPassword);
                 if (result.Succeeded)
                     return AuthResult.Success("Đặt lại mật khẩu thành công");
 
@@ -220,7 +237,7 @@ namespace MovieWeb.Services
 
         public string GenerateJwtToken(User user)
         {
-            var secretKey = _configuration["JwtSettings:SecretKey"] 
+            var secretKey = _configuration["JwtSettings:SecretKey"]
                             ?? throw new InvalidOperationException("JWT SecretKey not found");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

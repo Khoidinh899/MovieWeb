@@ -236,7 +236,6 @@ D:\Doan\webnc\MovieWeb\obj\Debug\net9.0\compressed\nezrqnk58p-muycvpuwrr.gz
 D:\Doan\webnc\MovieWeb\obj\Debug\net9.0\compressed\v0zgfp0y55-87fc7y1x7t.gz
 D:\Doan\webnc\MovieWeb\obj\Debug\net9.0\compressed\yfc7ypekbg-mlv21k5csn.gz
 D:\Doan\webnc\MovieWeb\obj\Debug\net9.0\compressed\q01hvvf9pq-gkex27t0wc.gz
-D:\Doan\webnc\MovieWeb\obj\Debug\net9.0\compressed\zqnfli859j-9w4fpl3rv8.gz
 D:\Doan\webnc\MovieWeb\obj\Debug\net9.0\compressed\drakrqhkq6-glh2ea8h0z.gz
 D:\Doan\webnc\MovieWeb\obj\Debug\net9.0\compressed\mldm5rpxzz-61n19gt1b8.gz
 D:\Doan\webnc\MovieWeb\obj\Debug\net9.0\compressed\s1szbeez1a-xtxxf3hu2r.gz
@@ -313,3 +312,7 @@ D:\Doan\webnc\MovieWeb\obj\Debug\net9.0\MovieWeb.genruntimeconfig.cache
 D:\Doan\webnc\MovieWeb\obj\Debug\net9.0\ref\MovieWeb.dll
 D:\Doan\webnc\MovieWeb\obj\Debug\net9.0\compressed\8tvrq0o264-iny5320wnf.gz
 D:\Doan\webnc\MovieWeb\obj\Debug\net9.0\compressed\zs3jmao4hq-lhnfv7grqw.gz
+D:\Doan\webnc\MovieWeb\bin\Debug\net9.0\DotNetEnv.dll
+D:\Doan\webnc\MovieWeb\bin\Debug\net9.0\Sprache.dll
+D:\Doan\webnc\MovieWeb\obj\Debug\net9.0\compressed\2sqaz2n8en-uiow5oxe6f.gz
+D:\Doan\webnc\MovieWeb\obj\Debug\net9.0\compressed\zqnfli859j-qbqwnf4ur7.gz

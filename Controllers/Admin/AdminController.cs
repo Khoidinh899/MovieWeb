@@ -122,7 +122,7 @@ namespace MovieWeb.Controllers
                         IsActive = u.IsActive ?? true,
                         CreatedAt = u.CreatedAt ?? DateTime.MinValue,
                         LastLogin = u.LastLogin,
-                        IsAdmin = u.RoleId == 1
+                        RoleId = u.RoleId  // ✅ Chỉ gán RoleId, IsAdmin sẽ tự động tính
                     })
                     .ToListAsync();
 
@@ -175,7 +175,7 @@ namespace MovieWeb.Controllers
                     IsActive = user.IsActive ?? true,
                     CreatedAt = user.CreatedAt ?? DateTime.MinValue,
                     LastLogin = user.LastLogin,
-                    IsAdmin = user.RoleId == 1
+                    RoleId = user.RoleId  // ✅ Chỉ gán RoleId
                 };
 
                 // Load thống kê của user

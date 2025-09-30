@@ -725,4 +725,23 @@ footer {
     background-color: #ff4c4c;
     transform: scale(1.1);
 }
+/* Fix navbar cho trang profile và các trang khác (không phải trang chủ) */
+body:not(.home-page) .navbar-custom {
+    position: fixed !important;
+    top: 0;
+    background: rgba(0, 0, 0, 0.95) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
 
+/* Thêm padding-top cho body khi navbar fixed */
+body:not(.home-page) {
+    padding-top: 80px !important;
+}
+
+/* Responsive cho mobile */
+@media (max-width: 991px) {
+    body:not(.home-page) {
+        padding-top: 70px !important;
+    }
+}

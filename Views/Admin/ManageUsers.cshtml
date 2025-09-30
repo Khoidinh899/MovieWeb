@@ -1,0 +1,177 @@
+@model List<MovieWeb.Models.DTOs.UserProfileDto>
+
+@{
+    ViewData["Title"] = "Quản lý người dùng";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-people me-2"></i>Quản lý người dùng</h2>
+            <p class="text-muted">Tổng số: <strong>@Model.Count</strong> người dùng</p>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Avatar</th>
+                            <th>Họ tên</th>
+                            <th>Email</th>
+                            <th>Username</th>
+                            <th>Vai trò</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày tham gia</th>
+                            <th>Hoạt động</th>
+                            <th class="text-center">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <img src="@(user.Avatar ?? "/images/default-avatar.png")" 
+                                         alt="Avatar" 
+                                         class="rounded-circle"
+                                         style="width: 40px; height: 40px; object-fit: cover;">
+                                </td>
+                                <td>
+                                    <strong>@user.FullName</strong>
+                                    @if (user.EmailConfirmed)
+                                    {
+                                        <i class="bi bi-patch-check-fill text-success" title="Email đã xác thực"></i>
+                                    }
+                                </td>
+                                <td>@user.Email</td>
+                                <td><code>@@@user.Username</code></td>
+                                <td>
+                                    <span class="badge bg-@(user.IsAdmin ? "danger" : "primary")">
+                                        @user.RoleName
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-@(user.IsActive ? "success" : "secondary")">
+                                        @(user.IsActive ? "Hoạt động" : "Đã khóa")
+                                    </span>
+                                </td>
+                                <td><small>@user.CreatedAt.ToString("dd/MM/yyyy")</small></td>
+                                <td>
+                                    <small class="text-muted">
+                                        <i class="bi bi-heart-fill text-danger"></i> @user.TotalFavorites
+                                        <i class="bi bi-chat-fill text-primary ms-2"></i> @user.TotalComments
+                                        <i class="bi bi-star-fill text-warning ms-2"></i> @user.TotalRatings
+                                    </small>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="@Url.Action("AdminEditUser", new { id = user.UserId })" 
+                                           class="btn btn-outline-primary"
+                                           title="Chỉnh sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="@Url.Action("AdminChangePassword", new { id = user.UserId })" 
+                                           class="btn btn-outline-warning"
+                                           title="Đổi mật khẩu">
+                                            <i class="bi bi-key"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-outline-@(user.IsActive ? "secondary" : "success")"
+                                                onclick="toggleUserStatus(@user.UserId)"
+                                                title="@(user.IsActive ? "Vô hiệu hóa" : "Kích hoạt")">
+                                            <i class="bi bi-@(user.IsActive ? "lock" : "unlock")"></i>
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-outline-danger"
+                                                onclick="deleteUser(@user.UserId, '@user.FullName')"
+                                                title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="toggleStatusForm" method="post" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+
+<form id="deleteUserForm" method="post" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        async function toggleUserStatus(userId) {
+            if (!confirm('Bạn có chắc muốn thay đổi trạng thái người dùng này?')) return;
+
+            const form = document.getElementById('toggleStatusForm');
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch(`@Url.Action("AdminToggleStatus", "Profile")/${userId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert('Có lỗi xảy ra');
+            }
+        }
+
+        async function deleteUser(userId, userName) {
+            if (!confirm(`Bạn có chắc muốn XÓA người dùng "${userName}"?\n\nHành động này không thể hoàn tác!`)) return;
+
+            const form = document.getElementById('deleteUserForm');
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch(`@Url.Action("AdminDeleteUser", "Profile")/${userId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert('Có lỗi xảy ra');
+            }
+        }
+    </script>
+}

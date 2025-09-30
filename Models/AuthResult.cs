@@ -6,6 +6,8 @@ namespace MovieWeb.Models.DTOs
     public class AuthResult
     {
         public bool IsSuccess { get; set; }
+        public bool Succeeded => IsSuccess;
+
         public string Message { get; set; } = string.Empty;
         public List<string> Errors { get; set; } = new List<string>();
         public string? Token { get; set; }

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using MovieWeb.Models;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,44 +25,50 @@ builder.Services.AddIdentity<User, Role>(options =>
     options.Password.RequireUppercase = false;
     options.Password.RequireLowercase = false;
     options.User.RequireUniqueEmail = true;
+    
+    // ✅ Chỉ yêu cầu xác thực email 1 lần duy nhất
     options.SignIn.RequireConfirmedEmail = true;
-    options.SignIn.RequireConfirmedAccount = true;
+    options.SignIn.RequireConfirmedAccount = false; // Không cần xác nhận account mỗi lần đăng nhập
+    
+    // ✅ Cấu hình token xác thực email
+    options.Tokens.EmailConfirmationTokenProvider = TokenOptions.DefaultEmailProvider;
 })
 .AddEntityFrameworkStores<MovieWebDbContext>()
 .AddDefaultTokenProviders();
 
-// Configure cookie
+// ✅ Cấu hình Cookie sau khi AddIdentity
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Auth/Login";
     options.LogoutPath = "/Auth/Logout";
     options.AccessDeniedPath = "/Auth/AccessDenied";
-    options.ExpireTimeSpan = TimeSpan.FromDays(30);
-    options.SlidingExpiration = true;
+    options.ExpireTimeSpan = TimeSpan.FromDays(30); // Cookie tồn tại 30 ngày
+    options.SlidingExpiration = true; // Tự động gia hạn cookie
     options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true; // Quan trọng
-    options.Cookie.SameSite = SameSiteMode.Lax; // Thêm dòng này
+    options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.Name = "MoonPhim.Auth"; // Đặt tên cookie
 });
 
-// JWT
+// ✅ Thêm JWT Authentication (cho API nếu cần)
 builder.Services.AddAuthentication()
-    .AddJwtBearer(options =>
+.AddJwtBearer("JwtScheme", options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
-            ValidAudience = builder.Configuration["JwtSettings:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"] 
-                    ?? throw new InvalidOperationException("JWT SecretKey not found"))),
-            ClockSkew = TimeSpan.Zero
-        };
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+        ValidAudience = builder.Configuration["JwtSettings:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"] 
+                ?? throw new InvalidOperationException("JWT SecretKey not found"))),
+        ClockSkew = TimeSpan.Zero
+    };
+});
 
 // Authorization policies
 builder.Services.AddAuthorization(options =>
@@ -78,6 +85,9 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 // Auth service
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// Profile service
+builder.Services.AddScoped<IProfileService, ProfileService>();
+
 // Add services to the container
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient();
@@ -86,6 +96,11 @@ builder.Services.AddScoped<IMovieSyncService, MovieSyncService>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 builder.Services.AddHostedService<BackgroundSyncService>();
 builder.Services.AddMemoryCache();
+
+// Load .env
+Env.Load();
+builder.Configuration.AddEnvironmentVariables();
+builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
@@ -107,36 +122,53 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=TrangChu}/{action=TrangChu}/{id?}");
 
+// Auth routes
 app.MapControllerRoute(
-    name: "auth",
-    pattern: "auth/{action}",
-    defaults: new { controller = "Auth" });
+    name: "confirmEmail",
+    pattern: "auth/confirm-email",
+    defaults: new { controller = "Auth", action = "ConfirmEmail" });
 
+// Route cho trang chi tiết phim
 app.MapControllerRoute(
     name: "movieDetail",
     pattern: "phim/{slug}",
     defaults: new { controller = "Movie", action = "Detail" });
 
+// Route cho trang profile
+app.MapControllerRoute(
+    name: "profile",
+    pattern: "tai-khoan/{action}",
+    defaults: new { controller = "Profile", action = "Index" });
+
+app.MapControllerRoute(
+    name: "adminManageUsers",
+    pattern: "admin/nguoi-dung/{action}/{id?}",
+    defaults: new { controller = "Profile", action = "ManageUsers" });
+// Route cho tìm kiếm
 app.MapControllerRoute(
     name: "search",
     pattern: "tim-kiem",
     defaults: new { controller = "Movie", action = "Search" });
 
+// Route cho danh sách theo thể loại
 app.MapControllerRoute(
     name: "category",
     pattern: "the-loai/{type}",
     defaults: new { controller = "Movie", action = "Category" });
 
+// Route cho danh sách phim hoạt hình
 app.MapControllerRoute(
     name: "hoathinh",
     pattern: "phim/hoathinh/{page?}",
     defaults: new { controller = "Movie", action = "ByType", type = "hoathinh" });
 
+// Route cho danh sách phim bộ
 app.MapControllerRoute(
     name: "series",
     pattern: "phim/series/{page?}",
     defaults: new { controller = "Movie", action = "ByType", type = "series" });
 
+// Route cho danh sách phim lẻ
 app.MapControllerRoute(
     name: "single",
     pattern: "phim/single/{page?}",
