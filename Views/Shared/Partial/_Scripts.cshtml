@@ -1,0 +1,103 @@
+<!-- Scripts -->
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+<script src="~/js/auth.js" asp-append-version="true"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // ----------------- Mobile search functionality -----------------
+        const mobileSearchBtn = document.getElementById("mobileSearchBtn");
+        const mobileSearchOverlay = document.getElementById("mobileSearchOverlay");
+        const mobileSearchClose = document.getElementById("mobileSearchClose");
+        const mobileSearchInput = document.getElementById("mobileSearchInput");
+
+        if (mobileSearchBtn && mobileSearchOverlay) {
+            mobileSearchBtn.addEventListener("click", function (e) {
+                e.preventDefault();
+                mobileSearchOverlay.classList.add("active");
+                document.body.classList.add("search-overlay-active");
+                setTimeout(() => mobileSearchInput.focus(), 300);
+            });
+
+            mobileSearchClose.addEventListener("click", closeMobileSearch);
+            mobileSearchOverlay.addEventListener("click", e => {
+                if (e.target === mobileSearchOverlay) closeMobileSearch();
+            });
+            document.addEventListener("keydown", e => {
+                if (e.key === "Escape" && mobileSearchOverlay.classList.contains("active")) {
+                    closeMobileSearch();
+                }
+            });
+
+            function closeMobileSearch() {
+                mobileSearchOverlay.classList.remove("active");
+                document.body.classList.remove("search-overlay-active");
+            }
+        }
+
+        // ----------------- Navbar scroll effect -----------------
+        const navbar = document.querySelector('.navbar-custom');
+        let ticking = false;
+
+        function updateNavbar() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            if (scrollTop > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+            ticking = false;
+        }
+
+        function requestTick() {
+            if (!ticking) {
+                requestAnimationFrame(updateNavbar);
+                ticking = true;
+            }
+        }
+
+        window.addEventListener('scroll', requestTick);
+
+        // ----------------- Suggestion tags click -----------------
+        const suggestionTags = document.querySelectorAll('.suggestion-tag');
+        suggestionTags.forEach(tag => {
+            tag.addEventListener('click', function () {
+                mobileSearchInput.value = this.textContent;
+                mobileSearchInput.focus();
+            });
+        });
+
+        // ----------------- Scroll to top button -----------------
+        const scrollBtn = document.getElementById("scrollTopBtn");
+        window.addEventListener("scroll", function () {
+            scrollBtn.style.display = window.scrollY > 1000 ? "block" : "none";
+        });
+        scrollBtn.addEventListener("click", () => {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+
+        // ----------------- Dark / Light Mode -----------------
+        const body = document.body;
+        const toggleBtn = document.getElementById("themeToggle");
+
+        if (toggleBtn) {
+            if (localStorage.getItem("admin-theme") === "dark") {
+                body.classList.add("dark-mode");
+                toggleBtn.innerHTML = '<i class="bi bi-brightness-high"></i>';
+            }
+
+            toggleBtn.addEventListener("click", function () {
+                body.classList.toggle("dark-mode");
+
+                if (body.classList.contains("dark-mode")) {
+                    localStorage.setItem("admin-theme", "dark");
+                    toggleBtn.innerHTML = '<i class="bi bi-brightness-high"></i>';
+                } else {
+                    localStorage.setItem("admin-theme", "light");
+                    toggleBtn.innerHTML = '<i class="bi bi-moon"></i>';
+                }
+            });
+        }
+    });
+</script>

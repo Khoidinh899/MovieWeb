@@ -12,6 +12,8 @@ public partial class AdminLog
     public string Action { get; set; } = null!;
 
     public string? Description { get; set; }
+    
+    public string? TargetId { get; set; }  // <- THÊM PROPERTY NÀY
 
     public string? TableName { get; set; }
 

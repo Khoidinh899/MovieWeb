@@ -1,0 +1,96 @@
+<!-- Login/Register Modal -->
+<div class="modal fade" id="authModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content auth-modal">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-white">Đăng nhập</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Logo -->
+                <div class="text-center mb-4">
+                    <img src="~/images/iconmoon.png" alt="MoonPhim" style="height: 60px;">
+                    <h4 class="text-white mt-2">MoonPhim</h4>
+                    <p class="text-muted">Bay bổng cùng điện ảnh</p>
+                </div>
+
+                <!-- Login Form -->
+                <div id="loginForm">
+                    <form id="loginFormSubmit" asp-controller="Auth" asp-action="Login" method="post">
+                        <div class="mb-3">
+                            <label for="loginEmail" class="form-label text-white">Email</label>
+                            <input type="email" class="form-control auth-input" id="loginEmail" name="Email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label text-white">Mật khẩu</label>
+                            <input type="password" class="form-control auth-input" id="loginPassword" name="Password" required>
+                        </div>
+                        
+                        <!-- Email verification alert -->
+                        <div id="emailVerificationAlert" class="alert alert-warning d-none">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Email chưa được xác thực. <a href="#" id="resendVerification" class="alert-link">Gửi lại email xác thực</a>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mb-3 auth-btn">
+                            <span id="loginBtnText">Đăng nhập</span>
+                            <span id="loginLoader" class="spinner-border spinner-border-sm d-none ms-2"></span>
+                        </button>
+                    </form>
+
+                    <div class="text-center">
+                        <a href="@Url.Action("ForgotPassword","Auth")" id="forgotPassword" class="text-muted">Quên mật khẩu?</a>
+                    </div>
+                    
+                    <hr class="my-4 border-secondary">
+                    
+                    <div class="text-center">
+                        <p class="text-muted">Nếu bạn chưa có tài khoản, <a href="#" id="showRegister" class="text-primary">đăng ký ngay</a></p>
+                    </div>
+                </div>
+
+                <!-- Register Form -->
+                <div id="registerForm" class="d-none">
+                    <form id="registerFormSubmit" asp-controller="Auth" asp-action="Register" method="post">
+                        <div class="mb-3">
+                            <label for="registerEmail" class="form-label text-white">Email</label>
+                            <input type="email" class="form-control auth-input" id="registerEmail" name="Email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerPassword" class="form-label text-white">Mật khẩu</label>
+                            <input type="password" class="form-control auth-input" id="registerPassword" name="Password" required minlength="6">
+                            <small class="form-text text-muted">Mật khẩu tối thiểu 6 ký tự</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerConfirmPassword" class="form-label text-white">Xác nhận mật khẩu</label>
+                            <input type="password" class="form-control auth-input" id="registerConfirmPassword" name="ConfirmPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerFullName" class="form-label text-white">Họ và tên</label>
+                            <input type="text" class="form-control auth-input" id="registerFullName" name="FullName" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 mb-3 auth-btn">
+                            <span id="registerBtnText">Đăng ký</span>
+                            <span id="registerLoader" class="spinner-border spinner-border-sm d-none ms-2"></span>
+                        </button>
+                    </form>
+                    
+                    <div class="text-center">
+                        <p class="text-muted">Đã có tài khoản? <a href="#" id="showLogin" class="text-primary">Đăng nhập</a></p>
+                    </div>
+                </div>
+
+                <!-- Email Verification Success -->
+                <div id="verificationSuccess" class="d-none text-center">
+                    <div class="mb-4">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    <h5 class="text-white mb-3">Đăng ký thành công!</h5>
+                    <p class="text-muted mb-4">Vui lòng kiểm tra email để xác thực tài khoản trước khi đăng nhập.</p>
+                    <button class="btn btn-primary" id="backToLogin">Quay lại đăng nhập</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

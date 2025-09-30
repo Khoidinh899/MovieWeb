@@ -1,17 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// Models/Entities/Role.cs
+using Microsoft.AspNetCore.Identity;
 
-namespace MovieWeb.Models.Entities;
-
-public partial class Role
+namespace MovieWeb.Models.Entities
 {
-    public int RoleId { get; set; }
+    public class Role : IdentityRole<int>
+    {
+        public string? Description { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-    public string RoleName { get; set; } = null!;
-
-    public string? Description { get; set; }
-
-    public DateTime? CreatedAt { get; set; }
-
-    public virtual ICollection<User> Users { get; set; } = new List<User>();
+        // Navigation property
+        public virtual ICollection<User> Users { get; set; } = new HashSet<User>();
+    }
 }

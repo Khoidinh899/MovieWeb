@@ -1,0 +1,238 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Admin Dashboard";
+    var stats = ViewBag.Stats;
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <!-- Bên trái: Dashboard + nút darkmode -->
+        <div class="d-flex align-items-center">
+            <h2 class="mb-0 me-3">
+                <i class="bi bi-speedometer2"></i> Admin Dashboard
+            </h2>
+            @if (Context.Request.Path.Value.StartsWith("/admin", StringComparison.OrdinalIgnoreCase))
+            {
+                <button id="themeToggle" class="btn btn-sm btn-outline-dark" title="Đổi giao diện">
+                    <i class="bi bi-moon"></i>
+                </button>
+            }
+        </div>
+
+        <!-- Bên phải: ngày giờ -->
+        <div class="text-muted">
+            <i class="bi bi-calendar3"></i> @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+        </div>
+    </div>
+</div>
+
+    
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75">Tổng Users</p>
+                            <h2 class="mb-0 fw-bold">@stats.TotalUsers</h2>
+                        </div>
+                        <div class="display-4 opacity-50">
+                            <i class="bi bi-people"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75">Users Hoạt Động</p>
+                            <h2 class="mb-0 fw-bold">@stats.ActiveUsers</h2>
+                        </div>
+                        <div class="display-4 opacity-50">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75">Admin Users</p>
+                            <h2 class="mb-0 fw-bold">@stats.AdminUsers</h2>
+                        </div>
+                        <div class="display-4 opacity-50">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75">Email Chưa Xác Thực</p>
+                            <h2 class="mb-0 fw-bold">@stats.UnconfirmedEmails</h2>
+                        </div>
+                        <div class="display-4 opacity-50">
+                            <i class="bi bi-envelope-exclamation"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Management Cards -->
+    <div class="row g-4">
+        <!-- User Management -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people-fill"></i> Quản Lý Users
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Quản lý tài khoản người dùng, phân quyền và trạng thái</p>
+                    <a href="@Url.Action("Users", "Admin")" class="btn btn-primary w-100">
+                        <i class="bi bi-arrow-right-circle"></i> Xem Chi Tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comment Management -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-chat-dots-fill"></i> Quản Lý Comments
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Kiểm duyệt và quản lý bình luận của người dùng</p>
+                    <a href="@Url.Action("Comments", "Admin")" class="btn btn-info w-100 text-white">
+                        <i class="bi bi-arrow-right-circle"></i> Xem Chi Tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movie Management -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-film"></i> Quản Lý Phim
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Thêm, sửa, xóa và quản lý danh sách phim</p>
+                    <a href="@Url.Action("Movies", "Admin")" class="btn btn-success w-100">
+                        <i class="bi bi-arrow-right-circle"></i> Xem Chi Tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Management -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-tags-fill"></i> Quản Lý Thể Loại
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Quản lý danh mục thể loại phim</p>
+                    <a href="@Url.Action("Categories", "Admin")" class="btn btn-warning w-100">
+                        <i class="bi bi-arrow-right-circle"></i> Xem Chi Tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actor Management -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-badge-fill"></i> Quản Lý Diễn Viên
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Quản lý thông tin diễn viên và đạo diễn</p>
+                    <a href="@Url.Action("Actors", "Admin")" class="btn btn-danger w-100">
+                        <i class="bi bi-arrow-right-circle"></i> Xem Chi Tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Logs -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-journal-text"></i> Nhật Ký Admin
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Xem lịch sử hoạt động của admin</p>
+                    <a href="@Url.Action("AdminLogs", "Admin")" class="btn btn-secondary w-100">
+                        <i class="bi bi-arrow-right-circle"></i> Xem Chi Tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (stats.UnconfirmedEmails > 0)
+    {
+        <div class="alert alert-warning mt-4 shadow-sm border-0" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                <div>
+                    <strong>Cảnh báo!</strong> Có <strong>@stats.UnconfirmedEmails</strong> tài khoản chưa xác thực email.
+                    <a href="@Url.Action("Users", "Admin", new { isActive = false })" class="alert-link">Xem danh sách</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+    }
+    
+    .card-header {
+        border-bottom: none;
+    }
+    
+    .btn {
+        transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+        transform: scale(1.02);
+    }
+    
+</style>

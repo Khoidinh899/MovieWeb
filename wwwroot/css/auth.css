@@ -1,0 +1,424 @@
+/* ===== AUTHENTICATION MODAL STYLES ===== */
+
+/* Auth Modal */
+.auth-modal {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.auth-modal .modal-header {
+    padding: 1.5rem 1.5rem 0;
+}
+
+.auth-modal .modal-body {
+    padding: 1rem 1.5rem 1.5rem;
+}
+
+.auth-modal .modal-title {
+    font-weight: 600;
+    font-size: 1.5rem;
+    color: #fff !important;
+}
+
+/* Logo Section - FIX TEXT CHÌM */
+.auth-modal .text-center h4 {
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+.auth-modal .text-center .text-muted {
+    color: #c5d3e0 !important;
+    font-size: 14px;
+    opacity: 1 !important;
+}
+
+/* Form Labels - FIX TEXT CHÌM */
+.auth-modal .form-label {
+    font-weight: 500;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #f0f4f8 !important;
+    letter-spacing: 0.3px;
+}
+
+.auth-modal label {
+    color: #f0f4f8 !important;
+}
+
+/* Auth Input Fields - IMPROVED */
+.auth-input {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 2px solid rgba(255, 255, 255, 0.25) !important;
+    border-radius: 10px;
+    color: white !important;
+    padding: 14px 16px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+}
+
+.auth-input:focus {
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-color: #4a90e2 !important;
+    color: white !important;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.25) !important;
+    outline: none;
+}
+
+.auth-input:hover {
+    border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.auth-input::placeholder {
+    color: rgba(255, 255, 255, 0.55) !important;
+    font-size: 14px;
+}
+
+/* Form Text - FIX TEXT CHÌM */
+.auth-modal .form-text,
+.auth-modal small {
+    font-size: 12px;
+    margin-top: 5px;
+    color: #c5d3e0 !important;
+}
+
+/* Text Muted Fix - FIX ALL TEXT MUTED */
+.auth-modal .text-muted,
+.auth-modal p.text-muted {
+    color: #c5d3e0 !important;
+    opacity: 1 !important;
+}
+
+/* Links - FIX TEXT CHÌM */
+.auth-modal a {
+    color: #5dade2 !important;
+    transition: color 0.2s ease;
+    text-decoration: none;
+}
+
+.auth-modal a:hover {
+    color: #85c1e9 !important;
+    text-decoration: underline;
+}
+
+.auth-modal a.text-primary {
+    color: #5dade2 !important;
+}
+
+.auth-modal a.text-primary:hover {
+    color: #85c1e9 !important;
+}
+
+.auth-modal .text-center a {
+    color: #5dade2 !important;
+}
+
+/* Auth Buttons */
+.auth-btn {
+    padding: 13px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    border: none;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.5px;
+}
+
+.auth-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.auth-btn:active {
+    transform: translateY(0);
+}
+
+/* Login Section Button */
+.login-section .btn {
+    border-radius: 25px;
+    padding: 8px 20px;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: transparent;
+}
+
+.login-section .btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.login-section .btn:active {
+    transform: translateY(0);
+}
+
+/* Avatar Circle */
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    object-fit: cover;
+    transition: all 0.3s ease;
+}
+
+.avatar-circle:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: scale(1.05);
+}
+
+/* User Dropdown */
+#userDropdown {
+    transition: all 0.3s ease;
+}
+
+#userDropdown:hover {
+    opacity: 0.9;
+}
+
+/* Alert Styling */
+.alert {
+    border-radius: 8px;
+    font-size: 14px;
+    padding: 10px 15px;
+}
+
+.alert-link {
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.alert-link:hover {
+    text-decoration: underline;
+}
+
+/* Loading Spinner */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Modal Transitions */
+.modal.fade .modal-dialog {
+    transform: translateY(-50px) scale(0.95);
+    transition: all 0.3s ease-out;
+}
+
+.modal.show .modal-dialog {
+    transform: translateY(0) scale(1);
+}
+
+/* Success Icon Animation */
+.bi-check-circle-fill {
+    animation: checkmark 0.6s ease-in-out;
+}
+
+@keyframes checkmark {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Mobile Login Section */
+.mobile-login-section .btn {
+    border-radius: 10px;
+    padding: 12px;
+    font-weight: 500;
+    font-size: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.mobile-login-section .btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* User Section Animations */
+.user-section,
+.login-section {
+    transition: all 0.3s ease;
+}
+
+.mobile-user-section,
+.mobile-login-section {
+    transition: all 0.3s ease;
+}
+
+/* Form Animation */
+#loginForm,
+#registerForm,
+#verificationSuccess {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#loginForm.fade-out,
+#registerForm.fade-out {
+    opacity: 0;
+    transform: translateX(-20px);
+}
+
+#registerForm.fade-in,
+#loginForm.fade-in {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Hover Effects */
+.dropdown-item {
+    transition: all 0.2s ease;
+    border-radius: 5px;
+    margin: 2px 8px;
+}
+
+.dropdown-item:hover {
+    background: rgba(0, 123, 255, 0.1);
+    transform: translateX(5px);
+}
+
+.dropdown-item.text-danger:hover {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545 !important;
+}
+
+/* HR Divider */
+.auth-modal hr {
+    border-color: rgba(255, 255, 255, 0.15);
+    opacity: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .auth-modal {
+        margin: 10px;
+    }
+    
+    .auth-modal .modal-body {
+        padding: 1rem;
+    }
+    
+    .auth-input {
+        padding: 14px 15px;
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+    
+    .auth-btn {
+        padding: 14px 20px;
+        font-size: 16px;
+    }
+    
+    .avatar-circle {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .form-label {
+        font-size: 15px;
+    }
+}
+
+/* Focus States for Accessibility */
+.auth-input:focus,
+.auth-btn:focus,
+.login-section .btn:focus {
+    outline: 2px solid #4a90e2;
+    outline-offset: 2px;
+}
+
+/* Dark theme adjustments */
+.dropdown-menu {
+    background-color: rgba(26, 26, 46, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.dropdown-menu .dropdown-item {
+    color: #fff;
+    font-size: 14px;
+}
+
+.dropdown-menu .dropdown-divider {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Success message styling */
+#verificationSuccess h5 {
+    color: #28a745;
+}
+
+#verificationSuccess .text-white {
+    color: #fff !important;
+}
+
+#verificationSuccess .text-muted {
+    color: #c5d3e0 !important;
+}
+
+/* Loading state for buttons */
+.auth-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Custom scrollbar for modal if content overflows */
+.auth-modal .modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.auth-modal .modal-body::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.auth-modal .modal-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.auth-modal .modal-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Input validation states */
+.auth-input.is-invalid {
+    border-color: #dc3545 !important;
+}
+
+.auth-input.is-valid {
+    border-color: #28a745 !important;
+}
+
+.invalid-feedback,
+.valid-feedback {
+    font-size: 13px;
+    margin-top: 5px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Close button styling */
+.auth-modal .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+
+.auth-modal .btn-close:hover {
+    opacity: 1;
+    transform: rotate(90deg);
+}

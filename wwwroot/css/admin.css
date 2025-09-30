@@ -1,0 +1,200 @@
+/* ================== ADMIN LAYOUT STYLES ================== */
+
+/* Body */
+body.admin-page {
+    padding-top: 70px; /* Cần cho fixed-top */
+    background: #f5f7fa;
+}
+
+/* Navbar */
+body.admin-page .navbar-custom {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    padding-top: 6px;
+    padding-bottom: 6px;
+    min-height: 56px;
+    z-index: 1040;
+}
+
+body.admin-page .navbar-custom .navbar-brand,
+body.admin-page .navbar-custom .nav-link {
+    color: #fff !important;
+}
+
+body.admin-page .navbar-custom .nav-link:hover {
+    color: #ffd700 !important;
+}
+
+/* Logo nhỏ gọn */
+body.admin-page .navbar-custom .navbar-brand img {
+    height: 38px !important;
+    width: auto;
+    margin-right: 8px;
+}
+body.admin-page .navbar-custom .navbar-brand div {
+    line-height: 1;
+}
+body.admin-page .navbar-custom .navbar-brand span:first-child {
+    font-size: 18px;
+    font-weight: 700;
+}
+body.admin-page .navbar-custom .navbar-brand span:last-child {
+    font-size: 12px;
+    color: #cfcfcf;
+}
+
+/* Search box compact */
+.search-box .search-input-wrapper {
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.08);
+    padding: 4px 8px;
+    border-radius: 20px;
+}
+.search-box .search-input-wrapper input {
+    height: 36px;
+    border: 0;
+    background: transparent;
+    outline: 0;
+    color: #fff;
+    padding: 0 8px;
+}
+.search-box .search-input-wrapper button {
+    border: 0;
+    background: transparent;
+    padding: 0 6px;
+    line-height: 1;
+}
+
+/* Avatar nhỏ */
+.avatar-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Admin Container */
+.admin-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Admin Cards */
+.admin-card {
+    border-radius: 15px;
+    border: none;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+.admin-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+.admin-card .card-header {
+    font-weight: 600;
+    border-bottom: none;
+    padding: 1rem 1.5rem;
+}
+.admin-card .card-body {
+    padding: 1.5rem;
+}
+
+/* Stats Cards */
+.stat-card {
+    border-radius: 15px;
+    overflow: hidden;
+    position: relative;
+}
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    transform: translate(30%, -30%);
+}
+
+/* Buttons */
+.admin-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+.admin-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Table Styles */
+.admin-table {
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.admin-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+}
+.admin-table th {
+    font-weight: 600;
+    border: none;
+    padding: 1rem;
+}
+.admin-table td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+.admin-table tbody tr {
+    transition: all 0.2s ease;
+}
+.admin-table tbody tr:hover {
+    background: #f8f9fa;
+    transform: scale(1.01);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    body.admin-page {
+        padding-top: 60px;
+    }
+    .admin-container {
+        padding: 10px;
+    }
+}
+/* Dark Mode Styles */
+body.admin-page.dark-mode {
+    background: #1e1e2f;
+    color: #e0e0e0;
+}
+
+body.admin-page.dark-mode .navbar-custom {
+    background: linear-gradient(135deg, #141e30 0%, #243b55 100%) !important;
+}
+
+body.admin-page.dark-mode .navbar-custom .nav-link {
+    color: #ddd !important;
+}
+
+body.admin-page.dark-mode .navbar-custom .nav-link:hover {
+    color: #ffd700 !important;
+}
+
+body.admin-page.dark-mode .admin-card {
+    background: #2c2c3e;
+    color: #f1f1f1;
+}
+
+body.admin-page.dark-mode .admin-table {
+    background: #2a2a3b;
+    color: #e0e0e0;
+}
+
+body.admin-page.dark-mode .admin-table thead {
+    background: linear-gradient(135deg, #3a6073 0%, #16222a 100%);
+}

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Admin MoonPhim</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico">
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="admin-page">
+    @await Html.PartialAsync("Partial/_Header")
+    
+    <main role="main" class="admin-container">
+        @RenderBody()
+    </main>
+    
+    @await Html.PartialAsync("Partial/_Footer")
+    @await Html.PartialAsync("Partial/_Scripts")
+    
+    @await RenderSectionAsync("Scripts", required: false)
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Remove "Admin System" text
+    const navbar = document.querySelector('.navbar-custom');
+    if (navbar) {
+        const walker = document.createTreeWalker(navbar, NodeFilter.SHOW_TEXT);
+        let node;
+        while (node = walker.nextNode()) {
+            if (node.textContent.trim() === 'Admin System') {
+                node.parentElement.remove();
+            }
+        }
+    }
+});
+</script>
+</body>
+</html>

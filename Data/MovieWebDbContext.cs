@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using MovieWeb.Models.Entities;
 
 namespace MovieWeb.Data;
 
-public partial class MovieWebDbContext : DbContext
+public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
+    IdentityUserClaim<int>, IdentityUserRole<int>, IdentityUserLogin<int>,
+    IdentityRoleClaim<int>, IdentityUserToken<int>>
 {
     public MovieWebDbContext()
     {
@@ -17,33 +21,82 @@ public partial class MovieWebDbContext : DbContext
     }
 
     public virtual DbSet<Actor> Actors { get; set; }
-
     public virtual DbSet<AdminLog> AdminLogs { get; set; }
-
     public virtual DbSet<Category> Categories { get; set; }
-
     public virtual DbSet<Comment> Comments { get; set; }
-
     public virtual DbSet<Country> Countries { get; set; }
-
     public virtual DbSet<Director> Directors { get; set; }
-
     public virtual DbSet<Favorite> Favorites { get; set; }
-
     public virtual DbSet<Movie> Movies { get; set; }
-
     public virtual DbSet<Notification> Notifications { get; set; }
-
     public virtual DbSet<Rating> Ratings { get; set; }
-
-    public virtual DbSet<Role> Roles { get; set; }
-
-    public virtual DbSet<User> Users { get; set; }
-
     public virtual DbSet<WatchHistory> WatchHistories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder); // cấu hình Identity mặc định
+
+        // ===== USERS =====
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.ToTable("Users");
+            entity.HasKey(e => e.Id).HasName("PK__Users__1788CC4C");
+
+            entity.Property(e => e.Id).HasColumnName("UserId");
+            entity.Property(e => e.UserName).HasColumnName("Username").HasMaxLength(50);
+            entity.Property(e => e.NormalizedUserName).HasColumnName("NormalizedUserName").HasMaxLength(256);
+            entity.Property(e => e.Email).HasMaxLength(100);
+            entity.Property(e => e.NormalizedEmail).HasColumnName("NormalizedEmail").HasMaxLength(256);
+            entity.Property(e => e.EmailConfirmed).HasColumnName("IsEmailConfirmed").HasDefaultValue(false);
+            entity.Property(e => e.PasswordHash).HasMaxLength(255);
+
+            entity.HasIndex(e => e.Email, "IX_Users_Email");
+            entity.HasIndex(e => e.UserName, "IX_Users_Username");
+            entity.HasIndex(e => e.UserName, "UQ__Users__Username").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__Users__Email").IsUnique();
+
+            entity.Property(e => e.Avatar).HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.EmailConfirmToken).HasMaxLength(255);
+            entity.Property(e => e.FirstName).HasMaxLength(50);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.LastName).HasMaxLength(50);
+            entity.Property(e => e.PasswordResetToken).HasMaxLength(255);
+            entity.Property(e => e.RoleId).HasDefaultValue(2);
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.Role).WithMany(p => p.Users)
+                .HasForeignKey(d => d.RoleId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Users__RoleId");
+        });
+
+        // ===== ROLES =====
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.ToTable("Roles");
+            entity.HasKey(e => e.Id).HasName("PK__Roles__RoleId");
+
+            entity.Property(e => e.Id).HasColumnName("RoleId");
+            entity.Property(e => e.Name).HasColumnName("RoleName").HasMaxLength(50);
+            entity.Property(e => e.NormalizedName).HasMaxLength(256);
+            entity.Property(e => e.ConcurrencyStamp).HasMaxLength(255);
+
+            entity.HasIndex(e => e.Name, "UQ__Roles__RoleName").IsUnique();
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Description).HasMaxLength(255);
+        });
+
+        // Map Identity other tables (để tránh EF tự tạo bảng mặc định)
+        modelBuilder.Entity<IdentityUserClaim<int>>().ToTable("AspNetUserClaims");
+        modelBuilder.Entity<IdentityUserLogin<int>>().ToTable("AspNetUserLogins");
+        modelBuilder.Entity<IdentityUserToken<int>>().ToTable("AspNetUserTokens");
+        modelBuilder.Entity<IdentityRoleClaim<int>>().ToTable("AspNetRoleClaims");
+        modelBuilder.Entity<IdentityUserRole<int>>().ToTable("AspNetUserRoles");
+
+        // ===== EXISTING ENTITY CONFIGURATIONS =====
+        
         modelBuilder.Entity<Actor>(entity =>
         {
             entity.HasKey(e => e.ActorId).HasName("PK__Actors__57B3EA4B1F26927F");
@@ -265,9 +318,7 @@ public partial class MovieWebDbContext : DbContext
         modelBuilder.Entity<Notification>(entity =>
         {
             entity.HasKey(e => e.NotificationId).HasName("PK__Notifica__20CF2E1229953B40");
-
             entity.HasIndex(e => e.UserId, "IX_Notifications_UserId");
-
             entity.Property(e => e.Content).HasColumnType("ntext");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.IsRead).HasDefaultValue(false);
@@ -302,49 +353,6 @@ public partial class MovieWebDbContext : DbContext
                 .HasConstraintName("FK__Ratings__UserId__7B5B524B");
         });
 
-        modelBuilder.Entity<Role>(entity =>
-        {
-            entity.HasKey(e => e.RoleId).HasName("PK__Roles__8AFACE1A931EB7E5");
-
-            entity.HasIndex(e => e.RoleName, "UQ__Roles__8A2B6160155A11B3").IsUnique();
-
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.Description).HasMaxLength(255);
-            entity.Property(e => e.RoleName).HasMaxLength(50);
-        });
-
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.HasKey(e => e.UserId).HasName("PK__Users__1788CC4CC2DA8064");
-
-            entity.HasIndex(e => e.Email, "IX_Users_Email");
-
-            entity.HasIndex(e => e.Username, "IX_Users_Username");
-
-            entity.HasIndex(e => e.Username, "UQ__Users__536C85E4B56F990C").IsUnique();
-
-            entity.HasIndex(e => e.Email, "UQ__Users__A9D105345763F5F3").IsUnique();
-
-            entity.Property(e => e.Avatar).HasMaxLength(500);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.Email).HasMaxLength(100);
-            entity.Property(e => e.EmailConfirmToken).HasMaxLength(255);
-            entity.Property(e => e.FirstName).HasMaxLength(50);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.IsEmailConfirmed).HasDefaultValue(false);
-            entity.Property(e => e.LastName).HasMaxLength(50);
-            entity.Property(e => e.PasswordHash).HasMaxLength(255);
-            entity.Property(e => e.PasswordResetToken).HasMaxLength(255);
-            entity.Property(e => e.RoleId).HasDefaultValue(2);
-            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.Username).HasMaxLength(50);
-
-            entity.HasOne(d => d.Role).WithMany(p => p.Users)
-                .HasForeignKey(d => d.RoleId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Users__RoleId__4222D4EF");
-        });
-
         modelBuilder.Entity<WatchHistory>(entity =>
         {
             entity.HasKey(e => e.HistoryId).HasName("PK__WatchHis__4D7B4ABD26257E5D");
@@ -370,6 +378,12 @@ public partial class MovieWebDbContext : DbContext
                 .HasConstraintName("FK__WatchHist__UserI__0C85DE4D");
         });
 
+        // ===== IGNORE API MODELS =====
+        modelBuilder.Ignore<MovieWeb.Models.API.Movie>();
+        modelBuilder.Ignore<MovieWeb.Models.API.Category>();
+        modelBuilder.Ignore<MovieWeb.Models.API.Country>();
+        modelBuilder.Ignore<MovieWeb.Models.API.OPhimResponse>();
+        
         OnModelCreatingPartial(modelBuilder);
     }
 

@@ -10,10 +10,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.AspNetCore.Identity.UI.UIFrameworkAttribute("Bootstrap5")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("MovieWeb")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7a499342e1ed6482195ee6034e243637cc3bd165")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+636e4d7135e53b9ad4960b0abd026b38da4bd7ae")]
 [assembly: System.Reflection.AssemblyProductAttribute("MovieWeb")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MovieWeb")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
