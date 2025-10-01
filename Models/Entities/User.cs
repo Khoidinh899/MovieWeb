@@ -1,83 +1,71 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using System;
-using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MovieWeb.Models.Entities
 {
-    public partial class User : IdentityUser<int>
+    [Table("Users")]
+    public class User : IdentityUser<int>
     {
-        public User()
-        {
-            // Không cần logic khởi tạo thủ công, để EF Core xử lý
-        }
-
-        // Xóa thuộc tính Username tùy chỉnh, sử dụng trực tiếp UserName từ IdentityUser
-        // Đồng bộ NormalizedUserName qua setter của UserName nếu cần
-
-        public override string? UserName
-        {
-            get => base.UserName;
-            set
-            {
-                base.UserName = value;
-                NormalizedUserName = value?.ToUpper();
-            }
-        }
-
-        public override string? Email
-        {
-            get => base.Email;
-            set
-            {
-                base.Email = value;
-                NormalizedEmail = value?.ToUpper();
-            }
-        }
-
+        // Basic Information
+        [StringLength(50)]
         public string? FirstName { get; set; }
 
+        [StringLength(50)]
         public string? LastName { get; set; }
 
-        public bool IsAdmin => RoleId == 1;
-
-        public string FullName => $"{FirstName} {LastName}".Trim();
-
+        [StringLength(255)]
         public string? Avatar { get; set; }
 
-        public int RoleId { get; set; }
+        [NotMapped]
+        public string FullName => $"{FirstName} {LastName}".Trim();
 
+        [StringLength(200)]
+        public string? Address { get; set; }
+
+        [StringLength(10)]
+        public string? Gender { get; set; }
+
+        [Column(TypeName = "date")]
+        public DateTime? DateOfBirth { get; set; }
+
+        [StringLength(500)]
+        public string? Bio { get; set; }
+
+        // Account Status
         public bool? IsActive { get; set; } = true;
 
-        public string? EmailConfirmToken { get; set; }
+        public DateTime? CreatedAt { get; set; } = DateTime.Now;
 
-        public string? PasswordResetToken { get; set; }
-
-        public DateTime? PasswordResetExpires { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
         public DateTime? LastLogin { get; set; }
 
-        public DateTime? CreatedAt { get; set; } // Sử dụng DefaultValueSql trong OnModelCreating
+        // Role
+        [Required]
+        [ForeignKey("Role")]
+        public int RoleId { get; set; } = 2;
 
-        public DateTime? UpdatedAt { get; set; } // Sử dụng DefaultValueSql trong OnModelCreating
+        public virtual Role? Role { get; set; }
 
-        // Navigation properties
-        public virtual ICollection<AdminLog> AdminLogs { get; set; } = new List<AdminLog>();
+        [NotMapped]
+        public bool IsAdmin => RoleId == 1;
 
-        public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
+        // ✅ Thêm thiếu
+        [StringLength(255)]
+        public string? EmailConfirmToken { get; set; }
 
-        public virtual ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
+        [StringLength(255)]
+        public string? PasswordResetToken { get; set; }
 
-        public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+        // Navigation Properties
+        public virtual ICollection<Comment>? Comments { get; set; }
+        public virtual ICollection<Favorite>? Favorites { get; set; }
+        public virtual ICollection<Rating>? Ratings { get; set; }
+        public virtual ICollection<WatchHistory>? WatchHistories { get; set; }
+        public virtual ICollection<AdminLog>? AdminLogs { get; set; }
 
-        public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
-
-        public virtual Role Role { get; set; } = null!;
-
-        public virtual ICollection<WatchHistory> WatchHistories { get; set; } = new List<WatchHistory>();
-
-        public override string ToString()
-        {
-            return FullName ?? UserName ?? Email ?? Id.ToString();
-        }
+        // ✅ Thêm thiếu
+        public virtual ICollection<Notification>? Notifications { get; set; }
     }
 }

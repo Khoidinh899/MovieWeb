@@ -1,0 +1,451 @@
+@model List<MovieWeb.Models.DTOs.UserProfileDto>
+
+@{
+    ViewData["Title"] = "Quản lý người dùng";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
+    <style>
+        .stats-card {
+            transition: transform 0.2s;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        .search-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+}
+
+<div class="container-fluid py-4">
+    <!-- Header với Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Tổng Users</h6>
+                            <h2 class="mb-0 mt-2">@ViewBag.TotalUsers</h2>
+                        </div>
+                        <i class="bi bi-people fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Hoạt Động</h6>
+                            <h2 class="mb-0 mt-2">@(Model.Count(u => u.IsActive))</h2>
+                        </div>
+                        <i class="bi bi-check-circle fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Admin Users</h6>
+                            <h2 class="mb-0 mt-2">@(Model.Count(u => u.IsAdmin))</h2>
+                        </div>
+                        <i class="bi bi-shield-check fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Email Chưa Xác Thực</h6>
+                            <h2 class="mb-0 mt-2">@(Model.Count(u => !u.EmailConfirmed))</h2>
+                        </div>
+                        <i class="bi bi-envelope-x fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Search & Filter Section -->
+    <div class="search-section">
+        <form method="get" asp-action="Users" class="row g-3">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control" placeholder="Tìm theo tên, email, username..." value="@ViewBag.Search">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select name="roleId" class="form-select">
+                    <option value="">Tất cả vai trò</option>
+                    @foreach(var role in ViewBag.Roles)
+                    {
+                        <option value="@role.RoleId" selected="@(ViewBag.RoleId == role.RoleId)">@role.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="isActive" class="form-select">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="true" selected="@(ViewBag.IsActive == true)">Hoạt động</option>
+                    <option value="false" selected="@(ViewBag.IsActive == false)">Đã khóa</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="pageSize" class="form-select">
+                    <option value="10" selected="@(ViewBag.PageSize == 10)">10 / trang</option>
+                    <option value="20" selected="@(ViewBag.PageSize == 20)">20 / trang</option>
+                    <option value="50" selected="@(ViewBag.PageSize == 50)">50 / trang</option>
+                    <option value="100" selected="@(ViewBag.PageSize == 100)">100 / trang</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i> Lọc
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="bi bi-table me-2"></i>Danh sách người dùng</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="60">Avatar</th>
+                            <th>Họ tên</th>
+                            <th>Email</th>
+                            <th>Username</th>
+                            <th>Vai trò</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày tham gia</th>
+                            <th>Hoạt động</th>
+                            <th class="text-center" width="200">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model == null || !Model.Any())
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center py-5">
+                                    <i class="bi bi-inbox fs-1 text-muted"></i>
+                                    <p class="text-muted mt-2">Không tìm thấy người dùng nào</p>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var user in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <img src="@(user.Avatar ?? "/images/default-avatar.png")" 
+                                             alt="Avatar" 
+                                             class="rounded-circle"
+                                             style="width: 40px; height: 40px; object-fit: cover;"
+                                             onerror="this.src='/images/default-avatar.png'">
+                                    </td>
+                                    <td>
+                                        <strong>@user.FullName</strong>
+                                        @if (user.EmailConfirmed)
+                                        {
+                                            <i class="bi bi-patch-check-fill text-success" title="Email đã xác thực"></i>
+                                        }
+                                    </td>
+                                    <td>
+                                        <small>@user.Email</small>
+                                    </td>
+                                    <td><code>@@@user.Username</code></td>
+                                    <td>
+                                        <span class="badge bg-@(user.IsAdmin ? "danger" : "primary")">
+                                            @user.RoleName
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-@(user.IsActive ? "success" : "secondary")">
+                                            @(user.IsActive ? "Hoạt động" : "Đã khóa")
+                                        </span>
+                                    </td>
+                                    <td><small>@user.CreatedAt.ToString("dd/MM/yyyy")</small></td>
+                                    <td>
+                                        <small class="text-muted">
+                                            <i class="bi bi-heart-fill text-danger"></i> @user.TotalFavorites
+                                            <i class="bi bi-chat-fill text-primary ms-2"></i> @user.TotalComments
+                                            <i class="bi bi-star-fill text-warning ms-2"></i> @user.TotalRatings
+                                        </small>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="@Url.Action("UserDetail", new { id = user.UserId })" 
+                                               class="btn btn-outline-info"
+                                               title="Chi tiết">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <button type="button" 
+                                                    class="btn btn-outline-@(user.IsActive ? "secondary" : "success")"
+                                                    onclick="toggleUserStatus(@user.UserId, @user.IsActive.ToString().ToLower())"
+                                                    title="@(user.IsActive ? "Vô hiệu hóa" : "Kích hoạt")">
+                                                <i class="bi bi-@(user.IsActive ? "lock" : "unlock")"></i>
+                                            </button>
+                                            <button type="button" 
+                                                    class="btn btn-outline-warning"
+                                                    onclick="showRoleModal(@user.UserId, @user.RoleId, '@user.FullName')"
+                                                    title="Đổi vai trò">
+                                                <i class="bi bi-shield"></i>
+                                            </button>
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger"
+                                                    onclick="deleteUser(@user.UserId, '@user.FullName')"
+                                                    title="Xóa">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    @if(ViewBag.TotalPages > 1)
+    {
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link" href="@Url.Action("Users", new { 
+                        page = ViewBag.CurrentPage - 1, 
+                        search = ViewBag.Search, 
+                        roleId = ViewBag.RoleId, 
+                        isActive = ViewBag.IsActive,
+                        pageSize = ViewBag.PageSize 
+                    })">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+
+                @for(int i = 1; i <= ViewBag.TotalPages; i++)
+                {
+                    @if (i == 1 || i == ViewBag.TotalPages || (i >= ViewBag.CurrentPage - 2 && i <= ViewBag.CurrentPage + 2))
+                    {
+                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Users", new { 
+                                page = i, 
+                                search = ViewBag.Search, 
+                                roleId = ViewBag.RoleId, 
+                                isActive = ViewBag.IsActive,
+                                pageSize = ViewBag.PageSize 
+                            })">@i</a>
+                        </li>
+                    }
+                    else if (i == ViewBag.CurrentPage - 3 || i == ViewBag.CurrentPage + 3)
+                    {
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    }
+                }
+
+                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                    <a class="page-link" href="@Url.Action("Users", new { 
+                        page = ViewBag.CurrentPage + 1, 
+                        search = ViewBag.Search, 
+                        roleId = ViewBag.RoleId, 
+                        isActive = ViewBag.IsActive,
+                        pageSize = ViewBag.PageSize 
+                    })">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>
+
+<!-- Modal đổi vai trò -->
+<div class="modal fade" id="roleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Đổi vai trò người dùng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Đổi vai trò cho: <strong id="roleUserName"></strong></p>
+                <form id="roleForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="roleUserId" name="userId">
+                    <div class="mb-3">
+                        <label class="form-label">Chọn vai trò mới:</label>
+                        <select class="form-select" id="newRoleId" name="roleId">
+                            @foreach(var role in ViewBag.Roles)
+                            {
+                                <option value="@role.RoleId">@role.Name</option>
+                            }
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="updateUserRole()">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden forms -->
+<form id="statusForm" method="post" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+
+<form id="deleteForm" method="post" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        // Toggle user status
+        async function toggleUserStatus(userId, currentStatus) {
+            const action = currentStatus ? 'khóa' : 'kích hoạt';
+            if (!confirm(`Bạn có chắc muốn ${action} người dùng này?`)) return;
+
+            const form = document.getElementById('statusForm');
+            const formData = new FormData(form);
+            formData.append('userId', userId);
+            formData.append('isActive', !currentStatus);
+
+            try {
+                const response = await fetch('@Url.Action("UpdateUserStatus", "Admin")', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification(result.message, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification(result.message, 'danger');
+                }
+            } catch (error) {
+                showNotification('Có lỗi xảy ra: ' + error, 'danger');
+            }
+        }
+
+        // Show role modal
+        function showRoleModal(userId, currentRoleId, userName) {
+            document.getElementById('roleUserId').value = userId;
+            document.getElementById('roleUserName').textContent = userName;
+            document.getElementById('newRoleId').value = currentRoleId;
+            
+            const modal = new bootstrap.Modal(document.getElementById('roleModal'));
+            modal.show();
+        }
+
+        // Update user role
+        async function updateUserRole() {
+            const form = document.getElementById('roleForm');
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('@Url.Action("UpdateUserRole", "Admin")', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification(result.message, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification(result.message, 'danger');
+                }
+            } catch (error) {
+                showNotification('Có lỗi xảy ra: ' + error, 'danger');
+            }
+        }
+
+        // Delete user
+        async function deleteUser(userId, userName) {
+            if (!confirm(`Bạn có chắc muốn XÓA người dùng "${userName}"?\n\nHành động này không thể hoàn tác!`)) return;
+
+            const form = document.getElementById('deleteForm');
+            const formData = new FormData(form);
+            formData.append('userId', userId);
+
+            try {
+                const response = await fetch('@Url.Action("DeleteUser", "Admin")', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification(result.message, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification(result.message, 'danger');
+                }
+            } catch (error) {
+                showNotification('Có lỗi xảy ra: ' + error, 'danger');
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => alertDiv.remove(), 5000);
+        }
+    </script>
+}

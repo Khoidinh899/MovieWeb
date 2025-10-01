@@ -107,24 +107,39 @@ namespace MovieWeb.Controllers
 
                 // Phân trang
                 var totalUsers = await query.CountAsync();
-                var users = await query
+                var userList = await query
                     .OrderByDescending(u => u.CreatedAt)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
-                    .Select(u => new UserProfileDto
-                    {
-                        UserId = u.Id,
-                        Username = u.UserName!,
-                        Email = u.Email!,
-                        FirstName = u.FirstName,
-                        LastName = u.LastName,
-                        Avatar = u.Avatar,
-                        IsActive = u.IsActive ?? true,
-                        CreatedAt = u.CreatedAt ?? DateTime.MinValue,
-                        LastLogin = u.LastLogin,
-                        RoleId = u.RoleId  // ✅ Chỉ gán RoleId, IsAdmin sẽ tự động tính
-                    })
                     .ToListAsync();
+
+                // ✅ Map sang DTO và load statistics cho từng user
+                var users = new List<UserProfileDto>();
+                foreach (var user in userList)
+                {
+                    var userDto = new UserProfileDto
+                    {
+                        UserId = user.Id,
+                        Username = user.UserName!,
+                        Email = user.Email!,
+                        FirstName = user.FirstName ?? "",
+                        LastName = user.LastName ?? "",
+                        Avatar = user.Avatar,
+                        IsActive = user.IsActive ?? true,
+                        EmailConfirmed = user.EmailConfirmed,
+                        CreatedAt = user.CreatedAt ?? DateTime.MinValue,
+                        UpdatedAt = user.UpdatedAt,
+                        LastLogin = user.LastLogin,
+                        RoleId = user.RoleId,
+
+                        // ✅ Load statistics cho mỗi user
+                        TotalComments = await _context.Comments.CountAsync(c => c.UserId == user.Id),
+                        TotalFavorites = await _context.Favorites.CountAsync(f => f.UserId == user.Id),
+                        TotalRatings = await _context.Ratings.CountAsync(r => r.UserId == user.Id),
+                        TotalWatchHistory = await _context.WatchHistories.CountAsync(w => w.UserId == user.Id)
+                    };
+                    users.Add(userDto);
+                }
 
                 ViewBag.TotalPages = (int)Math.Ceiling((double)totalUsers / pageSize);
                 ViewBag.CurrentPage = page;
@@ -169,13 +184,22 @@ namespace MovieWeb.Controllers
                     UserId = user.Id,
                     Username = user.UserName!,
                     Email = user.Email!,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
+                    FirstName = user.FirstName ?? "",
+                    LastName = user.LastName ?? "",
                     Avatar = user.Avatar,
                     IsActive = user.IsActive ?? true,
+                    EmailConfirmed = user.EmailConfirmed,
                     CreatedAt = user.CreatedAt ?? DateTime.MinValue,
+                    UpdatedAt = user.UpdatedAt,
                     LastLogin = user.LastLogin,
-                    RoleId = user.RoleId  // ✅ Chỉ gán RoleId
+                    RoleId = user.RoleId,
+
+                    // ✅ Thêm các thông tin bổ sung
+                    PhoneNumber = user.PhoneNumber,
+                    DateOfBirth = user.DateOfBirth,
+                    Gender = user.Gender,
+                    Address = user.Address,
+                    Bio = user.Bio
                 };
 
                 // Load thống kê của user
@@ -187,6 +211,7 @@ namespace MovieWeb.Controllers
                     WatchHistory = await _context.WatchHistories.CountAsync(w => w.UserId == id)
                 };
 
+                // Load roles cho dropdown
                 ViewBag.Roles = await _context.Roles.ToListAsync();
 
                 return View(userDetail);

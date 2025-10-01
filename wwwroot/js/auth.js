@@ -8,26 +8,40 @@ function initializeAuth() {
     const mobileLoginBtn = document.getElementById('mobileLoginBtn');
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
+    const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+    const resetPasswordForm = document.getElementById('resetPasswordForm');
     const verificationSuccess = document.getElementById('verificationSuccess');
 
     setupFormToggles();
     setupModalTriggers();
     setupFormSubmissions();
     setupLogout();
+    checkResetPasswordURL();
 
     // ===== Form Toggle Functions =====
     function setupFormToggles() {
-        document.getElementById('showRegister').addEventListener('click', e => {
+        document.getElementById('showRegister')?.addEventListener('click', e => {
             e.preventDefault();
             switchToRegister();
         });
 
-        document.getElementById('showLogin').addEventListener('click', e => {
+        document.getElementById('showLogin')?.addEventListener('click', e => {
             e.preventDefault();
             switchToLogin();
         });
 
-        document.getElementById('backToLogin').addEventListener('click', e => {
+        document.getElementById('backToLogin')?.addEventListener('click', e => {
+            e.preventDefault();
+            switchToLogin();
+        });
+
+        // NEW: Forgot Password toggles
+        document.getElementById('showForgotPassword')?.addEventListener('click', e => {
+            e.preventDefault();
+            switchToForgotPassword();
+        });
+
+        document.getElementById('backToLoginFromForgot')?.addEventListener('click', e => {
             e.preventDefault();
             switchToLogin();
         });
@@ -35,7 +49,7 @@ function initializeAuth() {
 
     function switchToRegister() {
         fadeOut(loginForm, () => {
-            loginForm.classList.add('d-none');
+            hideAllForms();
             registerForm.classList.remove('d-none');
             document.querySelector('.modal-title').textContent = 'Đăng ký';
             fadeIn(registerForm);
@@ -43,16 +57,58 @@ function initializeAuth() {
     }
 
     function switchToLogin() {
-        const activeForm = registerForm.classList.contains('d-none') ? verificationSuccess : registerForm;
+        const activeForms = [registerForm, verificationSuccess, forgotPasswordForm, resetPasswordForm];
+        const activeForm = activeForms.find(form => !form.classList.contains('d-none')) || registerForm;
 
         fadeOut(activeForm, () => {
-            registerForm.classList.add('d-none');
-            verificationSuccess.classList.add('d-none');
+            hideAllForms();
             loginForm.classList.remove('d-none');
             document.querySelector('.modal-title').textContent = 'Đăng nhập';
             document.getElementById('emailVerificationAlert')?.classList.add('d-none');
             fadeIn(loginForm);
         });
+    }
+
+    function switchToForgotPassword() {
+        fadeOut(loginForm, () => {
+            hideAllForms();
+            forgotPasswordForm.classList.remove('d-none');
+            document.querySelector('.modal-title').textContent = 'Quên mật khẩu';
+            fadeIn(forgotPasswordForm);
+        });
+    }
+
+    function switchToResetPassword(userId, token) {
+        hideAllForms();
+        resetPasswordForm.classList.remove('d-none');
+        document.querySelector('.modal-title').textContent = 'Đặt lại mật khẩu';
+        document.getElementById('resetUserId').value = userId;
+        document.getElementById('resetToken').value = token;
+        fadeIn(resetPasswordForm);
+    }
+
+    function hideAllForms() {
+        loginForm.classList.add('d-none');
+        registerForm.classList.add('d-none');
+        forgotPasswordForm.classList.add('d-none');
+        resetPasswordForm.classList.add('d-none');
+        verificationSuccess.classList.add('d-none');
+    }
+
+    // ===== Check URL for Reset Password =====
+    function checkResetPasswordURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const openResetPassword = urlParams.get('openResetPassword');
+        const userId = urlParams.get('userId');
+        const token = urlParams.get('token');
+
+        if (openResetPassword === 'true' && userId && token) {
+            switchToResetPassword(userId, token);
+            authModal.show();
+
+            // Clean URL sau khi mở modal
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
     }
 
     // ===== Modal Trigger Functions =====
@@ -73,37 +129,47 @@ function initializeAuth() {
     }
 
     function resetModalState() {
-        document.getElementById('loginFormSubmit').reset();
-        document.getElementById('registerFormSubmit').reset();
+        document.getElementById('loginFormSubmit')?.reset();
+        document.getElementById('registerFormSubmit')?.reset();
+        document.getElementById('forgotPasswordFormSubmit')?.reset();
+        document.getElementById('resetPasswordFormSubmit')?.reset();
+        hideAllForms();
         loginForm.classList.remove('d-none');
-        registerForm.classList.add('d-none');
-        verificationSuccess.classList.add('d-none');
         document.querySelector('.modal-title').textContent = 'Đăng nhập';
         document.getElementById('emailVerificationAlert')?.classList.add('d-none');
         resetLoadingState('login');
         resetLoadingState('register');
+        resetLoadingState('forgot');
+        resetLoadingState('reset');
     }
 
     // ===== Form Submission Functions =====
     function setupFormSubmissions() {
-        document.getElementById('loginFormSubmit').addEventListener('submit', async e => {
+        document.getElementById('loginFormSubmit')?.addEventListener('submit', async e => {
             e.preventDefault();
             await handleLogin();
         });
 
-        document.getElementById('registerFormSubmit').addEventListener('submit', async e => {
+        document.getElementById('registerFormSubmit')?.addEventListener('submit', async e => {
             e.preventDefault();
             await handleRegister();
         });
 
-        document.getElementById('resendVerification')?.addEventListener('click', async e => {
+        // NEW: Forgot Password submission
+        document.getElementById('forgotPasswordFormSubmit')?.addEventListener('submit', async e => {
             e.preventDefault();
-            showAlert('Chức năng gửi lại email xác thực chưa được hỗ trợ.', 'info');
+            await handleForgotPassword();
         });
 
-        document.getElementById('forgotPassword')?.addEventListener('click', e => {
+        // NEW: Reset Password submission
+        document.getElementById('resetPasswordFormSubmit')?.addEventListener('submit', async e => {
             e.preventDefault();
-            handleForgotPassword();
+            await handleResetPassword();
+        });
+
+        document.getElementById('resendVerification')?.addEventListener('click', async e => {
+            e.preventDefault();
+            await handleResendVerification();
         });
     }
 
@@ -126,12 +192,21 @@ function initializeAuth() {
                 showAlert(result.message, 'success');
                 authModal.hide();
 
-                // Redirect và reload để server render lại navbar với user info
                 setTimeout(() => {
                     window.location.href = result.redirectUrl;
                 }, 500);
             } else {
                 showAlert(result.message, 'danger');
+
+                // Nếu email chưa xác thực, hiện alert
+                if (result.message && result.message.includes('chưa được xác thực')) {
+                    const emailVerificationAlert = document.getElementById('emailVerificationAlert');
+                    if (emailVerificationAlert) {
+                        emailVerificationAlert.classList.remove('d-none');
+                        const email = document.getElementById('loginEmail').value;
+                        emailVerificationAlert.dataset.email = email;
+                    }
+                }
             }
         } catch (error) {
             console.error('Login error:', error);
@@ -143,6 +218,15 @@ function initializeAuth() {
 
     async function handleRegister() {
         const formData = new FormData(document.getElementById('registerFormSubmit'));
+        const password = document.getElementById('registerPassword').value;
+        const confirmPassword = document.getElementById('registerConfirmPassword').value;
+
+        // Validate password match
+        if (password !== confirmPassword) {
+            showAlert('Mật khẩu xác nhận không khớp!', 'danger');
+            return;
+        }
+
         setLoadingState('register', true);
 
         try {
@@ -151,13 +235,14 @@ function initializeAuth() {
                 body: formData
             });
 
-            if (response.redirected) {
+            if (response.redirected || response.ok) {
                 fadeOut(registerForm, () => {
-                    registerForm.classList.add('d-none');
+                    hideAllForms();
                     verificationSuccess.classList.remove('d-none');
                     document.querySelector('.modal-title').textContent = 'Đăng ký thành công';
                     fadeIn(verificationSuccess);
                 });
+                showAlert('Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.', 'success');
             } else {
                 const html = await response.text();
                 const parser = new DOMParser();
@@ -183,35 +268,125 @@ function initializeAuth() {
         }
     }
 
-    function handleForgotPassword() {
-        const email = document.getElementById('loginEmail').value.trim();
-        if (!email) {
-            showAlert('Vui lòng nhập email trước khi click "Quên mật khẩu"', 'warning');
+    // NEW: Handle Forgot Password
+    async function handleForgotPassword() {
+        const email = document.getElementById('forgotEmail').value.trim();
+
+        if (!email || !isValidEmail(email)) {
+            showAlert('Vui lòng nhập email hợp lệ!', 'warning');
             return;
         }
-        if (!isValidEmail(email)) {
-            showAlert('Email không hợp lệ', 'warning');
-            return;
-        }
+
+        setLoadingState('forgot', true);
 
         const formData = new FormData();
         formData.append('Email', email);
+        formData.append('__RequestVerificationToken', getAntiForgeryToken());
 
-        fetch('/Auth/ForgotPassword', {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => {
-                if (response.ok) {
-                    showAlert('Nếu email tồn tại, link đặt lại mật khẩu đã được gửi.', 'success');
-                } else {
-                    showAlert('Có lỗi xảy ra khi gửi yêu cầu đặt lại mật khẩu.', 'danger');
-                }
-            })
-            .catch(error => {
-                console.error('Forgot password error:', error);
-                showAlert('Có lỗi xảy ra khi gửi yêu cầu đặt lại mật khẩu.', 'danger');
+        try {
+            const response = await fetch('/Auth/ForgotPassword', {
+                method: 'POST',
+                body: formData
             });
+
+            if (response.ok) {
+                showAlert('Nếu email tồn tại, chúng tôi đã gửi link đặt lại mật khẩu. Vui lòng kiểm tra hộp thư!', 'success');
+
+                setTimeout(() => {
+                    switchToLogin();
+                    document.getElementById('forgotEmail').value = '';
+                }, 2000);
+            } else {
+                showAlert('Có lỗi xảy ra khi gửi yêu cầu đặt lại mật khẩu.', 'danger');
+            }
+        } catch (error) {
+            console.error('Forgot password error:', error);
+            showAlert('Có lỗi xảy ra khi gửi yêu cầu đặt lại mật khẩu.', 'danger');
+        } finally {
+            setLoadingState('forgot', false);
+        }
+    }
+
+    // NEW: Handle Reset Password
+async function handleResetPassword() {
+    const newPassword = document.getElementById('resetNewPassword').value;
+    const confirmPassword = document.getElementById('resetConfirmPassword').value;
+
+    // Validate
+    if (newPassword !== confirmPassword) {
+        showAlert('Mật khẩu xác nhận không khớp!', 'danger');
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        showAlert('Mật khẩu phải có ít nhất 6 ký tự!', 'danger');
+        return;
+    }
+
+    setLoadingState('reset', true);
+
+    const formData = new FormData(document.getElementById('resetPasswordFormSubmit'));
+
+    try {
+        const response = await fetch('/Auth/ResetPassword', {
+            method: 'POST',
+            body: formData  // FormData tự động gửi Anti-Forgery Token
+        });
+
+        if (response.ok) {
+            showAlert('Đặt lại mật khẩu thành công! Đang chuyển đến trang đăng nhập...', 'success');
+            
+            setTimeout(() => {
+                const authModal = bootstrap.Modal.getInstance(document.getElementById('authModal'));
+                if (authModal) {
+                    authModal.hide();
+                }
+                window.location.href = '/';
+            }, 2000);
+        } else {
+            const text = await response.text();
+            console.error('Reset password failed:', text);
+            showAlert('Đặt lại mật khẩu thất bại. Link có thể đã hết hạn hoặc không hợp lệ!', 'danger');
+        }
+    } catch (error) {
+        console.error('Reset password error:', error);
+        showAlert('Có lỗi xảy ra khi đặt lại mật khẩu.', 'danger');
+    } finally {
+        setLoadingState('reset', false);
+    }
+}
+    // NEW: Handle Resend Email Verification
+    async function handleResendVerification() {
+        const emailVerificationAlert = document.getElementById('emailVerificationAlert');
+        const email = emailVerificationAlert?.dataset.email;
+
+        if (!email) {
+            showAlert('Không tìm thấy email!', 'warning');
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('email', email);
+            formData.append('__RequestVerificationToken', getAntiForgeryToken());
+
+            const response = await fetch('/Auth/ResendEmailConfirmation', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert(result.message || 'Email xác thực đã được gửi lại!', 'success');
+                emailVerificationAlert.classList.add('d-none');
+            } else {
+                showAlert(result.message || 'Không thể gửi lại email!', 'danger');
+            }
+        } catch (error) {
+            console.error('Resend verification error:', error);
+            showAlert('Có lỗi xảy ra. Vui lòng thử lại!', 'danger');
+        }
     }
 
     // ===== Logout Functions =====
@@ -225,15 +400,16 @@ function initializeAuth() {
 
     async function handleLogout() {
         try {
+            const formData = new FormData();
+            formData.append('__RequestVerificationToken', getAntiForgeryToken());
+
             const response = await fetch('/Auth/Logout', {
                 method: 'POST',
-                headers: { 'RequestVerificationToken': getAntiForgeryToken() }
+                body: formData
             });
 
             if (response.ok) {
-                // XÓA DÒNG NÀY: updateUIForLoggedOutUser();
                 showAlert('Đăng xuất thành công!', 'success');
-                // THÊM DÒNG NÀY: Reload trang để server render lại
                 setTimeout(() => {
                     window.location.href = '/';
                 }, 1000);
@@ -245,7 +421,8 @@ function initializeAuth() {
             showAlert('Có lỗi xảy ra khi đăng xuất.', 'danger');
         }
     }
-    // ===== Utility =====
+
+    // ===== Utility Functions =====
     function getAntiForgeryToken() {
         const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
         return tokenInput ? tokenInput.value : '';
@@ -255,13 +432,26 @@ function initializeAuth() {
         const btnText = document.getElementById(formType + 'BtnText');
         const loader = document.getElementById(formType + 'Loader');
         const submitBtn = document.querySelector(`#${formType}FormSubmit button[type="submit"]`);
+
         if (btnText && loader && submitBtn) {
             if (isLoading) {
-                btnText.textContent = formType === 'login' ? 'Đang đăng nhập...' : 'Đang đăng ký...';
+                const loadingTexts = {
+                    login: 'Đang đăng nhập...',
+                    register: 'Đang đăng ký...',
+                    forgot: 'Đang gửi...',
+                    reset: 'Đang xử lý...'
+                };
+                btnText.textContent = loadingTexts[formType] || 'Đang xử lý...';
                 loader.classList.remove('d-none');
                 submitBtn.disabled = true;
             } else {
-                btnText.textContent = formType === 'login' ? 'Đăng nhập' : 'Đăng ký';
+                const defaultTexts = {
+                    login: 'Đăng nhập',
+                    register: 'Đăng ký',
+                    forgot: 'Gửi yêu cầu',
+                    reset: 'Đặt lại mật khẩu'
+                };
+                btnText.textContent = defaultTexts[formType] || 'Gửi';
                 loader.classList.add('d-none');
                 submitBtn.disabled = false;
             }

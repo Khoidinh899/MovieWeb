@@ -275,23 +275,21 @@ namespace MovieWeb.Controllers
         }
 
         // GET: /Auth/ResetPassword
-        [HttpGet]
-        public IActionResult ResetPassword(string userId, string token)
-        {
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
-            {
-                TempData["ErrorMessage"] = "Link đặt lại mật khẩu không hợp lệ.";
-                return RedirectToAction(nameof(Login));
-            }
+[HttpGet]
+public IActionResult ResetPassword(string userId, string token)
+{
+    if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
+    {
+        TempData["ErrorMessage"] = "Link đặt lại mật khẩu không hợp lệ.";
+        return RedirectToAction("TrangChu", "TrangChu");
+    }
 
-            var model = new ResetPasswordDto
-            {
-                UserId = userId,
-                Token = token
-            };
-
-            return PartialView("~/Views/Shared/Partial/_AuthModal.cshtml", model);
-        }
+    // Lưu vào TempData thay vì query params
+    TempData["ResetPasswordUserId"] = userId;
+    TempData["ResetPasswordToken"] = token;
+    
+    return RedirectToAction("TrangChu", "TrangChu");
+}
 
         // POST: /Auth/ResetPassword
         [HttpPost]
@@ -353,7 +351,7 @@ namespace MovieWeb.Controllers
                 if (user.EmailConfirmed)
                 {
                     _logger.LogInformation("Email already confirmed for user {Email}", user.Email);
-                    
+
                     // Nếu đã xác thực rồi, đăng nhập luôn
                     await _signInManager.SignInAsync(user, isPersistent: true);
                     TempData["InfoMessage"] = "Email đã được xác thực trước đó. Bạn đã được đăng nhập.";
@@ -366,20 +364,20 @@ namespace MovieWeb.Controllers
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("Email confirmed successfully for user {Email}", user.Email);
-                    
+
                     // ✅ Đăng nhập tự động sau khi xác thực thành công
                     // isPersistent: true = Cookie sẽ tồn tại 30 ngày (theo cấu hình ExpireTimeSpan)
                     await _signInManager.SignInAsync(user, isPersistent: true);
-                    
+
                     TempData["SuccessMessage"] = "Xác thực email thành công! Chào mừng bạn đến với MoonPhim.";
                     return RedirectToAction("TrangChu", "TrangChu");
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to confirm email for user {Email}. Errors: {Errors}", 
-                        user.Email, 
+                    _logger.LogWarning("Failed to confirm email for user {Email}. Errors: {Errors}",
+                        user.Email,
                         string.Join(", ", result.Errors.Select(e => e.Description)));
-                    
+
                     TempData["ErrorMessage"] = "Xác thực email thất bại. Link có thể đã hết hạn hoặc không hợp lệ.";
                     return RedirectToAction("TrangChu", "TrangChu");
                 }
@@ -423,9 +421,9 @@ namespace MovieWeb.Controllers
 
                 // Gửi email
                 await _emailService.SendEmailConfirmationAsync(user.Email!, user.FullName ?? user.Email, confirmationLink);
-                
+
                 _logger.LogInformation("Resent confirmation email to {Email}", user.Email);
-                
+
                 return Json(new { success = true, message = "Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư." });
             }
             catch (Exception ex)

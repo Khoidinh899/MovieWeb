@@ -352,6 +352,16 @@
 
 @section Scripts {
     <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar-custom');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
         // Xử lý lỗi ảnh
         document.addEventListener('DOMContentLoaded', function() {
             const images = document.querySelectorAll('.movie-poster img');
@@ -361,13 +371,11 @@
                     const movieName = this.alt || 'Phim';
                     const fallbackUrl = `https://via.placeholder.com/300x450/444444/ffffff?text=${encodeURIComponent(movieName)}`;
                     
-                    // Tránh infinite loop
                     if (this.src !== fallbackUrl) {
                         this.src = fallbackUrl;
                     }
                 });
                 
-                // Thêm loading placeholder
                 img.addEventListener('loadstart', function() {
                     this.style.backgroundColor = '#f8f9fa';
                 });
@@ -378,4 +386,5 @@
             });
         });
     </script>
+}
 }

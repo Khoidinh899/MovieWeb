@@ -1,0 +1,481 @@
+@model MovieWeb.Models.DTOs.UserProfileDto
+@using MovieWeb.Models.DTOs
+
+
+@{
+    ViewData["Title"] = $"Chi tiết - {Model.FullName}";
+}
+
+@section Styles {
+    <style>
+        .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 15px;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .stat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .stat-box:hover {
+            transform: translateY(-5px);
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .info-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .action-button {
+            margin-bottom: 10px;
+        }
+    </style>
+}
+
+<div class="container py-4">
+    <!-- Back Button -->
+    <div class="mb-3">
+        <a href="@Url.Action("Users", "Admin")" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Quay lại danh sách
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="row align-items-center">
+            <div class="col-md-2 text-center">
+                <img src="@(Model.Avatar ?? "/images/default-avatar.png")" 
+                     alt="Avatar" 
+                     class="rounded-circle border border-5 border-white"
+                     style="width: 120px; height: 120px; object-fit: cover;"
+                     onerror="this.src='/images/default-avatar.png'">
+            </div>
+            <div class="col-md-7">
+                <h2 class="mb-2">
+                    @Model.FullName
+                    @if (Model.EmailConfirmed)
+                    {
+                        <i class="bi bi-patch-check-fill" title="Email đã xác thực"></i>
+                    }
+                </h2>
+                <p class="mb-1"><i class="bi bi-envelope me-2"></i>@Model.Email</p>
+                <p class="mb-1"><i class="bi bi-person-badge me-2"></i>@@@Model.Username</p>
+                <div class="mt-3">
+                    <span class="badge bg-@(Model.IsAdmin ? "danger" : "light") fs-6 me-2">
+                        @Model.RoleName
+                    </span>
+                    <span class="badge bg-@(Model.IsActive ? "success" : "secondary") fs-6">
+                        @(Model.IsActive ? "Hoạt động" : "Đã khóa")
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-3 text-end">
+                <p class="mb-1"><small>Tham gia:</small></p>
+                <h5>@Model.CreatedAt.ToString("dd/MM/yyyy")</h5>
+                @if (Model.LastLogin.HasValue)
+                {
+                    <p class="mb-0 mt-2"><small>Đăng nhập cuối:</small></p>
+                    <p>@Model.LastLogin.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-box">
+                <i class="bi bi-chat-fill text-primary fs-1"></i>
+                <div class="stat-number text-primary">@ViewBag.UserStats.TotalComments</div>
+                <div class="text-muted">Bình luận</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box">
+                <i class="bi bi-heart-fill text-danger fs-1"></i>
+                <div class="stat-number text-danger">@ViewBag.UserStats.TotalFavorites</div>
+                <div class="text-muted">Yêu thích</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box">
+                <i class="bi bi-star-fill text-warning fs-1"></i>
+                <div class="stat-number text-warning">@ViewBag.UserStats.TotalRatings</div>
+                <div class="text-muted">Đánh giá</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box">
+                <i class="bi bi-clock-history text-info fs-1"></i>
+                <div class="stat-number text-info">@ViewBag.UserStats.WatchHistory</div>
+                <div class="text-muted">Lịch sử xem</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- User Information -->
+        <div class="col-md-8 mb-4">
+            <div class="info-card">
+                <h5 class="mb-4"><i class="bi bi-info-circle me-2"></i>Thông tin cá nhân</h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <td width="30%"><strong>User ID:</strong></td>
+                        <td><code>#@Model.UserId</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Username:</strong></td>
+                        <td><code>@@@Model.Username</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Email:</strong></td>
+                        <td>
+                            @Model.Email
+                            @if (Model.EmailConfirmed)
+                            {
+                                <span class="badge bg-success ms-2">Đã xác thực</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning ms-2">Chưa xác thực</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Họ và tên:</strong></td>
+                        <td>@Model.FirstName @Model.LastName</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Số điện thoại:</strong></td>
+                        <td>@(Model.PhoneNumber ?? "Chưa cập nhật")</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ngày sinh:</strong></td>
+                        <td>@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Giới tính:</strong></td>
+                        <td>@(Model.Gender ?? "Chưa cập nhật")</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Địa chỉ:</strong></td>
+                        <td>@(Model.Address ?? "Chưa cập nhật")</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ngày tạo:</strong></td>
+                        <td>@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cập nhật lần cuối:</strong></td>
+                        <td>@(Model.UpdatedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Chưa có")</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Đăng nhập lần cuối:</strong></td>
+                        <td>@(Model.LastLogin?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Chưa đăng nhập")</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Biography Section -->
+            @if (!string.IsNullOrEmpty(Model.Bio))
+            {
+                <div class="info-card mt-4">
+                    <h5 class="mb-3"><i class="bi bi-quote me-2"></i>Tiểu sử</h5>
+                    <p class="text-muted">@Model.Bio</p>
+                </div>
+            }
+        </div>
+
+        <!-- Actions Panel -->
+        <div class="col-md-4 mb-4">
+            <div class="info-card">
+                <h5 class="mb-4"><i class="bi bi-gear me-2"></i>Quản lý tài khoản</h5>
+                
+                <!-- Change Role -->
+                <div class="mb-4">
+                    <label class="form-label"><strong>Vai trò:</strong></label>
+                    <form id="roleForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="userId" value="@Model.UserId">
+                        <div class="input-group">
+                            <select class="form-select" name="roleId" id="roleSelect">
+                                @foreach(var role in ViewBag.Roles)
+                                {
+                                    <option value="@role.RoleId" selected="@(Model.RoleId == role.RoleId)">
+                                        @role.Name
+                                    </option>
+                                }
+                            </select>
+                            <button type="button" class="btn btn-primary" onclick="updateRole()">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2">
+                    <button type="button" 
+                            class="btn btn-@(Model.IsActive ? "warning" : "success") action-button"
+                            onclick="toggleStatus(@Model.UserId, @Model.IsActive.ToString().ToLower())">
+                        <i class="bi bi-@(Model.IsActive ? "lock" : "unlock")-fill me-2"></i>
+                        @(Model.IsActive ? "Khóa tài khoản" : "Kích hoạt tài khoản")
+                    </button>
+
+                    <button type="button" 
+                            class="btn btn-info action-button"
+                            onclick="resetPassword(@Model.UserId)">
+                        <i class="bi bi-key-fill me-2"></i>
+                        Reset mật khẩu
+                    </button>
+
+                    <button type="button" 
+                            class="btn btn-secondary action-button"
+                            onclick="sendVerificationEmail(@Model.UserId)"
+                            @(Model.EmailConfirmed ? "disabled" : "")>
+                        <i class="bi bi-envelope-check-fill me-2"></i>
+                        Gửi email xác thực
+                    </button>
+
+                    <hr>
+
+                    <button type="button" 
+                            class="btn btn-danger action-button"
+                            onclick="deleteUser(@Model.UserId, '@Model.FullName')">
+                        <i class="bi bi-trash-fill me-2"></i>
+                        Xóa tài khoản
+                    </button>
+                </div>
+
+                <!-- Warning Box -->
+                <div class="alert alert-warning mt-4" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <small>Các thao tác trên ảnh hưởng trực tiếp đến tài khoản người dùng. Hãy thận trọng!</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="row">
+        <div class="col-12">
+            <div class="info-card">
+                <h5 class="mb-4"><i class="bi bi-activity me-2"></i>Hoạt động gần đây</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Loại hoạt động</th>
+                                <th>Số lượng</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <i class="bi bi-chat-fill text-primary me-2"></i>
+                                    Bình luận
+                                </td>
+                                <td><strong>@ViewBag.UserStats.TotalComments</strong></td>
+                                <td>
+                                    <a href="#" class="btn btn-sm btn-outline-primary">
+                                        Xem tất cả
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="bi bi-heart-fill text-danger me-2"></i>
+                                    Phim yêu thích
+                                </td>
+                                <td><strong>@ViewBag.UserStats.TotalFavorites</strong></td>
+                                <td>
+                                    <a href="#" class="btn btn-sm btn-outline-danger">
+                                        Xem tất cả
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="bi bi-star-fill text-warning me-2"></i>
+                                    Đánh giá phim
+                                </td>
+                                <td><strong>@ViewBag.UserStats.TotalRatings</strong></td>
+                                <td>
+                                    <a href="#" class="btn btn-sm btn-outline-warning">
+                                        Xem tất cả
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="bi bi-clock-history text-info me-2"></i>
+                                    Lịch sử xem
+                                </td>
+                                <td><strong>@ViewBag.UserStats.WatchHistory</strong></td>
+                                <td>
+                                    <a href="#" class="btn btn-sm btn-outline-info">
+                                        Xem tất cả
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden Forms -->
+<form id="statusForm" method="post" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+
+<form id="deleteForm" method="post" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        // Update user role
+        async function updateRole() {
+            const form = document.getElementById('roleForm');
+            const formData = new FormData(form);
+
+            if (!confirm('Bạn có chắc muốn thay đổi vai trò người dùng này?')) return;
+
+            try {
+                const response = await fetch('@Url.Action("UpdateUserRole", "Admin")', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification(result.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showNotification(result.message, 'danger');
+                }
+            } catch (error) {
+                showNotification('Có lỗi xảy ra: ' + error, 'danger');
+            }
+        }
+
+        // Toggle user status
+        async function toggleStatus(userId, currentStatus) {
+            const action = currentStatus ? 'khóa' : 'kích hoạt';
+            if (!confirm(`Bạn có chắc muốn ${action} tài khoản này?`)) return;
+
+            const form = document.getElementById('statusForm');
+            const formData = new FormData(form);
+            formData.append('userId', userId);
+            formData.append('isActive', !currentStatus);
+
+            try {
+                const response = await fetch('@Url.Action("UpdateUserStatus", "Admin")', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification(result.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showNotification(result.message, 'danger');
+                }
+            } catch (error) {
+                showNotification('Có lỗi xảy ra: ' + error, 'danger');
+            }
+        }
+
+        // Delete user
+        async function deleteUser(userId, userName) {
+            if (!confirm(`⚠️ CẢNH BÁO: Bạn có chắc muốn XÓA người dùng "${userName}"?\n\nHành động này không thể hoàn tác!`)) return;
+
+            if (!confirm('Xác nhận lần cuối: Bạn THỰC SỰ muốn xóa?')) return;
+
+            const form = document.getElementById('deleteForm');
+            const formData = new FormData(form);
+            formData.append('userId', userId);
+
+            try {
+                const response = await fetch('@Url.Action("DeleteUser", "Admin")', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification(result.message, 'success');
+                    setTimeout(() => window.location.href = '@Url.Action("Users", "Admin")', 1500);
+                } else {
+                    showNotification(result.message, 'danger');
+                }
+            } catch (error) {
+                showNotification('Có lỗi xảy ra: ' + error, 'danger');
+            }
+        }
+
+        // Reset password (placeholder)
+        function resetPassword(userId) {
+            showNotification('Chức năng đang phát triển', 'info');
+        }
+
+        // Send verification email (placeholder)
+        function sendVerificationEmail(userId) {
+            showNotification('Chức năng đang phát triển', 'info');
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 350px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
+            alertDiv.innerHTML = `
+                <strong>${type === 'success' ? '✓' : type === 'danger' ? '✗' : 'ℹ'}</strong> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.classList.remove('show');
+                setTimeout(() => alertDiv.remove(), 150);
+            }, 5000);
+        }
+    </script>
+}

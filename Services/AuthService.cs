@@ -198,28 +198,39 @@ namespace MovieWeb.Services
         }
 
         public async Task<AuthResult> ResetPasswordAsync(ResetPasswordDto model)
+{
+    try
+    {
+        var user = await _userManager.FindByIdAsync(model.UserId);
+        if (user == null)
+            return AuthResult.Failed("Người dùng không tồn tại");
+
+        // LOG ĐỂ KIỂM TRA
+        _logger.LogInformation("Reset password - UserId: {UserId}", model.UserId);
+        _logger.LogInformation("Reset password - Token: {Token}", model.Token);
+        _logger.LogInformation("Reset password - New password length: {Length}", model.NewPassword?.Length);
+
+        // KHÔNG decode token
+        var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+        
+        if (result.Succeeded)
         {
-            try
-            {
-                var user = await _userManager.FindByIdAsync(model.UserId);
-                if (user == null)
-                    return AuthResult.Failed("Người dùng không tồn tại");
-
-                // Decode token before calling Identity
-                var decodedToken = WebUtility.UrlDecode(model.Token);
-
-                var result = await _userManager.ResetPasswordAsync(user, decodedToken, model.NewPassword);
-                if (result.Succeeded)
-                    return AuthResult.Success("Đặt lại mật khẩu thành công");
-
-                return AuthResult.Failed(result.Errors.Select(e => e.Description).ToList());
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during reset password");
-                return AuthResult.Failed("Có lỗi xảy ra trong quá trình đặt lại mật khẩu");
-            }
+            _logger.LogInformation("Password reset SUCCESS for user {Email}", user.Email);
+            return AuthResult.Success("Đặt lại mật khẩu thành công");
         }
+
+        // LOG LỖI CHI TIẾT
+        var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+        _logger.LogWarning("Password reset FAILED for user {Email}. Errors: {Errors}", user.Email, errors);
+
+        return AuthResult.Failed(result.Errors.Select(e => e.Description).ToList());
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error during reset password");
+        return AuthResult.Failed("Có lỗi xảy ra trong quá trình đặt lại mật khẩu");
+    }
+}
 
         public async Task<User?> GetCurrentUserAsync()
         {

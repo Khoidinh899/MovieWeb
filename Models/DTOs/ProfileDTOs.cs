@@ -2,6 +2,39 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MovieWeb.Models.DTOs
 {
+    // DTO trả về thông tin profile đầy đủ
+    public class UserProfileDto
+    {
+        public int UserId { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string FullName => $"{FirstName} {LastName}".Trim();
+        public string? Avatar { get; set; }
+        public bool IsActive { get; set; }
+        public bool EmailConfirmed { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }  // ✅ THÊM
+        public DateTime? LastLogin { get; set; }
+        public int RoleId { get; set; }
+        public string RoleName => RoleId == 1 ? "Admin" : "User";
+        public bool IsAdmin => RoleId == 1;
+
+        // ✅ THÊM - Các trường bổ sung cho view
+        public string? PhoneNumber { get; set; }
+        public DateTime? DateOfBirth { get; set; }
+        public string? Gender { get; set; }
+        public string? Address { get; set; }
+        public string? Bio { get; set; }
+
+        // Thống kê hoạt động
+        public int TotalFavorites { get; set; }
+        public int TotalComments { get; set; }
+        public int TotalRatings { get; set; }
+        public int TotalWatchHistory { get; set; }
+    }
+
     // DTO để cập nhật thông tin cá nhân
     public class UpdateProfileDto
     {
@@ -18,6 +51,22 @@ namespace MovieWeb.Models.DTOs
         public string Email { get; set; } = string.Empty;
 
         public string? CurrentEmail { get; set; } // Để so sánh khi thay đổi email
+
+        // ✅ Thêm các trường bổ sung
+        [Phone(ErrorMessage = "Số điện thoại không hợp lệ")]
+        public string? PhoneNumber { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? DateOfBirth { get; set; }
+
+        [StringLength(10)]
+        public string? Gender { get; set; }
+
+        [StringLength(200)]
+        public string? Address { get; set; }
+
+        [StringLength(500)]
+        public string? Bio { get; set; }
     }
 
     // DTO để thay đổi mật khẩu
@@ -42,31 +91,6 @@ namespace MovieWeb.Models.DTOs
         public IFormFile Avatar { get; set; } = null!;
     }
 
-    // DTO trả về thông tin profile đầy đủ
-    public class UserProfileDto
-    {
-        public int UserId { get; set; }
-        public string Username { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public string FullName => $"{FirstName} {LastName}".Trim();
-        public string? Avatar { get; set; }
-        public bool IsActive { get; set; }
-        public bool EmailConfirmed { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? LastLogin { get; set; }
-        public int RoleId { get; set; }
-        public string RoleName => RoleId == 1 ? "Admin" : "User";
-        public bool IsAdmin => RoleId == 1;
-        
-        // Thống kê hoạt động
-        public int TotalFavorites { get; set; }
-        public int TotalComments { get; set; }
-        public int TotalRatings { get; set; }
-        public int TotalWatchHistory { get; set; }
-    }
-
     // DTO cho admin quản lý user
     public class AdminUpdateUserDto
     {
@@ -89,6 +113,19 @@ namespace MovieWeb.Models.DTOs
         public int RoleId { get; set; }
 
         public bool IsActive { get; set; }
+
+        // ✅ Thêm các trường bổ sung
+        [Phone(ErrorMessage = "Số điện thoại không hợp lệ")]
+        public string? PhoneNumber { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? DateOfBirth { get; set; }
+
+        [StringLength(10)]
+        public string? Gender { get; set; }
+
+        [StringLength(200)]
+        public string? Address { get; set; }
     }
 
     // DTO để admin thay đổi mật khẩu user

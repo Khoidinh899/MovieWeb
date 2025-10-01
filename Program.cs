@@ -122,11 +122,17 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=TrangChu}/{action=TrangChu}/{id?}");
 
+
 // Auth routes
 app.MapControllerRoute(
     name: "confirmEmail",
     pattern: "auth/confirm-email",
     defaults: new { controller = "Auth", action = "ConfirmEmail" });
+
+app.MapControllerRoute(
+    name: "resetPassword",
+    pattern: "auth/reset-password",
+    defaults: new { controller = "Auth", action = "ResetPassword" });
 
 // Route cho trang chi tiết phim
 app.MapControllerRoute(
