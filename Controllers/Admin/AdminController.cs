@@ -58,7 +58,7 @@ namespace MovieWeb.Controllers
                 };
 
                 ViewBag.Stats = stats;
-                return View();
+                return View("Dashboard"); // ✅ Fix: trỏ view đúng tên
             }
             catch (Exception ex)
             {
@@ -80,7 +80,6 @@ namespace MovieWeb.Controllers
             {
                 var query = _context.Users.Include(u => u.Role).AsQueryable();
 
-                // Tìm kiếm
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     query = query.Where(u =>
@@ -91,21 +90,18 @@ namespace MovieWeb.Controllers
                     ViewBag.Search = search;
                 }
 
-                // Lọc theo role
                 if (roleId.HasValue)
                 {
                     query = query.Where(u => u.RoleId == roleId.Value);
                     ViewBag.RoleId = roleId.Value;
                 }
 
-                // Lọc theo trạng thái
                 if (isActive.HasValue)
                 {
                     query = query.Where(u => u.IsActive == isActive.Value);
                     ViewBag.IsActive = isActive.Value;
                 }
 
-                // Phân trang
                 var totalUsers = await query.CountAsync();
                 var userList = await query
                     .OrderByDescending(u => u.CreatedAt)
@@ -113,7 +109,6 @@ namespace MovieWeb.Controllers
                     .Take(pageSize)
                     .ToListAsync();
 
-                // ✅ Map sang DTO và load statistics cho từng user
                 var users = new List<UserProfileDto>();
                 foreach (var user in userList)
                 {
@@ -131,8 +126,6 @@ namespace MovieWeb.Controllers
                         UpdatedAt = user.UpdatedAt,
                         LastLogin = user.LastLogin,
                         RoleId = user.RoleId,
-
-                        // ✅ Load statistics cho mỗi user
                         TotalComments = await _context.Comments.CountAsync(c => c.UserId == user.Id),
                         TotalFavorites = await _context.Favorites.CountAsync(f => f.UserId == user.Id),
                         TotalRatings = await _context.Ratings.CountAsync(r => r.UserId == user.Id),
@@ -146,10 +139,9 @@ namespace MovieWeb.Controllers
                 ViewBag.PageSize = pageSize;
                 ViewBag.TotalUsers = totalUsers;
 
-                // Load roles cho dropdown
                 ViewBag.Roles = await _context.Roles.ToListAsync();
 
-                return View(users);
+                return View("Users", users); // ✅ Fix: trỏ view đúng tên
             }
             catch (Exception ex)
             {
@@ -193,8 +185,6 @@ namespace MovieWeb.Controllers
                     UpdatedAt = user.UpdatedAt,
                     LastLogin = user.LastLogin,
                     RoleId = user.RoleId,
-
-                    // ✅ Thêm các thông tin bổ sung
                     PhoneNumber = user.PhoneNumber,
                     DateOfBirth = user.DateOfBirth,
                     Gender = user.Gender,
@@ -202,7 +192,6 @@ namespace MovieWeb.Controllers
                     Bio = user.Bio
                 };
 
-                // Load thống kê của user
                 ViewBag.UserStats = new
                 {
                     TotalComments = await _context.Comments.CountAsync(c => c.UserId == id),
@@ -211,10 +200,9 @@ namespace MovieWeb.Controllers
                     WatchHistory = await _context.WatchHistories.CountAsync(w => w.UserId == id)
                 };
 
-                // Load roles cho dropdown
                 ViewBag.Roles = await _context.Roles.ToListAsync();
 
-                return View(userDetail);
+                return View("UserDetail", userDetail); // ✅ Fix: trỏ view đúng tên
             }
             catch (Exception ex)
             {
@@ -223,7 +211,6 @@ namespace MovieWeb.Controllers
                 return RedirectToAction("Users");
             }
         }
-
         // POST: /Admin/UpdateUserStatus
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -445,5 +432,204 @@ namespace MovieWeb.Controllers
                 _logger.LogError(ex, "Error logging admin action: {Action}", action);
             }
         }
+// GET: /Admin/GetUserData/{id} - Lấy dữ liệu user để edit
+[HttpGet]
+public async Task<IActionResult> GetUserData(int id)
+{
+    if (!await IsAdminAsync())
+    {
+        return Json(new { success = false, message = "Không có quyền truy cập" });
+    }
+
+    try
+    {
+        var user = await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Id == id);
+
+        if (user == null)
+        {
+            return Json(new { success = false, message = "Không tìm thấy người dùng" });
+        }
+
+        return Json(new
+        {
+            success = true,
+            data = new
+            {
+                userId = user.Id,
+                username = user.UserName,
+                email = user.Email,
+                firstName = user.FirstName,
+                lastName = user.LastName,
+                roleId = user.RoleId,
+                isActive = user.IsActive,
+                phoneNumber = user.PhoneNumber,
+                gender = user.Gender,
+                dateOfBirth = user.DateOfBirth?.ToString("yyyy-MM-dd"),
+                address = user.Address,
+                bio = user.Bio
+            }
+        });
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error getting user data for ID: {UserId}", id);
+        return Json(new { success = false, message = "Có lỗi xảy ra khi tải dữ liệu" });
+    }
+}
+
+// POST: /Admin/CreateUser - Tạo user mới
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> CreateUser(CreateUserDto model)
+{
+    if (!await IsAdminAsync())
+    {
+        return Json(new { success = false, message = "Không có quyền truy cập" });
+    }
+
+    try
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = string.Join(", ", ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage));
+            return Json(new { success = false, message = errors });
+        }
+
+        // Kiểm tra email đã tồn tại
+        if (await _userManager.FindByEmailAsync(model.Email) != null)
+        {
+            return Json(new { success = false, message = "Email đã được sử dụng" });
+        }
+
+        // Kiểm tra username đã tồn tại
+        if (await _userManager.FindByNameAsync(model.Username) != null)
+        {
+            return Json(new { success = false, message = "Username đã được sử dụng" });
+        }
+
+        var user = new User
+        {
+            UserName = model.Username,
+            Email = model.Email,
+            FirstName = model.FirstName,
+            LastName = model.LastName,
+            RoleId = model.RoleId,
+            IsActive = model.IsActive,
+            EmailConfirmed = true, // Admin tạo thì auto confirm
+            PhoneNumber = model.PhoneNumber,
+            Gender = model.Gender,
+            DateOfBirth = model.DateOfBirth,
+            Address = model.Address,
+            Bio = model.Bio,
+            CreatedAt = DateTime.Now,
+            UpdatedAt = DateTime.Now
+        };
+
+        var result = await _userManager.CreateAsync(user, model.Password);
+        
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            return Json(new { success = false, message = errors });
+        }
+
+        // Log admin action
+        await LogAdminActionAsync("CREATE_USER", $"Created new user: {user.UserName}", user.Id.ToString());
+
+        _logger.LogInformation("Admin created new user: {Username}", user.UserName);
+
+        return Json(new { success = true, message = "Tạo người dùng thành công!" });
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error creating user");
+        return Json(new { success = false, message = "Có lỗi xảy ra khi tạo người dùng" });
+    }
+}
+
+// POST: /Admin/UpdateUser - Cập nhật thông tin user
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> UpdateUser(UpdateUserDto model)
+{
+    if (!await IsAdminAsync())
+    {
+        return Json(new { success = false, message = "Không có quyền truy cập" });
+    }
+
+    try
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = string.Join(", ", ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage));
+            return Json(new { success = false, message = errors });
+        }
+
+        var user = await _userManager.FindByIdAsync(model.UserId.ToString());
+        if (user == null)
+        {
+            return Json(new { success = false, message = "Không tìm thấy người dùng" });
+        }
+
+        // Kiểm tra email đã tồn tại (trừ user hiện tại)
+        var existingEmailUser = await _userManager.FindByEmailAsync(model.Email);
+        if (existingEmailUser != null && existingEmailUser.Id != user.Id)
+        {
+            return Json(new { success = false, message = "Email đã được sử dụng bởi người dùng khác" });
+        }
+
+        // Cập nhật thông tin
+        user.Email = model.Email;
+        user.FirstName = model.FirstName;
+        user.LastName = model.LastName;
+        user.RoleId = model.RoleId;
+        user.IsActive = model.IsActive;
+        user.PhoneNumber = model.PhoneNumber;
+        user.Gender = model.Gender;
+        user.DateOfBirth = model.DateOfBirth;
+        user.Address = model.Address;
+        user.Bio = model.Bio;
+        user.UpdatedAt = DateTime.Now;
+
+        var result = await _userManager.UpdateAsync(user);
+        
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            return Json(new { success = false, message = errors });
+        }
+
+        // Đổi mật khẩu nếu có
+        if (!string.IsNullOrWhiteSpace(model.NewPassword))
+        {
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var passwordResult = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
+            
+            if (!passwordResult.Succeeded)
+            {
+                var errors = string.Join(", ", passwordResult.Errors.Select(e => e.Description));
+                return Json(new { success = false, message = "Cập nhật thông tin thành công nhưng đổi mật khẩu thất bại: " + errors });
+            }
+        }
+
+        // Log admin action
+        await LogAdminActionAsync("UPDATE_USER", $"Updated user: {user.UserName}", user.Id.ToString());
+
+        _logger.LogInformation("Admin updated user: {Username}", user.UserName);
+
+        return Json(new { success = true, message = "Cập nhật người dùng thành công!" });
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error updating user");
+        return Json(new { success = false, message = "Có lỗi xảy ra khi cập nhật" });
+    }
+}
     }
 }

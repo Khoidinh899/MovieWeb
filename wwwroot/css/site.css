@@ -36,3 +36,24 @@ body {
 .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+/* Body theo chiều dọc, chiếm đủ chiều cao màn hình */
+body.d-flex {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Main content chiếm toàn bộ khoảng trống còn lại */
+main.flex-fill {
+    flex: 1 0 auto;
+}
+
+/* Footer không bị kéo giãn */
+footer {
+    flex-shrink: 0;
+}

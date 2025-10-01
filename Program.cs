@@ -117,6 +117,16 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Admin routes - PHẢI ĐẶT TRƯỚC default route
+app.MapControllerRoute(
+    name: "admin",
+    pattern: "Admin/{action=Dashboard}/{id?}",
+    defaults: new { controller = "Admin" });
+
+// Routes
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=TrangChu}/{action=TrangChu}/{id?}");
 // Routes
 app.MapControllerRoute(
     name: "default",

@@ -79,13 +79,15 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
 
             entity.Property(e => e.Id).HasColumnName("RoleId");
             entity.Property(e => e.Name).HasColumnName("RoleName").HasMaxLength(50);
-            entity.Property(e => e.NormalizedName).HasMaxLength(256);
-            entity.Property(e => e.ConcurrencyStamp).HasMaxLength(255);
 
             entity.HasIndex(e => e.Name, "UQ__Roles__RoleName").IsUnique();
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.Description).HasMaxLength(255);
+
+            // BỎ mapping mấy cột mặc định không có trong DB
+            entity.Ignore(r => r.NormalizedName);
+            entity.Ignore(r => r.ConcurrencyStamp);
         });
 
         // Map Identity other tables (để tránh EF tự tạo bảng mặc định)
@@ -96,7 +98,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
         modelBuilder.Entity<IdentityUserRole<int>>().ToTable("AspNetUserRoles");
 
         // ===== EXISTING ENTITY CONFIGURATIONS =====
-        
+
         modelBuilder.Entity<Actor>(entity =>
         {
             entity.HasKey(e => e.ActorId).HasName("PK__Actors__57B3EA4B1F26927F");
@@ -383,7 +385,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
         modelBuilder.Ignore<MovieWeb.Models.API.Category>();
         modelBuilder.Ignore<MovieWeb.Models.API.Country>();
         modelBuilder.Ignore<MovieWeb.Models.API.OPhimResponse>();
-        
+
         OnModelCreatingPartial(modelBuilder);
     }
 

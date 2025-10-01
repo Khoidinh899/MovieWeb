@@ -1,6 +1,7 @@
 @model List<MovieWeb.Models.DTOs.UserProfileDto>
 
 @{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Quản lý người dùng";
 }
 
@@ -111,7 +112,7 @@
                     <option value="">Tất cả vai trò</option>
                     @foreach(var role in ViewBag.Roles)
                     {
-                        <option value="@role.RoleId" selected="@(ViewBag.RoleId == role.RoleId)">@role.Name</option>
+                        <option value="@role.Id" selected="@(ViewBag.RoleId == role.Id)">@role.Name</option>
                     }
                 </select>
             </div>
@@ -141,7 +142,12 @@
     <!-- Users Table -->
     <div class="card shadow-sm">
         <div class="card-header bg-white">
-            <h5 class="mb-0"><i class="bi bi-table me-2"></i>Danh sách người dùng</h5>
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-table me-2"></i>Danh sách người dùng</h5>
+                <button type="button" class="btn btn-primary" onclick="openCreateModal()">
+                    <i class="bi bi-plus-circle me-2"></i>Thêm User Mới
+                </button>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -191,7 +197,7 @@
                                     <td>
                                         <small>@user.Email</small>
                                     </td>
-                                    <td><code>@@@user.Username</code></td>
+                                    <td><code>@user.Username</code></td>
                                     <td>
                                         <span class="badge bg-@(user.IsAdmin ? "danger" : "primary")">
                                             @user.RoleName
@@ -212,6 +218,13 @@
                                     </td>
                                     <td class="text-center">
                                         <div class="btn-group btn-group-sm">
+                                            <button type="button" 
+                                                    class="btn btn-outline-primary"
+                                                    onclick="openEditModal(@user.UserId)"
+                                                    title="Chỉnh sửa">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+
                                             <a href="@Url.Action("UserDetail", new { id = user.UserId })" 
                                                class="btn btn-outline-info"
                                                title="Chi tiết">
@@ -301,38 +314,6 @@
     }
 </div>
 
-<!-- Modal đổi vai trò -->
-<div class="modal fade" id="roleModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Đổi vai trò người dùng</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Đổi vai trò cho: <strong id="roleUserName"></strong></p>
-                <form id="roleForm">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" id="roleUserId" name="userId">
-                    <div class="mb-3">
-                        <label class="form-label">Chọn vai trò mới:</label>
-                        <select class="form-select" id="newRoleId" name="roleId">
-                            @foreach(var role in ViewBag.Roles)
-                            {
-                                <option value="@role.RoleId">@role.Name</option>
-                            }
-                        </select>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-primary" onclick="updateUserRole()">Xác nhận</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Hidden forms -->
 <form id="statusForm" method="post" style="display: none;">
     @Html.AntiForgeryToken()
@@ -342,9 +323,234 @@
     @Html.AntiForgeryToken()
 </form>
 
+<!-- Modal Thêm/Sửa User -->
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Thêm người dùng mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="userForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="userId" name="UserId">
+                
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <!-- Username -->
+                        <div class="col-md-6">
+                            <label class="form-label">Username <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="username" name="Username" required>
+                            <div class="invalid-feedback">Vui lòng nhập username</div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="col-md-6">
+                            <label class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="email" name="Email" required>
+                            <div class="invalid-feedback">Vui lòng nhập email hợp lệ</div>
+                        </div>
+
+                        <!-- Họ -->
+                        <div class="col-md-6">
+                            <label class="form-label">Họ</label>
+                            <input type="text" class="form-control" id="lastName" name="LastName">
+                        </div>
+
+                        <!-- Tên -->
+                        <div class="col-md-6">
+                            <label class="form-label">Tên</label>
+                            <input type="text" class="form-control" id="firstName" name="FirstName">
+                        </div>
+
+                        <!-- Password (chỉ hiện khi thêm mới) -->
+                        <div class="col-md-6" id="passwordGroup">
+                            <label class="form-label">Mật khẩu <span class="text-danger" id="passwordRequired">*</span></label>
+                            <input type="password" class="form-control" id="password" name="Password">
+                            <small class="text-muted">Tối thiểu 6 ký tự</small>
+                            <div class="invalid-feedback">Mật khẩu tối thiểu 6 ký tự</div>
+                        </div>
+
+                        <!-- New Password (chỉ hiện khi sửa) -->
+                        <div class="col-md-6 d-none" id="newPasswordGroup">
+                            <label class="form-label">Mật khẩu mới</label>
+                            <input type="password" class="form-control" id="newPassword" name="NewPassword">
+                            <small class="text-muted">Để trống nếu không đổi</small>
+                        </div>
+
+                        <!-- Vai trò -->
+                        <div class="col-md-6">
+                            <label class="form-label">Vai trò <span class="text-danger">*</span></label>
+                            <select class="form-select" id="roleId" name="RoleId" required>
+                                @foreach(var role in ViewBag.Roles)
+                                {
+                                    <option value="@role.Id">@role.Name</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Số điện thoại -->
+                        <div class="col-md-6">
+                            <label class="form-label">Số điện thoại</label>
+                            <input type="tel" class="form-control" id="phoneNumber" name="PhoneNumber">
+                        </div>
+
+                        <!-- Giới tính -->
+                        <div class="col-md-6">
+                            <label class="form-label">Giới tính</label>
+                            <select class="form-select" id="gender" name="Gender">
+                                <option value="">Chọn giới tính</option>
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                        </div>
+
+                        <!-- Ngày sinh -->
+                        <div class="col-md-6">
+                            <label class="form-label">Ngày sinh</label>
+                            <input type="date" class="form-control" id="dateOfBirth" name="DateOfBirth">
+                        </div>
+
+                        <!-- Địa chỉ -->
+                        <div class="col-12">
+                            <label class="form-label">Địa chỉ</label>
+                            <input type="text" class="form-control" id="address" name="Address">
+                        </div>
+
+                        <!-- Bio -->
+                        <div class="col-12">
+                            <label class="form-label">Tiểu sử</label>
+                            <textarea class="form-control" id="bio" name="Bio" rows="3"></textarea>
+                        </div>
+
+                        <!-- Trạng thái -->
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="isActive" name="IsActive" checked>
+                                <label class="form-check-label" for="isActive">
+                                    Tài khoản hoạt động
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i><span id="submitButtonText">Tạo người dùng</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
-        // Toggle user status
+        let userModal;
+        let isEditMode = false;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            userModal = new bootstrap.Modal(document.getElementById('userModal'));
+            
+            document.getElementById('userForm').addEventListener('submit', handleFormSubmit);
+        });
+
+        function openCreateModal() {
+            isEditMode = false;
+            document.getElementById('modalTitle').textContent = 'Thêm người dùng mới';
+            document.getElementById('submitButtonText').textContent = 'Tạo người dùng';
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            
+            document.getElementById('passwordGroup').classList.remove('d-none');
+            document.getElementById('password').required = true;
+            document.getElementById('newPasswordGroup').classList.add('d-none');
+            document.getElementById('passwordRequired').classList.remove('d-none');
+            
+            document.getElementById('username').removeAttribute('readonly');
+            
+            userModal.show();
+        }
+
+        async function openEditModal(userId) {
+            isEditMode = true;
+            document.getElementById('modalTitle').textContent = 'Chỉnh sửa người dùng';
+            document.getElementById('submitButtonText').textContent = 'Cập nhật';
+            
+            try {
+                const response = await fetch(`@Url.Action("GetUserData", "Admin")?id=${userId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const user = result.data;
+                    
+                    document.getElementById('userId').value = user.userId;
+                    document.getElementById('username').value = user.username;
+                    document.getElementById('email').value = user.email;
+                    document.getElementById('firstName').value = user.firstName || '';
+                    document.getElementById('lastName').value = user.lastName || '';
+                    document.getElementById('roleId').value = user.roleId;
+                    document.getElementById('phoneNumber').value = user.phoneNumber || '';
+                    document.getElementById('gender').value = user.gender || '';
+                    document.getElementById('dateOfBirth').value = user.dateOfBirth || '';
+                    document.getElementById('address').value = user.address || '';
+                    document.getElementById('bio').value = user.bio || '';
+                    document.getElementById('isActive').checked = user.isActive;
+                    
+                    document.getElementById('passwordGroup').classList.add('d-none');
+                    document.getElementById('password').required = false;
+                    document.getElementById('newPasswordGroup').classList.remove('d-none');
+                    document.getElementById('passwordRequired').classList.add('d-none');
+                    
+                    document.getElementById('username').setAttribute('readonly', 'readonly');
+                    
+                    userModal.show();
+                } else {
+                    showNotification(result.message, 'danger');
+                }
+            } catch (error) {
+                showNotification('Có lỗi khi tải dữ liệu: ' + error, 'danger');
+            }
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            const formData = new FormData(form);
+            
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+            
+            const actionUrl = isEditMode 
+                ? '@Url.Action("UpdateUser", "Admin")'
+                : '@Url.Action("CreateUser", "Admin")';
+            
+            try {
+                const response = await fetch(actionUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    userModal.hide();
+                    showNotification(result.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showNotification(result.message, 'danger');
+                }
+            } catch (error) {
+                showNotification('Có lỗi xảy ra: ' + error, 'danger');
+            }
+        }
+
         async function toggleUserStatus(userId, currentStatus) {
             const action = currentStatus ? 'khóa' : 'kích hoạt';
             if (!confirm(`Bạn có chắc muốn ${action} người dùng này?`)) return;
@@ -373,7 +579,6 @@
             }
         }
 
-        // Show role modal
         function showRoleModal(userId, currentRoleId, userName) {
             document.getElementById('roleUserId').value = userId;
             document.getElementById('roleUserName').textContent = userName;
@@ -383,7 +588,6 @@
             modal.show();
         }
 
-        // Update user role
         async function updateUserRole() {
             const form = document.getElementById('roleForm');
             const formData = new FormData(form);
@@ -407,7 +611,6 @@
             }
         }
 
-        // Delete user
         async function deleteUser(userId, userName) {
             if (!confirm(`Bạn có chắc muốn XÓA người dùng "${userName}"?\n\nHành động này không thể hoàn tác!`)) return;
 
@@ -434,13 +637,12 @@
             }
         }
 
-        // Show notification
         function showNotification(message, type) {
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
             alertDiv.innerHTML = `
-                ${message}
+                <strong>${type === 'success' ? '✓' : '✗'}</strong> ${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
             document.body.appendChild(alertDiv);

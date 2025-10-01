@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,31 +12,33 @@
     <link rel="icon" type="image/x-icon" href="~/favicon.ico">
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body class="admin-page">
+
+<body class="admin-page d-flex flex-column min-vh-100">
     @await Html.PartialAsync("Partial/_Header")
-    
-    <main role="main" class="admin-container">
+
+    <main role="main" class="admin-container flex-fill">
         @RenderBody()
     </main>
-    
+
     @await Html.PartialAsync("Partial/_Footer")
     @await Html.PartialAsync("Partial/_Scripts")
-    
+
     @await RenderSectionAsync("Scripts", required: false)
     <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Remove "Admin System" text
-    const navbar = document.querySelector('.navbar-custom');
-    if (navbar) {
-        const walker = document.createTreeWalker(navbar, NodeFilter.SHOW_TEXT);
-        let node;
-        while (node = walker.nextNode()) {
-            if (node.textContent.trim() === 'Admin System') {
-                node.parentElement.remove();
+        document.addEventListener('DOMContentLoaded', function () {
+            // Remove "Admin System" text
+            const navbar = document.querySelector('.navbar-custom');
+            if (navbar) {
+                const walker = document.createTreeWalker(navbar, NodeFilter.SHOW_TEXT);
+                let node;
+                while (node = walker.nextNode()) {
+                    if (node.textContent.trim() === 'Admin System') {
+                        node.parentElement.remove();
+                    }
+                }
             }
-        }
-    }
-});
-</script>
+        });
+    </script>
 </body>
+
 </html>
