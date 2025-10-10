@@ -14,7 +14,7 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 
-<body class="home-page">
+<body class="@(ViewData["PageType"]?.ToString() == "Detail" ? "movie-detail-layout" : "home-page")">
     <!-- Header with Navigation -->
     @await Html.PartialAsync("Partial/_Header")
     

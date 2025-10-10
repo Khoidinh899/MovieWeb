@@ -1,0 +1,66 @@
+@model List<MovieWeb.Models.Entities.Movie>
+
+@{
+    Layout = "_Layout";
+    var category = ViewBag.Category as MovieWeb.Models.Entities.Category;
+    int currentPage = ViewBag.CurrentPage;
+    int totalPages = ViewBag.TotalPages;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/phimbo.css" asp-append-version="true" />
+}
+
+<div class="container py-4">
+
+    <!-- Phần tiêu đề và bộ lọc -->
+    <div class="category-header mb-4 d-flex flex-column align-items-start">
+        <h2 class="category-title mb-2">@category?.Name</h2>
+        <div class="filter-section">
+            <i class="bi bi-filter"></i> Bộ lọc 
+        </div>
+    </div>
+
+    <!-- Danh sách phim -->
+    <div class="row g-3">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var movie in Model)
+            {
+                <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                    <div class="movie-card">
+                        <a href="/phim/@movie.Slug" class="text-decoration-none text-white">
+                            <div class="thumb-wrapper">
+                                <img src="@(movie.ThumbUrl?.StartsWith("http") == true
+                                    ? movie.ThumbUrl
+                                    : "https://img.ophim.live/uploads/movies/" + movie.ThumbUrl)"
+                                    alt="@movie.Name"
+                                    class="movie-thumb" />
+                            </div>
+                            <div class="movie-title">@movie.Name</div>
+                        </a>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-white text-center">Không có phim nào trong thể loại này.</p>
+        }
+    </div>
+
+    <!-- Phân trang -->
+    @if (totalPages > 1)
+    {
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mt-4">
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                    <li class="page-item @(i == currentPage ? "active" : "")">
+                        <a class="page-link" href="/the-loai/phim-bo?page=@i">@i</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+</div>

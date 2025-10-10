@@ -1,0 +1,317 @@
+/* ===============================
+   GLOBAL
+=================================*/
+body {
+    background: #0f0f0f;
+    color: #fff;
+    font-family: 'Inter', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+/* ===============================
+   HERO SECTION
+=================================*/
+.hero {
+    position: relative;
+    background-size: cover;
+    background-position: center;
+    padding: 100px 0;
+}
+
+.hero .overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(to bottom, rgba(15,15,15,0.5), rgba(15,15,15,0.95));
+}
+
+.hero-content {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+    z-index: 2;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.poster-box img {
+    width: 280px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.6);
+}
+
+/* ===============================
+   MOVIE INFO
+=================================*/
+.movie-info {
+    max-width: 700px;
+}
+
+.movie-info h1 {
+    font-size: 2.8rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.movie-info .original-title {
+    color: #aaa;
+    font-style: italic;
+    display: block;
+    margin-bottom: 15px;
+}
+
+.tags {
+    margin-bottom: 15px;
+}
+
+.tags span {
+    background: rgba(255,255,255,0.1);
+    padding: 4px 12px;
+    border-radius: 8px;
+    margin-right: 6px;
+    font-size: 0.9rem;
+}
+
+.description {
+    margin-top: 15px;
+    color: #ccc;
+    line-height: 1.6;
+}
+
+/* ===============================
+   BUTTONS
+=================================*/
+.buttons {
+    margin-top: 25px;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.btn-watch,
+.btn-trailer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-watch {
+    background: linear-gradient(135deg, #ff3c00, #ff7300);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(255, 80, 0, 0.6);
+}
+
+.btn-watch:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 18px rgba(255, 80, 0, 0.8);
+}
+
+.btn-trailer {
+    background: linear-gradient(135deg, #0099ff, #00ccff);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(0, 140, 255, 0.6);
+}
+
+.btn-trailer:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 18px rgba(0, 160, 255, 0.8);
+}
+
+/* ===============================
+   PLAYER
+=================================*/
+#playerContainer {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    margin: 40px auto;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.6);
+}
+
+#player {
+    width: 100%;
+    height: 500px;
+    border: none;
+    border-radius: 16px;
+}
+
+/* ===============================
+   META INFO
+=================================*/
+.meta-section {
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.meta-title {
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+    color: #f5c518;
+}
+
+.meta-item {
+    margin-bottom: 12px;
+    line-height: 1.7;
+}
+
+.meta-item strong {
+    width: 120px;
+    display: inline-block;
+    color: #f5c518;
+}
+
+.meta-item a {
+    color: #ccc;
+    text-decoration: none;
+}
+
+.meta-item a:hover {
+    color: #f5c518;
+}
+
+.meta-item span {
+    color: #bbb;
+}
+
+/* ===============================
+   MOVIE DESCRIPTION
+=================================*/
+.movie-description {
+    margin-top: 20px;
+    color: #ccc;
+    line-height: 1.7;
+}
+
+.movie-description strong {
+    display: block;
+    color: #f5c518;
+    margin-bottom: 6px;
+    font-size: 1.1rem;
+}
+
+/* ===============================
+   RELATED MOVIES
+=================================*/
+.related {
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.related h3 {
+    border-left: 4px solid #f5c518;
+    padding-left: 10px;
+    margin-bottom: 25px;
+    font-size: 1.5rem;
+}
+
+.related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+}
+
+.related-card {
+    text-decoration: none;
+    color: #fff;
+    transition: transform 0.2s;
+}
+
+.related-card:hover {
+    transform: scale(1.05);
+}
+
+.related-card .poster {
+    position: relative;
+}
+
+.related-card img {
+    width: 100%;
+    border-radius: 8px;
+}
+
+.related-card .badge {
+    position: absolute;
+    top: 8px; left: 8px;
+    background: #f5c518;
+    color: #000;
+    font-weight: bold;
+    font-size: 0.8rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.related-card .info {
+    text-align: center;
+    margin-top: 8px;
+}
+
+.related-card .title {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+/* ===============================
+   RESPONSIVE
+=================================*/
+@media (max-width: 992px) {
+    .hero-content {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .poster-box img {
+        width: 220px;
+    }
+
+    .movie-info {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    #player {
+        height: 240px;
+    }
+
+    .buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .movie-info h1 {
+        font-size: 2rem;
+    }
+
+    .btn-watch,
+    .btn-trailer {
+        width: 100%;
+    }
+}

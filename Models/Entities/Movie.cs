@@ -24,9 +24,9 @@ public partial class Movie
     public string? PosterUrl { get; set; }
 
     public string? ThumbUrl { get; set; }
-
     public string? TrailerUrl { get; set; }
-
+    public string? Trailer { get; set; } // 8/10/2026
+    public string? Description { get; set; } // 8/10/2026
     public string? Time { get; set; }
 
     public string? EpisodeCurrent { get; set; }
@@ -34,7 +34,10 @@ public partial class Movie
     public string? EpisodeTotal { get; set; }
 
     public string? Quality { get; set; }
-
+    public string? Poster { get; set; }  //10/6/2026
+    public string? Backdrop { get; set; } // 10/06
+    
+    
     public string? Language { get; set; }
 
     public int? Year { get; set; }
@@ -70,4 +73,6 @@ public partial class Movie
     public virtual ICollection<Country> Countries { get; set; } = new List<Country>();
 
     public virtual ICollection<Director> Directors { get; set; } = new List<Director>();
+   
+    
 }

@@ -127,11 +127,6 @@ app.MapControllerRoute(
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=TrangChu}/{action=TrangChu}/{id?}");
-// Routes
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=TrangChu}/{action=TrangChu}/{id?}");
-
 
 // Auth routes
 app.MapControllerRoute(

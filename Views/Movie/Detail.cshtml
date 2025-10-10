@@ -1,0 +1,239 @@
+@model MovieWeb.Models.Entities.Movie
+@{
+    ViewData["Title"] = $"{Model.Name} - Xem phim online";
+    var relatedMovies = ViewBag.RelatedMovies as List<MovieWeb.Models.Entities.Movie>;
+
+    var bgImage = !string.IsNullOrEmpty(Model.ThumbUrl)
+        ? (Model.ThumbUrl.StartsWith("http") ? Model.ThumbUrl : "https://img.ophim.live/uploads/movies/" + Model.ThumbUrl)
+        : (Model.PosterUrl?.StartsWith("http") == true ? Model.PosterUrl : "https://img.ophim.live/uploads/movies/" + Model.PosterUrl);
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/detail.css" asp-append-version="true" />
+}
+
+<div class="detail-wrapper">
+    <!-- Hero Section -->
+    <section class="hero" style="background-image: url('@bgImage')">
+        <div class="overlay"></div>
+        <div class="container hero-content">
+            <div class="poster-box">
+                <img src="@(Model.PosterUrl?.StartsWith("http") == true 
+                    ? Model.PosterUrl 
+                    : "https://img.ophim.live/uploads/movies/" + Model.PosterUrl)" 
+                    alt="@Model.Name" />
+            </div>
+
+            <div class="movie-info">
+                <h1>@Model.Name</h1>
+                @if (!string.IsNullOrEmpty(Model.OriginalName))
+                {
+                    <p class="original-title">@Model.OriginalName</p>
+                }
+
+                <div class="tags">
+                    <span>@Model.Year</span>
+                    <span>@Model.Quality</span>
+                    <span>@Model.Language</span>
+                </div>
+
+                <p class="description">@Html.Raw(Model.Content)</p>
+
+                <!-- Nút xem phim / trailer -->
+                <div class="buttons">
+                    @if (!string.IsNullOrEmpty(Model.TrailerUrl))
+                    {
+                        <button class="btn-watch" id="watchBtn">
+                            <i class="fa-solid fa-play"></i> Xem phim
+                        </button>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.Trailer))
+                    {
+                        <button class="btn-trailer" id="trailerBtn">
+                            <i class="fa-solid fa-film"></i> Trailer
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn-trailer disabled" id="trailerBtn">
+                            <i class="fa-solid fa-film"></i> Trailer (đang cập nhật)
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Player Section -->
+    @if (!string.IsNullOrEmpty(Model.TrailerUrl))
+    {
+        <div class="container" id="playerContainer" style="margin-top:20px; display:none;">
+            <video id="player" controls playsinline preload="metadata" poster="@Model.ThumbUrl"></video>
+        </div>
+    }
+
+    <!-- Trailer Modal -->
+    <div class="modal" id="trailerModal">
+        <div class="modal-content">
+            <span class="close" id="closeTrailer">&times;</span>
+            <iframe id="trailerFrame" width="100%" height="480" frameborder="0" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <!-- Meta Info -->
+    <section class="meta-section container">
+    <h2 class="meta-title"><i class="fa-solid fa-circle-info"></i> Thông tin phim</h2>
+
+    <div class="meta-item">
+        <strong>Đạo diễn:</strong>
+        @if (Model.Directors != null && Model.Directors.Any())
+        {
+            @string.Join(", ", Model.Directors.Select(d => d.Name))
+        }
+        else
+        {
+            <span>Đang cập nhật</span>
+        }
+    </div>
+
+    <div class="meta-item">
+        <strong>Diễn viên:</strong>
+        @if (Model.Actors != null && Model.Actors.Any())
+        {
+            @string.Join(", ", Model.Actors.Select(a => a.Name))
+        }
+        else
+        {
+            <span>Đang cập nhật</span>
+        }
+    </div>
+
+    <div class="meta-item">
+        <strong>Thể loại:</strong>
+        @if (Model.Categories != null && Model.Categories.Any())
+        {
+            @foreach (var c in Model.Categories)
+            {
+                <a href="/the-loai/@c.Slug">@c.Name</a><text>, </text>
+            }
+        }
+        else
+        {
+            <span>Đang cập nhật</span>
+        }
+    </div>
+
+    <div class="meta-item">
+        <strong>Quốc gia:</strong>
+        @if (Model.Countries != null && Model.Countries.Any())
+        {
+            @foreach (var c in Model.Countries)
+            {
+                <a href="/quoc-gia/@c.Slug">@c.Name</a><text>, </text>
+            }
+        }
+        else
+        {
+            <span>Đang cập nhật</span>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Description))
+    {
+        <div class="meta-item movie-description">
+            <strong>Nội dung phim:</strong>
+            <p>@Html.Raw(Model.Description)</p>
+        </div>
+    }
+</section>
+
+    <!-- Related Movies -->
+    @if (relatedMovies != null && relatedMovies.Any())
+    {
+        <section class="related container">
+            <h3><i class="fa-solid fa-clone"></i> Phim liên quan</h3>
+            <div class="related-grid">
+                @foreach (var movie in relatedMovies)
+                {
+                    <a href="/phim/@movie.Slug" class="related-card">
+                        <div class="poster">
+                            <img src="@(movie.PosterUrl?.StartsWith("http") == true 
+                                ? movie.PosterUrl 
+                                : "https://img.ophim.live/uploads/movies/" + movie.PosterUrl)" 
+                                alt="@movie.Name" />
+                            <span class="badge">@movie.Quality</span>
+                        </div>
+                        <div class="info">
+                            <p class="title">@movie.Name</p>
+                            <small>@movie.Year</small>
+                        </div>
+                    </a>
+                }
+            </div>
+        </section>
+    }
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+    const watchBtn = document.getElementById('watchBtn');
+    const playerContainer = document.getElementById('playerContainer');
+    const video = document.getElementById('player');
+    const hlsUrl = "@Model.TrailerUrl";
+
+    const trailerBtn = document.getElementById('trailerBtn');
+    const trailerModal = document.getElementById('trailerModal');
+    const trailerFrame = document.getElementById('trailerFrame');
+    const closeTrailer = document.getElementById('closeTrailer');
+    const trailerLink = "@Model.Trailer";
+
+    // Xử lý xem phim
+    if (watchBtn) {
+        watchBtn.addEventListener('click', () => {
+            playerContainer.style.display = 'block';
+            watchBtn.style.display = 'none';
+            initHlsAndPlay();
+            video.play().catch(()=>{});
+        });
+    }
+
+    function initHlsAndPlay() {
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = hlsUrl;
+        } else if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(hlsUrl);
+            hls.attachMedia(video);
+        } else {
+            alert('Trình duyệt không hỗ trợ HLS (.m3u8)');
+        }
+    }
+
+    // Xử lý trailer
+    if (trailerBtn && !trailerBtn.classList.contains('disabled')) {
+        trailerBtn.addEventListener('click', () => {
+            trailerModal.style.display = 'flex';
+            trailerFrame.src = trailerLink.includes("youtube")
+                ? trailerLink.replace("watch?v=", "embed/") + "?autoplay=1"
+                : trailerLink;
+        });
+    } else if (trailerBtn) {
+        trailerBtn.addEventListener('click', () => {
+            alert('Trailer đang được cập nhật, vui lòng quay lại sau!');
+        });
+    }
+
+    closeTrailer.addEventListener('click', () => {
+        trailerModal.style.display = 'none';
+        trailerFrame.src = '';
+    });
+
+    window.onclick = (e) => {
+        if (e.target === trailerModal) {
+            trailerModal.style.display = 'none';
+            trailerFrame.src = '';
+        }
+    };
+</script>

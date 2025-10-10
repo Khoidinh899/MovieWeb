@@ -57,3 +57,8 @@ main.flex-fill {
 footer {
     flex-shrink: 0;
 }
+.main-content {
+    margin: 0;
+    padding: 0;
+}
+

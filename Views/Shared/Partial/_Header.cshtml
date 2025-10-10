@@ -27,9 +27,11 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="/">Trang chủ</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/the-loai/phim-le">Phim lẻ</a></li>
+                    <li cl
+                    
                     <li class="nav-item"><a class="nav-link" href="/the-loai/phim-bo">Phim bộ</a></li>
                     <li class="nav-item"><a class="nav-link" href="/the-loai/hoat-hinh">Hoạt hình</a></li>
+                    
                     @{
                         var currentUser = await _authService.GetCurrentUserAsync();
                         if (currentUser?.IsAdmin == true)
