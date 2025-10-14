@@ -1,0 +1,835 @@
+@model MovieWeb.Models.DTOs.UserProfileDto
+
+@{
+    ViewData["Title"] = "Tài khoản của tôi";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/user.css" asp-append-version="true" />
+    <style>
+        .verification-step {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @@keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #otpCode {
+            font-family: 'Courier New', monospace;
+        }
+
+        .student-verified-section {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+        }
+
+        .btn-verify-student {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        /* Badge cho subscription type */
+        .subscription-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .subscription-badge.moonpro {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+        }
+
+        .subscription-badge.moonstu {
+            background: linear-gradient(135deg, #00C9FF, #92FE9D);
+            color: #000;
+            box-shadow: 0 2px 8px rgba(0, 201, 255, 0.3);
+        }
+
+        .subscription-badge.free {
+            background: #e9ecef;
+            color: #6c757d;
+            border: 1px solid #dee2e6;
+        }
+
+        .subscription-badge i {
+            font-size: 10px;
+        }
+
+        /* Tag hiển thị trong thông tin chi tiết */
+        .subscription-tag {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .subscription-tag.premium {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+        }
+
+        .subscription-tag.student {
+            background: linear-gradient(135deg, #00C9FF, #92FE9D);
+            color: #000;
+        }
+
+        .subscription-tag.free {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .subscription-tag i {
+            font-size: 12px;
+        }
+    </style>
+}
+
+<div class="container py-5">
+    @Html.AntiForgeryToken()
+    <div class="row">
+        <div class="col-lg-3 mb-4">
+            <div class="card profile-sidebar">
+                <div class="card-body text-center">
+                    <div class="avatar-container mb-3">
+                        <img src="@(Model.Avatar ?? "/images/nouser.png")" alt="Avatar" class="profile-avatar"
+                            id="profileAvatar">
+                        <div class="avatar-overlay">
+                            <label class="avatar-edit-btn" onclick="openAvatarModal()">
+                                <i class="bi bi-camera"></i>
+                            </label>
+                        </div>
+                    </div>
+                    <h5 class="mb-1">@Model.FullName</h5>
+                    <p class="text-muted mb-2">@@@Model.Username</p>
+
+                    <div class="d-flex justify-content-center align-items-center flex-wrap gap-2">
+                        <span class="badge bg-@(Model.IsAdmin ? "danger" : "primary")">
+                            @Model.RoleName
+                        </span>
+
+                        @if (Model.SubscriptionType == "premium")
+                        {
+                            <span class="subscription-badge moonpro">
+                                <i class="fas fa-crown"></i> MoonPro
+                            </span>
+                        }
+                        else if (Model.SubscriptionType == "student")
+                        {
+                            <span class="subscription-badge moonstu">
+                                <i class="fas fa-graduation-cap"></i> MoonStu
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="subscription-badge free">
+                                <i class="fas fa-user"></i> Free
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <div class="list-group list-group-flush">
+                    <a href="/user/profile" class="list-group-item list-group-item-action active">
+                        <i class="bi bi-person me-2"></i> Thông tin cá nhân
+                    </a>
+                    <a href="/user/edit" class="list-group-item list-group-item-action">
+                        <i class="bi bi-pencil me-2"></i> Chỉnh sửa thông tin
+                    </a>
+                    <a href="/user/change-password" class="list-group-item list-group-item-action">
+                        <i class="bi bi-key me-2"></i> Đổi mật khẩu
+                    </a>
+                    <a href="/user/payment-history" class="list-group-item list-group-item-action">
+                        <i class="bi bi-credit-card-2-front me-2"></i> Lịch sử thanh toán
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="bi bi-check-circle me-2"></i>
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Thông tin cơ bản</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3 text-muted">Họ và tên:</div>
+                        <div class="col-md-9"><strong>@Model.FullName</strong></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3 text-muted">Tên đăng nhập:</div>
+                        <div class="col-md-9"><strong>@Model.Username</strong></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-3 text-muted">Email:</div>
+                        <div class="col-md-9">
+                            <strong>@Model.Email</strong>
+                            @if (Model.EmailConfirmed)
+                            {
+                                <span class="badge bg-success ms-2">
+                                    <i class="bi bi-check-circle"></i> Đã xác thực
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning ms-2">
+                                    <i class="bi bi-exclamation-circle"></i> Chưa xác thực
+                                </span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-3 text-muted">Email sinh viên:</div>
+                        <div class="col-md-9">
+                            @if (Model.IsStudentVerified && !string.IsNullOrEmpty(Model.StudentEmail))
+                            {
+                                <div class="d-flex align-items-center flex-wrap gap-2">
+                                    <span>@Model.StudentEmail</span>
+                                    <span class="badge bg-success" id="studentVerifiedBadge">
+                                        <i class="bi bi-check-circle"></i> Đã xác thực
+                                    </span>
+
+                                    @if (Model.StudentEmailVerificationExpiry.HasValue)
+                                    {
+                                        var daysLeft = (Model.StudentEmailVerificationExpiry.Value - DateTime.Now).Days;
+                                        if (daysLeft <= 7 && daysLeft > 0)
+                                        {
+                                            <span class="badge bg-warning text-dark" id="studentExpiringBadge">
+                                                <i class="bi bi-exclamation-circle"></i> Sắp hết hạn
+                                            </span>
+                                        }
+                                        else if (daysLeft <= 0)
+                                        {
+                                            <span class="badge bg-danger" id="studentExpiredBadge">
+                                                <i class="bi bi-x-circle"></i> Hết hạn
+                                            </span>
+                                        }
+                                    }
+
+                                    <button type="button" class="btn btn-outline-primary btn-sm ms-auto"
+                                        id="btnRenewStudent" style="display:none;" onclick="openRenewModal()">
+                                        <i class="bi bi-arrow-clockwise"></i> Gia hạn
+                                    </button>
+                                </div>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-primary btn-sm btn-verify-student"
+                                    onclick="openVerificationModal()">
+                                    <i class="bi bi-shield-check me-1"></i>Xác thực Email Sinh viên
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-3 text-muted">Gói dịch vụ:</div>
+                        <div class="col-md-9">
+                            <div class="d-flex flex-column gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    @if (Model.SubscriptionType == "premium")
+                                    {
+                                        <span class="subscription-tag premium">
+                                            <i class="fas fa-crown"></i>
+                                            MoonPro
+                                        </span>
+                                    }
+                                    else if (Model.SubscriptionType == "student")
+                                    {
+                                        <span class="subscription-tag student">
+                                            <i class="fas fa-graduation-cap"></i>
+                                            MoonStu
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="subscription-tag free">
+                                            <i class="fas fa-user"></i>
+                                            Free
+                                        </span>
+                                    }
+
+                                    @* ✅ HIỂN THỊ BADGE "ĐÃ HỦY GIA HẠN" *@
+                                    @if (Model.IsCancelled)
+                                    {
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-ban"></i> Đã hủy gia hạn
+                                        </span>
+                                    }
+                                </div>
+
+                                @if (Model.RemainingDaysFromPreviousPackage > 0)
+                                {
+                                    <small class="text-success" style="font-style: italic;">
+                                        <i class="fas fa-plus-circle"></i>
+                                        + @Model.RemainingDaysFromPreviousPackage ngày từ gói trước
+                                    </small>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-3 text-muted">Vai trò:</div>
+                        <div class="col-md-9">
+                            <span class="badge bg-@(Model.IsAdmin ? "danger" : "primary")">
+                                @Model.RoleName
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-3 text-muted">Trạng thái:</div>
+                        <div class="col-md-9">
+                            <span class="badge bg-@(Model.IsActive ? "success" : "secondary")">
+                                @(Model.IsActive ? "Đang hoạt động" : "Đã khóa")
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-3 text-muted">Ngày tham gia:</div>
+                        <div class="col-md-9"><strong>@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</strong></div>
+                    </div>
+
+                    @if (Model.LastLogin.HasValue)
+                    {
+                        <div class="row">
+                            <div class="col-md-3 text-muted">Đăng nhập lần cuối:</div>
+                            <div class="col-md-9">
+                                <strong>@Model.LastLogin.Value.ToString("dd/MM/yyyy HH:mm")</strong>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Thống kê hoạt động</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-box">
+                                <i class="bi bi-heart-fill text-danger stat-icon"></i>
+                                <h3 class="stat-number">@Model.TotalFavorites</h3>
+                                <p class="stat-label">Yêu thích</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-box">
+                                <i class="bi bi-chat-fill text-primary stat-icon"></i>
+                                <h3 class="stat-number">@Model.TotalComments</h3>
+                                <p class="stat-label">Bình luận</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-box">
+                                <i class="bi bi-star-fill text-warning stat-icon"></i>
+                                <h3 class="stat-number">@Model.TotalRatings</h3>
+                                <p class="stat-label">Đánh giá</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stat-box">
+                                <i class="bi bi-clock-history text-info stat-icon"></i>
+                                <h3 class="stat-number">@Model.TotalWatchHistory</h3>
+                                <p class="stat-label">Lịch sử xem</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="studentVerificationModal" tabindex="-1" aria-labelledby="studentVerificationModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="studentVerificationModalLabel">
+                    <i class="bi bi-mortarboard me-2"></i>Xác thực Email Sinh viên
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Lưu ý:</strong> Xác thực email sinh viên (.edu, .edu.vn, .ac.vn) để mở khóa gói
+                    Student với
+                    giá ưu đãi.
+                    <br /><small>Email sinh viên có hiệu lực 12 tháng. Bạn sẽ nhận được thông báo trước 7 ngày
+                        để gia
+                        hạn.</small>
+                </div>
+
+                <div id="modalStep1" class="verification-step">
+                    <div class="mb-3">
+                        <label for="modalStudentEmail" class="form-label">
+                            <i class="bi bi-envelope me-2"></i>Email sinh viên
+                        </label>
+                        <input type="email" class="form-control" id="modalStudentEmail"
+                            placeholder="example@university.edu.vn" value="@Model.StudentEmail" />
+                        <small class="form-text text-muted">
+                            Chỉ chấp nhận email có đuôi .edu, .edu.vn, .ac.vn
+                        </small>
+                    </div>
+                    <button type="button" class="btn btn-primary w-100" id="modalSendOtpBtn" onclick="sendOTP()">
+                        <i class="bi bi-send me-2"></i>Gửi mã xác thực
+                    </button>
+                </div>
+
+                <div id="modalStep2" class="verification-step" style="display: none;">
+                    <div class="alert alert-success mb-3">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Mã xác thực đã được gửi đến email <strong id="modalSentEmailDisplay"></strong>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modalOtpCode" class="form-label">
+                            <i class="bi bi-key me-2"></i>Mã OTP (6 chữ số)
+                        </label>
+                        <input type="text" class="form-control text-center" id="modalOtpCode" placeholder="000000"
+                            maxlength="6" style="font-size: 24px; letter-spacing: 8px; font-weight: bold;" />
+                        <small class="form-text text-muted">
+                            Mã OTP có hiệu lực trong 5 phút
+                        </small>
+                    </div>
+
+                    <div class="d-flex gap-2 mb-3">
+                        <button type="button" class="btn btn-success flex-fill" id="modalVerifyOtpBtn"
+                            onclick="verifyOTP()">
+                            <i class="bi bi-check-circle me-2"></i>Xác thực
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="resendOTP()">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Gửi lại
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="cancelVerification()">
+                            <i class="bi bi-x-circle me-2"></i>Hủy
+                        </button>
+                    </div>
+
+                    <div id="modalOtpTimer">
+                        <small class="text-muted">
+                            <i class="bi bi-clock me-1"></i>
+                            Mã hết hạn sau: <span id="modalCountdown" class="fw-bold">05:00</span>
+                        </small>
+                    </div>
+                </div>
+
+                <div id="modalLoadingSpinner" class="text-center" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Đang xử lý...</p>
+                </div>
+
+                <div id="modalMessageBox" class="mt-3" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Avatar Selection Modal -->
+<div class="modal fade" id="avatarSelectionModal" tabindex="-1" aria-labelledby="avatarSelectionModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="avatarSelectionModalLabel">
+                    <i class="bi bi-image me-2"></i>Chọn Avatar
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="avatar-grid">
+                    <div class="avatar-option" onclick="selectAvatar('default0.png')">
+                        <img src="/images/default0.png" alt="Avatar 0">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('default1.png')">
+                        <img src="/images/default1.png" alt="Avatar 1">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('default2.png')">
+                        <img src="/images/default2.png" alt="Avatar 2">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('default3.png')">
+                        <img src="/images/default3.png" alt="Avatar 3">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('default4.png')">
+                        <img src="/images/default4.png" alt="Avatar 4">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('default5.png')">
+                        <img src="/images/default5.png" alt="Avatar 5">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('default6.png')">
+                        <img src="/images/default6.png" alt="Avatar 6">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('default7.png')">
+                        <img src="/images/default7.png" alt="Avatar 7">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('default8.png')">
+                        <img src="/images/default8.png" alt="Avatar 8">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('default9.png')">
+                        <img src="/images/default9.png" alt="Avatar 9">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('default10.png')">
+                        <img src="/images/default10.png" alt="Avatar 10">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('default11.png')">
+                        <img src="/images/default11.png" alt="Avatar 11">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('default12.png')">
+                        <img src="/images/default12.png" alt="Avatar 12">
+                    </div>
+                    <div class="avatar-option" onclick="selectAvatar('nouser.png')">
+                        <img src="/images/nouser.png" alt="Avatar 13">
+                    </div>
+                </div>
+                <div id="avatarMessageBox" class="mt-3" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        let avatarModal;
+        let verificationModal;
+        let countdownInterval;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            avatarModal = new bootstrap.Modal(document.getElementById('avatarSelectionModal'));
+            verificationModal = new bootstrap.Modal(document.getElementById('studentVerificationModal'));
+            checkStudentEmailStatus();
+
+            const otpInput = document.getElementById('modalOtpCode');
+            if (otpInput) {
+                otpInput.addEventListener('input', function (e) {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                });
+            }
+        });
+
+        // Open avatar modal
+        function openAvatarModal() {
+            document.getElementById('avatarMessageBox').style.display = 'none';
+            avatarModal.show();
+        }
+        async function selectAvatar(avatarName) {
+            try {
+                // ✅ Lấy CSRF token
+                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+
+                if (tokenInput) {
+                    headers['RequestVerificationToken'] = tokenInput.value;
+                }
+
+                const response = await fetch('/user/select-avatar', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ avatarName: avatarName })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const avatarUrl = result.avatar + '?t=' + new Date().getTime();
+
+                    // Update tất cả avatar
+                    document.getElementById('profileAvatar').src = avatarUrl;
+                    document.querySelectorAll('.avatar-circle, .avatar-circle-large').forEach(img => {
+                        img.src = avatarUrl;
+                    });
+
+                    // Hide loading, show success
+                    showAvatarMessage('✅ Cập nhật avatar thành công!', 'success');
+
+                    setTimeout(() => {
+                        avatarModal.hide();
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showAvatarMessage(result.message || '❌ Cập nhật thất bại!', 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAvatarMessage('⚠️ Không thể kết nối server! ' + error.message, 'danger');
+            }
+        }
+        function showAvatarMessage(message, type) {
+            const messageBox = document.getElementById('avatarMessageBox');
+            messageBox.className = 'alert alert-' + type + ' mt-3';
+            const icon = type === 'success' ? 'check-circle' : 'x-circle';
+            messageBox.innerHTML = '<i class="bi bi-' + icon + ' me-2"></i>' + message;
+            messageBox.style.display = 'block';
+        }
+        // Initialize modal
+        document.addEventListener('DOMContentLoaded', function () {
+            verificationModal = new bootstrap.Modal(document.getElementById('studentVerificationModal'));
+
+            // Check student email verification status
+            checkStudentEmailStatus();
+
+            // OTP input only numbers
+            const otpInput = document.getElementById('modalOtpCode');
+            if (otpInput) {
+                otpInput.addEventListener('input', function (e) {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                });
+            }
+        });
+
+        // Check student email verification status
+        function checkStudentEmailStatus() {
+            @if (Model.IsStudentVerified && Model.StudentEmailVerifiedAt.HasValue)
+                {
+                    var verifiedDateStr = Model.StudentEmailVerifiedAt.Value.ToString("yyyy-MM-dd");
+                    <text>
+                        const verifiedDate = new Date('@verifiedDateStr');
+                        const now = new Date();
+                        const daysDiff = Math.floor((now - verifiedDate) / (1000 * 60 * 60 * 24));
+
+                                                    if (daysDiff > 365) {
+                            document.getElementById('studentVerifiedBadge').style.display = 'none';
+                        document.getElementById('studentExpiredBadge').style.display = 'inline-block';
+                        document.getElementById('reverifyStudentBtn').style.display = 'inline-block';
+                                                    } else if (daysDiff >= 358) {
+                            document.getElementById('studentExpiringSoonBadge').style.display = 'inline-block';
+                        document.getElementById('renewStudentBtn').style.display = 'inline-block';
+                                                    }
+                    </text>
+            }
+                        }
+
+        // Open verification modal
+        function openVerificationModal() {
+            document.getElementById('modalStep1').style.display = 'block';
+            document.getElementById('modalStep2').style.display = 'none';
+            document.getElementById('modalOtpCode').value = '';
+            document.getElementById('modalMessageBox').style.display = 'none';
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            verificationModal.show();
+        }
+
+        // Gửi OTP
+        async function sendOTP() {
+            const email = document.getElementById('modalStudentEmail').value.trim();
+            if (!email) {
+                showModalMessage('Vui lòng nhập email sinh viên!', 'danger');
+                return;
+            }
+
+            const studentEmailPattern = /^[^\s@@]+@@[^\s@@]+\.(edu|edu\.vn|ac\.vn)$/i;
+            if (!studentEmailPattern.test(email)) {
+                showModalMessage('Email phải có đuôi .edu, .edu.vn hoặc .ac.vn', 'danger');
+                return;
+            }
+            showModalLoading(true);
+            disableModalButton('modalSendOtpBtn', true);
+
+            try {
+                const response = await fetch('/api/profile/send-student-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ studentEmail: email })
+                });
+
+                let result;
+                const text = await response.text();
+                try {
+                    result = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    result = { isSuccess: false, message: 'Server trả về dữ liệu không hợp lệ' };
+                }
+
+                if (result.isSuccess) {
+                    document.getElementById('modalStep1').style.display = 'none';
+                    document.getElementById('modalStep2').style.display = 'block';
+                    document.getElementById('modalSentEmailDisplay').textContent = email;
+                    startCountdown(300);
+                    showModalMessage('Mã OTP đã được gửi đến email của bạn!', 'success');
+
+                    setTimeout(() => {
+                        document.getElementById('modalOtpCode').focus();
+                    }, 300);
+                } else {
+                    showModalMessage(result.message || 'Email đã được sử dụng, vui lòng nhập email khác!', 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showModalMessage('Không thể kết nối đến server!', 'danger');
+            } finally {
+                showModalLoading(false);
+                disableModalButton('modalSendOtpBtn', false);
+            }
+        }
+
+        // Xác thực OTP
+        async function verifyOTP() {
+            const otp = document.getElementById('modalOtpCode').value.trim();
+
+            if (!otp || otp.length !== 6) {
+                showModalMessage('Vui lòng nhập đủ 6 chữ số OTP!', 'danger');
+                return;
+            }
+
+            showModalLoading(true);
+            disableModalButton('modalVerifyOtpBtn', true);
+
+            try {
+                const response = await fetch('/api/profile/verify-student-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ otpCode: otp })
+                });
+
+                let result;
+                const text = await response.text();
+                try {
+                    result = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    result = { isSuccess: false, message: 'Server trả về dữ liệu không hợp lệ' };
+                }
+
+                if (result.isSuccess) {
+                    showModalMessage('Xác thực email sinh viên thành công!', 'success');
+                    if (countdownInterval) {
+                        clearInterval(countdownInterval);
+                    }
+                    setTimeout(() => {
+                        verificationModal.hide();
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    showModalMessage(result.message || 'Mã OTP không đúng hoặc đã hết hạn!', 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showModalMessage('Không thể kết nối đến server!', 'danger');
+            } finally {
+                showModalLoading(false);
+                disableModalButton('modalVerifyOtpBtn', false);
+            }
+        }
+
+        async function resendOTP() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            document.getElementById('modalOtpCode').value = '';
+            document.getElementById('modalStep2').style.display = 'none';
+            document.getElementById('modalStep1').style.display = 'block';
+            await sendOTP();
+        }
+
+        function cancelVerification() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            document.getElementById('modalStep2').style.display = 'none';
+            document.getElementById('modalStep1').style.display = 'block';
+            document.getElementById('modalOtpCode').value = '';
+            document.getElementById('modalMessageBox').style.display = 'none';
+        }
+
+        function startCountdown(seconds) {
+            let timeLeft = seconds;
+            const countdownElement = document.getElementById('modalCountdown');
+
+            countdownInterval = setInterval(() => {
+                const minutes = Math.floor(timeLeft / 60);
+                const secs = timeLeft % 60;
+                countdownElement.textContent = minutes.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    showModalMessage('Mã OTP đã hết hạn. Vui lòng gửi lại mã mới!', 'warning');
+                    disableModalButton('modalVerifyOtpBtn', true);
+                }
+                timeLeft--;
+            }, 1000);
+        }
+
+        function showModalLoading(show) {
+            document.getElementById('modalLoadingSpinner').style.display = show ? 'block' : 'none';
+            document.getElementById('modalStep1').style.display = show ? 'none' : (document.getElementById('modalStep2').style.display === 'none' ? 'block' : 'none');
+            document.getElementById('modalStep2').style.display = show ? 'none' : document.getElementById('modalStep2').style.display;
+        }
+
+        function disableModalButton(buttonId, disable) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.disabled = disable;
+            }
+        }
+
+        function showModalMessage(message, type) {
+            const messageBox = document.getElementById('modalMessageBox');
+            messageBox.className = 'alert alert-' + type + ' mt-3';
+            const icon = type === 'success' ? 'check-circle' : (type === 'warning' ? 'exclamation-triangle' : 'x-circle');
+            messageBox.innerHTML = '<i class="bi bi-' + icon + ' me-2"></i>' + message;
+            messageBox.style.display = 'block';
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageBox.style.display = 'none';
+                }, 5000);
+            }
+        }
+        // Open renew modal (for student email renewal)
+        function openRenewModal() {
+            if (confirm('Bạn muốn gia hạn xác thực email sinh viên?')) {
+                openVerificationModal();
+            }
+        }
+    </script>
+}
