@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MovieWeb")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2723cbc8e415df322938a200a7e3b12fed0e81dc")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+75689855aabe57352d2e1b2f5f4fd1b11bd78c14")]
 [assembly: System.Reflection.AssemblyProductAttribute("MovieWeb")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MovieWeb")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

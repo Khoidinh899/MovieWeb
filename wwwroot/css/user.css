@@ -1,0 +1,10 @@
+/* Navbar cho tất cả trang không phải home */
+body.user-page .navbar-custom .nav-link,
+body.user-page .navbar-custom .navbar-brand span {
+    color: #fff !important;
+}
+
+body.user-page .navbar-custom .nav-link:hover {
+    color: #ffd700 !important;
+}
+

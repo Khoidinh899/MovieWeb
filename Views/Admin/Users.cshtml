@@ -20,6 +20,28 @@
             border-radius: 10px;
             margin-bottom: 20px;
         }
+        .premium-badge {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .student-badge {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
     </style>
 }
 
@@ -39,8 +61,21 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Premium</h6>
+                            <h2 class="mb-0 mt-2">@ViewBag.PremiumUsers</h2>
+                        </div>
+                        <i class="bi bi-gem fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
                 <div class="card-body text-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -52,7 +87,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                 <div class="card-body text-white">
                     <div class="d-flex justify-content-between align-items-center">
@@ -101,7 +136,7 @@
     <!-- Search & Filter Section -->
     <div class="search-section">
         <form method="get" asp-action="Users" class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                     <input type="text" name="search" class="form-control" placeholder="Tìm theo tên, email, username..." value="@ViewBag.Search">
@@ -117,8 +152,16 @@
                 </select>
             </div>
             <div class="col-md-2">
+                <select name="subscriptionType" class="form-select">
+                    <option value="">Tất cả gói</option>
+                    <option value="free" selected="@(ViewBag.SubscriptionType == "free")">Free</option>
+                    <option value="premium" selected="@(ViewBag.SubscriptionType == "premium")">Premium</option>
+                    <option value="student" selected="@(ViewBag.SubscriptionType == "student")">Student</option>
+                </select>
+            </div>
+            <div class="col-md-1">
                 <select name="isActive" class="form-select">
-                    <option value="">Tất cả trạng thái</option>
+                    <option value="">Trạng thái</option>
                     <option value="true" selected="@(ViewBag.IsActive == true)">Hoạt động</option>
                     <option value="false" selected="@(ViewBag.IsActive == false)">Đã khóa</option>
                 </select>
@@ -159,8 +202,8 @@
                             <th>Email</th>
                             <th>Username</th>
                             <th>Vai trò</th>
+                            <th>Subscription</th>
                             <th>Trạng thái</th>
-                            <th>Ngày tham gia</th>
                             <th>Hoạt động</th>
                             <th class="text-center" width="200">Hành động</th>
                         </tr>
@@ -204,11 +247,36 @@
                                         </span>
                                     </td>
                                     <td>
+                                        @if (user.SubscriptionType == "premium")
+                                        {
+                                            <span class="premium-badge">
+                                                <i class="bi bi-gem"></i> Premium
+                                            </span>
+                                            @if (user.SubscriptionEndDate.HasValue)
+                                            {
+                                                <br><small class="text-muted">Đến @user.SubscriptionEndDate.Value.ToString("dd/MM/yyyy")</small>
+                                            }
+                                        }
+                                        else if (user.SubscriptionType == "student")
+                                        {
+                                            <span class="student-badge">
+                                                <i class="bi bi-mortarboard"></i> Student
+                                            </span>
+                                            @if (user.SubscriptionEndDate.HasValue)
+                                            {
+                                                <br><small class="text-muted">Đến @user.SubscriptionEndDate.Value.ToString("dd/MM/yyyy")</small>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Free</span>
+                                        }
+                                    </td>
+                                    <td>
                                         <span class="badge bg-@(user.IsActive ? "success" : "secondary")">
                                             @(user.IsActive ? "Hoạt động" : "Đã khóa")
                                         </span>
                                     </td>
-                                    <td><small>@user.CreatedAt.ToString("dd/MM/yyyy")</small></td>
                                     <td>
                                         <small class="text-muted">
                                             <i class="bi bi-heart-fill text-danger"></i> @user.TotalFavorites
@@ -269,6 +337,7 @@
                         page = ViewBag.CurrentPage - 1, 
                         search = ViewBag.Search, 
                         roleId = ViewBag.RoleId, 
+                        subscriptionType = ViewBag.SubscriptionType,
                         isActive = ViewBag.IsActive,
                         pageSize = ViewBag.PageSize 
                     })">
@@ -284,7 +353,8 @@
                             <a class="page-link" href="@Url.Action("Users", new { 
                                 page = i, 
                                 search = ViewBag.Search, 
-                                roleId = ViewBag.RoleId, 
+                                roleId = ViewBag.RoleId,
+                                subscriptionType = ViewBag.SubscriptionType,
                                 isActive = ViewBag.IsActive,
                                 pageSize = ViewBag.PageSize 
                             })">@i</a>
@@ -302,7 +372,8 @@
                     <a class="page-link" href="@Url.Action("Users", new { 
                         page = ViewBag.CurrentPage + 1, 
                         search = ViewBag.Search, 
-                        roleId = ViewBag.RoleId, 
+                        roleId = ViewBag.RoleId,
+                        subscriptionType = ViewBag.SubscriptionType,
                         isActive = ViewBag.IsActive,
                         pageSize = ViewBag.PageSize 
                     })">

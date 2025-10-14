@@ -13,5 +13,8 @@ namespace MovieWeb.Services
         Task<AuthResult> ResetPasswordAsync(ResetPasswordDto model);
         Task<User?> GetCurrentUserAsync();
         string GenerateJwtToken(User user);
+        // ✅ THÊM 2 DÒNG NÀY VÀO ✅
+        Task<UserProfileDto?> GetUserProfileAsync(int userId);
+        Task<ProfileResult> UpdateUserProfileAsync(int userId, UpdateProfileDto model);
     }
 }

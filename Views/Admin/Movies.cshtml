@@ -1,0 +1,846 @@
+@model List<MovieWeb.Models.DTOs.AdminMovieListDto>
+@using MovieWeb.Helpers
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản lý phim";
+}
+
+@section Styles {
+    <style>
+        .stats-card {
+            transition: transform 0.2s;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        .search-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .movie-poster {
+            width: 60px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        .badge-source {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+        }
+    </style>
+}
+
+<div class="container-fluid py-4">
+    <!-- Header với Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Tổng Phim</h6>
+                            <h2 class="mb-0 mt-2">@ViewBag.TotalMovies</h2>
+                        </div>
+                        <i class="bi bi-film fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Đang Hoạt Động</h6>
+                            <h2 class="mb-0 mt-2">@ViewBag.ActiveMovies</h2>
+                        </div>
+                        <i class="bi bi-eye fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Phim Thủ Công</h6>
+                            <h2 class="mb-0 mt-2">@ViewBag.ManualMovies</h2>
+                        </div>
+                        <i class="bi bi-pencil-square fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Phim Từ API</h6>
+                            <h2 class="mb-0 mt-2">@ViewBag.ApiMovies</h2>
+                        </div>
+                        <i class="bi bi-cloud-download fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Search & Filter Section -->
+    <div class="search-section">
+        <form method="get" asp-action="Movies" class="row g-3">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control" placeholder="Tìm theo tên, slug..." value="@ViewBag.Search">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select name="type" class="form-select">
+                    <option value="">Tất cả loại</option>
+                    <option value="single" selected="@(ViewBag.Type == "single")">Phim lẻ</option>
+                    <option value="series" selected="@(ViewBag.Type == "series")">Phim bộ</option>
+                    <option value="hoathinh" selected="@(ViewBag.Type == "hoathinh")">Hoạt hình</option>
+                    <option value="tvshows" selected="@(ViewBag.Type == "tvshows")">TV Shows</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="isActive" class="form-select">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="true" selected="@(ViewBag.IsActive == true)">Hoạt động</option>
+                    <option value="false" selected="@(ViewBag.IsActive == false)">Đã ẩn</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="isManual" class="form-select">
+                    <option value="">Tất cả nguồn</option>
+                    <option value="true" selected="@(ViewBag.IsManual == true)">Thủ công</option>
+                    <option value="false" selected="@(ViewBag.IsManual == false)">Từ API</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i> Lọc
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Movies Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-film me-2"></i>Danh sách phim</h5>
+                <button type="button" class="btn btn-primary" onclick="openCreateModal()">
+                    <i class="bi bi-plus-circle me-2"></i>Thêm Phim Mới
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="80">Poster</th>
+                            <th>Tên phim</th>
+                            <th>Loại</th>
+                            <th>Năm</th>
+                            <th>Chất lượng</th>
+                            <th>Đánh giá</th>
+                            <th>Lượt xem</th>
+                            <th>Nguồn</th>
+                            <th>Trạng thái</th>
+                            <th class="text-center" width="250">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model == null || !Model.Any())
+                        {
+                            <tr>
+                                <td colspan="10" class="text-center py-5">
+                                    <i class="bi bi-inbox fs-1 text-muted"></i>
+                                    <p class="text-muted mt-2">Không tìm thấy phim nào</p>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var movie in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <img src="@ImageHelper.GetPoster(movie.PosterUrl)" 
+                                             alt="@movie.Name" 
+                                             class="img-fluid movie-poster"
+                                             onerror="this.onerror=null; this.src='/images/no-poster.png';" />
+                                    </td>
+                                    <td>
+                                        <strong>@movie.Name</strong>
+                                        @if (movie.IsRecommended)
+                                        {
+                                            <i class="bi bi-star-fill text-warning" title="Phim đề xuất"></i>
+                                        }
+                                        <br>
+                                        <small class="text-muted">@movie.OriginalName</small>
+                                        @if (movie.Categories.Any())
+                                        {
+                                            <br>
+                                            <small class="text-info">@string.Join(", ", movie.Categories.Take(2))</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            @(movie.Type switch {
+                                                "single" => "Phim lẻ",
+                                                "series" => "Phim bộ",
+                                                "hoathinh" => "Hoạt hình",
+                                                "tvshows" => "TV Shows",
+                                                _ => movie.Type
+                                            })
+                                        </span>
+                                    </td>
+                                    <td>@movie.Year</td>
+                                    <td>
+                                        <span class="badge bg-secondary">@movie.Quality</span>
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-star-fill text-warning"></i>
+                                        <strong>@movie.Rating.ToString("0.0")</strong>
+                                        <small class="text-muted">(@movie.RatingCount)</small>
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-eye text-primary"></i> @movie.ViewCount.ToString("N0")
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-source bg-@(movie.IsManual ? "success" : "primary")">
+                                            @(movie.IsManual ? "Thủ công" : "API")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-@(movie.IsActive ? "success" : "secondary")">
+                                            @(movie.IsActive ? "Hiển thị" : "Đã ẩn")
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" 
+                                                    class="btn btn-outline-primary"
+                                                    onclick="openEditModal(@movie.MovieId)"
+                                                    title="Chỉnh sửa">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                            
+                                            <button type="button" 
+                                                    class="btn btn-outline-@(movie.IsActive ? "secondary" : "success")"
+                                                    onclick="toggleMovieStatus(@movie.MovieId, @movie.IsActive.ToString().ToLower())"
+                                                    title="@(movie.IsActive ? "Ẩn phim" : "Hiển thị")">
+                                                <i class="bi bi-@(movie.IsActive ? "eye-slash" : "eye")"></i>
+                                            </button>
+                                            
+                                            <button type="button" 
+                                                    class="btn btn-outline-warning"
+                                                    onclick="toggleMovieRecommended(@movie.MovieId, @movie.IsRecommended.ToString().ToLower())"
+                                                    title="@(movie.IsRecommended ? "Bỏ đề xuất" : "Đề xuất")">
+                                                <i class="bi bi-star@(movie.IsRecommended ? "-fill" : "")"></i>
+                                            </button>
+                                             <!-- Đây là nút Banner bạn cần thêm -->
+                                            <button type="button" 
+                                                    class="btn btn-outline-info"
+                                                    onclick="toggleMovieBanner(@movie.MovieId, @movie.IsBanner.ToString().ToLower())"
+                                                    title="@(movie.IsBanner ? "Bỏ khỏi banner" : "Thêm vào banner")">
+                                                <i class="bi bi-layout-sidebar-inset-reverse@(movie.IsBanner ? "-reverse" : "")"></i>
+                                            </button>
+                                            @if (movie.IsManual)
+                                            {
+                                                <button type="button" 
+                                                        class="btn btn-outline-danger"
+                                                        onclick="deleteMovie(@movie.MovieId, '@movie.Name')"
+                                                        title="Xóa">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    @if(ViewBag.TotalPages > 1)
+    {
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link" href="@Url.Action("Movies", new { 
+                        page = ViewBag.CurrentPage - 1, 
+                        search = ViewBag.Search, 
+                        type = ViewBag.Type, 
+                        isActive = ViewBag.IsActive,
+                        isManual = ViewBag.IsManual
+                    })">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+
+                @for(int i = 1; i <= ViewBag.TotalPages; i++)
+                {
+                    @if (i == 1 || i == ViewBag.TotalPages || (i >= ViewBag.CurrentPage - 2 && i <= ViewBag.CurrentPage + 2))
+                    {
+                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Movies", new { 
+                                page = i, 
+                                search = ViewBag.Search, 
+                                type = ViewBag.Type, 
+                                isActive = ViewBag.IsActive,
+                                isManual = ViewBag.IsManual
+                            })">@i</a>
+                        </li>
+                    }
+                    else if (i == ViewBag.CurrentPage - 3 || i == ViewBag.CurrentPage + 3)
+                    {
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    }
+                }
+
+                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                    <a class="page-link" href="@Url.Action("Movies", new { 
+                        page = ViewBag.CurrentPage + 1, 
+                        search = ViewBag.Search, 
+                        type = ViewBag.Type, 
+                        isActive = ViewBag.IsActive,
+                        isManual = ViewBag.IsManual
+                    })">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>
+
+<!-- Hidden forms -->
+<form id="statusForm" method="post" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+<form id="recommendedForm" method="post" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+<form id="bannerForm" method="post" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+<form id="deleteForm" method="post" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+
+<!-- Modal Thêm/Sửa Phim -->
+<div class="modal fade" id="movieModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Thêm phim mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="movieForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="movieId" name="MovieId">
+                
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <!-- Tên phim -->
+                        <div class="col-md-6">
+                            <label class="form-label">Tên phim <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="Name" required>
+                        </div>
+
+                        <!-- Tên gốc -->
+                        <div class="col-md-6">
+                            <label class="form-label">Tên gốc</label>
+                            <input type="text" class="form-control" id="originalName" name="OriginalName">
+                        </div>
+
+                        <!-- Slug -->
+                        <div class="col-md-6">
+                            <label class="form-label">Slug <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="slug" name="Slug" required>
+                            <small class="text-muted">URL thân thiện (vd: phim-hay-2025)</small>
+                        </div>
+
+                        <!-- Năm -->
+                        <div class="col-md-6">
+                            <label class="form-label">Năm</label>
+                            <input type="number" class="form-control" id="year" name="Year" min="1900" max="2100">
+                        </div>
+
+                        <!-- Loại phim -->
+                        <div class="col-md-3">
+                            <label class="form-label">Loại phim</label>
+                            <select class="form-select" id="type" name="Type">
+                                <option value="single">Phim lẻ</option>
+                                <option value="series">Phim bộ</option>
+                                <option value="hoathinh">Hoạt hình</option>
+                                <option value="tvshows">TV Shows</option>
+                            </select>
+                        </div>
+
+                        <!-- Trạng thái -->
+                        <div class="col-md-3">
+                            <label class="form-label">Trạng thái</label>
+                            <select class="form-select" id="status" name="Status">
+                                <option value="completed">Hoàn thành</option>
+                                <option value="ongoing">Đang chiếu</option>
+                                <option value="trailer">Trailer</option>
+                            </select>
+                        </div>
+
+                        <!-- Chất lượng -->
+                        <div class="col-md-3">
+                            <label class="form-label">Chất lượng</label>
+                            <select class="form-select" id="quality" name="Quality">
+                                <option value="HD">HD</option>
+                                <option value="FullHD">FullHD</option>
+                                <option value="4K">4K</option>
+                                <option value="CAM">CAM</option>
+                            </select>
+                        </div>
+
+                        <!-- Ngôn ngữ -->
+                        <div class="col-md-3">
+                            <label class="form-label">Ngôn ngữ</label>
+                            <select class="form-select" id="language" name="Language">
+                                <option value="Vietsub">Vietsub</option>
+                                <option value="Thuyết minh">Thuyết minh</option>
+                                <option value="Lồng tiếng">Lồng tiếng</option>
+                            </select>
+                        </div>
+
+                        <!-- Thời lượng -->
+                        <div class="col-md-4">
+                            <label class="form-label">Thời lượng</label>
+                            <input type="text" class="form-control" id="time" name="Time" placeholder="120 phút">
+                        </div>
+
+                        <!-- Tập hiện tại -->
+                        <div class="col-md-4">
+                            <label class="form-label">Tập hiện tại</label>
+                            <input type="text" class="form-control" id="episodeCurrent" name="EpisodeCurrent" placeholder="Full">
+                        </div>
+
+                        <!-- Tổng số tập -->
+                        <div class="col-md-4">
+                            <label class="form-label">Tổng số tập</label>
+                            <input type="text" class="form-control" id="episodeTotal" name="EpisodeTotal" placeholder="1">
+                        </div>
+                        <!-- Poster -->
+                        <div class="col-md-6">
+                            <label class="form-label">Poster (tên file)</label>
+                            <input type="text" class="form-control" id="posterUrl" name="PosterUrl" placeholder="poster.jpg">
+                        </div>
+                        <!-- Thumb -->
+                        <div class="col-md-6">
+                            <label class="form-label">Thumb (tên file)</label>
+                            <input type="text" class="form-control" id="thumbUrl" name="ThumbUrl" placeholder="thumb.jpg">
+                        </div>
+                        <!-- Trailer URL -->
+                        <div class="col-12">
+                            <label class="form-label">Trailer URL (YouTube)</label>
+                            <input type="url" class="form-control" id="trailerUrl" name="TrailerUrl">
+                        </div>
+
+                        <!-- Nội dung -->
+                        <div class="col-12">
+                            <label class="form-label">Nội dung phim</label>
+                            <textarea class="form-control" id="content" name="Content" rows="4"></textarea>
+                        </div>
+
+                        <!-- Thể loại -->
+                        <div class="col-md-6">
+                            <label class="form-label">Thể loại (IDs, ngăn cách bởi dấu phẩy)</label>
+                            <input type="text" class="form-control" id="categoryIds" name="CategoryIds" placeholder="1,2,3">
+                            <small class="text-muted">Ví dụ: 1,5,7</small>
+                        </div>
+
+                        <!-- Quốc gia -->
+                        <div class="col-md-6">
+                            <label class="form-label">Quốc gia (IDs, ngăn cách bởi dấu phẩy)</label>
+                            <input type="text" class="form-control" id="countryIds" name="CountryIds" placeholder="1,2">
+                            <small class="text-muted">Ví dụ: 1,3</small>
+                        </div>
+
+                        <!-- Diễn viên -->
+                        <div class="col-md-6">
+                            <label class="form-label">Diễn viên (ngăn cách bởi dấu phẩy)</label>
+                            <input type="text" class="form-control" id="actorNames" name="ActorNames" placeholder="Diễn viên 1, Diễn viên 2">
+                        </div>
+
+                        <!-- Đạo diễn -->
+                        <div class="col-md-6">
+                            <label class="form-label">Đạo diễn (ngăn cách bởi dấu phẩy)</label>
+                            <input type="text" class="form-control" id="directorNames" name="DirectorNames" placeholder="Đạo diễn 1">
+                        </div>
+                        <!-- Checkbox options -->
+                        <div class="col-12">
+                            <div class="form-check form-switch d-inline-block me-4">
+                                <!-- hidden để khi không tick vẫn gửi false -->
+                                <input type="hidden" name="IsRecommended" value="false" />
+                                <input class="form-check-input" type="checkbox" id="isRecommended" name="IsRecommended" value="true">
+                                <label class="form-check-label" for="isRecommended">Phim đề xuất</label>
+                            </div>
+
+                            <div class="form-check form-switch d-inline-block">
+                                <!-- hidden để khi không tick vẫn gửi false -->
+                                <input type="hidden" name="IsActive" value="false" />
+                                <input class="form-check-input" type="checkbox" id="isActive" name="IsActive" value="true" checked>
+                                <label class="form-check-label" for="isActive">Hiển thị phim</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i><span id="submitButtonText">Tạo phim</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let movieModal;
+        let isEditMode = false;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            movieModal = new bootstrap.Modal(document.getElementById('movieModal'));
+            document.getElementById('movieForm').addEventListener('submit', handleFormSubmit);
+            
+            // Auto-generate slug from name
+            document.getElementById('name').addEventListener('blur', function() {
+                if (!isEditMode && !document.getElementById('slug').value) {
+                    document.getElementById('slug').value = generateSlug(this.value);
+                }
+            });
+        });
+
+        function generateSlug(text) {
+            if (!text) return '';
+            
+            text = text.toLowerCase().trim();
+            
+            // Replace Vietnamese characters
+            const vietnameseMap = {
+                'à': 'a', 'á': 'a', 'ạ': 'a', 'ả': 'a', 'ã': 'a',
+                'â': 'a', 'ầ': 'a', 'ấ': 'a', 'ậ': 'a', 'ẩ': 'a', 'ẫ': 'a',
+                'ă': 'a', 'ằ': 'a', 'ắ': 'a', 'ặ': 'a', 'ẳ': 'a', 'ẵ': 'a',
+                'è': 'e', 'é': 'e', 'ẹ': 'e', 'ẻ': 'e', 'ẽ': 'e',
+                'ê': 'e', 'ề': 'e', 'ế': 'e', 'ệ': 'e', 'ể': 'e', 'ễ': 'e',
+                'ì': 'i', 'í': 'i', 'ị': 'i', 'ỉ': 'i', 'ĩ': 'i',
+                'ò': 'o', 'ó': 'o', 'ọ': 'o', 'ỏ': 'o', 'õ': 'o',
+                'ô': 'o', 'ồ': 'o', 'ố': 'o', 'ộ': 'o', 'ổ': 'o', 'ỗ': 'o',
+                'ơ': 'o', 'ờ': 'o', 'ớ': 'o', 'ợ': 'o', 'ở': 'o', 'ỡ': 'o',
+                'ù': 'u', 'ú': 'u', 'ụ': 'u', 'ủ': 'u', 'ũ': 'u',
+                'ư': 'u', 'ừ': 'u', 'ứ': 'u', 'ự': 'u', 'ử': 'u', 'ữ': 'u',
+                'ỳ': 'y', 'ý': 'y', 'ỵ': 'y', 'ỷ': 'y', 'ỹ': 'y',
+                'đ': 'd',
+                'À': 'A', 'Á': 'A', 'Ạ': 'A', 'Ả': 'A', 'Ã': 'A',
+                'Â': 'A', 'Ầ': 'A', 'Ấ': 'A', 'Ậ': 'A', 'Ẩ': 'A', 'Ẫ': 'A',
+                'Ă': 'A', 'Ằ': 'A', 'Ắ': 'A', 'Ặ': 'A', 'Ẳ': 'A', 'Ẵ': 'A',
+                'È': 'E', 'É': 'E', 'Ẹ': 'E', 'Ẻ': 'E', 'Ẽ': 'E',
+                'Ê': 'E', 'Ề': 'E', 'Ế': 'E', 'Ệ': 'E', 'Ể': 'E', 'Ễ': 'E',
+                'Ì': 'I', 'Í': 'I', 'Ị': 'I', 'Ỉ': 'I', 'Ĩ': 'I',
+                'Ò': 'O', 'Ó': 'O', 'Ọ': 'O', 'Ỏ': 'O', 'Õ': 'O',
+                'Ô': 'O', 'Ồ': 'O', 'Ố': 'O', 'Ộ': 'O', 'Ổ': 'O', 'Ỗ': 'O',
+                'Ơ': 'O', 'Ờ': 'O', 'Ớ': 'O', 'Ợ': 'O', 'Ở': 'O', 'Ỡ': 'O',
+                'Ù': 'U', 'Ú': 'U', 'Ụ': 'U', 'Ủ': 'U', 'Ũ': 'U',
+                'Ư': 'U', 'Ừ': 'U', 'Ứ': 'U', 'Ự': 'U', 'Ử': 'U', 'Ữ': 'U',
+                'Ỳ': 'Y', 'Ý': 'Y', 'Ỵ': 'Y', 'Ỷ': 'Y', 'Ỹ': 'Y',
+                'Đ': 'D'
+            };
+            
+            for (let char in vietnameseMap) {
+                text = text.replace(new RegExp(char, 'g'), vietnameseMap[char]);
+            }
+            
+            text = text.replace(/[^a-z0-9\s-]/g, '');
+            text = text.replace(/\s+/g, '-');
+            text = text.replace(/-+/g, '-');
+            text = text.replace(/^-+|-+$/g, '');
+            
+            return text;
+        }
+
+        function openCreateModal() {
+            isEditMode = false;
+            document.getElementById('movieForm').reset();
+            document.getElementById('movieId').value = '';
+            document.getElementById('modalTitle').textContent = 'Thêm phim mới';
+            document.getElementById('submitButtonText').textContent = 'Tạo phim';
+            document.getElementById('isActive').checked = true;
+            movieModal.show();
+        }
+
+        async function openEditModal(movieId) {
+            isEditMode = true;
+            document.getElementById('modalTitle').textContent = 'Chỉnh sửa phim';
+            document.getElementById('submitButtonText').textContent = 'Cập nhật';
+            
+            try {
+                const response = await fetch(`/Admin/GetMovieData/${movieId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    
+                    document.getElementById('movieId').value = data.movieId;
+                    document.getElementById('name').value = data.name || '';
+                    document.getElementById('originalName').value = data.originalName || '';
+                    document.getElementById('slug').value = data.slug || '';
+                    document.getElementById('year').value = data.year || '';
+                    document.getElementById('type').value = data.type || 'single';
+                    document.getElementById('status').value = data.status || 'completed';
+                    document.getElementById('quality').value = data.quality || 'HD';
+                    document.getElementById('language').value = data.language || 'Vietsub';
+                    document.getElementById('time').value = data.time || '';
+                    document.getElementById('episodeCurrent').value = data.episodeCurrent || '';
+                    document.getElementById('episodeTotal').value = data.episodeTotal || '';
+                    document.getElementById('posterUrl').value = data.posterUrl || '';
+                    document.getElementById('thumbUrl').value = data.thumbUrl || '';
+                    document.getElementById('trailerUrl').value = data.trailerUrl || '';
+                    document.getElementById('content').value = data.content || '';
+                    document.getElementById('categoryIds').value = data.categoryIds || '';
+                    document.getElementById('countryIds').value = data.countryIds || '';
+                    document.getElementById('actorNames').value = data.actorNames || '';
+                    document.getElementById('directorNames').value = data.directorNames || '';
+                    document.getElementById('isRecommended').checked = data.isRecommended || false;
+                    document.getElementById('isActive').checked = data.isActive !== false;
+                    
+                    movieModal.show();
+                } else {
+                    showAlert('danger', result.message || 'Không thể tải dữ liệu phim');
+                }
+            } catch (error) {
+                console.error('Error loading movie data:', error);
+                showAlert('danger', 'Có lỗi xảy ra khi tải dữ liệu phim');
+            }
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const movieId = formData.get('MovieId');
+            const url = movieId ? '/Admin/UpdateMovie' : '/Admin/CreateMovie';
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    movieModal.hide();
+                    showAlert('success', result.message);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showAlert('danger', result.message);
+                }
+            } catch (error) {
+                console.error('Error submitting form:', error);
+                showAlert('danger', 'Có lỗi xảy ra khi lưu phim');
+            }
+        }
+
+        async function toggleMovieStatus(movieId, currentStatus) {
+            const newStatus = !currentStatus;
+            const action = newStatus ? 'kích hoạt' : 'ẩn';
+            
+            if (!confirm(`Bạn có chắc muốn ${action} phim này?`)) {
+                return;
+            }
+            
+            try {
+                const form = document.getElementById('statusForm');
+                const formData = new FormData(form);
+                formData.append('movieId', movieId);
+                formData.append('isActive', newStatus);
+                
+                const response = await fetch('/Admin/ToggleMovieStatus', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', result.message);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showAlert('danger', result.message);
+                }
+            } catch (error) {
+                console.error('Error toggling status:', error);
+                showAlert('danger', 'Có lỗi xảy ra khi thay đổi trạng thái');
+            }
+        }
+
+        async function toggleMovieRecommended(movieId, currentStatus) {
+            const newStatus = !currentStatus;
+            const action = newStatus ? 'đánh dấu' : 'bỏ đánh dấu';
+            
+            if (!confirm(`Bạn có chắc muốn ${action} phim đề xuất?`)) {
+                return;
+            }
+            
+            try {
+                const form = document.getElementById('recommendedForm');
+                const formData = new FormData(form);
+                formData.append('movieId', movieId);
+                formData.append('isRecommended', newStatus);
+                
+                const response = await fetch('/Admin/ToggleMovieRecommended', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', result.message);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showAlert('danger', result.message);
+                }
+            } catch (error) {
+                console.error('Error toggling recommended:', error);
+                showAlert('danger', 'Có lỗi xảy ra khi thay đổi trạng thái đề xuất');
+            }
+        }
+
+        async function deleteMovie(movieId, movieName) {
+            if (!confirm(`Bạn có chắc chắn muốn XÓA phim "${movieName}"?\n\nHành động này KHÔNG THỂ HOÀN TÁC!`)) {
+                return;
+            }
+            
+            if (!confirm('Xác nhận lần cuối: BẠN THỰC SỰ MUỐN XÓA?')) {
+                return;
+            }
+            
+            try {
+                const form = document.getElementById('deleteForm');
+                const formData = new FormData(form);
+                formData.append('movieId', movieId);
+                
+                const response = await fetch('/Admin/DeleteMovie', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', result.message);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showAlert('danger', result.message);
+                }
+            } catch (error) {
+                console.error('Error deleting movie:', error);
+                showAlert('danger', 'Có lỗi xảy ra khi xóa phim');
+            }
+        }
+
+        function showAlert(type, message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+            alertDiv.style.zIndex = '9999';
+            alertDiv.style.minWidth = '300px';
+            alertDiv.innerHTML = `
+                <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+            async function toggleMovieBanner(movieId, currentStatus) {
+            const newStatus = !currentStatus;
+            const action = newStatus ? 'thêm vào banner' : 'bỏ khỏi banner';
+            
+            if (!confirm(`Bạn có chắc muốn ${action} phim này?`)) {
+                return;
+            }
+            
+            try {
+                const form = document.getElementById('bannerForm');
+                const formData = new FormData(form);
+                formData.append('movieId', movieId);
+                formData.append('isBanner', newStatus);
+                
+                const response = await fetch('/Admin/ToggleMovieBanner', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', result.message);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showAlert('danger', result.message);
+                }
+            } catch (error) {
+                console.error('Error toggling banner:', error);
+                showAlert('danger', 'Có lỗi xảy ra khi thay đổi trạng thái banner');
+            }
+        }
+
+    </script>
+}

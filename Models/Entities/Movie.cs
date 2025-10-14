@@ -49,6 +49,9 @@ public partial class Movie
 
     public bool? IsRecommended { get; set; }
 
+    public bool? IsBanner { get; set; } // Đánh dấu phim hiển thị trên banner trang chủ
+
+
     public bool? IsActive { get; set; }
 
     public DateTime? CreatedAt { get; set; }
