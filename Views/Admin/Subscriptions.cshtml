@@ -1,0 +1,281 @@
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản Lý Subscription";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/admin-revenue.css" asp-append-version="true" />
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <a href="@Url.Action("Dashboard", "Admin")" class="btn btn-outline-secondary me-3">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h2 class="mb-0">
+                <i class="bi bi-graph-up"></i> Quản Lý Subscription & Doanh Thu
+            </h2>
+        </div>
+        <div class="text-muted">
+            <i class="bi bi-calendar3"></i> @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100"
+                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75">Doanh Thu Tháng</p>
+                            <h2 class="mb-0 fw-bold" id="monthlyRevenue">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </h2>
+                            <small class="opacity-75">Cập nhật realtime</small>
+                        </div>
+                        <div class="display-4 opacity-50">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100"
+                style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75">Users Premium</p>
+                            <h2 class="mb-0 fw-bold" id="premiumUsers">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </h2>
+                            <small class="opacity-75">Đang hoạt động</small>
+                        </div>
+                        <div class="display-4 opacity-50">
+                            <i class="bi bi-gem"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100"
+                style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75">Tổng Giao Dịch</p>
+                            <h2 class="mb-0 fw-bold" id="totalTransactions">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </h2>
+                            <small class="opacity-75">Tất cả trạng thái</small>
+                        </div>
+                        <div class="display-4 opacity-50">
+                            <i class="bi bi-receipt"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100"
+                style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1 opacity-75">Subscriptions Active</p>
+                            <h2 class="mb-0 fw-bold" id="activeSubscriptions">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </h2>
+                            <small class="opacity-75">Đang hoạt động</small>
+                        </div>
+                        <div class="display-4 opacity-50">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header revenue-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-white">
+                        <i class="bi bi-bar-chart-line me-2"></i>Thống Kê Chi Tiết
+                    </h5>
+                    <button class="btn btn-light btn-sm" onclick="refreshRevenueStats()">
+                        <i class="bi bi-arrow-clockwise"></i> Làm mới
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- Revenue Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="stat-box">
+                                <div class="stat-icon bg-success">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h6>Giao Dịch Thành Công</h6>
+                                    <h4 id="completedTransactions">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-box">
+                                <div class="stat-icon bg-warning">
+                                    <i class="bi bi-clock-fill"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h6>Đang Xử Lý</h6>
+                                    <h4 id="pendingTransactions">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-box">
+                                <div class="stat-icon bg-danger">
+                                    <i class="bi bi-x-circle-fill"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h6>Thất Bại</h6>
+                                    <h4 id="failedTransactions">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-box">
+                                <div class="stat-icon bg-info">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h6>Hoàn Tiền</h6>
+                                    <h4 id="refundedTransactions">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Biểu Đồ Doanh Thu 30 Ngày
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pie-chart me-2"></i>Doanh Thu Theo Gói
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="planRevenueChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-receipt me-2"></i>Giao Dịch Gần Đây
+                    </h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary active"
+                            onclick="filterTransactions('all')">
+                            Tất cả
+                        </button>
+                        <button type="button" class="btn btn-outline-success" onclick="filterTransactions('completed')">
+                            Thành công
+                        </button>
+                        <button type="button" class="btn btn-outline-warning" onclick="filterTransactions('pending')">
+                            Đang xử lý
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="filterTransactions('failed')">
+                            Thất bại
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="recentTransactionsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Mã GD</th>
+                                    <th>User</th>
+                                    <th>Gói</th>
+                                    <th>Số Tiền</th>
+                                    <th>Phương Thức</th>
+                                    <th>Trạng Thái</th>
+                                    <th>Ngày</th>
+                                    <th>Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">
+                                        <div class="spinner-border spinner-border-sm me-2" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        Đang tải dữ liệu...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-muted">
+                            <small>Hiển thị <span id="showingCount">0</span> trên tổng số <span id="totalCount">0</span>
+                                giao dịch</small>
+                        </div>
+                        <div id="paginationControls">
+                            <!-- Pagination will be added here by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/js/admin-revenue.js" asp-append-version="true"></script>
+}

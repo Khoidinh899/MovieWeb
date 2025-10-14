@@ -2,20 +2,12 @@
 
 @{
     ViewData["Title"] = "Chỉnh sửa thông tin";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
-    <style>
-        .navbar-custom {
-            position: fixed !important;
-            background: rgba(0, 0, 0, 0.95) !important;
-            backdrop-filter: blur(10px);
-        }
-        body {
-            padding-top: 80px;
-        }
-    </style>
+    <link rel="stylesheet" href="~/css/user.css" asp-append-version="true" />
 }
 
 <div class="container py-5">
@@ -59,7 +51,7 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle me-1"></i> Lưu thay đổi
                             </button>
-                            <a asp-action="Index" class="btn btn-outline-secondary">
+                            <a asp-action="Profile" class="btn btn-outline-secondary">
                                 <i class="bi bi-x-circle me-1"></i> Hủy
                             </a>
                         </div>
