@@ -1,8 +1,8 @@
 @model MovieWeb.Models.DTOs.UserProfileDto
 @using MovieWeb.Models.DTOs
 
-
 @{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = $"Chi tiết - {Model.FullName}";
 }
 
@@ -15,28 +15,33 @@
             color: white;
             margin-bottom: 30px;
         }
+
         .stat-box {
             background: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             text-align: center;
             transition: transform 0.2s;
         }
+
         .stat-box:hover {
             transform: translateY(-5px);
         }
+
         .stat-number {
             font-size: 2rem;
             font-weight: bold;
             margin: 10px 0;
         }
+
         .info-card {
             background: white;
             border-radius: 10px;
             padding: 25px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
+
         .action-button {
             margin-bottom: 10px;
         }
@@ -73,11 +78,10 @@
     <div class="profile-header">
         <div class="row align-items-center">
             <div class="col-md-2 text-center">
-                <img src="@(Model.Avatar ?? "/images/default-avatar.png")" 
-                     alt="Avatar" 
-                     class="rounded-circle border border-5 border-white"
-                     style="width: 120px; height: 120px; object-fit: cover;"
-                     onerror="this.src='/images/default-avatar.png'">
+                <img src="@(Model.Avatar ?? "/images/default-avatar.png")" alt="Avatar"
+                    class="rounded-circle border border-5 border-white"
+                    style="width: 120px; height: 120px; object-fit: cover;"
+                    onerror="this.src='/images/default-avatar.png'">
             </div>
             <div class="col-md-7">
                 <h2 class="mb-2">
@@ -219,7 +223,7 @@
         <div class="col-md-4 mb-4">
             <div class="info-card">
                 <h5 class="mb-4"><i class="bi bi-gear me-2"></i>Quản lý tài khoản</h5>
-                
+
                 <!-- Change Role -->
                 <div class="mb-4">
                     <label class="form-label"><strong>Vai trò:</strong></label>
@@ -228,9 +232,9 @@
                         <input type="hidden" name="userId" value="@Model.UserId">
                         <div class="input-group">
                             <select class="form-select" name="roleId" id="roleSelect">
-                                @foreach(var role in ViewBag.Roles)
+                                @foreach (var role in ViewBag.Roles)
                                 {
-                                    <option value="@role.RoleId" selected="@(Model.RoleId == role.RoleId)">
+                                    <option value="@role.Id" selected="@(Model.RoleId == role.Id)">
                                         @role.Name
                                     </option>
                                 }
@@ -244,33 +248,27 @@
 
                 <!-- Action Buttons -->
                 <div class="d-grid gap-2">
-                    <button type="button" 
-                            class="btn btn-@(Model.IsActive ? "warning" : "success") action-button"
-                            onclick="toggleStatus(@Model.UserId, @Model.IsActive.ToString().ToLower())">
+                    <button type="button" class="btn btn-@(Model.IsActive ? "warning" : "success") action-button"
+                        onclick="toggleStatus(@Model.UserId, @Model.IsActive.ToString().ToLower())">
                         <i class="bi bi-@(Model.IsActive ? "lock" : "unlock")-fill me-2"></i>
                         @(Model.IsActive ? "Khóa tài khoản" : "Kích hoạt tài khoản")
                     </button>
 
-                    <button type="button" 
-                            class="btn btn-info action-button"
-                            onclick="resetPassword(@Model.UserId)">
+                    <button type="button" class="btn btn-info action-button" onclick="resetPassword(@Model.UserId)">
                         <i class="bi bi-key-fill me-2"></i>
                         Reset mật khẩu
                     </button>
 
-                    <button type="button" 
-                            class="btn btn-secondary action-button"
-                            onclick="sendVerificationEmail(@Model.UserId)"
-                            @(Model.EmailConfirmed ? "disabled" : "")>
+                    <button type="button" class="btn btn-secondary action-button"
+                        onclick="sendVerificationEmail(@Model.UserId)" @(Model.EmailConfirmed ? "disabled" : "")>
                         <i class="bi bi-envelope-check-fill me-2"></i>
                         Gửi email xác thực
                     </button>
 
                     <hr>
 
-                    <button type="button" 
-                            class="btn btn-danger action-button"
-                            onclick="deleteUser(@Model.UserId, '@Model.FullName')">
+                    <button type="button" class="btn btn-danger action-button"
+                        onclick="deleteUser(@Model.UserId, '@Model.FullName')">
                         <i class="bi bi-trash-fill me-2"></i>
                         Xóa tài khoản
                     </button>
@@ -381,7 +379,7 @@
                 });
 
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showNotification(result.message, 'success');
                     setTimeout(() => location.reload(), 1500);
@@ -410,7 +408,7 @@
                 });
 
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showNotification(result.message, 'success');
                     setTimeout(() => location.reload(), 1500);
@@ -439,7 +437,7 @@
                 });
 
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showNotification(result.message, 'success');
                     setTimeout(() => window.location.href = '@Url.Action("Users", "Admin")', 1500);
@@ -467,11 +465,11 @@
             alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
             alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 350px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
             alertDiv.innerHTML = `
-                <strong>${type === 'success' ? '✓' : type === 'danger' ? '✗' : 'ℹ'}</strong> ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
+                        <strong>${type === 'success' ? '✓' : type === 'danger' ? '✗' : 'ℹ'}</strong> ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
             document.body.appendChild(alertDiv);
-            
+
             setTimeout(() => {
                 alertDiv.classList.remove('show');
                 setTimeout(() => alertDiv.remove(), 150);

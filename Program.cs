@@ -1,4 +1,5 @@
 using MovieWeb.Services;
+using MovieWeb.Services.Interfaces;
 using MovieWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
 using MovieWeb.Models.Entities;
@@ -9,8 +10,13 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using MovieWeb.Models;
 using DotNetEnv;
+using StripeLib = Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Load .env file first
+Env.Load();
+builder.Configuration.AddEnvironmentVariables();
 
 // Kết nối DbContext với SQL Server
 builder.Services.AddDbContext<MovieWebDbContext>(options =>
@@ -78,33 +84,51 @@ builder.Services.AddAuthorization(options =>
         context.User.HasClaim("RoleId", "1") || context.User.HasClaim("RoleId", "2")));
 });
 
-// Email service
+// ===== EMAIL SETTINGS =====
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IStudentEmailService, StudentEmailService>();
 
-// Auth service
+// ===== STRIPE CONFIGURATION =====
+builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("StripeSettings"));
+StripeLib.StripeConfiguration.ApiKey = builder.Configuration["StripeSettings:SecretKey"];
+
+// ===== CORE SERVICES =====
 builder.Services.AddScoped<IAuthService, AuthService>();
-
-// Profile service
 builder.Services.AddScoped<IProfileService, ProfileService>();
 
-// Add services to the container
-builder.Services.AddControllersWithViews();
-builder.Services.AddHttpClient();
+// ===== SUBSCRIPTION SERVICES =====
+builder.Services.AddScoped<IStripeService, StripeService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+
+// ===== MOVIE SERVICES =====
 builder.Services.AddScoped<IOPhimService, OPhimService>();
 builder.Services.AddScoped<IMovieSyncService, MovieSyncService>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 builder.Services.AddHostedService<BackgroundSyncService>();
-builder.Services.AddMemoryCache();
 
-// Load .env
-Env.Load();
-builder.Configuration.AddEnvironmentVariables();
+// ===== OTHER SERVICES =====
+builder.Services.AddControllersWithViews();
+builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 
+// ===== CORS (nếu cần cho API) =====
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+// Add logging before building the application
+builder.Services.AddLogging();
+// Build the application
 var app = builder.Build();
 
-// Middleware
+// ===== MIDDLEWARE CONFIGURATION =====
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -113,15 +137,41 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+// ===== STRIPE WEBHOOK RAW BODY MIDDLEWARE =====
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/api/payment/webhook"))
+    {
+        context.Request.EnableBuffering();
+    }
+    await next();
+});
+
 app.UseRouting();
+app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Routes
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=TrangChu}/{action=TrangChu}/{id?}");
+// ===== ROUTE CONFIGURATION =====
 
+// 🎯 Landing Page - PHẢI ĐẶT TRƯỚC CÁC ROUTE KHÁC
+app.MapControllerRoute(
+    name: "landing",
+    pattern: "",
+    defaults: new { controller = "Home", action = "Index" });
+
+// 🎯 Trang chủ chính
+app.MapControllerRoute(
+    name: "trangchu",
+    pattern: "trang-chu",
+    defaults: new { controller = "TrangChu", action = "TrangChu" });
+
+// Admin routes - PHẢI ĐẶT TRƯỚC default route
+app.MapControllerRoute(
+    name: "admin",
+    pattern: "Admin/{action=Dashboard}/{id?}",
+    defaults: new { controller = "Admin" });
 
 // Auth routes
 app.MapControllerRoute(
@@ -134,50 +184,64 @@ app.MapControllerRoute(
     pattern: "auth/reset-password",
     defaults: new { controller = "Auth", action = "ResetPassword" });
 
-// Route cho trang chi tiết phim
+// Profile routes
+app.MapControllerRoute(
+    name: "profile",
+    pattern: "user/{action}",
+    defaults: new { controller = "Profile", action = "Profile" });
+
+// Movie routes
 app.MapControllerRoute(
     name: "movieDetail",
     pattern: "phim/{slug}",
     defaults: new { controller = "Movie", action = "Detail" });
 
-// Route cho trang profile
-app.MapControllerRoute(
-    name: "profile",
-    pattern: "tai-khoan/{action}",
-    defaults: new { controller = "Profile", action = "Index" });
-
-app.MapControllerRoute(
-    name: "adminManageUsers",
-    pattern: "admin/nguoi-dung/{action}/{id?}",
-    defaults: new { controller = "Profile", action = "ManageUsers" });
-// Route cho tìm kiếm
 app.MapControllerRoute(
     name: "search",
     pattern: "tim-kiem",
     defaults: new { controller = "Movie", action = "Search" });
 
-// Route cho danh sách theo thể loại
 app.MapControllerRoute(
     name: "category",
     pattern: "the-loai/{type}",
     defaults: new { controller = "Movie", action = "Category" });
 
-// Route cho danh sách phim hoạt hình
 app.MapControllerRoute(
     name: "hoathinh",
     pattern: "phim/hoathinh/{page?}",
     defaults: new { controller = "Movie", action = "ByType", type = "hoathinh" });
 
-// Route cho danh sách phim bộ
 app.MapControllerRoute(
     name: "series",
     pattern: "phim/series/{page?}",
     defaults: new { controller = "Movie", action = "ByType", type = "series" });
 
-// Route cho danh sách phim lẻ
 app.MapControllerRoute(
     name: "single",
     pattern: "phim/single/{page?}",
     defaults: new { controller = "Movie", action = "ByType", type = "single" });
 
+// Nâng cấp tài khoản
+app.MapControllerRoute(
+    name: "nangCapTaiKhoan",
+    pattern: "nang-cap",
+    defaults: new { controller = "NangCap", action = "Index" });
+
+// Default route - ĐẶT CUỐI CÙNG
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=TrangChu}/{action=TrangChu}/{id?}");
+
 app.Run();
+
+// ===== STRIPE SETTINGS CLASS =====
+public class StripeSettings
+{
+    public string PublishableKey { get; set; } = string.Empty;
+    public string SecretKey { get; set; } = string.Empty;
+    public string WebhookSecret { get; set; } = string.Empty;
+    public string Currency { get; set; } = "usd";
+    public string SuccessUrl { get; set; } = string.Empty;
+    public string CancelUrl { get; set; } = string.Empty;
+    public string WebhookEndpoint { get; set; } = string.Empty;
+}

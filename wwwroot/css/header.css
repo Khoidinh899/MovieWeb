@@ -1,0 +1,411 @@
+/* ========== NAVBAR STYLES - FIXED VERSION ========== */
+
+/* Base navbar - Fixed position */
+.navbar-custom {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    padding: 0.8rem 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 9999 !important;
+    pointer-events: auto !important;
+    isolation: isolate;
+}
+
+/* CÁC TRANG KHÁC (không phải home) - Luôn có màu gradient */
+body:not(.home-page) .navbar-custom {
+    background: linear-gradient(135deg, #012c42 0%, #015487 50%, #0477eb 100%) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* TRANG CHỦ - Ban đầu HOÀN TOÀN trong suốt */
+body.home-page .navbar-custom {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* TRANG CHỦ - Có màu GRADIENT XANH khi scroll xuống */
+body.home-page .navbar-custom.navbar-scrolled {
+    background: linear-gradient(135deg, #012c42 0%, #015487 50%, #0477eb 100%) !important;
+    background-image: linear-gradient(135deg, #012c42 0%, #015487 50%, #0477eb 100%) !important;
+    background-color: #012c42 !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* Layout Padding */
+body.home-page {
+    padding-top: 0 !important;
+}
+
+body.home-page main {
+    padding-top: 0 !important;
+}
+
+body:not(.home-page) {
+    padding-top: 80px;
+}
+
+body.user-page main,
+body.admin-page main,
+body.nangcap-page main {
+    padding-top: 85px;
+}
+
+/* Đảm bảo z-index hierarchy */
+.navbar-custom * {
+    position: relative;
+}
+
+.navbar-custom .container-fluid {
+    position: relative;
+}
+
+.navbar-custom .dropdown {
+    z-index: 10000 !important;
+}
+
+.navbar-custom .dropdown-menu {
+    z-index: 10001 !important;
+}
+
+/* Navbar brand */
+.navbar-brand {
+    transition: transform 0.3s ease;
+}
+
+.navbar-brand span {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.navbar-brand:hover {
+    transform: scale(1.05);
+}
+
+/* Nav links */
+.navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.95) !important;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+    position: relative;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.navbar-nav .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #00d4ff, #0099ff);
+    transition: width 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #fff !important;
+}
+
+.navbar-nav .nav-link:hover::after {
+    width: 70%;
+}
+
+/* ========== SEARCH BOX ========== */
+.search-box {
+    margin: 0 1rem;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-input-wrapper input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    color: white;
+    padding: 0.5rem 3rem 0.5rem 1.2rem;
+    width: 250px;
+    transition: all 0.3s ease;
+}
+
+.search-input-wrapper input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+    width: 300px;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+.search-input-wrapper input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.search-input-wrapper button {
+    position: absolute;
+    right: 5px;
+    background: linear-gradient(135deg, #00d4ff, #0099ff);
+    border: none;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.search-input-wrapper button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+}
+
+/* ========== AVATAR ========== */
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.avatar-circle-large {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #00d4ff;
+}
+
+.user-dropdown-trigger {
+    padding: 0.4rem 0.8rem;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+}
+
+.user-dropdown-trigger:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.user-dropdown-trigger:hover .avatar-circle {
+    border-color: #00d4ff;
+    transform: scale(1.05);
+}
+
+.user-name {
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+/* ========== DROPDOWN MENU ========== */
+.user-dropdown-custom {
+    background: #1a1a2e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0;
+    min-width: 320px;
+    margin-top: 0.8rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    animation: dropdownSlideIn 0.3s ease;
+    overflow: hidden;
+    z-index: 10000 !important;
+    position: absolute !important;
+}
+
+@keyframes dropdownSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.user-info-header {
+    background: #1a1a2e;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-info-header h5 {
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.user-info-header p {
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0.5rem 0;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.btn-upgrade {
+    display: inline-block;
+    background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: none;
+    transition: all 0.3s ease;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+}
+
+.btn-upgrade:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+    color: white;
+}
+
+.dropdown-item-custom {
+    background: #1a1a2e;
+    color: rgba(255, 255, 255, 0.9);
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item-custom i {
+    font-size: 1.1rem;
+    width: 24px;
+}
+
+.dropdown-item-custom:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.dropdown-item-custom.text-danger:hover {
+    background: rgba(255, 107, 107, 0.1);
+    color: #ff6b6b;
+}
+
+.dropdown-divider {
+    border-color: rgba(255, 255, 255, 0.1);
+    margin: 0;
+}
+
+/* ========== LOGIN BUTTON ========== */
+.btn-login {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 25px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-login:hover {
+    background: linear-gradient(135deg, #00d4ff, #0099ff);
+    border-color: transparent;
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+}
+
+/* ========== SCROLL TO TOP BUTTON ========== */
+#scrollTopBtn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 9998;
+    display: none;
+    opacity: 0;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #012c42 0%, #015487 50%, #0477eb 100%);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(1, 84, 135, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: scale(0.8);
+}
+
+#scrollTopBtn.show {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transform: scale(1);
+}
+
+#scrollTopBtn:hover {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 6px 25px rgba(4, 119, 235, 0.6);
+    background: linear-gradient(135deg, #015487 0%, #0477eb 50%, #0099ff 100%);
+}
+
+#scrollTopBtn:active {
+    transform: translateY(-3px) scale(0.95);
+}
+
+/* ========== MOBILE RESPONSIVE ========== */
+@media (max-width: 991.98px) {
+    .navbar-custom,
+    body.home-page .navbar-custom,
+    body.home-page .navbar-custom.navbar-scrolled {
+        background: linear-gradient(135deg, #012c42 0%, #015487 50%, #0477eb 100%) !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    body.home-page {
+        padding-top: 70px !important;
+    }
+    
+    .navbar-collapse {
+        background: rgba(26, 42, 50, 0.98);
+        padding: 1rem;
+        margin-top: 1rem;
+        border-radius: 12px;
+    }
+    
+    .search-input-wrapper input {
+        width: 100%;
+    }
+    
+    #scrollTopBtn {
+        width: 45px;
+        height: 45px;
+        bottom: 20px;
+        right: 20px;
+        font-size: 16px;
+    }
+}
+
+/* ========== SCROLLBAR STYLING ========== */
+.dropdown-menu::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+    background: rgba(0, 212, 255, 0.5);
+    border-radius: 3px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 212, 255, 0.8);
+}

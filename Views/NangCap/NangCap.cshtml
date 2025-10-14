@@ -1,0 +1,147 @@
+@model MovieWeb.Models.NangCapViewModel
+@{
+    ViewData["Title"] = "Nâng Cấp Tài Khoản";
+        Layout = "_Layout";
+}
+
+<div class="container upgrade-page-container my-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4">TÀI KHOẢN MooX</h1>
+        <p class="lead">Sở hữu tài khoản MoonX để nhận nhiều quyền lợi và tăng trải nghiệm xem phim.</p>
+
+        <div class="user-status my-4">
+            <img src="@Model.Avatar" alt="Avatar" class="avatar-circle-large">
+            <h4 class="mt-2">@Model.UserName</h4>
+            <p>@Model.CurrentStatus</p>
+        </div>
+
+        <h2>Nâng cấp tài khoản MoonX ngay bây giờ</h2>
+    </div>
+
+    <div class="row justify-content-center">
+        @foreach (var plan in Model.Plans)
+        {
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="pricing-card @(plan.IsPopular ? "recommended" : "")">
+                    <h3>@plan.DisplayName</h3>
+                    <p class="price">@plan.PriceVND.ToString("N0") <span class="currency-icon"></span></p>
+                    <ul class="list-unstyled features-list">
+                        <li><i class="bi bi-check-circle-fill"></i> Tắt quảng cáo</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Xem phim chất lượng 4K</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Chat không cần chờ</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Chat sử dụng stickers và Gifs</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Tải lên ảnh đại diện của bạn</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Tên được gắn nhãn MoonX</li>
+                    </ul>
+                    <button class="btn btn-primary mt-3 btn-purchase" data-plan-id="@plan.PlanId">
+                        Chọn gói này
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@* ======================================================= *@
+@* ===== SCRIPT XỬ LÝ THANH TOÁN (QUAN TRỌNG NHẤT) ===== *@
+@* ======================================================= *@
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const purchaseButtons = document.querySelectorAll('.btn-purchase');
+
+            purchaseButtons.forEach(button => {
+                button.addEventListener('click', async function (event) {
+                    event.preventDefault();
+                    const planId = this.dataset.planId;
+                    
+                    // Kiểm tra subscription hiện tại trước
+                    try {
+                        const checkResponse = await fetch('/api/subscription/check-active', {
+                            method: 'GET',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        
+                        const checkData = await checkResponse.json();
+                        
+                        if (checkData.success && checkData.data.hasActiveSubscription) {
+                            // Hiển thị popup cảnh báo
+                            const sub = checkData.data.subscription;
+                            showWarningPopup(sub.planName, sub.daysRemaining);
+                            return;
+                        }
+                        
+                        // Nếu không có gói active, tiếp tục thanh toán
+                        await processPurchase(planId, this);
+                        
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+                    }
+                });
+            });
+        });
+
+        // Hàm hiển thị popup cảnh báo
+        function showWarningPopup(planName, daysRemaining) {
+            const popup = document.createElement('div');
+            popup.className = 'warning-overlay';
+            popup.innerHTML = `
+                <div class="warning-box">
+                    <div class="warning-icon">⚠️</div>
+                    <h3>Bạn đang có gói đăng ký</h3>
+                    <p class="warning-text">
+                        Bạn đang là thành viên <strong>${planName}</strong><br>
+                        Thời hạn còn <strong>${daysRemaining} ngày</strong>
+                    </p>
+                    <p class="warning-note">
+                        Bạn cần phải huỷ gói cũ trước để mua gói mới.
+                    </p>
+                    <p class="warning-reminder">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Lưu ý:</strong> Sau khi huỷ gói, bạn vẫn được sử dụng đến hết thời hạn còn lại.
+                    </p>
+                    <div class="warning-buttons">
+                        <button class="btn-warning-ok" onclick="closeWarningPopup()">Đã hiểu</button>
+                        <a href="/user/payment-history" class="btn-warning-cancel">Đi đến quản lý gói</a>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(popup);
+        }
+
+        function closeWarningPopup() {
+            const popup = document.querySelector('.warning-overlay');
+            if (popup) popup.remove();
+        }
+
+        // Hàm xử lý thanh toán
+        async function processPurchase(planId, button) {
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang xử lý...';
+
+            try {
+                const response = await fetch('/api/payment/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ planId: parseInt(planId) })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.data.sessionUrl) {
+                    window.location.href = data.data.sessionUrl;
+                } else {
+                    alert('Lỗi: ' + (data.message || 'Không thể tạo phiên thanh toán.'));
+                    button.disabled = false;
+                    button.innerHTML = 'Chọn gói này';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Đã có lỗi nghiêm trọng xảy ra. Vui lòng thử lại.');
+                button.disabled = false;
+                button.innerHTML = 'Chọn gói này';
+            }
+        }
+    </script>
+}
