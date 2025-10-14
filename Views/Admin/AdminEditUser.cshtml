@@ -27,12 +27,14 @@
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label asp-for="FirstName" class="form-label">Họ <span class="text-danger">*</span></label>
+                                <label asp-for="FirstName" class="form-label">Họ <span
+                                        class="text-danger">*</span></label>
                                 <input asp-for="FirstName" class="form-control" />
                                 <span asp-validation-for="FirstName" class="text-danger"></span>
                             </div>
                             <div class="col-md-6">
-                                <label asp-for="LastName" class="form-label">Tên <span class="text-danger">*</span></label>
+                                <label asp-for="LastName" class="form-label">Tên <span
+                                        class="text-danger">*</span></label>
                                 <input asp-for="LastName" class="form-control" />
                                 <span asp-validation-for="LastName" class="text-danger"></span>
                             </div>
@@ -45,7 +47,8 @@
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="RoleId" class="form-label">Vai trò <span class="text-danger">*</span></label>
+                            <label asp-for="RoleId" class="form-label">Vai trò <span
+                                    class="text-danger">*</span></label>
                             <select asp-for="RoleId" class="form-select">
                                 <option value="2">User</option>
                                 <option value="1">Admin</option>
@@ -76,5 +79,7 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

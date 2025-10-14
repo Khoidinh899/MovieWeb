@@ -264,3 +264,641 @@
 .input-group .form-control:focus + .btn-outline-secondary {
     border-color: #ff6b6b;
 }
+/* Subscription Tags */
+.subscription-tag {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.subscription-tag.moonpro {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #000;
+}
+
+.subscription-tag.moonstu {
+    background: linear-gradient(135deg, #00C9FF, #92FE9D); 
+    color: #000;
+}
+
+.subscription-tag.free {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.subscription-tag i {
+    font-size: 12px;
+}
+/* Payment History Styles */
+
+.payment-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.payment-container h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.payment-container h2::before {
+    content: "📋";
+    font-size: 1.5rem;
+}
+
+/* Table Styles */
+.payment-container table {
+    width: 100%;
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.payment-container thead {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+}
+
+.payment-container thead th {
+    padding: 1.2rem 1rem;
+    color: white;
+    font-weight: 600;
+    text-align: left;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+}
+
+.payment-container tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: all 0.3s ease;
+}
+
+.payment-container tbody tr:last-child {
+    border-bottom: none;
+}
+
+.payment-container tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: scale(1.005);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.payment-container tbody td {
+    padding: 1.2rem 1rem;
+    color: #333;
+    font-size: 0.95rem;
+    vertical-align: middle;
+}
+
+/* Status Badge */
+.status-badge {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: capitalize;
+}
+
+.status-completed {
+    background: linear-gradient(135deg, #00C9FF, #92FE9D);
+    color: #fdfdfd;
+}
+
+.status-pending {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #000;
+}
+.status-badge.status-stacked {
+    background: linear-gradient(135deg, #ff6bb8, #24bbee); 
+    color: rgb(255, 255, 255);
+}
+.status-cancelled,
+.status-failed {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: white;
+}
+
+/* Cancel Button */
+.cancel-btn {
+    padding: 0.5rem 1.2rem;
+    background: white;
+    border: 2px solid #ff6b6b;
+    color: #ff6b6b;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background: #ff6b6b;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+/* Empty State */
+.text-center.text-gray-400 {
+    padding: 3rem 1rem;
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+/* Confirm Popup */
+.confirm-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.confirm-box {
+    background: white;
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    max-width: 450px;
+    width: 90%;
+    text-align: center;
+    animation: slideUp 0.4s ease;
+}
+
+.confirm-box h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.confirm-box p {
+    color: #6c757d;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.confirm-btn {
+    padding: 0.75rem 2rem;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 0 0.5rem;
+}
+
+.confirm-yes {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+}
+
+.confirm-yes:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+}
+
+.confirm-no {
+    background: #e9ecef;
+    color: #333;
+}
+
+.confirm-no:hover {
+    background: #dee2e6;
+    transform: translateY(-2px);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .payment-container {
+        padding: 0 1rem;
+    }
+    
+    .payment-container table {
+        font-size: 0.9rem;
+    }
+    
+    .payment-container thead th,
+    .payment-container tbody td {
+        padding: 1rem 0.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .payment-container h2 {
+        font-size: 1.5rem;
+    }
+    
+    .payment-container table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .payment-container thead th,
+    .payment-container tbody td {
+        padding: 0.8rem 0.6rem;
+        font-size: 0.85rem;
+    }
+    
+    .status-badge {
+        padding: 0.3rem 0.8rem;
+        font-size: 0.75rem;
+    }
+    
+    .cancel-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+    }
+    
+    .confirm-box {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+    
+    .confirm-box h3 {
+        font-size: 1.3rem;
+    }
+    
+    .confirm-btn {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.85rem;
+        margin: 0.3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .payment-container thead th {
+        font-size: 0.75rem;
+        padding: 0.7rem 0.5rem;
+    }
+    
+    .payment-container tbody td {
+        font-size: 0.8rem;
+        padding: 0.7rem 0.5rem;
+    }
+    
+    .confirm-btn {
+        display: block;
+        width: 100%;
+        margin: 0.5rem 0;
+    }
+}
+/* Thêm vào cuối file profile.css */
+
+/* Pagination Styles */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.pagination-btn {
+    padding: 0.6rem 1rem;
+    border: 2px solid #dee2e6;
+    background: white;
+    color: #333;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.pagination-btn:hover:not(.disabled) {
+    background: #f8f9fa;
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+    transform: translateY(-2px);
+    text-decoration: none;
+}
+
+.pagination-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.pagination-btn.active {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+    border-color: #ff6b6b;
+    pointer-events: none;
+}
+
+/* Back button improvement */
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: white;
+    border: 2px solid #ff6b6b;
+    color: #ff6b6b;
+    border-radius: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    background: #ff6b6b;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+    text-decoration: none;
+}
+
+/* Page numbers */
+.page-numbers {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+}
+
+.page-number {
+    min-width: 40px;
+    height: 40px;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Thêm khoảng cách với navbar */
+.payment-container {
+    margin-top: 100px !important;
+}
+
+@media (max-width: 768px) {
+    .payment-container {
+        margin-top: 80px !important;
+    }
+    
+    .pagination-container {
+        gap: 0.3rem;
+    }
+
+    .pagination-btn {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.8rem;
+    }
+
+    .page-info {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-numbers .page-number:not(.active) {
+        display: none;
+    }
+}
+/* Change Password Page Styles */
+.change-password-container {
+    margin-top: 100px;
+    min-height: calc(100vh - 200px);
+}
+
+.change-password-card {
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border: none;
+    overflow: hidden;
+    animation: fadeIn 0.5s ease;
+}
+
+.change-password-header {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24) !important;
+    padding: 1.5rem;
+    border: none;
+}
+
+.change-password-header h4 {
+    margin: 0;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.change-password-header i {
+    font-size: 1.3rem;
+}
+
+.change-password-body {
+    padding: 2rem;
+}
+
+.change-password-form .form-label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.change-password-form .form-control {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.change-password-form .form-control:focus {
+    border-color: #ff6b6b;
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 107, 0.25);
+}
+
+.change-password-form .btn-submit {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.change-password-form .btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+.change-password-form .btn-back {
+    background: white;
+    border: 2px solid #6c757d;
+    color: #6c757d;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.change-password-form .btn-back:hover {
+    background: #6c757d;
+    color: white;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .change-password-container {
+        margin-top: 80px;
+    }
+    
+    .change-password-body {
+        padding: 1.5rem;
+    }
+}
+/* Avatar Selection Modal Styles - Thêm vào cuối file profile.css */
+
+.avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem;
+}
+
+.avatar-option {
+    position: relative;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 3px solid #e9ecef;
+    aspect-ratio: 1/1;
+}
+
+.avatar-option img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: all 0.3s ease;
+}
+
+.avatar-option:hover {
+    transform: scale(1.1);
+    border-color: #ff6b6b;
+    box-shadow: 0 5px 20px rgba(255, 107, 107, 0.4);
+    z-index: 10;
+}
+
+.avatar-option:hover img {
+    transform: scale(1.1);
+}
+
+.avatar-option::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(45deg, rgba(255, 107, 107, 0.8), rgba(238, 90, 36, 0.8));
+    opacity: 0;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-option:hover::after {
+    opacity: 1;
+}
+
+.avatar-option::before {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: 3rem;
+    color: white;
+    font-weight: bold;
+    z-index: 1;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.avatar-option:hover::before {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* Avatar Modal Header */
+#avatarSelectionModal .modal-header {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+}
+
+#avatarSelectionModal .modal-header .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+#avatarSelectionModal .modal-content {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .avatar-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        padding: 0.5rem;
+    }
+    
+    .avatar-option:hover {
+        transform: scale(1.05);
+    }
+}
+
+@media (max-width: 480px) {
+    .avatar-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+

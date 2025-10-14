@@ -32,9 +32,14 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
     public virtual DbSet<Rating> Ratings { get; set; }
     public virtual DbSet<WatchHistory> WatchHistories { get; set; }
 
+    // ===== NEW SUBSCRIPTION TABLES =====
+    public virtual DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
+    public virtual DbSet<UserSubscription> UserSubscriptions { get; set; }
+    public virtual DbSet<Transaction> Transactions { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder); // cấu hình Identity mặc định
+        base.OnModelCreating(modelBuilder);
 
         // ===== USERS =====
         modelBuilder.Entity<User>(entity =>
@@ -54,6 +59,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.HasIndex(e => e.UserName, "IX_Users_Username");
             entity.HasIndex(e => e.UserName, "UQ__Users__Username").IsUnique();
             entity.HasIndex(e => e.Email, "UQ__Users__Email").IsUnique();
+            entity.HasIndex(e => e.StripeCustomerId, "IX_Users_StripeCustomerId");
 
             entity.Property(e => e.Avatar).HasMaxLength(500);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
@@ -65,10 +71,116 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.RoleId).HasDefaultValue(2);
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(getdate())");
 
+            // Subscription fields
+            entity.Property(e => e.SubscriptionType).HasMaxLength(20).HasDefaultValue("free");
+            entity.Property(e => e.StripeCustomerId).HasMaxLength(100);
+            entity.Property(e => e.StudentEmail).HasMaxLength(100);
+            entity.Property(e => e.IsStudentVerified).HasDefaultValue(false);
+
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Users__RoleId");
+        });
+
+        // ===== SUBSCRIPTION PLANS =====
+        modelBuilder.Entity<SubscriptionPlan>(entity =>
+        {
+            entity.HasKey(e => e.PlanId).HasName("PK__SubscriptionPlans");
+
+            entity.HasIndex(e => new { e.PlanType, e.DurationMonths }, "IX_Plans_Type_Duration");
+            entity.HasIndex(e => e.StripePriceId, "IX_Plans_StripePriceId");
+
+            entity.Property(e => e.PlanName).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.DisplayName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.PriceVND).HasColumnType("decimal(18,0)").IsRequired();
+            entity.Property(e => e.PriceUSD).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.DurationMonths).IsRequired();
+            entity.Property(e => e.ActualMonths).IsRequired();
+            entity.Property(e => e.BonusMonths).HasDefaultValue(0);
+            entity.Property(e => e.PlanType).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.StripePriceId).HasMaxLength(100);
+            entity.Property(e => e.StripeProductId).HasMaxLength(100);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsPopular).HasDefaultValue(false);
+            entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+        });
+
+        // ===== USER SUBSCRIPTIONS (ĐÃ SỬA) =====
+        modelBuilder.Entity<UserSubscription>(entity =>
+        {
+            // ✅ SỬA LẠI DÒNG NÀY ĐỂ FIX LỖI DATABASE TRIGGER
+            entity.ToTable("UserSubscriptions", tb => tb.HasTrigger("trg_UserSubscription"));
+
+            entity.HasKey(e => e.SubscriptionId).HasName("PK__UserSubscriptions");
+
+            entity.HasIndex(e => e.UserId, "IX_UserSubscriptions_UserId");
+            entity.HasIndex(e => e.StripeSubscriptionId, "IX_UserSubscriptions_StripeId");
+            entity.HasIndex(e => new { e.UserId, e.Status }, "IX_UserSubscriptions_User_Status");
+
+            entity.Property(e => e.StripeSubscriptionId).HasMaxLength(100);
+            entity.Property(e => e.StripeCustomerId).HasMaxLength(100);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue("active");
+            entity.Property(e => e.StartDate).IsRequired();
+            entity.Property(e => e.EndDate).IsRequired();
+            entity.Property(e => e.AutoRenew).HasDefaultValue(true);
+            entity.Property(e => e.CancellationReason).HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.User).WithMany(p => p.UserSubscriptions)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__UserSubscriptions__UserId");
+
+            entity.HasOne(d => d.SubscriptionPlan).WithMany(p => p.UserSubscriptions)
+                .HasForeignKey(d => d.PlanId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK__UserSubscriptions__PlanId");
+        });
+
+        // ===== TRANSACTIONS =====
+        modelBuilder.Entity<Transaction>(entity =>
+        {
+            entity.HasKey(e => e.TransactionId).HasName("PK__Transactions");
+
+            entity.HasIndex(e => e.UserId, "IX_Transactions_UserId");
+            entity.HasIndex(e => e.TransactionCode, "IX_Transactions_Code").IsUnique();
+            entity.HasIndex(e => e.StripePaymentIntentId, "IX_Transactions_StripePaymentIntentId");
+            entity.HasIndex(e => new { e.UserId, e.Status }, "IX_Transactions_User_Status");
+            entity.HasIndex(e => e.CreatedAt, "IX_Transactions_CreatedAt");
+
+            entity.Property(e => e.TransactionCode).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.StripePaymentIntentId).HasMaxLength(100);
+            entity.Property(e => e.StripeChargeId).HasMaxLength(100);
+            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(e => e.AmountVND).HasColumnType("decimal(18,0)").IsRequired();
+            entity.Property(e => e.Currency).IsRequired().HasMaxLength(10).HasDefaultValue("USD");
+            entity.Property(e => e.PaymentMethod).IsRequired().HasMaxLength(50).HasDefaultValue("stripe");
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue("pending");
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.PaymentDetails).HasMaxLength(1000);
+            entity.Property(e => e.FailureReason).HasMaxLength(500);
+            entity.Property(e => e.IpAddress).HasMaxLength(50);
+            entity.Property(e => e.UserAgent).HasMaxLength(500);
+            entity.Property(e => e.RefundAmount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Transactions)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK__Transactions__UserId");
+
+            entity.HasOne(d => d.SubscriptionPlan).WithMany(p => p.Transactions)
+                .HasForeignKey(d => d.PlanId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK__Transactions__PlanId");
+
+            entity.HasOne(d => d.UserSubscription).WithMany()
+                .HasForeignKey(d => d.SubscriptionId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK__Transactions__SubscriptionId");
         });
 
         // ===== ROLES =====
@@ -85,12 +197,11 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.Description).HasMaxLength(255);
 
-            // BỎ mapping mấy cột mặc định không có trong DB
             entity.Ignore(r => r.NormalizedName);
             entity.Ignore(r => r.ConcurrencyStamp);
         });
 
-        // Map Identity other tables (để tránh EF tự tạo bảng mặc định)
+        // Map Identity other tables
         modelBuilder.Entity<IdentityUserClaim<int>>().ToTable("AspNetUserClaims");
         modelBuilder.Entity<IdentityUserLogin<int>>().ToTable("AspNetUserLogins");
         modelBuilder.Entity<IdentityUserToken<int>>().ToTable("AspNetUserTokens");

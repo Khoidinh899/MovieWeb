@@ -29,44 +29,43 @@ namespace MovieWeb.Controllers
                 // CDN Domain cho ảnh
                 viewModel.CdnImageDomain = "https://img.ophim.live/uploads/movies/";
 
-                // Lấy phim hot cho banner với cache
+                // Lấy phim banner - THAY ĐỔI: Ưu tiên phim được đánh dấu IsBanner
                 var cacheKeyBanner = "banner_movies_with_content";
                 if (!_cache.TryGetValue(cacheKeyBanner, out List<Movie> bannerMovies))
                 {
                     _logger.LogInformation("Loading banner movies from database...");
 
-                    // Lấy phim hot từ database (theo view count và rating)
-                    var hotMoviesFromDb = await _movieRepository.GetHotMoviesAsync(6);
+                    // Lấy phim được đánh dấu làm banner trước
+                    var bannerMarkedMovies = await _movieRepository.GetBannerMoviesAsync(5);
 
-                    if (hotMoviesFromDb != null && hotMoviesFromDb.Any())
+                    if (bannerMarkedMovies != null && bannerMarkedMovies.Any())
                     {
-                        bannerMovies = hotMoviesFromDb.ToApiModelList();
-                        _logger.LogInformation($"Loaded {bannerMovies.Count} banner movies from database");
-
-                        // Log content để debug
-                        foreach (var movie in bannerMovies.Take(3))
-                        {
-                            if (!string.IsNullOrEmpty(movie.Content))
-                            {
-                                _logger.LogInformation($"Movie {movie.Name} has content: {movie.Content.Substring(0, Math.Min(50, movie.Content.Length))}...");
-                            }
-                            else
-                            {
-                                _logger.LogWarning($"Movie {movie.Name} has no content");
-                            }
-                        }
+                        bannerMovies = bannerMarkedMovies.ToApiModelList();
+                        _logger.LogInformation($"Loaded {bannerMovies.Count} marked banner movies");
                     }
                     else
                     {
-                        bannerMovies = new List<Movie>();
-                        _logger.LogWarning("No hot movies found in database");
+                        // Fallback: nếu không có phim nào được đánh dấu, lấy hot movies
+                        _logger.LogInformation("No marked banner movies, falling back to hot movies...");
+                        var hotMoviesFromDb = await _movieRepository.GetHotMoviesAsync(5);
+                        
+                        if (hotMoviesFromDb != null && hotMoviesFromDb.Any())
+                        {
+                            bannerMovies = hotMoviesFromDb.ToApiModelList();
+                            _logger.LogInformation($"Loaded {bannerMovies.Count} hot movies as banner fallback");
+                        }
+                        else
+                        {
+                            bannerMovies = new List<Movie>();
+                            _logger.LogWarning("No movies found for banner");
+                        }
                     }
 
                     _cache.Set(cacheKeyBanner, bannerMovies, TimeSpan.FromMinutes(30));
                 }
 
                 viewModel.HotMovies = bannerMovies;
-                viewModel.BannerMovies = bannerMovies; // Dùng cho banner
+                viewModel.BannerMovies = bannerMovies;
 
                 // Lấy phim mới cập nhật với cache
                 var cacheKey = "latest_movies_page_1_db";
@@ -112,6 +111,7 @@ namespace MovieWeb.Controllers
                 }
 
                 viewModel.TvSeries = tvSeries;
+                
                 // Lấy phim hoạt hình
                 var cacheKeyHoatHinh = "hoathinh_movies_page_1_db";
                 if (!_cache.TryGetValue(cacheKeyHoatHinh, out List<Movie> hoatHinhMovies))
@@ -127,7 +127,7 @@ namespace MovieWeb.Controllers
 
                 viewModel.HoatHinhMovies = hoatHinhMovies;
 
-                _logger.LogInformation($"TrangChu loaded successfully: {viewModel.HotMovies.Count} hot, {viewModel.LatestMovies.Count} latest, {viewModel.SingleMovies.Count} single, {viewModel.TvSeries.Count} series");
+                _logger.LogInformation($"TrangChu loaded successfully: {viewModel.BannerMovies.Count} banner, {viewModel.LatestMovies.Count} latest, {viewModel.SingleMovies.Count} single, {viewModel.TvSeries.Count} series");
 
                 return View("~/Views/Home/TrangChu.cshtml", viewModel);
             }
