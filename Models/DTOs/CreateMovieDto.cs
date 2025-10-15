@@ -52,7 +52,7 @@ namespace MovieWeb.Models.DTOs
         public int? Year { get; set; }
 
         public bool IsRecommended { get; set; } = false;
-
+        public bool? IsBanner { get; set; }
         public bool IsActive { get; set; } = true;
 
         // Các trường liên kết (comma-separated IDs hoặc names)

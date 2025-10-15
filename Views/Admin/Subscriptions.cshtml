@@ -22,32 +22,9 @@
             <i class="bi bi-calendar3"></i> @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
         </div>
     </div>
-
     <!-- Quick Stats Cards -->
     <div class="row g-4 mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100"
-                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <div class="card-body text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="mb-1 opacity-75">Doanh Thu Tháng</p>
-                            <h2 class="mb-0 fw-bold" id="monthlyRevenue">
-                                <div class="spinner-border spinner-border-sm" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                            </h2>
-                            <small class="opacity-75">Cập nhật realtime</small>
-                        </div>
-                        <div class="display-4 opacity-50">
-                            <i class="bi bi-currency-dollar"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100"
                 style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                 <div class="card-body text-white">
@@ -69,7 +46,7 @@
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100"
                 style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                 <div class="card-body text-white">
@@ -91,7 +68,7 @@
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100"
                 style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
                 <div class="card-body text-white">
@@ -113,67 +90,121 @@
             </div>
         </div>
     </div>
-
-    <!-- Detailed Statistics -->
+    <!-- Revenue Filter Card (Full Width) -->
     <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header revenue-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 text-white">
-                        <i class="bi bi-bar-chart-line me-2"></i>Thống Kê Chi Tiết
-                    </h5>
-                    <button class="btn btn-light btn-sm" onclick="refreshRevenueStats()">
-                        <i class="bi bi-arrow-clockwise"></i> Làm mới
-                    </button>
+        <div class="col-12">
+            <div class="card border-0 shadow-lg revenue-filter-card">
+                <div class="card-header revenue-header">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <h5 class="mb-0 text-white">
+                            <i class="bi bi-currency-dollar me-2"></i>Doanh Thu Chi Tiết
+                        </h5>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-light" onclick="filterRevenue('today')">
+                                <i class="bi bi-calendar-day"></i> Hôm nay
+                            </button>
+                            <button type="button" class="btn btn-light" onclick="filterRevenue('week')">
+                                <i class="bi bi-calendar-week"></i> Tuần
+                            </button>
+                            <button type="button" class="btn btn-light active" onclick="filterRevenue('month')">
+                                <i class="bi bi-calendar-month"></i> Tháng
+                            </button>
+                            <button type="button" class="btn btn-light" onclick="filterRevenue('year')">
+                                <i class="bi bi-calendar-range"></i> Năm
+                            </button>
+                            <button type="button" class="btn btn-light" onclick="showCustomDatePicker()">
+                                <i class="bi bi-calendar3"></i> Tùy chỉnh
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <!-- Revenue Statistics -->
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="stat-box">
-                                <div class="stat-icon bg-success">
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <!-- Total Revenue - FULL WIDTH -->
+                        <div class="col-12">
+                            <div class="revenue-stat-box-large bg-gradient-primary text-center">
+                                <div class="stat-content-large">
+                                    <h6>TỔNG DOANH THU</h6>
+                                    <h1 id="filterTotalRevenue" class="display-1">
+                                        <div class="spinner-border" role="status"></div>
+                                    </h1>
+                                    <p class="lead mb-0" id="filterPeriod">Tháng này</p>
+                                </div>
+                                <div class="stat-icon-background">
+                                    <i class="bi bi-cash-stack"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3 Stats Cards - Chia đều -->
+                        <div class="col-md-4">
+                            <div class="revenue-stat-box bg-gradient-success h-100">
+                                <div class="stat-icon-large">
                                     <i class="bi bi-check-circle-fill"></i>
                                 </div>
-                                <div class="stat-info">
-                                    <h6>Giao Dịch Thành Công</h6>
-                                    <h4 id="completedTransactions">0</h4>
+                                <div class="stat-content">
+                                    <h6>THÀNH CÔNG</h6>
+                                    <h2 id="filterCompletedCount">0</h2>
+                                    <small class="text-muted">giao dịch</small>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="stat-box">
-                                <div class="stat-icon bg-warning">
-                                    <i class="bi bi-clock-fill"></i>
+
+                        <div class="col-md-4">
+                            <div class="revenue-stat-box bg-gradient-warning h-100">
+                                <div class="stat-icon-large">
+                                    <i class="bi bi-clock-history"></i>
                                 </div>
-                                <div class="stat-info">
-                                    <h6>Đang Xử Lý</h6>
-                                    <h4 id="pendingTransactions">0</h4>
+                                <div class="stat-content">
+                                    <h6>ĐANG XỬ LÝ</h6>
+                                    <h2 id="filterPendingCount">0</h2>
+                                    <small class="text-muted">giao dịch</small>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="stat-box">
-                                <div class="stat-icon bg-danger">
+
+                        <div class="col-md-4">
+                            <div class="revenue-stat-box bg-gradient-danger h-100">
+                                <div class="stat-icon-large">
                                     <i class="bi bi-x-circle-fill"></i>
                                 </div>
-                                <div class="stat-info">
-                                    <h6>Thất Bại</h6>
-                                    <h4 id="failedTransactions">0</h4>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="stat-box">
-                                <div class="stat-icon bg-info">
-                                    <i class="bi bi-arrow-counterclockwise"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <h6>Hoàn Tiền</h6>
-                                    <h4 id="refundedTransactions">0</h4>
+                                <div class="stat-content">
+                                    <h6>THẤT BẠI</h6>
+                                    <h2 id="filterFailedCount">0</h2>
+                                    <small class="text-muted">giao dịch</small>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Custom Date Range Modal -->
+    <div class="modal fade" id="customDateModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-calendar-range me-2"></i>Chọn Khoảng Thời Gian
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Từ ngày</label>
+                        <input type="date" class="form-control" id="customStartDate">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Đến ngày</label>
+                        <input type="date" class="form-control" id="customEndDate">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" onclick="applyCustomDateFilter()">
+                        <i class="bi bi-check2"></i> Áp dụng
+                    </button>
                 </div>
             </div>
         </div>
