@@ -20,7 +20,6 @@ namespace MovieWeb.Controllers.API.Admin
             _subscriptionService = subscriptionService;
             _stripeService = stripeService;
         }
-
         // GET: api/admin/subscription/stats
         [HttpGet("stats")]
         public async Task<IActionResult> GetStats(

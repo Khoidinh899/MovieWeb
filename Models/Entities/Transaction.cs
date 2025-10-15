@@ -60,7 +60,7 @@ namespace MovieWeb.Models.Entities
         // ===== RELATIONSHIPS =====
 
         public int UserId { get; set; }
-        public virtual User User { get; set; }
+        public User User { get; set; }
 
         public int? PlanId { get; set; }
         public virtual SubscriptionPlan? SubscriptionPlan { get; set; }

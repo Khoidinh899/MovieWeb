@@ -178,6 +178,13 @@ namespace MovieWeb.Services
                 {
                     user.LastLogin = DateTime.Now;
                     await _userManager.UpdateAsync(user);
+                    await _signInManager.SignOutAsync();
+                    var claims = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.Role, user.RoleId == 1 ? "Admin" : "User"),
+                        new Claim("RoleId", user.RoleId.ToString())
+                    };
+                    await _signInManager.SignInWithClaimsAsync(user, model.RememberMe, claims);
                     var token = GenerateJwtToken(user);
                     return AuthResult.Success("Đăng nhập thành công", token, user);
                 }
