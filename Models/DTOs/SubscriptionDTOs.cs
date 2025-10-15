@@ -116,6 +116,8 @@ namespace MovieWeb.Models.DTOs
 
     public class TransactionDto
     {
+        public int UserId { get; set; }
+        public string? UserName { get; set; }
         public int TransactionId { get; set; }
         
         public string TransactionCode { get; set; } = string.Empty;

@@ -893,6 +893,7 @@ namespace MovieWeb.Controllers
                     Rating = 0,
                     RatingCount = 0,
                     IsRecommended = model.IsRecommended,
+                    IsBanner = model.IsBanner ?? false,
                     IsActive = model.IsActive,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now

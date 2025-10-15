@@ -819,10 +819,23 @@ namespace MovieWeb.Services
                 Description = transaction.Description,
                 CreatedAt = transaction.CreatedAt,
                 CompletedAt = transaction.CompletedAt,
-                Plan = transaction.SubscriptionPlan != null ? MapToDto(transaction.SubscriptionPlan) : null
+
+                // Gói
+                Plan = transaction.SubscriptionPlan != null ? MapToDto(transaction.SubscriptionPlan) : null,
+
+                // 🟢 Người dùng
+                UserId = transaction.UserId,
+                UserName = transaction.User != null
+                    ? (
+                        !string.IsNullOrWhiteSpace(transaction.User.FullName)
+                            ? transaction.User.FullName
+                            : !string.IsNullOrWhiteSpace(transaction.User.FirstName) || !string.IsNullOrWhiteSpace(transaction.User.LastName)
+                                ? $"{transaction.User.FirstName} {transaction.User.LastName}".Trim()
+                                : transaction.User.Email ?? $"User #{transaction.UserId}"
+                    )
+                    : $"User #{transaction.UserId}"
             };
         }
-
         private string GenerateVerificationCode()
         {
             return Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper();
