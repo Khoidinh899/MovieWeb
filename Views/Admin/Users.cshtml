@@ -46,6 +46,20 @@
 }
 
 <div class="container-fluid py-4">
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center">
+        <a href="javascript:history.back()" class="btn btn-light me-3" title="Quay lại">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h4 class="mb-0">
+            <i class="bi bi-people-fill me-2"></i> @ViewData["Title"]
+        </h4>
+    </div>
+    <div class="text-muted small">
+        <i class="bi bi-calendar-event me-1"></i>
+        @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+    </div>
+</div>
     <!-- Header với Statistics -->
     <div class="row mb-4">
         <div class="col-md-3">
@@ -133,256 +147,203 @@
         </div>
     }
 
-    <!-- Search & Filter Section -->
-    <div class="search-section">
-        <form method="get" asp-action="Users" class="row g-3">
-            <div class="col-md-3">
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-search"></i></span>
-                    <input type="text" name="search" class="form-control" placeholder="Tìm theo tên, email, username..." value="@ViewBag.Search">
-                </div>
-            </div>
-            <div class="col-md-2">
-                <select name="roleId" class="form-select">
-                    <option value="">Tất cả vai trò</option>
-                    @foreach(var role in ViewBag.Roles)
-                    {
-                        <option value="@role.Id" selected="@(ViewBag.RoleId == role.Id)">@role.Name</option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select name="subscriptionType" class="form-select">
-                    <option value="">Tất cả gói</option>
-                    <option value="free" selected="@(ViewBag.SubscriptionType == "free")">Free</option>
-                    <option value="premium" selected="@(ViewBag.SubscriptionType == "premium")">Premium</option>
-                    <option value="student" selected="@(ViewBag.SubscriptionType == "student")">Student</option>
-                </select>
-            </div>
-            <div class="col-md-1">
-                <select name="isActive" class="form-select">
-                    <option value="">Trạng thái</option>
-                    <option value="true" selected="@(ViewBag.IsActive == true)">Hoạt động</option>
-                    <option value="false" selected="@(ViewBag.IsActive == false)">Đã khóa</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select name="pageSize" class="form-select">
-                    <option value="10" selected="@(ViewBag.PageSize == 10)">10 / trang</option>
-                    <option value="20" selected="@(ViewBag.PageSize == 20)">20 / trang</option>
-                    <option value="50" selected="@(ViewBag.PageSize == 50)">50 / trang</option>
-                    <option value="100" selected="@(ViewBag.PageSize == 100)">100 / trang</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-funnel me-1"></i> Lọc
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <!-- Users Table -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-white">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-table me-2"></i>Danh sách người dùng</h5>
-                <button type="button" class="btn btn-primary" onclick="openCreateModal()">
-                    <i class="bi bi-plus-circle me-2"></i>Thêm User Mới
-                </button>
+    <!-- Search & Filter Section - FIXED -->
+<div class="search-section">
+    <form method="get" asp-action="Users" class="row g-3">
+        <div class="col-md-3">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" name="search" class="form-control" placeholder="Tìm theo tên, email, username..." value="@ViewBag.Search">
             </div>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+        
+        <div class="col-md-2">
+            <select name="roleId" class="form-select">
+                <option value="">Tất cả vai trò</option>
+                @foreach(var role in ViewBag.Roles)
+                {
+                    <option value="@role.Id" selected="@(ViewBag.RoleId == role.Id)">@role.Name</option>
+                }
+            </select>
+        </div>
+        
+        <div class="col-md-2">
+            <select name="subscriptionType" class="form-select">
+                <option value="">Tất cả gói</option>
+                <option value="free" selected="@(ViewBag.SubscriptionType == "free")">Free</option>
+                <option value="premium" selected="@(ViewBag.SubscriptionType == "premium")">Premium</option>
+                <option value="student" selected="@(ViewBag.SubscriptionType == "student")">Student</option>
+            </select>
+        </div>
+        
+        <!-- ⭐ FIX: Tăng độ rộng cột cho Trạng thái -->
+        <div class="col-md-2">
+            <select name="isActive" class="form-select">
+                <option value="">Trạng thái</option>
+                <option value="true" selected="@(ViewBag.IsActive == true)">Hoạt động</option>
+                <option value="false" selected="@(ViewBag.IsActive == false)">Đã khóa</option>
+            </select>
+        </div>
+        
+        <!-- ⭐ FIX: Giảm độ rộng cột PageSize -->
+        <div class="col-md-1">
+            <select name="pageSize" class="form-select">
+                <option value="10" selected="@(ViewBag.PageSize == 10)">10</option>
+                <option value="20" selected="@(ViewBag.PageSize == 20)">20</option>
+                <option value="50" selected="@(ViewBag.PageSize == 50)">50</option>
+                <option value="100" selected="@(ViewBag.PageSize == 100)">100</option>
+            </select>
+        </div>
+        
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-funnel me-1"></i> Lọc
+            </button>
+        </div>
+    </form>
+</div>
+
+    <!-- Users Table -->
+   <div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-table me-2"></i>Danh sách người dùng</h5>
+            <button type="button" class="btn btn-primary" onclick="openCreateModal()">
+                <i class="bi bi-plus-circle me-2"></i>Thêm User Mới
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th width="60">Avatar</th>
+                        <th width="180">Họ tên</th>
+                        <th width="200">Email</th>
+                        <th width="120">Username</th>
+                        <th width="100">Vai trò</th>
+                        <th width="150">Subscription</th>
+                        <th width="110">Trạng thái</th>
+                        <!-- ✅ BỎ cột Hoạt động -->
+                        <!-- ✅ FIX: Width cố định cho cột Hành động -->
+                        <th class="text-center" width="250">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model == null || !Model.Any())
+                    {
+                        <!-- ✅ FIX: colspan từ 9 -> 8 -->
                         <tr>
-                            <th width="60">Avatar</th>
-                            <th>Họ tên</th>
-                            <th>Email</th>
-                            <th>Username</th>
-                            <th>Vai trò</th>
-                            <th>Subscription</th>
-                            <th>Trạng thái</th>
-                            <th>Hoạt động</th>
-                            <th class="text-center" width="200">Hành động</th>
+                            <td colspan="8" class="text-center py-5">
+                                <i class="bi bi-inbox fs-1 text-muted"></i>
+                                <p class="text-muted mt-2">Không tìm thấy người dùng nào</p>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model == null || !Model.Any())
+                    }
+                    else
+                    {
+                        @foreach (var user in Model)
                         {
                             <tr>
-                                <td colspan="9" class="text-center py-5">
-                                    <i class="bi bi-inbox fs-1 text-muted"></i>
-                                    <p class="text-muted mt-2">Không tìm thấy người dùng nào</p>
+                                <td>
+                                    <img src="@(user.Avatar ?? "/images/default-avatar.png")" 
+                                         alt="Avatar" 
+                                         class="rounded-circle"
+                                         style="width: 40px; height: 40px; object-fit: cover;"
+                                         onerror="this.src='/images/default-avatar.png'">
+                                </td>
+                                <td>
+                                    <strong>@user.FullName</strong>
+                                    @if (user.EmailConfirmed)
+                                    {
+                                        <i class="bi bi-patch-check-fill text-success" title="Email đã xác thực"></i>
+                                    }
+                                </td>
+                                <td>
+                                    <small>@user.Email</small>
+                                </td>
+                                <td><code>@user.Username</code></td>
+                                <td>
+                                    <span class="badge bg-@(user.IsAdmin ? "danger" : "primary")">
+                                        @user.RoleName
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (user.SubscriptionType == "premium")
+                                    {
+                                        <span class="premium-badge">
+                                            <i class="bi bi-gem"></i> Premium
+                                        </span>
+                                        @if (user.SubscriptionEndDate.HasValue)
+                                        {
+                                            <br><small class="text-muted">Đến @user.SubscriptionEndDate.Value.ToString("dd/MM/yyyy")</small>
+                                        }
+                                    }
+                                    else if (user.SubscriptionType == "student")
+                                    {
+                                        <span class="student-badge">
+                                            <i class="bi bi-mortarboard"></i> Student
+                                        </span>
+                                        @if (user.SubscriptionEndDate.HasValue)
+                                        {
+                                            <br><small class="text-muted">Đến @user.SubscriptionEndDate.Value.ToString("dd/MM/yyyy")</small>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Free</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge bg-@(user.IsActive ? "success" : "secondary")">
+                                        @(user.IsActive ? "Hoạt động" : "Đã khóa")
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" 
+                                                class="btn btn-outline-primary"
+                                                onclick="openEditModal(@user.UserId)"
+                                                title="Chỉnh sửa">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+
+                                        <a href="@Url.Action("UserDetail", new { id = user.UserId })" 
+                                           class="btn btn-outline-info"
+                                           title="Chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        
+                                        <button type="button" 
+                                                class="btn btn-outline-@(user.IsActive ? "secondary" : "success")"
+                                                onclick="toggleUserStatus(@user.UserId, @user.IsActive.ToString().ToLower())"
+                                                title="@(user.IsActive ? "Vô hiệu hóa" : "Kích hoạt")">
+                                            <i class="bi bi-@(user.IsActive ? "lock" : "unlock")"></i>
+                                        </button>
+@*                                         
+                                        <button type="button" 
+                                                class="btn btn-outline-warning"
+                                                onclick="showRoleModal(@user.UserId, @user.RoleId, '@user.FullName')"
+                                                title="Đổi vai trò">
+                                            <i class="bi bi-shield"></i>
+                                        </button>
+                                         *@
+                                        <button type="button" 
+                                                class="btn btn-outline-danger"
+                                                onclick="deleteUser(@user.UserId, '@user.FullName')"
+                                                title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         }
-                        else
-                        {
-                            @foreach (var user in Model)
-                            {
-                                <tr>
-                                    <td>
-                                        <img src="@(user.Avatar ?? "/images/default-avatar.png")" 
-                                             alt="Avatar" 
-                                             class="rounded-circle"
-                                             style="width: 40px; height: 40px; object-fit: cover;"
-                                             onerror="this.src='/images/default-avatar.png'">
-                                    </td>
-                                    <td>
-                                        <strong>@user.FullName</strong>
-                                        @if (user.EmailConfirmed)
-                                        {
-                                            <i class="bi bi-patch-check-fill text-success" title="Email đã xác thực"></i>
-                                        }
-                                    </td>
-                                    <td>
-                                        <small>@user.Email</small>
-                                    </td>
-                                    <td><code>@user.Username</code></td>
-                                    <td>
-                                        <span class="badge bg-@(user.IsAdmin ? "danger" : "primary")">
-                                            @user.RoleName
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @if (user.SubscriptionType == "premium")
-                                        {
-                                            <span class="premium-badge">
-                                                <i class="bi bi-gem"></i> Premium
-                                            </span>
-                                            @if (user.SubscriptionEndDate.HasValue)
-                                            {
-                                                <br><small class="text-muted">Đến @user.SubscriptionEndDate.Value.ToString("dd/MM/yyyy")</small>
-                                            }
-                                        }
-                                        else if (user.SubscriptionType == "student")
-                                        {
-                                            <span class="student-badge">
-                                                <i class="bi bi-mortarboard"></i> Student
-                                            </span>
-                                            @if (user.SubscriptionEndDate.HasValue)
-                                            {
-                                                <br><small class="text-muted">Đến @user.SubscriptionEndDate.Value.ToString("dd/MM/yyyy")</small>
-                                            }
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">Free</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-@(user.IsActive ? "success" : "secondary")">
-                                            @(user.IsActive ? "Hoạt động" : "Đã khóa")
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <small class="text-muted">
-                                            <i class="bi bi-heart-fill text-danger"></i> @user.TotalFavorites
-                                            <i class="bi bi-chat-fill text-primary ms-2"></i> @user.TotalComments
-                                            <i class="bi bi-star-fill text-warning ms-2"></i> @user.TotalRatings
-                                        </small>
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="btn-group btn-group-sm">
-                                            <button type="button" 
-                                                    class="btn btn-outline-primary"
-                                                    onclick="openEditModal(@user.UserId)"
-                                                    title="Chỉnh sửa">
-                                                <i class="bi bi-pencil-square"></i>
-                                            </button>
-
-                                            <a href="@Url.Action("UserDetail", new { id = user.UserId })" 
-                                               class="btn btn-outline-info"
-                                               title="Chi tiết">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                            <button type="button" 
-                                                    class="btn btn-outline-@(user.IsActive ? "secondary" : "success")"
-                                                    onclick="toggleUserStatus(@user.UserId, @user.IsActive.ToString().ToLower())"
-                                                    title="@(user.IsActive ? "Vô hiệu hóa" : "Kích hoạt")">
-                                                <i class="bi bi-@(user.IsActive ? "lock" : "unlock")"></i>
-                                            </button>
-                                            <button type="button" 
-                                                    class="btn btn-outline-warning"
-                                                    onclick="showRoleModal(@user.UserId, @user.RoleId, '@user.FullName')"
-                                                    title="Đổi vai trò">
-                                                <i class="bi bi-shield"></i>
-                                            </button>
-                                            <button type="button" 
-                                                    class="btn btn-outline-danger"
-                                                    onclick="deleteUser(@user.UserId, '@user.FullName')"
-                                                    title="Xóa">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
-
-    <!-- Pagination -->
-    @if(ViewBag.TotalPages > 1)
-    {
-        <nav class="mt-4">
-            <ul class="pagination justify-content-center">
-                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
-                    <a class="page-link" href="@Url.Action("Users", new { 
-                        page = ViewBag.CurrentPage - 1, 
-                        search = ViewBag.Search, 
-                        roleId = ViewBag.RoleId, 
-                        subscriptionType = ViewBag.SubscriptionType,
-                        isActive = ViewBag.IsActive,
-                        pageSize = ViewBag.PageSize 
-                    })">
-                        <i class="bi bi-chevron-left"></i>
-                    </a>
-                </li>
-
-                @for(int i = 1; i <= ViewBag.TotalPages; i++)
-                {
-                    @if (i == 1 || i == ViewBag.TotalPages || (i >= ViewBag.CurrentPage - 2 && i <= ViewBag.CurrentPage + 2))
-                    {
-                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
-                            <a class="page-link" href="@Url.Action("Users", new { 
-                                page = i, 
-                                search = ViewBag.Search, 
-                                roleId = ViewBag.RoleId,
-                                subscriptionType = ViewBag.SubscriptionType,
-                                isActive = ViewBag.IsActive,
-                                pageSize = ViewBag.PageSize 
-                            })">@i</a>
-                        </li>
-                    }
-                    else if (i == ViewBag.CurrentPage - 3 || i == ViewBag.CurrentPage + 3)
-                    {
-                        <li class="page-item disabled">
-                            <span class="page-link">...</span>
-                        </li>
-                    }
-                }
-
-                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
-                    <a class="page-link" href="@Url.Action("Users", new { 
-                        page = ViewBag.CurrentPage + 1, 
-                        search = ViewBag.Search, 
-                        roleId = ViewBag.RoleId,
-                        subscriptionType = ViewBag.SubscriptionType,
-                        isActive = ViewBag.IsActive,
-                        pageSize = ViewBag.PageSize 
-                    })">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-    }
 </div>
 
 <!-- Hidden forms -->
@@ -553,6 +514,7 @@
             
             try {
                 const response = await fetch(`@Url.Action("GetUserData", "Admin")?id=${userId}`);
+                credentials: 'include'
                 const result = await response.json();
                 
                 if (result.success) {
@@ -597,13 +559,17 @@
                 form.classList.add('was-validated');
                 return;
             }
-            
+                // ⚡ FIX: Convert checkbox to bool
+            formData.delete('IsActive');
+            const isActiveCheckbox = form.querySelector('input[name="IsActive"]');
+            formData.append('IsActive', isActiveCheckbox?.checked ? 'true' : 'false');
             const actionUrl = isEditMode 
                 ? '@Url.Action("UpdateUser", "Admin")'
                 : '@Url.Action("CreateUser", "Admin")';
             
             try {
                 const response = await fetch(actionUrl, {
+                    credentials: 'include',
                     method: 'POST',
                     body: formData
                 });
@@ -633,6 +599,7 @@
 
             try {
                 const response = await fetch('@Url.Action("UpdateUserStatus", "Admin")', {
+                    credentials: 'include',
                     method: 'POST',
                     body: formData
                 });
@@ -665,6 +632,7 @@
 
             try {
                 const response = await fetch('@Url.Action("UpdateUserRole", "Admin")', {
+                    credentials: 'include',
                     method: 'POST',
                     body: formData
                 });
@@ -691,6 +659,7 @@
 
             try {
                 const response = await fetch('@Url.Action("DeleteUser", "Admin")', {
+                    credentials: 'include',
                     method: 'POST',
                     body: formData
                 });
