@@ -46,6 +46,65 @@
                                 <i class="bi bi-shield-lock-fill"></i> Admin
                             </a>
                         </li>
+                    <li class="nav-item dropdown mega-dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="megaMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Thể Loại
+                    </a>
+                    <div class="dropdown-menu mega-menu" aria-labelledby="megaMenu">
+                        <div class="mega-container">
+                        <div class="row">
+                            <div class="col-md-3 col-6">
+                            <ul class="list-unstyled">
+                                <li><a href="#">Hành Động</a></li>
+                                <li><a href="#">Kinh Dị</a></li>
+                                <li><a href="#">Phiêu Lưu</a></li>
+                                <li><a href="#">Tình Cảm</a></li>
+                                <li><a href="#">Lãng Mạn</a></li>
+                            </ul>
+                            </div>
+                            <div class="col-md-3 col-6">
+                            <ul class="list-unstyled">
+                                <li><a href="#">Cổ Trang</a></li>
+                                <li><a href="#">Hài Hước</a></li>
+                                <li><a href="#">Hoạt Hình</a></li>
+                                <li><a href="#">Tâm Lý</a></li>
+                                <li><a href="#">Thần Thoại</a></li>
+                            </ul>
+                            </div>
+                            <div class="col-md-3 col-6">
+                            <ul class="list-unstyled">
+                                <li><a href="#">Marvel</a></li>
+                                <li><a href="#">Anime</a></li>
+                                <li><a href="#">TV Show</a></li>
+                                <li><a href="#">Chiếu Rạp</a></li>
+                                <li><a href="#">Bí Ẩn</a></li>
+                            </ul>
+                            </div>
+                            <div class="col-md-3 col-6">
+                            <ul class="list-unstyled">
+                                <li><a href="#">Hình Sự</a></li>
+                                <li><a href="#">Học Đường</a></li>
+                                <li><a href="#">Xuyên Không</a></li>
+                                <li><a href="#">Game Show</a></li>
+                                <li><a href="#">Thể Thao</a></li>
+                            </ul>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                    </li>
+
+                    
+                    @* @{
+                        var currentUser = await _authService.GetCurrentUserAsync();
+                        if (currentUser?.IsAdmin == true)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" href="@Url.Action("Dashboard", "Admin")">
+                                    <i class="bi bi-shield-lock-fill"></i> Admin
+                                </a>
+                            </li>
+                        } *@
                     }
                 </ul>
 
