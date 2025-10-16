@@ -1,29 +1,44 @@
-/* =======================
-   GIAO DIỆN CHUNG
-======================= */
-body {
-    background-color: #0f172a;
-    color: #fff;
-    font-family: 'Segoe UI', sans-serif;
+/* ============================
+   🎬 GIAO DIỆN CHUNG
+============================ */
+:root {
+    --bg-main: #0f172a;
+    --bg-card: #1e293b;
+    --border-color: #334155;
+    --text-main: #ffffff;
+    --text-muted: #9ca3af;
+    --highlight: #facc15;
 }
 
-/* =======================
-   TIÊU ĐỀ & BỘ LỌC
-======================= */
+body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 0 12px;
+}
+
+/* ============================
+   🏷️ TIÊU ĐỀ & BỘ LỌC
+============================ */
 .category-header {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     margin: 40px 0 20px 0;
-    padding-left: 4px;
 }
 
 .category-title {
     font-size: 1.8rem;
     font-weight: 700;
+    color: var(--text-main);
     margin-bottom: 8px;
-    color: #fff;
-    margin-top: 40px;
 }
 
 .filter-section {
@@ -31,28 +46,29 @@ body {
     align-items: center;
     gap: 6px;
     font-size: 1rem;
-    color: #9ca3af;
+    color: var(--text-muted);
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: color 0.25s ease;
 }
 
 .filter-section:hover {
-    color: #facc15;
+    color: var(--highlight);
 }
 
-/* =======================
-   DANH SÁCH PHIM
-======================= */
+/* ============================
+   📽️ DANH SÁCH PHIM
+============================ */
 .row {
     margin: 0;
 }
 
 .movie-card {
-    background: #1e293b;
+    background: var(--bg-card);
     border-radius: 8px;
     overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
     height: 100%;
+    position: relative;
 }
 
 .movie-card:hover {
@@ -60,59 +76,92 @@ body {
     box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
+.thumb-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2/3;
+}
+
 .movie-thumb {
     width: 100%;
-    height: 260px;
+    height: 100%;
     object-fit: cover;
-    border-bottom: 1px solid #334155;
+    display: block;
+}
+
+/* Overlay hover effect */
+.thumb-wrapper::after {
+    content: "Xem ngay";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.5);
+    color: var(--highlight);
+    font-weight: 600;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.movie-card:hover .thumb-wrapper::after {
+    opacity: 1;
 }
 
 .movie-title {
     font-size: 0.95rem;
     font-weight: 500;
     text-align: center;
-    color: #fff;
+    color: var(--text-main);
     padding: 10px 6px;
     line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* =======================
-   PHÂN TRANG
-======================= */
+/* ============================
+   📌 PHÂN TRANG
+============================ */
 .pagination {
     margin-top: 30px;
     margin-bottom: 20px;
 }
 
 .page-link {
-    color: #fff;
+    color: var(--text-main);
     background-color: transparent;
-    border: 1px solid #334155;
+    border: 1px solid var(--border-color);
+    transition: background 0.25s ease, color 0.25s ease;
 }
 
 .page-item.active .page-link {
-    background-color: #facc15;
-    border-color: #facc15;
+    background-color: var(--highlight);
+    border-color: var(--highlight);
     color: #000;
+    font-weight: 600;
 }
 
 .page-link:hover {
-    background-color: #334155;
+    background-color: var(--border-color);
 }
 
-/* =======================
-   FOOTER & CĂN ĐỀU
-======================= */
-.container {
-    max-width: 1300px;
-    margin: 0 auto;
+/* ============================
+   🖥️ RESPONSIVE
+============================ */
+@media (min-width: 576px) {
+    .category-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
 }
 
 @media (min-width: 992px) {
     .row.g-3 {
         row-gap: 1.5rem;
     }
-
     .col-lg-2 {
         flex: 0 0 auto;
         width: 16.6667%;

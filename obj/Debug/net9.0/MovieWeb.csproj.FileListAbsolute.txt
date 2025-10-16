@@ -545,7 +545,12 @@ C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\nezrqnk58p-muycvpuwrr.gz
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\v0zgfp0y55-87fc7y1x7t.gz
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\yfc7ypekbg-mlv21k5csn.gz
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\q01hvvf9pq-gkex27t0wc.gz
+<<<<<<< HEAD
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\drakrqhkq6-8xh19203b9.gz
+=======
+C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\zqnfli859j-8v4pwgg2i3.gz
+C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\2sqaz2n8en-9scr2zw0s7.gz
+>>>>>>> feature/PlayMovie
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\mldm5rpxzz-61n19gt1b8.gz
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\8tvrq0o264-qrf5j2cm0w.gz
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\s1szbeez1a-xtxxf3hu2r.gz
@@ -621,6 +626,7 @@ C:\Users\Acer\MovieWeb\obj\Debug\net9.0\MovieWeb.pdb
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\MovieWeb.genruntimeconfig.cache
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\ref\MovieWeb.dll
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\lgninhctd2-qgxp0cjhx5.gz
+<<<<<<< HEAD
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\5x2vp5iob8-yalf8ug8oi.gz
 C:\Users\Acer\MovieWeb\bin\Debug\net9.0\Stripe.net.dll
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\riy6dje64u-f04u3hhbkq.gz
@@ -632,3 +638,7 @@ C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\xdtmykk4kb-5vlpvod6iu.gz
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\2sqaz2n8en-rlya8zdtk4.gz
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\xfwfm63bh2-dksurijcl1.gz
 C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\1yd28g4z9x-30wqr3lodb.gz
+=======
+C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\5x2vp5iob8-clu6sox6ed.gz
+C:\Users\Acer\MovieWeb\obj\Debug\net9.0\compressed\drakrqhkq6-fda3nu53hv.gz
+>>>>>>> feature/PlayMovie
