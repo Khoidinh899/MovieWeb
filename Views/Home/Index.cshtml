@@ -1,0 +1,74 @@
+@{
+    Layout = "_LandingLayout";
+    ViewData["Title"] = "MoonPhim - Bay bổng cùng điện ảnh";
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoonPhim - Bay bổng cùng điện ảnh</title>
+    <link rel="icon" type="image/x-icon" href="~/favicon.ico">
+    <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
+</head>
+<body>
+    <!-- Background Animation -->
+    <div class="bg-animation">
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <div class="circle"></div>
+    </div>
+
+    <!-- Stars -->
+    <div class="stars" id="stars"></div>
+
+    <!-- Main Content -->
+    <div class="landing-container">
+        <div class="logo-container">
+            <div class="logo-wrapper">
+                <img src="~/images/iconmoon.png" alt="MoonPhim Logo" class="logo">
+                <div class="brand-text">
+                    <div class="brand-name">MoonPhim</div>
+                    <div class="brand-slogan">Bay bổng cùng điện ảnh</div>
+                </div>
+            </div>
+        </div>
+
+        <h1 class="main-heading">
+            Xem Phim Miễn Phí Chất Lượng Cao
+        </h1>
+        
+        <p class="sub-heading">
+            Hàng Nghìn Bộ Phim HD Cập Nhật Liên Tục
+        </p>
+
+        <a href="/trang-chu" class="cta-button">
+            <span>Xem Ngay</span>
+            <span class="arrow">→</span>
+        </a>
+
+        <div class="description">
+            Trong kỷ nguyên số ngày nay, việc xem phim miễn phí trực tuyến đã trở thành nhu cầu giải trí không thể thiếu. 
+            Với sự bùng nổ của các nền tảng phát trực tuyến phim, MoonPhim nổi bật lên như một trang web xem phim miễn phí uy tín, 
+            mang đến cho người dùng trải nghiệm xem phim tuyệt vời nhất.
+        </div>
+    </div>
+
+    <script>
+        // Tạo stars
+        const starsContainer = document.getElementById('stars');
+        for (let i = 0; i < 100; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            const size = Math.random() * 2 + 1;
+            star.style.width = size + 'px';
+            star.style.height = size + 'px';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.animationDelay = Math.random() * 3 + 's';
+            starsContainer.appendChild(star);
+        }
+    </script>
+</body>
+</html>

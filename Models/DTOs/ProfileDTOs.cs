@@ -15,26 +15,56 @@ namespace MovieWeb.Models.DTOs
         public bool IsActive { get; set; }
         public bool EmailConfirmed { get; set; }
         public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }  // ✅ THÊM
+        public DateTime? UpdatedAt { get; set; }
         public DateTime? LastLogin { get; set; }
         public int RoleId { get; set; }
         public string RoleName => RoleId == 1 ? "Admin" : "User";
         public bool IsAdmin => RoleId == 1;
-
-        // ✅ THÊM - Các trường bổ sung cho view
         public string? PhoneNumber { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public string? Gender { get; set; }
         public string? Address { get; set; }
         public string? Bio { get; set; }
-
-        // Thống kê hoạt động
         public int TotalFavorites { get; set; }
         public int TotalComments { get; set; }
         public int TotalRatings { get; set; }
         public int TotalWatchHistory { get; set; }
-    }
 
+        // ===== SUBSCRIPTION PROPERTIES =====
+        public string SubscriptionType { get; set; } = "free";
+        public DateTime? SubscriptionStartDate { get; set; }
+        public DateTime? SubscriptionEndDate { get; set; }
+        public int RemainingDaysFromPreviousPackage { get; set; } // Bonus days từ gói cũ
+        public bool IsCancelled { get; set; } // True nếu gói bị hủy nhưng còn hạn
+        public string SubscriptionDisplayName
+        {
+            get => SubscriptionType switch
+            {
+                "premium" => "MoonPro",
+                "student" => "MoonStu",
+                _ => "Free"
+            };
+        }
+
+        public bool IsPremium =>
+            (SubscriptionType == "premium" || SubscriptionType == "student")
+            && SubscriptionEndDate.HasValue
+            && SubscriptionEndDate.Value > DateTime.Now;
+
+        public int DaysRemaining =>
+            (IsPremium && SubscriptionEndDate.HasValue)
+                ? Math.Max(0, (int)(SubscriptionEndDate.Value - DateTime.Now).TotalDays)
+                : 0;
+
+        public bool IsExpiringSoon =>
+            IsPremium && DaysRemaining <= 7;
+
+        // ===== STUDENT VERIFICATION PROPERTIES =====
+        public bool IsStudentVerified { get; set; }
+        public string? StudentEmail { get; set; }
+        public DateTime? StudentEmailVerifiedAt { get; set; }
+        public DateTime? StudentEmailVerificationExpiry { get; set; }
+    }
     // DTO để cập nhật thông tin cá nhân
     public class UpdateProfileDto
     {
@@ -71,18 +101,23 @@ namespace MovieWeb.Models.DTOs
 
     // DTO để thay đổi mật khẩu
     public class ChangePasswordDto
-    {
-        [Required(ErrorMessage = "Mật khẩu hiện tại là bắt buộc")]
-        public string CurrentPassword { get; set; } = string.Empty;
+{
+    [Required(ErrorMessage = "Mật khẩu hiện tại là bắt buộc")]
+    [DataType(DataType.Password)]
+    public string CurrentPassword { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Mật khẩu mới là bắt buộc")]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu phải từ 6-100 ký tự")]
-        public string NewPassword { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Mật khẩu mới là bắt buộc")]
+    [DataType(DataType.Password)]
+    // THAY ĐỔI Ở ĐÂY: Thêm Regular Expression để kiểm tra độ phức tạp
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$",
+        ErrorMessage = "Mật khẩu mới phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.")]
+    public string NewPassword { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Xác nhận mật khẩu là bắt buộc")]
-        [Compare("NewPassword", ErrorMessage = "Xác nhận mật khẩu không khớp")]
-        public string ConfirmPassword { get; set; } = string.Empty;
-    }
+    [Required(ErrorMessage = "Xác nhận mật khẩu là bắt buộc")]
+    [DataType(DataType.Password)]
+    [Compare("NewPassword", ErrorMessage = "Xác nhận mật khẩu không khớp")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
 
     // DTO để upload avatar
     public class UpdateAvatarDto

@@ -24,6 +24,7 @@ namespace MovieWeb.Models.DTOs
         public decimal Rating { get; set; }
         public int RatingCount { get; set; }
         public bool IsRecommended { get; set; }
+        public bool? IsBanner { get; set; }
         public DateTime UpdatedAt { get; set; }
         
         public List<CategoryDto> Categories { get; set; } = new List<CategoryDto>();

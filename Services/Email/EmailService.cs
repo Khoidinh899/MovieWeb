@@ -194,5 +194,57 @@ namespace MovieWeb.Services
 
             await SendEmailAsync(toEmail, subject, htmlBody);
         }
+        public async Task SendStudentEmailOtpAsync(string toEmail, string userName, string otpCode)
+        {
+            var subject = "Mã xác thực Email sinh viên - MoonPhim";
+            var htmlBody = $@"
+    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <div style='text-align: center; margin-bottom: 30px;'>
+            <h1 style='color: #333; margin-bottom: 10px;'>MoonPhim</h1>
+            <p style='color: #666; font-size: 16px;'>Bay bổng cùng điện ảnh</p>
+        </div>
+        
+        <div style='background: #f8f9fa; padding: 30px; border-radius: 10px; border-left: 4px solid #007bff;'>
+            <h2 style='color: #333; margin-bottom: 20px;'>Xác thực Email sinh viên</h2>
+            <p style='color: #555; font-size: 16px; line-height: 1.6; margin-bottom: 20px;'>
+                Chào {userName},<br><br>
+                Bạn đang thực hiện xác thực email sinh viên để nâng cấp lên gói <strong>Student</strong>.
+                Vui lòng sử dụng mã OTP bên dưới để hoàn tất quá trình xác thực.
+            </p>
+            
+            <div style='text-align: center; margin: 30px 0;'>
+                <div style='background-color: #007bff; /* Màu xanh biển của Bootstrap */
+                            color: white; 
+                            padding: 20px; 
+                            border-radius: 10px; 
+                            display: inline-block;
+                            font-size: 32px;
+                            font-weight: bold;
+                            letter-spacing: 8px;
+                            font-family: monospace;'>
+                    {otpCode}
+                </div>
+            </div>
+            
+            <p style='color: #777; font-size: 14px; margin-top: 20px; text-align: center;'>
+                ⏰ Mã OTP này có hiệu lực trong <strong>5 phút</strong>
+            </p>
+            
+            <div style='background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin-top: 20px;'>
+                <p style='color: #856404; font-size: 14px; margin: 0;'>
+                    <strong>⚠️ Lưu ý:</strong> Không chia sẻ mã OTP này với bất kỳ ai. 
+                    MoonPhim sẽ không bao giờ yêu cầu bạn cung cấp mã OTP qua điện thoại hoặc email.
+                </p>
+            </div>
+        </div>
+        
+        <div style='text-align: center; margin-top: 30px; color: #999; font-size: 12px;'>
+            <p>© 2025 MoonPhim. All rights reserved.</p>
+            <p>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>
+        </div>
+    </div>";
+
+            await SendEmailAsync(toEmail, subject, htmlBody);
+        }
     }
 }
