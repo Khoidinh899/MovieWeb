@@ -17,6 +17,7 @@ namespace MovieWeb.Models.DTOs
         public string? OriginalName { get; set; }
 
         public string? Content { get; set; }
+        public string? Description { get; set; } // 👈 THÊM NÀY
 
         [StringLength(50)]
         public string? Type { get; set; } = "single"; // single, series, hoathinh, tvshows
@@ -79,7 +80,8 @@ namespace MovieWeb.Models.DTOs
         public string? OriginalName { get; set; }
 
         public string? Content { get; set; }
-
+        public string? Description { get; set; } // 👈 THÊM NÀY
+        
         [StringLength(50)]
         public string? Type { get; set; }
 
@@ -139,7 +141,8 @@ namespace MovieWeb.Models.DTOs
         public int RatingCount { get; set; }
         public bool IsRecommended { get; set; }
         public bool IsBanner { get; set; }
-
+        public string EpisodeCurrent { get; set; }
+        public string EpisodeTotal { get; set; }
         public bool IsActive { get; set; }
         public bool IsManual { get; set; } // ApiId == null
         public DateTime CreatedAt { get; set; }

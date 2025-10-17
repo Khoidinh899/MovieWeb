@@ -28,6 +28,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
     public virtual DbSet<Director> Directors { get; set; }
     public virtual DbSet<Favorite> Favorites { get; set; }
     public virtual DbSet<Movie> Movies { get; set; }
+    public virtual DbSet<Episode> Episodes { get; set; }
     public virtual DbSet<Notification> Notifications { get; set; }
     public virtual DbSet<Rating> Ratings { get; set; }
     public virtual DbSet<WatchHistory> WatchHistories { get; set; }
