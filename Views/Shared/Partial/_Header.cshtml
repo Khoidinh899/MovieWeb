@@ -39,13 +39,6 @@
                     <li class="nav-item"><a class="nav-link" href="/the-loai/phim-le">Phim lẻ</a></li>
                     <li class="nav-item"><a class="nav-link" href="/the-loai/phim-bo">Phim bộ</a></li>
                     <li class="nav-item"><a class="nav-link" href="/the-loai/hoat-hinh">Hoạt hình</a></li>
-                    @if (currentUser?.IsAdmin == true)
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link" href="@Url.Action("Dashboard", "Admin")">
-                                <i class="bi bi-shield-lock-fill"></i> Admin
-                            </a>
-                        </li>
                     <li class="nav-item dropdown mega-dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="megaMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         Thể Loại
@@ -91,21 +84,16 @@
                             </div>
                         </div>
                         </div>
+                        @if (currentUser?.IsAdmin == true)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" href="@Url.Action("Dashboard", "Admin")">
+                                <i class="bi bi-shield-lock-fill"></i> Admin
+                            </a>
+                        </li>
+                    }
                     </div>
                     </li>
-
-                    
-                    @* @{
-                        var currentUser = await _authService.GetCurrentUserAsync();
-                        if (currentUser?.IsAdmin == true)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link" href="@Url.Action("Dashboard", "Admin")">
-                                    <i class="bi bi-shield-lock-fill"></i> Admin
-                                </a>
-                            </li>
-                        } *@
-                    }
                 </ul>
 
                 <!-- Desktop search -->

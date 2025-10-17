@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Acer\\MovieWeb\\MovieWeb.csproj": {}
+    "D:\\Doan\\webnc\\MovieWeb\\MovieWeb.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Acer\\MovieWeb\\MovieWeb.csproj": {
+    "D:\\Doan\\webnc\\MovieWeb\\MovieWeb.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Acer\\MovieWeb\\MovieWeb.csproj",
+        "projectUniqueName": "D:\\Doan\\webnc\\MovieWeb\\MovieWeb.csproj",
         "projectName": "MovieWeb",
-        "projectPath": "C:\\Users\\Acer\\MovieWeb\\MovieWeb.csproj",
-        "packagesPath": "C:\\Users\\Acer\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Acer\\MovieWeb\\obj\\",
+        "projectPath": "D:\\Doan\\webnc\\MovieWeb\\MovieWeb.csproj",
+        "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
+        "outputPath": "D:\\Doan\\webnc\\MovieWeb\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Acer\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -135,7 +135,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

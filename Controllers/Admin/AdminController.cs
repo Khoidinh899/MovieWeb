@@ -8,6 +8,7 @@ using MovieWeb.Data;
 using MovieWeb.Services;
 using Microsoft.Extensions.Caching.Memory;
 using MovieWeb.Extensions;
+using MovieWeb.Helpers;
 
 namespace MovieWeb.Controllers
 {
@@ -669,114 +670,116 @@ namespace MovieWeb.Controllers
             }
         }
         // GET: /Admin/Movies
-        public async Task<IActionResult> Movies(string? search, string? type, bool? isActive, bool? isManual, int page = 1, int pageSize = 20)
+        public async Task<IActionResult> Movies(string? search, string? type, bool? isActive, bool? isManual, bool? isBanner, int page = 1, int pageSize = 20)
+{
+    if (!await IsAdminAsync())
+    {
+        return Forbid();
+    }
+
+    try
+    {
+        var query = _context.Movies
+            .Include(m => m.Categories)
+            .Include(m => m.Countries)
+            .AsQueryable();
+
+        // Search
+        if (!string.IsNullOrWhiteSpace(search))
         {
-            if (!await IsAdminAsync())
-            {
-                return Forbid();
-            }
-
-            try
-            {
-                var query = _context.Movies
-                    .Include(m => m.Categories)
-                    .Include(m => m.Countries)
-                    .AsQueryable();
-
-                // Search
-                if (!string.IsNullOrWhiteSpace(search))
-                {
-                    query = query.Where(m =>
-                        m.Name.Contains(search) ||
-                        m.OriginalName.Contains(search) ||
-                        m.Slug.Contains(search));
-                    ViewBag.Search = search;
-                }
-
-                // Filter by type
-                if (!string.IsNullOrWhiteSpace(type))
-                {
-                    query = query.Where(m => m.Type == type);
-                    ViewBag.Type = type;
-                }
-
-                // Filter by active status
-                if (isActive.HasValue)
-                {
-                    query = query.Where(m => m.IsActive == isActive.Value);
-                    ViewBag.IsActive = isActive.Value;
-                }
-
-                // Filter by manual/API source
-                if (isManual.HasValue)
-                {
-                    if (isManual.Value)
-                        query = query.Where(m => m.ApiId == null);
-                    else
-                        query = query.Where(m => m.ApiId != null);
-                    ViewBag.IsManual = isManual.Value;
-                }
-
-                var totalMovies = await query.CountAsync();
-                var movieList = await query
-                    .OrderByDescending(m => m.CreatedAt)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
-                var movies = new List<AdminMovieListDto>();
-                foreach (var movie in movieList)
-                {
-                    var movieDto = new AdminMovieListDto
-                    {
-                        MovieId = movie.MovieId,
-                        Slug = movie.Slug,
-                        Name = movie.Name,
-                        OriginalName = movie.OriginalName,
-                        PosterUrl = movie.PosterUrl,
-                        Type = movie.Type,
-                        Status = movie.Status,
-                        Quality = movie.Quality,
-                        Year = movie.Year,
-                        ViewCount = movie.ViewCount ?? 0,
-                        Rating = movie.Rating ?? 0,
-                        RatingCount = movie.RatingCount ?? 0,
-                        IsRecommended = movie.IsRecommended ?? false,
-                        IsBanner = movie.IsBanner ?? false, // ✅ THÊM DÒNG NÀY
-
-                        IsActive = movie.IsActive ?? true,
-                        IsManual = string.IsNullOrEmpty(movie.ApiId),
-                        CreatedAt = movie.CreatedAt ?? DateTime.MinValue,
-                        UpdatedAt = movie.UpdatedAt ?? DateTime.MinValue,
-                        TotalComments = await _context.Comments.CountAsync(c => c.MovieId == movie.MovieId),
-                        TotalFavorites = await _context.Favorites.CountAsync(f => f.MovieId == movie.MovieId),
-                        Categories = movie.Categories.Select(c => c.Name).ToList(),
-                        Countries = movie.Countries.Select(c => c.Name).ToList()
-                    };
-                    movies.Add(movieDto);
-                }
-
-                ViewBag.TotalPages = (int)Math.Ceiling((double)totalMovies / pageSize);
-                ViewBag.CurrentPage = page;
-                ViewBag.PageSize = pageSize;
-                ViewBag.TotalMovies = totalMovies;
-                ViewBag.ActiveMovies = await _context.Movies.CountAsync(m => m.IsActive == true);
-                ViewBag.ManualMovies = await _context.Movies.CountAsync(m => m.ApiId == null);
-                ViewBag.ApiMovies = await _context.Movies.CountAsync(m => m.ApiId != null);
-
-                // Load categories và countries cho dropdown
-                ViewBag.Categories = await _context.Categories.OrderBy(c => c.Name).ToListAsync();
-                ViewBag.Countries = await _context.Countries.OrderBy(c => c.Name).ToListAsync();
-
-                return View("Movies", movies);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading movies list");
-                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải danh sách phim";
-                return RedirectToAction("Dashboard");
-            }
+            query = query.Where(m =>
+                m.Name.Contains(search) ||
+                (m.OriginalName != null && m.OriginalName.Contains(search)) ||
+                m.Slug.Contains(search));
+            ViewBag.Search = search;
         }
+
+        // Filter by type
+        if (!string.IsNullOrWhiteSpace(type))
+        {
+            query = query.Where(m => m.Type == type);
+            ViewBag.Type = type;
+        }
+
+        // Filter by active status
+        if (isActive.HasValue)
+        {
+            query = query.Where(m => m.IsActive == isActive.Value);
+            ViewBag.IsActive = isActive.Value;
+        }
+
+        // Filter by manual/API source
+        if (isManual.HasValue)
+        {
+            if (isManual.Value)
+                query = query.Where(m => m.ApiId == null);
+            else
+                query = query.Where(m => m.ApiId != null);
+            ViewBag.IsManual = isManual.Value;
+        }
+
+        // ===> BỘ LỌC BANNER ĐÃ ĐƯỢỢC THÊM VÀO ĐÂY <===
+        if (isBanner.HasValue)
+        {
+            query = query.Where(m => m.IsBanner == isBanner.Value);
+            ViewBag.IsBanner = isBanner.Value;
+        }
+
+        var totalMovies = await query.CountAsync();
+        var movieList = await query
+            .OrderByDescending(m => m.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var movies = new List<AdminMovieListDto>();
+        foreach (var movie in movieList)
+        {
+            var movieDto = new AdminMovieListDto
+            {
+                MovieId = movie.MovieId,
+                Slug = movie.Slug,
+                Name = movie.Name,
+                OriginalName = movie.OriginalName,
+                PosterUrl = movie.PosterUrl,
+                Type = movie.Type,
+                Status = movie.Status,
+                Quality = movie.Quality,
+                Year = movie.Year,
+                ViewCount = movie.ViewCount ?? 0,
+                Rating = movie.Rating ?? 0,
+                RatingCount = movie.RatingCount ?? 0,
+                IsRecommended = movie.IsRecommended ?? false,
+                IsBanner = movie.IsBanner ?? false,
+                EpisodeCurrent = movie.EpisodeCurrent,
+                EpisodeTotal = movie.EpisodeTotal,
+                IsActive = movie.IsActive ?? true,
+                IsManual = string.IsNullOrEmpty(movie.ApiId),
+                CreatedAt = movie.CreatedAt ?? DateTime.MinValue,
+                UpdatedAt = movie.UpdatedAt ?? DateTime.MinValue,
+                Categories = movie.Categories.Select(c => c.Name).ToList(),
+                Countries = movie.Countries.Select(c => c.Name).ToList()
+            };
+            movies.Add(movieDto);
+        }
+
+        ViewBag.TotalPages = (int)Math.Ceiling((double)totalMovies / pageSize);
+        ViewBag.CurrentPage = page;
+        ViewBag.PageSize = pageSize;
+        ViewBag.TotalMovies = await _context.Movies.CountAsync(); // Lấy tổng số để hiển thị card
+        ViewBag.ActiveMovies = await _context.Movies.CountAsync(m => m.IsActive == true);
+        ViewBag.ManualMovies = await _context.Movies.CountAsync(m => m.ApiId == null);
+        ViewBag.ApiMovies = await _context.Movies.CountAsync(m => m.ApiId != null);
+
+        return View("Movies", movies);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error loading movies list");
+        TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải danh sách phim";
+        return RedirectToAction("Dashboard");
+    }
+}
 
         // GET: /Admin/GetMovieData/{id}
         [HttpGet]
@@ -810,7 +813,7 @@ namespace MovieWeb.Controllers
                         slug = movie.Slug,
                         name = movie.Name,
                         originalName = movie.OriginalName,
-                        content = movie.Content,
+                        description = movie.Description,
                         type = movie.Type,
                         status = movie.Status,
                         posterUrl = movie.PosterUrl,
@@ -870,7 +873,8 @@ namespace MovieWeb.Controllers
                     Slug = model.Slug,
                     Name = model.Name,
                     OriginalName = model.OriginalName,
-                    Content = model.Content,
+                    Description = model.Description,  // ✅ Lưu mô tả đầy đủ
+                    Content = MovieHelper.GetBannerDescription(model.Description ?? ""), // ✅ Auto-generate
                     Type = model.Type,
                     Status = model.Status,
 
@@ -1049,7 +1053,8 @@ namespace MovieWeb.Controllers
                 movie.Slug = model.Slug;
                 movie.Name = model.Name;
                 movie.OriginalName = model.OriginalName;
-                movie.Content = model.Content;
+                movie.Description = model.Description; // ✅ THÊM
+                movie.Content = MovieHelper.GetBannerDescription(model.Description ?? ""); // ✅ Auto-generate
                 movie.Type = model.Type;
                 movie.Status = model.Status;
                 movie.PosterUrl = model.PosterUrl;

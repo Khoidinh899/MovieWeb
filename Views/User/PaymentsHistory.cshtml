@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Lịch sử thanh toán";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
     var currentPage = ViewBag.CurrentPage ?? 1;
     var totalPages = ViewBag.TotalPages ?? 1;
     var totalTransactions = ViewBag.TotalTransactions ?? 0;

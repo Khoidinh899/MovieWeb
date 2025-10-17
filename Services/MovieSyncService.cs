@@ -1,16 +1,24 @@
+// File: Services/MovieSyncService.cs
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MovieWeb.Data;
-using MovieWeb.Services;
-using ApiMovie = MovieWeb.Models.API.Movie; // Alias cho API model
-using DbMovie = MovieWeb.Models.Entities.Movie; // Alias cho DB entity
+using MovieWeb.Models.API;
+using MovieWeb.Models.Entities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using ApiMovie = MovieWeb.Models.API.Movie;
+using DbMovie = MovieWeb.Models.Entities.Movie;
+using ApiEpisode = MovieWeb.Models.API.Episode;
+using DbEpisode = MovieWeb.Models.Entities.Episode;
 
 namespace MovieWeb.Services
 {
     public interface IMovieSyncService
     {
-        Task SyncMovieFromApiToDbAsync(ApiMovie apiMovie);
         Task SyncMoviesFromApiToDbAsync(List<ApiMovie> apiMovies);
-        Task<DbMovie> GetMovieFromDbAsync(string slug);
+        Task BackfillAllEpisodesAsync();
     }
 
     public class MovieSyncService : IMovieSyncService
@@ -26,75 +34,169 @@ namespace MovieWeb.Services
             _logger = logger;
         }
 
-        public async Task SyncMovieFromApiToDbAsync(ApiMovie apiMovie)
-        {
-            try
-            {
-                // Kiểm tra movie đã tồn tại chưa
-                var existingMovie = await _context.Movies.FirstOrDefaultAsync(m => m.Slug == apiMovie.Slug);
-
-                if (existingMovie == null)
-                {
-                    // Lấy chi tiết phim từ API
-                    var movieDetail = await _oPhimService.GetMovieDetailAsync(apiMovie.Slug);
-                    
-                    // Tạo entity mới
-                    var dbMovie = new DbMovie
-                    {
-                        ApiId = apiMovie.Id,
-                        Slug = apiMovie.Slug,
-                        Name = apiMovie.Name,
-                        OriginalName = apiMovie.OriginName,
-                        Content = movieDetail?.Content ?? apiMovie.Content,
-                        Type = apiMovie.Type,
-                        Status = apiMovie.Status,
-                        PosterUrl = apiMovie.PosterUrl,
-                        ThumbUrl = apiMovie.ThumbUrl,
-                        TrailerUrl = apiMovie.TrailerUrl,
-                        Time = apiMovie.Time,
-                        EpisodeCurrent = apiMovie.EpisodeCurrent,
-                        EpisodeTotal = apiMovie.EpisodeTotal,
-                        Quality = apiMovie.Quality,
-                        Language = apiMovie.Lang,
-                        Year = apiMovie.Year,
-                        ViewCount = apiMovie.View,
-                        Rating = 0,
-                        RatingCount = 0,
-                        IsActive = true,
-                        CreatedAt = DateTime.Now,
-                        UpdatedAt = DateTime.Now
-                    };
-
-                    _context.Movies.Add(dbMovie);
-                    await _context.SaveChangesAsync();
-
-                    _logger.LogInformation($"Synced movie to DB: {apiMovie.Name}");
-                }
-                else
-                {
-                    // Cập nhật thông tin nếu đã tồn tại
-                    existingMovie.ViewCount = apiMovie.View;
-                    existingMovie.UpdatedAt = DateTime.Now;
-                    await _context.SaveChangesAsync();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error syncing movie: {apiMovie.Name}");
-            }
-        }
-
+        // =================================================================
+        // HÀM CHÍNH ĐỂ ĐỒNG BỘ PHIM MỚI (CHẠY TỰ ĐỘNG)
+        // =================================================================
         public async Task SyncMoviesFromApiToDbAsync(List<ApiMovie> apiMovies)
         {
-            foreach (var movie in apiMovies)
+            int processedCount = 0;
+            foreach (var apiMovie in apiMovies)
             {
-                await SyncMovieFromApiToDbAsync(movie);
+                processedCount++;
+                try
+                {
+                    var existingMovie = await _context.Movies.AsNoTracking().FirstOrDefaultAsync(m => m.Slug == apiMovie.Slug);
+
+                    if (existingMovie == null)
+                    {
+                        var apiResponse = await _oPhimService.GetMovieDetailAsync(apiMovie.Slug);
+                        if (apiResponse?.Item == null)
+                        {
+                            _logger.LogWarning($"Không thể lấy chi tiết API cho slug (khi thêm phim mới): {apiMovie.Slug}. Bỏ qua.");
+                            continue;
+                        }
+
+                        var apiItem = apiResponse.Item;
+                        var dbMovie = new DbMovie
+                        {
+                            ApiId = apiItem.Id,
+                            Slug = apiItem.Slug,
+                            Name = apiItem.Name,
+                            OriginalName = apiItem.OriginName,
+                            Type = apiItem.Type,
+                            Status = apiItem.Status,
+                            PosterUrl = apiItem.PosterUrl,
+                            ThumbUrl = apiItem.ThumbUrl,
+                            Time = apiItem.Time,
+                            EpisodeCurrent = apiItem.EpisodeCurrent,
+                            EpisodeTotal = apiItem.EpisodeTotal,
+                            Quality = apiItem.Quality,
+                            Language = apiItem.Lang,
+                            Year = apiItem.Year,
+                            ViewCount = apiItem.View,
+                            IsActive = true,
+                            CreatedAt = DateTime.Now,
+                            UpdatedAt = DateTime.Now,
+                            IsBanner = false,
+                            Trailer = apiItem.TrailerUrl,
+                            Description = apiItem.Content,
+                            Content = apiResponse.SeoOnPage?.DescriptionHead,
+                        };
+
+                        if (apiItem.Type == "series" || apiItem.Type == "hoathinh")
+                        {
+                            if (apiItem.Episodes != null)
+                            {
+                                foreach (var server in apiItem.Episodes)
+                                {
+                                    foreach (var episodeData in server.ServerData)
+                                    {
+                                        dbMovie.Episodes.Add(new DbEpisode
+                                        {
+                                            ServerName = server.ServerName,
+                                            EpisodeName = episodeData.Name,
+                                            Slug = episodeData.Slug,
+                                            LinkM3u8 = episodeData.LinkM3u8
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        _context.Movies.Add(dbMovie);
+                        _logger.LogInformation($"Chuẩn bị thêm phim mới: {dbMovie.Name}");
+                    }
+                    else
+                    {
+                        var movieToUpdate = await _context.Movies.FindAsync(existingMovie.MovieId);
+                        if(movieToUpdate != null && movieToUpdate.EpisodeCurrent != apiMovie.EpisodeCurrent)
+                        {
+                            movieToUpdate.EpisodeCurrent = apiMovie.EpisodeCurrent;
+                            movieToUpdate.UpdatedAt = DateTime.Now;
+                        }
+                    }
+
+                    if (processedCount % 10 == 0 && _context.ChangeTracker.HasChanges())
+                    {
+                        await _context.SaveChangesAsync();
+                        _logger.LogInformation("=======> Đã lưu 1 lô phim vào DB <=======");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Lỗi khi đồng bộ phim: {apiMovie.Name}");
+                }
+            }
+            
+            if (_context.ChangeTracker.HasChanges())
+            {
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Đã lưu lô phim cuối cùng vào DB.");
             }
         }
-
-        public async Task<DbMovie> GetMovieFromDbAsync(string slug)
+        
+        // =================================================================
+        // HÀM SỬA LỖI TẬP PHIM (CHỈ CHẠY KHI BẠN GỌI THỦ CÔNG)
+        // =================================================================
+        public async Task BackfillAllEpisodesAsync()
         {
-            return await _context.Movies.FirstOrDefaultAsync(m => m.Slug == slug);
+            _logger.LogInformation(">>> Bắt đầu tác vụ rà soát và điền tập phim cho tất cả phim bộ/hoạt hình.");
+
+            var moviesToProcess = await _context.Movies
+                                                .Include(m => m.Episodes)
+                                                .Where(m => !string.IsNullOrEmpty(m.Slug) && (m.Type == "series" || m.Type == "hoathinh"))
+                                                .ToListAsync();
+
+            if (!moviesToProcess.Any())
+            {
+                _logger.LogWarning("Không tìm thấy phim bộ/hoạt hình nào để rà soát.");
+                return;
+            }
+
+            _logger.LogInformation($"Tìm thấy {moviesToProcess.Count} phim. Bắt đầu gọi API...");
+            int updatedMovieCount = 0;
+            int processedCount = 0;
+
+            foreach (var movie in moviesToProcess)
+            {
+                processedCount++;
+                try
+                {
+                    var apiResponse = await _oPhimService.GetMovieDetailAsync(movie.Slug);
+                    var apiEpisodes = apiResponse?.Item?.Episodes;
+
+                    if (apiEpisodes == null || !apiEpisodes.Any()) continue;
+                    
+                    if(movie.Episodes.Any()) _context.Episodes.RemoveRange(movie.Episodes);
+
+                    foreach(var server in apiEpisodes) {
+                        foreach(var episodeData in server.ServerData) {
+                            movie.Episodes.Add(new DbEpisode {
+                                ServerName = server.ServerName, EpisodeName = episodeData.Name, Slug = episodeData.Slug, 
+                                LinkM3u8 = episodeData.LinkM3u8
+                            });
+                        }
+                    }
+                    
+                    movie.UpdatedAt = DateTime.Now;
+                    updatedMovieCount++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Lỗi khi xử lý slug '{movie.Slug}'.");
+                }
+
+                if (processedCount % 50 == 0 && _context.ChangeTracker.HasChanges())
+                {
+                    await _context.SaveChangesAsync();
+                }
+            }
+            
+            if (_context.ChangeTracker.HasChanges())
+            {
+                await _context.SaveChangesAsync();
+            }
+
+            _logger.LogInformation($"*** HOÀN TẤT: Đã cập nhật tập phim cho {updatedMovieCount} phim. ***");
         }
     }
 }
