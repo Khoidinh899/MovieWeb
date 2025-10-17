@@ -60,6 +60,7 @@ public partial class Movie
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+    
 
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
 
@@ -76,6 +77,7 @@ public partial class Movie
     public virtual ICollection<Country> Countries { get; set; } = new List<Country>();
 
     public virtual ICollection<Director> Directors { get; set; } = new List<Director>();
+    public virtual ICollection<Episode> Episodes { get; set; } = new List<Episode>();
    
     
 }

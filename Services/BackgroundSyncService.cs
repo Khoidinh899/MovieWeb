@@ -1,5 +1,11 @@
+// File: Services/BackgroundSyncService.cs
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MovieWeb.Services;
-using ApiMovie = MovieWeb.Models.API.Movie;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MovieWeb.Services
 {
@@ -16,44 +22,44 @@ namespace MovieWeb.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            _logger.LogInformation("Background Sync Service is starting.");
+
             while (!stoppingToken.IsCancellationRequested)
             {
+                _logger.LogInformation("Starting new movie sync cycle...");
+
                 try
                 {
-                    using var scope = _serviceProvider.CreateScope();
-                    var syncService = scope.ServiceProvider.GetRequiredService<IMovieSyncService>();
-                    var oPhimService = scope.ServiceProvider.GetRequiredService<IOPhimService>();
-
-                    // Lấy phim mới từ API
-                    var latestMovies = await oPhimService.GetLatestMoviesAsync(1);
-                    if (latestMovies?.Data?.Items != null)
+                    using (var scope = _serviceProvider.CreateScope())
                     {
-                        // Chỉ lấy phim có Year >= 2023
-                        var apiMovieList = latestMovies.Data.Items
-                            .Where(m => m.Year >= 2023)
-                            .ToList();
+                        var oPhimService = scope.ServiceProvider.GetRequiredService<IOPhimService>();
+                        var movieSyncService = scope.ServiceProvider.GetRequiredService<IMovieSyncService>();
 
-                        if (apiMovieList.Any())
+                        // === SỬA LỖI Ở ĐÂY: Gọi đúng tên hàm là GetLatestMoviesAsync ===
+                        var apiResponse = await oPhimService.GetLatestMoviesAsync(1);
+                        var recentMovies = apiResponse?.Data?.Items;
+
+                        if (recentMovies != null && recentMovies.Any())
                         {
-                            await syncService.SyncMoviesFromApiToDbAsync(apiMovieList);
-                            _logger.LogInformation($"Synced {apiMovieList.Count} movies (Year >= 2023) to database");
+                            await movieSyncService.SyncMoviesFromApiToDbAsync(recentMovies);
+                            _logger.LogInformation($"Sync cycle completed. Processed {recentMovies.Count} items.");
                         }
                         else
                         {
-                            _logger.LogInformation("Không có phim nào từ 2023 trở đi để sync.");
+                            _logger.LogInformation("No new movies to sync in this cycle.");
                         }
                     }
-
-                    // Chờ 1 giờ trước khi sync lần tiếp theo
-                    await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error in background sync");
-                    // Nếu lỗi thì delay 10 phút rồi thử lại
-                    await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
+                    _logger.LogError(ex, "An error occurred during the sync cycle.");
                 }
+
+                _logger.LogInformation("Next sync cycle will start in 6 hours.");
+                await Task.Delay(TimeSpan.FromHours(6), stoppingToken);
             }
+
+            _logger.LogInformation("Background Sync Service is stopping.");
         }
     }
 }
