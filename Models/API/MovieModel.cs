@@ -1,5 +1,7 @@
-// Models/MovieModels.cs
+// File đã sửa: Models/API/MovieModels.cs
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 
 namespace MovieWeb.Models.API
 {
@@ -22,15 +24,6 @@ namespace MovieWeb.Models.API
 
         [JsonProperty("params")]
         public OPhimParams Params { get; set; }
-
-        [JsonProperty("type_list")]
-        public string TypeList { get; set; }
-
-        [JsonProperty("APP_DOMAIN_FRONTEND")]
-        public string AppDomainFrontend { get; set; }
-
-        [JsonProperty("APP_DOMAIN_CDN_IMAGE")]
-        public string AppDomainCdnImage { get; set; }
     }
 
     public class Movie
@@ -64,34 +57,6 @@ namespace MovieWeb.Models.API
 
         [JsonProperty("thumb_url")]
         public string ThumbUrl { get; set; }
-        // thêm cho API home
-        [JsonProperty("poster")]
-        public string Poster { get; set; }
-
-        [JsonProperty("thumb")]
-        public string Thumb { get; set; }
-
-        [JsonProperty("banner_url")]
-        public string BannerUrl { get; set; }
-
-
-        // Property helper: luôn trả về link ảnh hợp lệ
-        public string ImageUrl =>
-            !string.IsNullOrEmpty(BannerUrl) ? BannerUrl :
-            !string.IsNullOrEmpty(PosterUrl) ? PosterUrl :
-            !string.IsNullOrEmpty(ThumbUrl) ? ThumbUrl :
-            !string.IsNullOrEmpty(Poster) ? Poster :
-            !string.IsNullOrEmpty(Thumb) ? Thumb :
-            "/images/no-poster.png";
-
-        [JsonProperty("is_copyright")]
-        public bool IsCopyright { get; set; }
-
-        [JsonProperty("sub_docquyen")]
-        public bool SubDocquyen { get; set; }
-
-        [JsonProperty("chieurap")]
-        public bool Chieurap { get; set; }
 
         [JsonProperty("trailer_url")]
         public string TrailerUrl { get; set; }
@@ -111,12 +76,6 @@ namespace MovieWeb.Models.API
         [JsonProperty("lang")]
         public string Lang { get; set; }
 
-        [JsonProperty("notify")]
-        public string Notify { get; set; }
-
-        [JsonProperty("showtimes")]
-        public string Showtimes { get; set; }
-
         [JsonProperty("year")]
         public int Year { get; set; }
 
@@ -134,6 +93,47 @@ namespace MovieWeb.Models.API
 
         [JsonProperty("country")]
         public List<Country> Country { get; set; }
+
+        [JsonProperty("episodes")]
+        public List<Episode> Episodes { get; set; } = new List<Episode>();
+        
+        // ===> CÁC THUỘC TÍNH BỊ THIẾU ĐÃ ĐƯỢC BỔ SUNG LẠI <===
+        [JsonProperty("is_copyright")]
+        public bool IsCopyright { get; set; }
+
+        [JsonProperty("sub_docquyen")]
+        public bool SubDocquyen { get; set; }
+
+        [JsonProperty("chieurap")]
+        public bool Chieurap { get; set; }
+
+        [JsonProperty("notify")]
+        public string Notify { get; set; }
+
+        [JsonProperty("showtimes")]
+        public string Showtimes { get; set; }
+    }
+    
+    // Các class hỗ trợ khác giữ nguyên
+    public class Episode
+    {
+        [JsonProperty("server_name")]
+        public string ServerName { get; set; }
+
+        [JsonProperty("server_data")]
+        public List<ServerDatum> ServerData { get; set; } = new List<ServerDatum>();
+    }
+
+    public class ServerDatum
+    {
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("slug")]
+        public string Slug { get; set; }
+
+        [JsonProperty("link_m3u8")]
+        public string LinkM3u8 { get; set; }
     }
 
     public class ModifiedInfo
@@ -153,7 +153,6 @@ namespace MovieWeb.Models.API
         [JsonProperty("slug")]
         public string Slug { get; set; }
     }
-
     public class Country
     {
         [JsonProperty("id")]

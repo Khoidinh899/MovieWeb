@@ -24,7 +24,7 @@ body.admin-page {
 
 .admin-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
 .admin-card .card-header {
@@ -58,7 +58,7 @@ body.admin-page {
     right: 0;
     width: 100px;
     height: 100px;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 50%;
     transform: translate(30%, -30%);
 }
@@ -73,7 +73,7 @@ body.admin-page {
 
 .admin-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 /* ================ TABLE STYLES - FIXED ================ */
@@ -121,9 +121,11 @@ body.admin-page {
 .admin-table table,
 .table {
     width: 100%;
-    table-layout: auto; /* Để table tự điều chỉnh theo nội dung */
+    table-layout: auto;
+    /* Để table tự điều chỉnh theo nội dung */
     margin-bottom: 0;
-    min-width: 1200px; /* Đảm bảo table không bị co quá nhỏ */
+    min-width: 1200px;
+    /* Đảm bảo table không bị co quá nhỏ */
 }
 
 /* Table Header */
@@ -206,8 +208,10 @@ body.admin-page {
 .search-section .form-select {
     width: 100%;
     min-width: 100px;
-    height: 42px; /* Chiều cao cố định */
-    padding: 0.375rem 2.25rem 0.375rem 0.75rem; /* Đủ chỗ cho mũi tên dropdown */
+    height: 42px;
+    /* Chiều cao cố định */
+    padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+    /* Đủ chỗ cho mũi tên dropdown */
 }
 
 /* ⭐ FIX: Input group height khớp với select */
@@ -291,22 +295,22 @@ body.admin-page {
     .admin-container {
         padding: 10px;
     }
-    
+
     .table-responsive {
         min-height: 400px;
         max-height: 500px;
     }
-    
+
     .admin-card {
         min-height: 350px;
     }
-    
+
     .stat-card,
     .stats-card {
         min-height: 100px;
         height: 100px;
     }
-    
+
     /* Mobile: cho phép scroll ngang */
     .table {
         min-width: 1000px;
@@ -333,25 +337,65 @@ body.admin-page {
 
 /* Giới hạn từng cột Movie */
 .table-movie-list th:nth-child(1),
-.table-movie-list td:nth-child(1) { width: 80px; }   /* Poster */
+.table-movie-list td:nth-child(1) {
+    width: 80px;
+}
+
+/* Poster */
 .table-movie-list th:nth-child(2),
-.table-movie-list td:nth-child(2) { width: 180px; }  /* Tên phim */
+.table-movie-list td:nth-child(2) {
+    width: 180px;
+}
+
+/* Tên phim */
 .table-movie-list th:nth-child(3),
-.table-movie-list td:nth-child(3) { width: 100px; }  /* Loại */
+.table-movie-list td:nth-child(3) {
+    width: 100px;
+}
+
+/* Loại */
 .table-movie-list th:nth-child(4),
-.table-movie-list td:nth-child(4) { width: 70px; }   /* Năm */
+.table-movie-list td:nth-child(4) {
+    width: 70px;
+}
+
+/* Năm */
 .table-movie-list th:nth-child(5),
-.table-movie-list td:nth-child(5) { width: 100px; }  /* Chất lượng */
+.table-movie-list td:nth-child(5) {
+    width: 100px;
+}
+
+/* Chất lượng */
 .table-movie-list th:nth-child(6),
-.table-movie-list td:nth-child(6) { width: 100px; }  /* Đánh giá */
+.table-movie-list td:nth-child(6) {
+    width: 100px;
+}
+
+/* Đánh giá */
 .table-movie-list th:nth-child(7),
-.table-movie-list td:nth-child(7) { width: 100px; }  /* Lượt xem */
+.table-movie-list td:nth-child(7) {
+    width: 100px;
+}
+
+/* Lượt xem */
 .table-movie-list th:nth-child(8),
-.table-movie-list td:nth-child(8) { width: 100px; }  /* Nguồn */
+.table-movie-list td:nth-child(8) {
+    width: 100px;
+}
+
+/* Nguồn */
 .table-movie-list th:nth-child(9),
-.table-movie-list td:nth-child(9) { width: 100px; }  /* Trạng thái */
+.table-movie-list td:nth-child(9) {
+    width: 100px;
+}
+
+/* Trạng thái */
 .table-movie-list th:nth-child(10),
-.table-movie-list td:nth-child(10) { width: 130px; } /* Hành động */
+.table-movie-list td:nth-child(10) {
+    width: 130px;
+}
+
+/* Hành động */
 
 /* Nút hành động Movie không xuống dòng */
 .table-movie-list td .action-buttons {
@@ -368,6 +412,7 @@ body.admin-page {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -378,6 +423,7 @@ body.admin-page {
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
@@ -385,4 +431,54 @@ body.admin-page {
 
 .btn:active i.bi-arrow-clockwise {
     animation: spin 0.5s ease;
+}
+/* ✅ FIX: Cột "Thông tin" hiển thị trên 1 hàng */
+.info-badges {
+    display: flex;
+    flex-wrap: nowrap;
+    /* Không cho xuống hàng */
+    gap: 4px;
+    align-items: center;
+    min-width: 0;
+    /* Cho phép flex-item co lại */
+}
+
+.info-badges .badge {
+    white-space: nowrap;
+    /* Text không xuống hàng */
+    flex-shrink: 0;
+    /* Không co lại */
+    padding: 4px 8px;
+    /* Nhỏ gọn hơn */
+    font-size: 0.75rem;
+    /* Chữ nhỏ hơn một tí */
+}
+
+/* ✅ Đảm bảo cột thông tin có đủ chiều rộng nhưng không quá rộng */
+table th:has(+ td .info-badges),
+table td:has(.info-badges) {
+    min-width: 220px;
+    /* Đủ rộng để chứa 3 badge */
+    white-space: nowrap;
+    overflow: visible;
+}
+
+/* ✅ Responsive: Thu nhỏ badge khi màn hình nhỏ */
+@media (max-width: 1400px) {
+    .info-badges .badge {
+        font-size: 0.7rem;
+        padding: 3px 6px;
+    }
+}
+
+@media (max-width: 1200px) {
+    table td:has(.info-badges) {
+        min-width: 180px;
+    }
+}
+
+/* ✅ Ngăn chặn table collapse quá nhỏ */
+table {
+    table-layout: auto !important;
+    min-width: 1000px;
 }

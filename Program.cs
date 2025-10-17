@@ -129,6 +129,8 @@ builder.Services.AddScoped<IOPhimService, OPhimService>();
 builder.Services.AddScoped<IMovieSyncService, MovieSyncService>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 builder.Services.AddHostedService<BackgroundSyncService>();
+// == Hàm BackfillService chỉ chạy thủ công khi cần sửa lỗi tập phim ==
+// builder.Services.AddHostedService<BackfillService>();
 
 // ===== OTHER SERVICES =====
 builder.Services.AddControllersWithViews();
