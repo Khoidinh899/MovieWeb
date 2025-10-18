@@ -57,6 +57,17 @@ namespace MovieWeb.Services
                         }
 
                         var apiItem = apiResponse.Item;
+
+                        // === THÊM LẠI LOGIC CHECK NĂM MÀ BẠN NÓI ===
+                        // (Giả sử bạn chỉ muốn lấy phim của năm hiện tại.
+                        //  Bạn có thể thay 2025 bằng DateTime.Now.Year)
+                        if (apiItem.Year != 2025)
+                        {
+                            _logger.LogInformation($"Bỏ qua phim (năm cũ): {apiItem.Name} (Năm: {apiItem.Year})");
+                            continue; // Bỏ qua, đi đến phim tiếp theo
+                        }
+                        // === KẾT THÚC CHECK NĂM ===
+
                         var dbMovie = new DbMovie
                         {
                             ApiId = apiItem.Id,
@@ -80,25 +91,17 @@ namespace MovieWeb.Services
                             IsBanner = false,
                             Description = apiItem.Content,
                             Content = apiResponse.SeoOnPage?.DescriptionHead,
-
-                            // === LOGIC CHUẨN ĐÂY ===
-                            // 1. Cột "Trailer" sẽ lưu link YouTube
                             Trailer = apiItem.TrailerUrl,
-
-                            // 2. Cột "TrailerUrl" sẽ được gán ở dưới,
-                            //    nó sẽ là null cho phim bộ và có giá trị cho phim lẻ
                         };
 
                         // === LOGIC XỬ LÝ LINK XEM PHIM (M3U8) ===
                         if (apiItem.Type == "single")
                         {
-                            // 3a. Nếu là phim lẻ, gán link M3U8 vào cột TrailerUrl
                             var playbackLink = apiItem.Episodes?.FirstOrDefault()?.ServerData?.FirstOrDefault()?.LinkM3u8;
                             dbMovie.TrailerUrl = playbackLink; // Gán link xem phim
                         }
                         else if (apiItem.Type == "series" || apiItem.Type == "hoathinh")
                         {
-                            // 3b. Nếu là phim bộ/hoạt hình, thêm các tập vào bảng Episodes
                             if (apiItem.Episodes != null)
                             {
                                 foreach (var server in apiItem.Episodes)
@@ -116,7 +119,6 @@ namespace MovieWeb.Services
                                 }
                             }
                         }
-                        // === KẾT THÚC SỬA LỖI ===
 
                         _context.Movies.Add(dbMovie);
                         _logger.LogInformation($"Chuẩn bị thêm phim mới: {dbMovie.Name}");
@@ -152,7 +154,6 @@ namespace MovieWeb.Services
                 _logger.LogInformation("Đã lưu lô phim cuối cùng vào DB.");
             }
         }
-
         // =================================================================
         // HÀM SỬA LỖI TẬP PHIM (CHỈ CHẠY KHI BẠN GỌI THỦ CÔNG)
         // =================================================================
