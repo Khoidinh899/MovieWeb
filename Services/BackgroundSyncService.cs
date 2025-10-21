@@ -41,7 +41,8 @@ namespace MovieWeb.Services
 
                         if (recentMovies != null && recentMovies.Any())
                         {
-                            await movieSyncService.SyncMoviesFromApiToDbAsync(recentMovies);
+                            // Sync chỉ phim từ 2023 trở đi
+                            await movieSyncService.SyncMoviesFromApiToDbAsync(recentMovies, minYear: 2023);
                             _logger.LogInformation($"Sync cycle completed. Processed {recentMovies.Count} items.");
                         }
                         else
