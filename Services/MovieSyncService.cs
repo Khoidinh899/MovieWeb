@@ -114,12 +114,18 @@ namespace MovieWeb.Services
                             CreatedAt = DateTime.Now,
                             UpdatedAt = DateTime.Now,
                             IsBanner = false,
-                            Trailer = apiItem.TrailerUrl,
                             Description = apiItem.Content,
                             Content = apiResponse.SeoOnPage?.DescriptionHead,
+                            Trailer = apiItem.TrailerUrl,
                         };
 
-                        if (apiItem.Type == "series" || apiItem.Type == "hoathinh")
+                        // === LOGIC XỬ LÝ LINK XEM PHIM (M3U8) ===
+                        if (apiItem.Type == "single")
+                        {
+                            var playbackLink = apiItem.Episodes?.FirstOrDefault()?.ServerData?.FirstOrDefault()?.LinkM3u8;
+                            dbMovie.TrailerUrl = playbackLink; // Gán link xem phim
+                        }
+                        else if (apiItem.Type == "series" || apiItem.Type == "hoathinh")
                         {
                             if (apiItem.Episodes == null || !apiItem.Episodes.Any())
                             {
@@ -230,6 +236,7 @@ namespace MovieWeb.Services
                         }
                     }
 
+                    // Lưu theo lô
                     if (processedCount % 10 == 0 && _context.ChangeTracker.HasChanges())
                     {
                         await _context.SaveChangesAsync();
@@ -242,7 +249,8 @@ namespace MovieWeb.Services
                     skippedCount++;
                 }
             }
-            
+
+            // Lưu lô cuối cùng
             if (_context.ChangeTracker.HasChanges())
             {
                 await _context.SaveChangesAsync();
@@ -251,7 +259,6 @@ namespace MovieWeb.Services
 
             _logger.LogInformation($"🎬 === HOÀN TẤT === Thêm mới: {addedCount}, Bỏ qua: {skippedCount}, Tổng xử lý: {processedCount}");
         }
-        
         // =================================================================
         // HÀM SỬA LỖI TẬP PHIM (CHỈ CHẠY KHI BẠN GỌI THỦ CÔNG)
         // =================================================================
@@ -283,8 +290,6 @@ namespace MovieWeb.Services
                     var apiEpisodes = apiResponse?.Item?.Episodes;
 
                     if (apiEpisodes == null || !apiEpisodes.Any()) continue;
-                    
-                    if(movie.Episodes.Any()) _context.Episodes.RemoveRange(movie.Episodes);
 
                     foreach(var server in apiEpisodes) {
                         foreach(var episodeData in server.ServerData) {
@@ -304,7 +309,7 @@ namespace MovieWeb.Services
                             });
                         }
                     }
-                    
+
                     movie.UpdatedAt = DateTime.Now;
                     updatedMovieCount++;
                 }
@@ -318,7 +323,7 @@ namespace MovieWeb.Services
                     await _context.SaveChangesAsync();
                 }
             }
-            
+
             if (_context.ChangeTracker.HasChanges())
             {
                 await _context.SaveChangesAsync();
