@@ -30,10 +30,15 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
     public virtual DbSet<Movie> Movies { get; set; }
     public virtual DbSet<Episode> Episodes { get; set; }
     public virtual DbSet<Notification> Notifications { get; set; }
+    
+    // ===== THÊM MỚI: MOVIE REQUEST TABLES =====
+    public virtual DbSet<RequestsMovie> RequestsMovies { get; set; }
+    public virtual DbSet<UserRequestMovie> UserRequestMovies { get; set; }
+    
     public virtual DbSet<Rating> Ratings { get; set; }
     public virtual DbSet<WatchHistory> WatchHistories { get; set; }
 
-    // ===== NEW SUBSCRIPTION TABLES =====
+    // ===== SUBSCRIPTION TABLES =====
     public virtual DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
     public virtual DbSet<UserSubscription> UserSubscriptions { get; set; }
     public virtual DbSet<Transaction> Transactions { get; set; }
@@ -72,7 +77,6 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.RoleId).HasDefaultValue(2);
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(getdate())");
 
-            // Subscription fields
             entity.Property(e => e.SubscriptionType).HasMaxLength(20).HasDefaultValue("free");
             entity.Property(e => e.StripeCustomerId).HasMaxLength(100);
             entity.Property(e => e.StudentEmail).HasMaxLength(100);
@@ -82,6 +86,54 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Users__RoleId");
+        });
+
+        // ===== THÊM MỚI: REQUESTS MOVIE =====
+        modelBuilder.Entity<RequestsMovie>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__RequestsMovie");
+
+            entity.HasIndex(e => e.Status, "IX_RequestsMovie_Status");
+            entity.HasIndex(e => e.CreatedAt, "IX_RequestsMovie_CreatedAt");
+            entity.HasIndex(e => e.OphimSlug, "IX_RequestsMovie_Slug");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.MovieTitle).HasColumnName("movie_title").HasMaxLength(255);
+            entity.Property(e => e.MovieYear).HasColumnName("movie_year");
+            entity.Property(e => e.OphimSlug).HasColumnName("ophim_slug").HasMaxLength(255);
+            entity.Property(e => e.RequestCount).HasColumnName("request_count").HasDefaultValue(1);
+            entity.Property(e => e.Status).HasColumnName("status").IsRequired().HasMaxLength(50).HasDefaultValue("Chờ đồng bộ");
+            entity.Property(e => e.ConversationLog).HasColumnName("conversation_log").HasColumnType("ntext");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CompletedAt).HasColumnName("completed_at");
+            entity.Property(e => e.AdminNote).HasColumnName("admin_note").HasMaxLength(500);
+        });
+
+        // ===== THÊM MỚI: USER REQUEST MOVIE =====
+        modelBuilder.Entity<UserRequestMovie>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__UserRequestMovie");
+
+            entity.HasIndex(e => e.UserId, "IX_UserRequestMovie_UserId");
+            entity.HasIndex(e => e.RequestId, "IX_UserRequestMovie_RequestId");
+            entity.HasIndex(e => new { e.UserId, e.RequestId }, "UQ_UserRequestMovie").IsUnique();
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id").IsRequired();
+            entity.Property(e => e.RequestId).HasColumnName("request_id").IsRequired();
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_UserRequestMovie_Users");
+
+            entity.HasOne(d => d.Request)
+                .WithMany(r => r.UserRequests)
+                .HasForeignKey(d => d.RequestId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_UserRequestMovie_RequestsMovie");
         });
 
         // ===== SUBSCRIPTION PLANS =====
@@ -109,10 +161,9 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
         });
 
-        // ===== USER SUBSCRIPTIONS (ĐÃ SỬA) =====
+        // ===== USER SUBSCRIPTIONS =====
         modelBuilder.Entity<UserSubscription>(entity =>
         {
-            // ✅ SỬA LẠI DÒNG NÀY ĐỂ FIX LỖI DATABASE TRIGGER
             entity.ToTable("UserSubscriptions", tb => tb.HasTrigger("trg_UserSubscription"));
 
             entity.HasKey(e => e.SubscriptionId).HasName("PK__UserSubscriptions");
@@ -202,21 +253,17 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Ignore(r => r.ConcurrencyStamp);
         });
 
-        // Map Identity other tables
         modelBuilder.Entity<IdentityUserClaim<int>>().ToTable("AspNetUserClaims");
         modelBuilder.Entity<IdentityUserLogin<int>>().ToTable("AspNetUserLogins");
         modelBuilder.Entity<IdentityUserToken<int>>().ToTable("AspNetUserTokens");
         modelBuilder.Entity<IdentityRoleClaim<int>>().ToTable("AspNetRoleClaims");
         modelBuilder.Entity<IdentityUserRole<int>>().ToTable("AspNetUserRoles");
 
-        // ===== EXISTING ENTITY CONFIGURATIONS =====
-
+        // ===== ACTORS =====
         modelBuilder.Entity<Actor>(entity =>
         {
             entity.HasKey(e => e.ActorId).HasName("PK__Actors__57B3EA4B1F26927F");
-
             entity.HasIndex(e => e.Slug, "UQ__Actors__BC7B5FB688EA0EF4").IsUnique();
-
             entity.Property(e => e.Avatar).HasMaxLength(500);
             entity.Property(e => e.Biography).HasColumnType("ntext");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
@@ -225,10 +272,10 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.Slug).HasMaxLength(100);
         });
 
+        // ===== ADMIN LOGS =====
         modelBuilder.Entity<AdminLog>(entity =>
         {
             entity.HasKey(e => e.LogId).HasName("PK__AdminLog__5E5486482B3552F5");
-
             entity.Property(e => e.Action).HasMaxLength(100);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.Description).HasMaxLength(500);
@@ -244,12 +291,11 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
                 .HasConstraintName("FK__AdminLogs__Admin__17036CC0");
         });
 
+        // ===== CATEGORIES =====
         modelBuilder.Entity<Category>(entity =>
         {
             entity.HasKey(e => e.CategoryId).HasName("PK__Categori__19093A0BE8B0B1CA");
-
             entity.HasIndex(e => e.Slug, "UQ__Categori__BC7B5FB63CACE86B").IsUnique();
-
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
@@ -257,12 +303,11 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.Slug).HasMaxLength(100);
         });
 
+        // ===== COMMENTS =====
         modelBuilder.Entity<Comment>(entity =>
         {
             entity.HasKey(e => e.CommentId).HasName("PK__Comments__C3B4DFCADA06B684");
-
             entity.HasIndex(e => e.MovieId, "IX_Comments_MovieId");
-
             entity.Property(e => e.Content).HasColumnType("ntext");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
@@ -281,24 +326,22 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
                 .HasConstraintName("FK__Comments__UserId__02084FDA");
         });
 
+        // ===== COUNTRIES =====
         modelBuilder.Entity<Country>(entity =>
         {
             entity.HasKey(e => e.CountryId).HasName("PK__Countrie__10D1609F99BB0BFD");
-
             entity.HasIndex(e => e.Slug, "UQ__Countrie__BC7B5FB6D85F4721").IsUnique();
-
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Slug).HasMaxLength(100);
         });
 
+        // ===== DIRECTORS =====
         modelBuilder.Entity<Director>(entity =>
         {
             entity.HasKey(e => e.DirectorId).HasName("PK__Director__26C69E467ECC4538");
-
             entity.HasIndex(e => e.Slug, "UQ__Director__BC7B5FB6E39C98C0").IsUnique();
-
             entity.Property(e => e.Avatar).HasMaxLength(500);
             entity.Property(e => e.Biography).HasColumnType("ntext");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
@@ -307,14 +350,12 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.Slug).HasMaxLength(100);
         });
 
+        // ===== FAVORITES =====
         modelBuilder.Entity<Favorite>(entity =>
         {
             entity.HasKey(e => e.FavoriteId).HasName("PK__Favorite__CE74FAD59B321046");
-
             entity.HasIndex(e => e.UserId, "IX_Favorites_UserId");
-
             entity.HasIndex(e => new { e.UserId, e.MovieId }, "UQ__Favorite__A335E50C0B1A2B81").IsUnique();
-
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
 
             entity.HasOne(d => d.Movie).WithMany(p => p.Favorites)
@@ -326,20 +367,15 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
                 .HasConstraintName("FK__Favorites__UserI__73BA3083");
         });
 
+        // ===== MOVIES =====
         modelBuilder.Entity<Movie>(entity =>
         {
             entity.HasKey(e => e.MovieId).HasName("PK__Movies__4BD2941AB82DFE56");
-
             entity.HasIndex(e => e.Rating, "IX_Movies_Rating").IsDescending();
-
             entity.HasIndex(e => e.Slug, "IX_Movies_Slug");
-
             entity.HasIndex(e => e.Type, "IX_Movies_Type");
-
             entity.HasIndex(e => e.ViewCount, "IX_Movies_ViewCount").IsDescending();
-
             entity.HasIndex(e => e.Year, "IX_Movies_Year");
-
             entity.HasIndex(e => e.Slug, "UQ__Movies__BC7B5FB6B116A7B6").IsUnique();
 
             entity.Property(e => e.ApiId).HasMaxLength(50);
@@ -355,9 +391,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.OriginalName).HasMaxLength(255);
             entity.Property(e => e.PosterUrl).HasMaxLength(500);
             entity.Property(e => e.Quality).HasMaxLength(50);
-            entity.Property(e => e.Rating)
-                .HasDefaultValue(0m)
-                .HasColumnType("decimal(3, 1)");
+            entity.Property(e => e.Rating).HasDefaultValue(0m).HasColumnType("decimal(3, 1)");
             entity.Property(e => e.RatingCount).HasDefaultValue(0);
             entity.Property(e => e.Slug).HasMaxLength(200);
             entity.Property(e => e.Status).HasMaxLength(50);
@@ -371,64 +405,33 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.HasMany(d => d.Actors).WithMany(p => p.Movies)
                 .UsingEntity<Dictionary<string, object>>(
                     "MovieActor",
-                    r => r.HasOne<Actor>().WithMany()
-                        .HasForeignKey("ActorId")
-                        .HasConstraintName("FK__MovieActo__Actor__6B24EA82"),
-                    l => l.HasOne<Movie>().WithMany()
-                        .HasForeignKey("MovieId")
-                        .HasConstraintName("FK__MovieActo__Movie__6A30C649"),
-                    j =>
-                    {
-                        j.HasKey("MovieId", "ActorId").HasName("PK__MovieAct__EEA9AABE4EA61940");
-                        j.ToTable("MovieActors");
-                    });
+                    r => r.HasOne<Actor>().WithMany().HasForeignKey("ActorId").HasConstraintName("FK__MovieActo__Actor__6B24EA82"),
+                    l => l.HasOne<Movie>().WithMany().HasForeignKey("MovieId").HasConstraintName("FK__MovieActo__Movie__6A30C649"),
+                    j => { j.HasKey("MovieId", "ActorId").HasName("PK__MovieAct__EEA9AABE4EA61940"); j.ToTable("MovieActors"); });
 
             entity.HasMany(d => d.Categories).WithMany(p => p.Movies)
                 .UsingEntity<Dictionary<string, object>>(
                     "MovieCategory",
-                    r => r.HasOne<Category>().WithMany()
-                        .HasForeignKey("CategoryId")
-                        .HasConstraintName("FK__MovieCate__Categ__59FA5E80"),
-                    l => l.HasOne<Movie>().WithMany()
-                        .HasForeignKey("MovieId")
-                        .HasConstraintName("FK__MovieCate__Movie__59063A47"),
-                    j =>
-                    {
-                        j.HasKey("MovieId", "CategoryId").HasName("PK__MovieCat__EA4207BAA3EAFAAD");
-                        j.ToTable("MovieCategories");
-                    });
+                    r => r.HasOne<Category>().WithMany().HasForeignKey("CategoryId").HasConstraintName("FK__MovieCate__Categ__59FA5E80"),
+                    l => l.HasOne<Movie>().WithMany().HasForeignKey("MovieId").HasConstraintName("FK__MovieCate__Movie__59063A47"),
+                    j => { j.HasKey("MovieId", "CategoryId").HasName("PK__MovieCat__EA4207BAA3EAFAAD"); j.ToTable("MovieCategories"); });
 
             entity.HasMany(d => d.Countries).WithMany(p => p.Movies)
                 .UsingEntity<Dictionary<string, object>>(
                     "MovieCountry",
-                    r => r.HasOne<Country>().WithMany()
-                        .HasForeignKey("CountryId")
-                        .HasConstraintName("FK__MovieCoun__Count__5DCAEF64"),
-                    l => l.HasOne<Movie>().WithMany()
-                        .HasForeignKey("MovieId")
-                        .HasConstraintName("FK__MovieCoun__Movie__5CD6CB2B"),
-                    j =>
-                    {
-                        j.HasKey("MovieId", "CountryId").HasName("PK__MovieCou__AADF82134A71A76F");
-                        j.ToTable("MovieCountries");
-                    });
+                    r => r.HasOne<Country>().WithMany().HasForeignKey("CountryId").HasConstraintName("FK__MovieCoun__Count__5DCAEF64"),
+                    l => l.HasOne<Movie>().WithMany().HasForeignKey("MovieId").HasConstraintName("FK__MovieCoun__Movie__5CD6CB2B"),
+                    j => { j.HasKey("MovieId", "CountryId").HasName("PK__MovieCou__AADF82134A71A76F"); j.ToTable("MovieCountries"); });
 
             entity.HasMany(d => d.Directors).WithMany(p => p.Movies)
                 .UsingEntity<Dictionary<string, object>>(
                     "MovieDirector",
-                    r => r.HasOne<Director>().WithMany()
-                        .HasForeignKey("DirectorId")
-                        .HasConstraintName("FK__MovieDire__Direc__6EF57B66"),
-                    l => l.HasOne<Movie>().WithMany()
-                        .HasForeignKey("MovieId")
-                        .HasConstraintName("FK__MovieDire__Movie__6E01572D"),
-                    j =>
-                    {
-                        j.HasKey("MovieId", "DirectorId").HasName("PK__MovieDir__39BEFDFE237775CE");
-                        j.ToTable("MovieDirectors");
-                    });
+                    r => r.HasOne<Director>().WithMany().HasForeignKey("DirectorId").HasConstraintName("FK__MovieDire__Direc__6EF57B66"),
+                    l => l.HasOne<Movie>().WithMany().HasForeignKey("MovieId").HasConstraintName("FK__MovieDire__Movie__6E01572D"),
+                    j => { j.HasKey("MovieId", "DirectorId").HasName("PK__MovieDir__39BEFDFE237775CE"); j.ToTable("MovieDirectors"); });
         });
 
+        // ===== NOTIFICATIONS =====
         modelBuilder.Entity<Notification>(entity =>
         {
             entity.HasKey(e => e.NotificationId).HasName("PK__Notifica__20CF2E1229953B40");
@@ -437,9 +440,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.IsRead).HasDefaultValue(false);
             entity.Property(e => e.Title).HasMaxLength(255);
-            entity.Property(e => e.Type)
-                .HasMaxLength(50)
-                .HasDefaultValue("info");
+            entity.Property(e => e.Type).HasMaxLength(50).HasDefaultValue("info");
             entity.Property(e => e.Url).HasMaxLength(500);
 
             entity.HasOne(d => d.User).WithMany(p => p.Notifications)
@@ -448,12 +449,11 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
                 .HasConstraintName("FK__Notificat__UserI__1332DBDC");
         });
 
+        // ===== RATINGS =====
         modelBuilder.Entity<Rating>(entity =>
         {
             entity.HasKey(e => e.RatingId).HasName("PK__Ratings__FCCDF87CCCFCF95A");
-
             entity.HasIndex(e => new { e.UserId, e.MovieId }, "UQ__Ratings__A335E50C987AA62A").IsUnique();
-
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.Rating1).HasColumnName("Rating");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(getdate())");
@@ -466,7 +466,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("FK__Ratings__UserId__7B5B524B");
         });
-
+        // ===== WATCH HISTORIES =====
         modelBuilder.Entity<WatchHistory>(entity =>
         {
             entity.HasKey(e => e.HistoryId).HasName("PK__WatchHis__4D7B4ABD26257E5D");

@@ -103,7 +103,51 @@
                         <button type="submit"><i class="fas fa-search"></i></button>
                     </div>
                 </form>
-
+<!-- Notification Bell -->
+<div class="notification-wrapper d-none d-lg-block position-relative" id="notificationBell">
+    <button class="btn btn-link text-white position-relative p-2 notification-trigger" 
+            type="button" 
+            aria-label="Thông báo">
+        <i class="bi bi-bell fs-4"></i>
+        <span class="badge bg-danger position-absolute translate-middle rounded-pill notification-badge" 
+              style="display: none;">0</span>
+    </button>
+    
+    <div class="notification-dropdown" style="display: none;">
+        <div class="notification-header">
+            <ul class="nav nav-tabs border-0 mb-0">
+                <li class="nav-item flex-fill">
+                    <button class="nav-link active w-100 border-0" data-tab="payment" type="button">
+                        <i class="bi bi-credit-card me-1"></i> Thanh toán 
+                        <span class="badge bg-danger ms-1" id="paymentBadge" style="display: none;">0</span>
+                    </button>
+                </li>
+                <li class="nav-item flex-fill">
+                    <button class="nav-link w-100 border-0" data-tab="movie" type="button">
+                        <i class="bi bi-film me-1"></i> Phim 
+                        <span class="badge bg-danger ms-1" id="movieBadge" style="display: none;">0</span>
+                    </button>
+                </li>
+            </ul>
+            <button class="btn btn-sm btn-outline-light mark-all-read" type="button">
+                <i class="bi bi-check-all"></i> Đã đọc
+            </button>
+        </div>
+        
+        <div class="notification-body" id="notificationList">
+            <div class="text-center text-muted">
+                <i class="bi bi-bell-slash d-block mb-2"></i>
+                <p class="mb-0">Không có thông báo nào</p>
+            </div>
+        </div>
+        
+        <div class="notification-footer">
+            <a href="/thong-bao" class="btn btn-link w-100 text-decoration-none">
+                Xem toàn bộ <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
                 <!-- Desktop user menu -->
                 <div class="dropdown ms-3 position-relative d-none d-lg-block">
                     @if (currentUser != null)
