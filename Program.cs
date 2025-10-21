@@ -11,6 +11,10 @@ using System.Text;
 using MovieWeb.Models;
 using DotNetEnv;
 using StripeLib = Stripe;
+using Hangfire;
+using Hangfire.SqlServer;
+using MovieWeb.Filters;
+using MovieWeb.Jobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +38,7 @@ builder.Services.AddIdentity<User, Role>(options =>
     
     // ✅ Chỉ yêu cầu xác thực email 1 lần duy nhất
     options.SignIn.RequireConfirmedEmail = true;
-    options.SignIn.RequireConfirmedAccount = false; // Không cần xác nhận account mỗi lần đăng nhập
+    options.SignIn.RequireConfirmedAccount = false;
     
     // ✅ Cấu hình token xác thực email
     options.Tokens.EmailConfirmationTokenProvider = TokenOptions.DefaultEmailProvider;
@@ -56,7 +60,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.Cookie.Name = "MoonPhim.Auth";
     
-    // ⬇️ THÊM ĐOẠN NÀY - API trả JSON thay vì redirect
+    // ⬇️ API trả JSON thay vì redirect
     options.Events.OnRedirectToLogin = context =>
     {
         if (context.Request.Path.StartsWithSegments("/api"))
@@ -107,6 +111,33 @@ builder.Services.AddAuthorization(options =>
         context.User.HasClaim("RoleId", "1") || context.User.HasClaim("RoleId", "2")));
 });
 
+// ===== HANGFIRE CONFIGURATION =====
+builder.Services.AddHangfire(configuration => configuration
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        new SqlServerStorageOptions
+        {
+            CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+            SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+            QueuePollInterval = TimeSpan.Zero,
+            UseRecommendedIsolationLevel = true,
+            DisableGlobalLocks = true,
+            SchemaName = "hangfire"
+        }
+    ));
+
+builder.Services.AddHangfireServer(options =>
+{
+    options.WorkerCount = 2;
+    options.ServerName = "MoonPhim-BackgroundServer";
+});
+
+// Register Hangfire Jobs
+builder.Services.AddScoped<PaymentReminderJob>();
+
 // ===== EMAIL SETTINGS =====
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();
@@ -119,6 +150,9 @@ StripeLib.StripeConfiguration.ApiKey = builder.Configuration["StripeSettings:Sec
 // ===== CORE SERVICES =====
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+
+// ===== NOTIFICATION SERVICE ===== 
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 // ===== SUBSCRIPTION SERVICES =====
 builder.Services.AddScoped<IStripeService, StripeService>();
@@ -138,7 +172,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 
-// ===== CORS (nếu cần cho API) =====
+// ===== CORS =====
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -148,9 +182,9 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
-// Add logging before building the application
+
 builder.Services.AddLogging();
-// Build the application
+
 var app = builder.Build();
 
 // ===== MIDDLEWARE CONFIGURATION =====
@@ -178,9 +212,29 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
+// ===== HANGFIRE DASHBOARD =====
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new HangfireAuthorizationFilter() },
+    DashboardTitle = "🌙 MoonPhim - Background Jobs Dashboard",
+    StatsPollingInterval = 10000,
+    DisplayStorageConnectionString = false
+});
+
+// ===== ĐĂNG KÝ RECURRING JOBS =====
+RecurringJob.AddOrUpdate<PaymentReminderJob>(
+    recurringJobId: "payment-reminder-daily",
+    methodCall: job => job.Execute(),
+    cronExpression: "0 0 * * *",
+    options: new RecurringJobOptions
+    {
+        TimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")
+    }
+);
+
 // ===== ROUTE CONFIGURATION =====
 
-// 🎯 Landing Page - PHẢI ĐẶT TRƯỚC CÁC ROUTE KHÁC
+// 🎯 Landing Page
 app.MapControllerRoute(
     name: "landing",
     pattern: "",
@@ -192,7 +246,7 @@ app.MapControllerRoute(
     pattern: "trang-chu",
     defaults: new { controller = "TrangChu", action = "TrangChu" });
 
-// Admin routes - PHẢI ĐẶT TRƯỚC default route
+// Admin routes
 app.MapControllerRoute(
     name: "admin",
     pattern: "Admin/{action=Dashboard}/{id?}",
@@ -252,7 +306,7 @@ app.MapControllerRoute(
     pattern: "nang-cap",
     defaults: new { controller = "NangCap", action = "Index" });
 
-// Default route - ĐẶT CUỐI CÙNG
+// Default route
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=TrangChu}/{action=TrangChu}/{id?}");
