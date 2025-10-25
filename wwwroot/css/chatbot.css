@@ -1,0 +1,312 @@
+/* ===================================== */
+/* === CHATBOT FLOATING BUTTON & POPUP === */
+/* ===================================== */
+
+/* --- Nút Tròn Nổi (FAB) --- */
+.chatbot-fab {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1040;
+    transition: all 0.3s ease;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.chatbot-fab.move-up {
+    bottom: 140px; 
+}
+
+.chatbot-fab img {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+
+.chatbot-fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.chatbot-fab:hover img {
+    transform: rotate(15deg);
+}
+
+/* --- Tooltip --- */
+.chatbot-tooltip {
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%) translateX(-15px);
+    background-color: #333;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+}
+
+.chatbot-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    margin-top: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent transparent #333;
+}
+
+.chatbot-fab:hover .chatbot-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) translateX(-10px);
+}
+
+/* --- Khung Chat Popup --- */
+.chatbot-popup {
+    display: none;
+    position: fixed;
+    bottom: 90px;
+    right: 20px;
+    width: 370px;
+    max-height: 70vh;
+    background-color: white;
+    border-radius: 15px;
+    z-index: 1039;
+    overflow: hidden;
+    flex-direction: column;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: popupSlideIn 0.4s ease-out;
+    transition: bottom 0.3s ease;
+}
+
+.chatbot-fab.move-up + .chatbot-popup {
+     bottom: 150px;
+}
+
+@keyframes popupSlideIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Header Popup */
+.chatbot-popup-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.chatbot-popup-header h5 {
+    margin-bottom: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chatbot-popup-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+    font-size: 0.8rem;
+    opacity: 1;
+}
+
+.chatbot-popup-header .btn-close:hover {
+    opacity: 0.8;
+}
+
+/* Body Popup (Khung chứa tin nhắn) */
+.chatbot-popup-body {
+    flex-grow: 1;
+    overflow-y: auto;
+    background-color: #ffffff; /* === THAY ĐỔI 1 ===: Đổi từ #f8f9fa sang #ffffff cho đồng bộ */
+    padding: 10px 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 300px;
+}
+
+.chatbot-popup-body .chat-messages {
+    padding: 0 15px;
+    flex-grow: 1;
+    margin-bottom: 0;
+}
+
+/* CSS Tin Nhắn */
+.chatbot-popup-body .chat-message { 
+    margin-bottom: 10px; 
+    display: flex; 
+}
+
+.chatbot-popup-body .chat-message.user { 
+    justify-content: flex-end; 
+}
+
+.chatbot-popup-body .chat-message.mooner { 
+    justify-content: flex-start; 
+}
+
+.chatbot-popup-body .message-bubble { 
+    padding: 8px 12px; 
+    border-radius: 18px; 
+    max-width: 80%; 
+    word-wrap: break-word; 
+    font-size: 0.9rem; 
+    line-height: 1.5; 
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+}
+
+.chatbot-popup-body .chat-message.user .message-bubble { 
+    background-color: #0d6efd; 
+    color: white; 
+    border-bottom-right-radius: 5px; 
+}
+
+.chatbot-popup-body .chat-message.mooner .message-bubble { 
+    background-color: #f1f3f5; /* === THAY ĐỔI 2 ===: Đổi từ #ffffff sang xám nhạt */
+    color: #212529; 
+    border-bottom-left-radius: 5px; 
+    border: 1px solid #dee2e6; /* Đổi border cho hợp với nền mới */
+}
+
+.chatbot-popup-body #popupTypingIndicator { 
+    flex-shrink: 0; 
+    padding: 5px 15px !important; 
+}
+
+/* Footer Popup (Ô nhập liệu) */
+.chatbot-popup-footer {
+    padding: 10px 15px;
+    background-color: white;
+    border-top: 1px solid #e9ecef;
+    flex-shrink: 0;
+}
+
+.chatbot-popup-footer .form-control {
+    border-radius: 20px;
+    font-size: 0.9rem;
+    border: 1px solid #ced4da;
+    padding: 8px 15px;
+    color: #212529; /* === THAY ĐỔI 3 ===: Thêm màu chữ đen để fix lỗi chữ trắng */
+}
+
+/* === THAY ĐỔI 4 ===: Thêm rule cho placeholder (chữ mờ) */
+.chatbot-popup-footer .form-control::placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+.chatbot-popup-footer .form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    border-color: #667eea;
+}
+
+.chatbot-popup-footer .btn {
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chatbot-popup-footer .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+}
+
+.chatbot-popup-footer .btn-primary:hover {
+    opacity: 0.9;
+    transform: scale(1.05);
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .chatbot-fab {
+        width: 50px;
+        height: 50px;
+        bottom: 70px;
+        right: 15px;
+    }
+    
+    .chatbot-fab.move-up {
+         bottom: 125px;
+    }
+    
+    .chatbot-fab img { 
+        width: 30px; 
+        height: 30px; 
+    }
+    
+    .chatbot-tooltip { 
+        display: none; 
+    }
+
+    .chatbot-popup {
+        bottom: 80px;
+        right: 15px;
+        width: calc(100vw - 30px);
+        max-height: 60vh;
+    }
+    
+    .chatbot-fab.move-up + .chatbot-popup {
+         bottom: 135px;
+    }
+}
+
+/* --- Scrollbar Styling --- */
+.chatbot-popup-body::-webkit-scrollbar { 
+    width: 6px; 
+}
+
+.chatbot-popup-body::-webkit-scrollbar-track { 
+    background: #f1f1f1; 
+    border-radius: 3px; 
+}
+
+.chatbot-popup-body::-webkit-scrollbar-thumb { 
+    background: #adb5bd; 
+    border-radius: 3px; 
+}
+
+.chatbot-popup-body::-webkit-scrollbar-thumb:hover { 
+    background: #868e96; 
+}
+/* 1. Sửa màu chữ trong ô input (Dùng !important để ép ghi đè) */
+.chatbot-popup .chatbot-popup-footer .form-control {
+color: #212529 !important; 
+}
+
+/* 2. Sửa màu chữ mờ (placeholder) */
+.chatbot-popup .chatbot-popup-footer .form-control::placeholder {
+color: #6c757d;
+opacity: 1;
+}
+
+/* 3. Sửa màu chữ "Mooner đang nhập..." (cũng đang bị trắng) */
+.chatbot-popup-body #popupTypingIndicator {
+color: #6c757d; /* Thêm màu chữ xám cho dễ đọc */
+font-style: italic;
+padding-left: 15px; /* Thêm padding cho thống nhất */
+}

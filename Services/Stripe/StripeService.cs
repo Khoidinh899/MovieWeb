@@ -6,6 +6,8 @@ using Stripe;
 using Stripe.Checkout;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
+using Microsoft.AspNetCore.SignalR;
+using MovieWeb.Hubs;
 
 namespace MovieWeb.Services
 {
@@ -16,16 +18,22 @@ namespace MovieWeb.Services
         private readonly string _secretKey;
         private readonly string _webhookSecret;
         private readonly decimal _exchangeRate;
+        private readonly INotificationService _notificationService;
+        private readonly IHubContext<NotificationHub> _hubContext;
         private readonly ILogger<StripeService> _logger;
 
         public StripeService(
             MovieWebDbContext context,
             IConfiguration configuration,
-            ILogger<StripeService> logger)
+            ILogger<StripeService> logger,
+            INotificationService notificationService,
+            IHubContext<NotificationHub> hubContext)
         {
             _context = context;
             _configuration = configuration;
             _logger = logger;
+            _notificationService = notificationService;        // ← THÊM
+            _hubContext = hubContext;
             _secretKey = configuration["StripeSettings:SecretKey"] ?? throw new ArgumentNullException("Stripe SecretKey not configured");
             _webhookSecret = configuration["StripeSettings:WebhookSecret"] ?? "";
             _exchangeRate = decimal.Parse(configuration["SubscriptionSettings:ExchangeRateVNDtoUSD"] ?? "25000");
@@ -550,6 +558,41 @@ namespace MovieWeb.Services
                     $"✅ Checkout completed: User {userId}, Plan {plan.DisplayName}, " +
                     $"Total days: {totalDays} (New: {actualMonths * 30}, Bonus: {bonusDays})"
                 );
+                try
+                {
+                    // 1. Lưu vào DB (không cần Hangfire vì đã trong webhook async rồi)
+                    await _notificationService.CreatePaymentSuccessNotificationAsync(
+                        userId,
+                        plan.PlanType,
+                        DateTime.Now.AddDays(totalDays),
+                        plan.PriceVND
+                    );
+
+                    // 2. Gửi SignalR real-time
+                    var notificationDto = new
+                    {
+                        NotificationId = 0,
+                        Title = "✅ Thanh toán thành công!",
+                        Content = $"Bạn đã nâng cấp lên gói {plan.DisplayName} thành công. " +
+                                  $"Có hiệu lực đến {DateTime.Now.AddDays(totalDays):dd/MM/yyyy}. " +
+                                  $"Cảm ơn bạn đã ủng hộ MoonPhim!",
+                        Type = "PaymentSuccess",
+                        Url = "/user/profile",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    await _hubContext.Clients
+                        .User(userId.ToString())
+                        .SendAsync("ReceiveNotification", notificationDto);
+
+                    _logger.LogInformation("✅ Sent payment success notification to User {UserId}", userId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "❌ Error sending payment notification to User {UserId}", userId);
+                    // Không throw để không làm fail webhook
+                }
             }
             catch (Exception ex)
             {

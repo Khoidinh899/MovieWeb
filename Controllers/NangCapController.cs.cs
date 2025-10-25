@@ -8,72 +8,85 @@ using System.Threading.Tasks;
 
 namespace MovieWeb.Controllers
 {
-    [Authorize] // Bắt buộc người dùng phải đăng nhập để truy cập
+    [Authorize]
     public class NangCapController : Controller
     {
         private readonly IAuthService _authService;
         private readonly ISubscriptionService _subscriptionService;
+        private readonly ILogger<NangCapController> _logger;
 
-        public NangCapController(IAuthService authService, ISubscriptionService subscriptionService)
+        public NangCapController(
+            IAuthService authService, 
+            ISubscriptionService subscriptionService,
+            ILogger<NangCapController> logger)
         {
             _authService = authService;
             _subscriptionService = subscriptionService;
+            _logger = logger;
         }
 
-        // Action này sẽ được gọi khi truy cập vào route /nang-cap
         public async Task<IActionResult> Index()
         {
-            // Lấy thông tin người dùng hiện tại
             var userProfile = await _authService.GetUserProfileAsync(
                 int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!)
             );
 
             if (userProfile == null)
             {
-                // Nếu không tìm thấy user, trả về lỗi hoặc trang đăng nhập
                 return NotFound("Không tìm thấy người dùng.");
             }
 
-            // Lấy danh sách các gói cước
             var plans = await _subscriptionService.GetAllPlansAsync();
 
-            // Tạo ViewModel để gửi dữ liệu ra View
             var viewModel = new NangCapViewModel
             {
                 UserName = userProfile.Username,
-                Avatar = userProfile.Avatar,
+                Avatar = userProfile.Avatar ?? string.Empty, // ✅ Fix null warning
                 CurrentStatus = userProfile.IsPremium ? "Bạn là thành viên Premium" : "Bạn đang là thành viên miễn phí.",
-                Balance = 0, // Thay bằng số dư thật của user nếu có
+                Balance = 0,
                 Plans = plans
             };
 
             return View("NangCap", viewModel);
         }
-        // ✅ THÊM PHƯƠNG THỨC NÀY VÀO
-        // Action này sẽ xử lý kết quả sau khi thanh toán
-        // GET: /NangCap/KetQuaThanhToan
-        public async Task<IActionResult> KetQuaThanhToan([FromQuery] bool? success, [FromQuery] string session_id)
-        {
-            if (success == true && !string.IsNullOrEmpty(session_id))
-            {
-                // Gọi service để kích hoạt gói cước
-                var result = await _subscriptionService.FulfillOrderAsync(session_id);
 
-                if (result)
+        // GET: /NangCap/KetQuaThanhToan
+        public async Task<IActionResult> KetQuaThanhToan([FromQuery] bool success, [FromQuery] string? session_id)
+        {
+            if (success && !string.IsNullOrEmpty(session_id))
+            {
+                // ✅ Xử lý thanh toán thành công
+                try
                 {
-                    ViewBag.Message = "Thanh toán thành công! Gói cước của bạn đã được kích hoạt.";
+                    // Gọi service để kích hoạt gói cước
+                    var result = await _subscriptionService.FulfillOrderAsync(session_id);
+
+                    if (result)
+                    {
+                        ViewBag.Message = "Thanh toán thành công! Gói đăng ký của bạn đã được kích hoạt.";
+                        ViewBag.IsSuccess = true;
+                    }
+                    else
+                    {
+                        ViewBag.Message = "Thanh toán đã được xử lý nhưng có lỗi khi kích hoạt gói cước. Vui lòng liên hệ hỗ trợ.";
+                        ViewBag.IsSuccess = false;
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    ViewBag.Message = "Thanh toán đã được xử lý nhưng có lỗi khi kích hoạt gói cước. Vui lòng liên hệ hỗ trợ.";
+                    _logger.LogError(ex, "Lỗi khi xử lý kết quả thanh toán cho session: {SessionId}", session_id);
+                    ViewBag.Message = "Có lỗi xảy ra khi xử lý thanh toán. Vui lòng liên hệ hỗ trợ.";
+                    ViewBag.IsSuccess = false;
                 }
             }
             else
             {
-                ViewBag.Message = "Thanh toán đã bị hủy hoặc có lỗi xảy ra.";
+                // ✅ Xử lý trường hợp cancel hoặc thất bại
+                ViewBag.Message = "Thanh toán đã bị hủy. Bạn có thể thử lại bất cứ lúc nào.";
+                ViewBag.IsSuccess = false;
             }
 
-            return View(); // Sẽ tìm file View tên là KetQuaThanhToan.cshtml
+            return View();
         }
     }
 }
