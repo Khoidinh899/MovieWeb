@@ -3,6 +3,8 @@ using MovieWeb.Data;
 using MovieWeb.Models.DTOs;
 using MovieWeb.Models.Entities;
 using MovieWeb.Services.Interfaces;
+using Microsoft.AspNetCore.SignalR;
+using MovieWeb.Hubs;
 
 namespace MovieWeb.Services
 {
@@ -11,11 +13,17 @@ namespace MovieWeb.Services
         private readonly MovieWebDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly string[] _studentEmailDomains;
+        private readonly INotificationService _notificationService;
+        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly ILogger<SubscriptionService> _logger;
 
-        public SubscriptionService(MovieWebDbContext context, IConfiguration configuration)
+        public SubscriptionService(MovieWebDbContext context, IConfiguration configuration, INotificationService notificationService, IHubContext<NotificationHub> hubContext, ILogger<SubscriptionService> logger)
         {
             _context = context;
             _configuration = configuration;
+            _notificationService = notificationService;
+            _hubContext = hubContext;
+            _logger = logger;
             _studentEmailDomains = configuration.GetSection("SubscriptionSettings:StudentEmailDomains").Get<string[]>()
                                     ?? new[] { ".edu", ".edu.vn", ".ac.vn" };
         }
@@ -274,6 +282,7 @@ namespace MovieWeb.Services
         {
             var subscription = await _context.UserSubscriptions
                 .Include(s => s.User)
+                .Include(s => s.SubscriptionPlan) // ← THÊM dòng này để lấy tên gói
                 .FirstOrDefaultAsync(s => s.SubscriptionId == subscriptionId);
 
             if (subscription == null) return false;
@@ -284,16 +293,66 @@ namespace MovieWeb.Services
             subscription.CancellationReason = reason;
             subscription.AutoRenew = false;
             subscription.UpdatedAt = DateTime.Now;
+
             if (subscription.User != null)
             {
                 subscription.User.UpdatedAt = DateTime.Now;
             }
+
             await _context.SaveChangesAsync();
+
+            var daysRemaining = (subscription.EndDate - DateTime.Now).Days;
 
             Console.WriteLine($"✅ Đã hủy gói thành công:\n" +
                 $"- SubscriptionId: {subscriptionId}\n" +
                 $"- User vẫn dùng đến: {subscription.EndDate:dd/MM/yyyy}\n" +
-                $"- Ngày còn lại: {(subscription.EndDate - DateTime.Now).Days} ngày");
+                $"- Ngày còn lại: {daysRemaining} ngày");
+            // 2. Tạo notification và gửi real-time qua SignalR
+            try
+            {
+                var planType = subscription.SubscriptionPlan?.PlanType ?? "Premium";
+
+                // 1. Lưu vào DB
+                await _notificationService.CreateCancelSubscriptionNotificationAsync(
+                    subscription.UserId,
+                    planType,
+                    subscription.EndDate,
+                    daysRemaining
+                );
+
+                // 2. Gửi SignalR real-time
+                var planDisplay = planType.ToLower() switch
+                {
+                    "premium" => "Premium",
+                    "student" => "Student",
+                    _ => planType
+                };
+
+                var notificationDto = new
+                {
+                    NotificationId = 0,
+                    Title = "⚠️ Gói đăng ký đã được hủy",
+                    Content = $"Gói {planDisplay} của bạn đã được hủy thành công. " +
+                             $"Bạn vẫn có thể sử dụng đầy đủ tính năng đến hết ngày {subscription.EndDate:dd/MM/yyyy} " +
+                             $"(còn {daysRemaining} ngày). " +
+                             $"Sau đó tài khoản sẽ tự động chuyển về gói Free.",
+                    Type = "CancelSubscription",
+                    Url = "/user/profile",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _hubContext.Clients
+                    .User(subscription.UserId.ToString())
+                    .SendAsync("ReceiveNotification", notificationDto);
+
+                _logger.LogInformation("✅ Sent cancel subscription notification to User {UserId}", subscription.UserId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error sending cancel notification to User {UserId}", subscription.UserId);
+                // Không throw để không làm fail việc hủy gói
+            }
             return true;
         }
         public async Task<bool> RenewSubscriptionAsync(int subscriptionId)

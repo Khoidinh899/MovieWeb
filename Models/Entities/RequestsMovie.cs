@@ -46,17 +46,24 @@ namespace MovieWeb.Models.Entities
         [Column("admin_note")]
         [MaxLength(500)]
         public string? AdminNote { get; set; }
+        /// <summary>
+        /// Khóa ngoại trỏ đến phim trong bảng [Movie] sau khi request hoàn tất.
+        /// </summary>
+        [Column("movie_id")]
+        public int? MovieId { get; set; }
 
+        [ForeignKey("MovieId")]
+        public virtual Movie? Movie { get; set; }
         // Navigation property - Danh sách users đã request phim này
         public virtual ICollection<UserRequestMovie> UserRequests { get; set; } = new List<UserRequestMovie>();
     }
-
     /// <summary>
     /// Helper class: Constants cho Status
     /// </summary>
     public static class RequestStatus
     {
         public const string Pending = "Chờ đồng bộ";
+        public const string Processing = "Đang xử lý"; // tránh conflict với sync tự động
         public const string NeedsVerification = "Cần xác minh thủ công";
         public const string Completed = "Đã hoàn tất";
     }

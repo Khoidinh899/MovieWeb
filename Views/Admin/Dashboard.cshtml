@@ -6,28 +6,19 @@
 
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <!-- Bên trái: Dashboard + nút darkmode -->
         <div class="d-flex align-items-center">
             <h2 class="mb-0 me-3">
                 <i class="bi bi-speedometer2"></i> Admin Dashboard
             </h2>
-            @* @if (Context.Request.Path.Value.StartsWith("/admin", StringComparison.OrdinalIgnoreCase))
-            {
-                <button id="themeToggle" class="btn btn-sm btn-outline-dark" title="Đổi giao diện">
-                    <i class="bi bi-moon"></i>
-                </button>
-            } *@
         </div>
 
-        <!-- Bên phải: ngày giờ -->
         <div class="text-muted">
             <i class="bi bi-calendar3"></i> @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
         </div>
     </div>
 
-    <!-- Statistics Cards -->
     <div class="row g-4 mb-4">
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6">
             <div class="card border-0 shadow-sm h-100"
                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 <div class="card-body text-white">
@@ -44,7 +35,7 @@
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6">
             <div class="card border-0 shadow-sm h-100"
                 style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                 <div class="card-body text-white">
@@ -61,7 +52,7 @@
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6">
             <div class="card border-0 shadow-sm h-100"
                 style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                 <div class="card-body text-white">
@@ -78,7 +69,7 @@
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6">
             <div class="card border-0 shadow-sm h-100"
                 style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
                 <div class="card-body text-white">
@@ -94,11 +85,8 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Management Cards -->
-    <div class="row g-4">
-        <!-- User Management -->
+        </div> <div class="row g-4">
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-primary text-white">
@@ -115,24 +103,6 @@
             </div>
         </div>
 
-        <!-- Comment Management -->
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-chat-dots-fill"></i> Quản Lý Comments
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted mb-3">Kiểm duyệt và quản lý bình luận của người dùng</p>
-                    <a href="@Url.Action("Comments", "Admin")" class="btn btn-info w-100 text-white">
-                        <i class="bi bi-arrow-right-circle"></i> Xem Chi Tiết
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Movie Management -->
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-success text-white">
@@ -149,7 +119,21 @@
             </div>
         </div>
 
-        <!-- Category Management -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-purple text-white"> <h5 class="mb-0">
+                        <i class="bi bi-envelope-paper"></i> Quản Lý Yêu Cầu Phim
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Xử lý các yêu cầu phim từ người dùng</p>
+                    <a href="@Url.Action("MovieRequests", "Admin")" class="btn bg-purple w-100 text-white">
+                        <i class="bi bi-arrow-right-circle"></i> Xem Chi Tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-warning text-dark">
@@ -166,7 +150,6 @@
             </div>
         </div>
 
-        <!-- Actor Management -->
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-danger text-white">
@@ -183,7 +166,22 @@
             </div>
         </div>
 
-        <!-- Admin Logs -->
+         <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-chat-dots-fill"></i> Quản Lý Comments
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Kiểm duyệt và quản lý bình luận của người dùng</p>
+                    <a href="@Url.Action("Comments", "Admin")" class="btn btn-info w-100 text-white">
+                        <i class="bi bi-arrow-right-circle"></i> Xem Chi Tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-secondary text-white">
@@ -200,7 +198,6 @@
             </div>
         </div>
 
-        <!-- Subscription Management -->
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header text-white"
@@ -218,9 +215,8 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    @if (stats.UnconfirmedEmails > 0)
+    </div> @if (stats.UnconfirmedEmails > 0)
     {
         <div class="alert alert-warning mt-4 shadow-sm border-0" role="alert">
             <div class="d-flex align-items-center">
@@ -234,7 +230,12 @@
     }
 </div>
 
+@* Thêm CSS cho màu purple mới *@
 <style>
+    .bg-purple {
+        background-color: #6f42c1; /* Màu purple của Bootstrap */
+    }
+
     .card {
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
