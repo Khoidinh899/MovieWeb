@@ -179,53 +179,53 @@ namespace MovieWeb.Controllers
         }
 
         [HttpPost("change-password")]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> ChangePassword(ChangePasswordDto model)
-{
-    // Giữ nguyên phần kiểm tra ModelState
-    if (!ModelState.IsValid)
-        return View("~/Views/User/ChangePassword.cshtml", model);
-
-    var user = await _userManager.GetUserAsync(User);
-    if (user == null)
-        return NotFound();
-
-    // === THÊM LOGIC KIỂM TRA MẬT KHẨU MỚI VÀ CŨ Ở ĐÂY ===
-    var isSameAsOldPassword = await _userManager.CheckPasswordAsync(user, model.NewPassword);
-    if (isSameAsOldPassword)
-    {
-        // Nếu mật khẩu mới trùng mật khẩu cũ, thêm lỗi và trả về view
-        ModelState.AddModelError("NewPassword", "Mật khẩu mới không được trùng với mật khẩu cũ.");
-        return View("~/Views/User/ChangePassword.cshtml", model);
-    }
-    // =======================================================
-
-    // Giữ nguyên logic đổi mật khẩu của bạn
-    var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
-
-    if (result.Succeeded)
-    {
-        await _signInManager.RefreshSignInAsync(user);
-        TempData["SuccessMessage"] = "Đổi mật khẩu thành công!";
-        return RedirectToAction("Profile", "Profile");
-    }
-
-    foreach (var error in result.Errors)
-    {
-        // Sửa nhỏ: nên gán lỗi vào một key cụ thể nếu có thể
-        // Ví dụ: lỗi "Incorrect password" thì nên gán vào CurrentPassword
-        if (error.Code == "PasswordMismatch")
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto model)
         {
-            ModelState.AddModelError("CurrentPassword", "Mật khẩu hiện tại không đúng.");
+            // Giữ nguyên phần kiểm tra ModelState
+            if (!ModelState.IsValid)
+                return View("~/Views/User/ChangePassword.cshtml", model);
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return NotFound();
+
+            // === THÊM LOGIC KIỂM TRA MẬT KHẨU MỚI VÀ CŨ Ở ĐÂY ===
+            var isSameAsOldPassword = await _userManager.CheckPasswordAsync(user, model.NewPassword);
+            if (isSameAsOldPassword)
+            {
+                // Nếu mật khẩu mới trùng mật khẩu cũ, thêm lỗi và trả về view
+                ModelState.AddModelError("NewPassword", "Mật khẩu mới không được trùng với mật khẩu cũ.");
+                return View("~/Views/User/ChangePassword.cshtml", model);
+            }
+            // =======================================================
+
+            // Giữ nguyên logic đổi mật khẩu của bạn
+            var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+
+            if (result.Succeeded)
+            {
+                await _signInManager.RefreshSignInAsync(user);
+                TempData["SuccessMessage"] = "Đổi mật khẩu thành công!";
+                return RedirectToAction("Profile", "Profile");
+            }
+
+            foreach (var error in result.Errors)
+            {
+                // Sửa nhỏ: nên gán lỗi vào một key cụ thể nếu có thể
+                // Ví dụ: lỗi "Incorrect password" thì nên gán vào CurrentPassword
+                if (error.Code == "PasswordMismatch")
+                {
+                    ModelState.AddModelError("CurrentPassword", "Mật khẩu hiện tại không đúng.");
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+            }
+
+            return View("~/Views/User/ChangePassword.cshtml", model);
         }
-        else
-        {
-            ModelState.AddModelError(string.Empty, error.Description);
-        }
-    }
-    
-    return View("~/Views/User/ChangePassword.cshtml", model);
-}
         [HttpGet("payment-history")]
         public async Task<IActionResult> PaymentHistory(int page = 1)
         {

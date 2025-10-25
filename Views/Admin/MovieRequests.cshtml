@@ -1,0 +1,588 @@
+@model List<MovieWeb.Models.Entities.RequestsMovie>
+@using MovieWeb.Models.Entities
+
+@{
+    ViewData["Title"] = "Quản lý Yêu cầu Phim";
+    Layout = "_AdminLayout"; // Hoặc Layout admin của b
+
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    int pageSize = ViewBag.PageSize ?? 20;
+    string? currentStatus = ViewBag.Status as string ?? "all";
+    var statusOptions = ViewBag.StatusOptions as List<string> ?? new List<string>();
+    var requestCounts = ViewBag.RequestCounts;
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <a href="@Url.Action("Dashboard", "Admin")" class="btn btn-light me-3" title="Quay lại">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h4 class="mb-0">
+                <i class="bi bi-film me-2"></i> @ViewData["Title"]
+            </h4>
+        </div>
+        <div class="text-muted small">
+            <i class="bi bi-calendar-event me-1"></i>
+            @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+        </div>
+    </div>
+    @Html.AntiForgeryToken()
+
+    <div class="search-section">
+    <form asp-action="MovieRequests" method="get" class="row g-3 align-items-center">
+        <div class="col-auto">
+            <label for="statusFilter" class="col-form-label">Trạng thái:</label>
+        </div>
+        <div class="col-auto">
+            <select name="status" id="statusFilter" class="form-select">
+                <option value="all" selected="@(currentStatus == "all")">Tất cả (@requestCounts?.Total)</option>
+                @foreach (var status in statusOptions)
+                {
+                    int count = 0;
+                    if (requestCounts != null)
+                    {
+                        count = status switch
+                        {
+                            RequestStatus.Pending => requestCounts.Pending,
+                            RequestStatus.Processing => requestCounts.Processing,
+                            RequestStatus.NeedsVerification => requestCounts.NeedsVerification,
+                            RequestStatus.Completed => requestCounts.Completed,
+                            _ => 0
+                        };
+                    }
+                    <option value="@status" selected="@(currentStatus == status)">@status (@count)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Lọc</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card stats-card border-0 shadow-sm @(currentStatus == RequestStatus.Pending ? "border border-primary border-3" : "")"
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0 text-uppercase fw-light opacity-75">Chờ Đồng Bộ</h6>
+                            <h2 class="mb-0 mt-2 fw-bold">@requestCounts?.Pending</h2>
+                        </div>
+                        <i class="bi bi-hourglass-split fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card stats-card border-0 shadow-sm @(currentStatus == RequestStatus.Processing ? "border border-primary border-3" : "")"
+                 style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0 text-uppercase fw-light opacity-75">Đang Xử Lý</h6>
+                            <h2 class="mb-0 mt-2 fw-bold">@requestCounts?.Processing</h2>
+                        </div>
+                        <i class="bi bi-gear fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card stats-card border-0 shadow-sm @(currentStatus == RequestStatus.NeedsVerification ? "border border-primary border-3" : "")"
+                 style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0 text-uppercase fw-light opacity-75">Cần Xác Minh</h6>
+                            <h2 class="mb-0 mt-2 fw-bold">@requestCounts?.NeedsVerification</h2>
+                        </div>
+                        <i class="bi bi-patch-question fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card stats-card border-0 shadow-sm @(currentStatus == RequestStatus.Completed ? "border border-primary border-3" : "")"
+                 style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <div class="card-body text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0 text-uppercase fw-light opacity-75">Đã Hoàn Tất</h6>
+                            <h2 class="mb-0 mt-2 fw-bold">@requestCounts?.Completed</h2>
+                        </div>
+                        <i class="bi bi-check2-circle fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+        <p>Hiển thị @Model.Count trên tổng số @ViewBag.TotalRequests yêu cầu.</p>
+        <div class="admin-table card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-list-task me-2"></i>Danh sách yêu cầu</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle table-fixed-layout">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tiêu đề Phim</th>
+                            <th>Năm</th>
+                            <th>Lượt YC</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày Tạo</th>
+                            <th>Phim liên kết</th>
+                            <th>Ghi chú Admin</th>
+                            <th style="min-width: 150px;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    @if (!Model.Any())
+    {
+        <tr>
+            <td colspan="9" class="text-center py-5">  @* <-- Colspan = 9 vì bảng có 9 cột *@
+                <i class="bi bi-inbox fs-1 text-muted"></i>
+                <p class="text-muted mt-2">Không có yêu cầu nào phù hợp.</p>
+            </td>
+        </tr>
+    }
+    else
+    {
+        @foreach (var request in Model)
+        {
+            <tr id="request-row-@request.Id">
+                <td>@request.Id</td>
+                <td>@request.MovieTitle</td>
+                <td>@request.MovieYear</td>
+                <td>@request.RequestCount</td>
+                <td>
+                    <span class="badge @GetStatusBadgeClass(request.Status)">
+                        @request.Status
+                    </span>
+                </td>
+                <td>@request.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>
+                    @if (request.Movie != null)
+                    {
+                        <a href="/phim/@request.Movie.Slug" target="_blank" title="@request.Movie.Name">ID:
+                            @request.MovieId</a>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Chưa có</span>
+                    }
+                </td>
+                <td>@request.AdminNote</td>
+                <td>
+                    @* ... (Code các nút bấm giữ nguyên) ... *@
+                    <div class="btn-group btn-group-sm" role="group">
+                        @* === STATUS: PENDING === *@
+                        @if (request.Status == RequestStatus.Pending)
+                        {
+                            <button type="button" class="btn btn-warning btn-sm btn-process" data-id="@request.Id" title="Xử lý thủ công">
+                                <i class="fas fa-hand-paper"></i> Thủ công
+                            </button>
+                            <button type="button" class="btn btn-primary btn-sm btn-auto-sync" data-id="@request.Id" data-title="@request.MovieTitle" data-year="@request.MovieYear" title="Tự động tìm và đồng bộ phim">
+                                <i class="fas fa-robot"></i> Tự động
+                            </button>
+                        }
+                        @* === STATUS: PROCESSING === *@
+                        @if (request.Status == RequestStatus.Processing)
+                        {
+                             <button type="button" class="btn btn-secondary btn-sm btn-return-pending" data-id="@request.Id" title="Trả lại Chờ đồng bộ">
+                                <i class="fas fa-undo"></i> Trả lại
+                            </button>
+                            <button type="button" class="btn btn-success btn-sm btn-link-movie" data-bs-toggle="modal" data-bs-target="#linkMovieModal" data-request-id="@request.Id" data-movie-title="@request.MovieTitle" title="Liên kết phim thủ công">
+                                <i class="fas fa-link"></i> Link Phim
+                            </button>
+                        }
+                        @* === STATUS: NEEDS VERIFICATION === *@
+                        @if (request.Status == RequestStatus.NeedsVerification)
+                        {
+                            @if (request.MovieId.HasValue && request.Movie != null)
+                            {
+                                <button type="button" class="btn btn-info btn-sm btn-view-synced-movie" data-bs-toggle="modal" data-bs-target="#viewSyncedMovieModal" data-request-id="@request.Id" data-movie-id="@request.Movie.MovieId" data-movie-name="@request.Movie.Name" data-movie-year="@request.Movie.Year" data-movie-slug="@request.Movie.Slug" data-movie-poster="@request.Movie.PosterUrl" data-movie-type="@request.Movie.Type" data-admin-note="@request.AdminNote" title="Xem thông tin phim đã sync">
+                                    <i class="fas fa-eye"></i> Chi tiết
+                                </button>
+                            }
+                            <button type="button" class="btn btn-success btn-sm btn-confirm-request" data-id="@request.Id" data-movie-name="@request.Movie?.Name" title="Xác nhận phim đúng">
+                                <i class="fas fa-check"></i> Xác nhận
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm btn-process" data-id="@request.Id" title="Làm lại thủ công">
+                                <i class="fas fa-hand-paper"></i> Làm lại
+                            </button>
+                        }
+                        @* === STATUS: COMPLETED === *@
+                        @if (request.Status == RequestStatus.Completed)
+                        {
+                            <button type="button" class="btn btn-info btn-sm btn-send-notification" data-id="@request.Id" data-movie-name="@request.Movie?.Name" title="Gửi thông báo cho users">
+                                <i class="fas fa-bell"></i> Gửi TB
+                            </button>
+                        }
+                    </div>
+                </td>
+            </tr>
+        }
+    } @* <-- Đóng thẻ else *@
+</tbody>
+                        @foreach (var request in Model)
+                        {
+                            <tr id="request-row-@request.Id">
+                                <td>@request.Id</td>
+                                <td>@request.MovieTitle</td>
+                                <td>@request.MovieYear</td>
+                                <td>@request.RequestCount</td>
+                                <td>
+                                    <span class="badge @GetStatusBadgeClass(request.Status)">
+                                        @request.Status
+                                    </span>
+                                </td>
+                                <td>@request.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    @if (request.Movie != null)
+                                    {
+                                        <a href="/phim/@request.Movie.Slug" target="_blank" title="@request.Movie.Name">ID:
+                                            @request.MovieId</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Chưa có</span>
+                                    }
+                                </td>
+                                <td>@request.AdminNote</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        @* === STATUS: PENDING === *@
+                                        @if (request.Status == RequestStatus.Pending)
+                                        {
+                                            @* Nút THỦ CÔNG (cũ: Bắt đầu) *@
+                                            <button type="button" class="btn btn-warning btn-sm btn-process" data-id="@request.Id"
+                                                title="Xử lý thủ công">
+                                                <i class="fas fa-hand-paper"></i> Thủ công
+                                            </button>
+
+                                            @* Nút TỰ ĐỘNG (cũ: Xác minh) *@
+                                            <button type="button" class="btn btn-primary btn-sm btn-auto-sync" data-id="@request.Id"
+                                                data-title="@request.MovieTitle" data-year="@request.MovieYear"
+                                                title="Tự động tìm và đồng bộ phim">
+                                                <i class="fas fa-robot"></i> Tự động
+                                            </button>
+                                        }
+
+                                        @* === STATUS: PROCESSING === *@
+                                        @if (request.Status == RequestStatus.Processing)
+                                        {
+                                            @* Nút TRẢ LẠI *@
+                                            <button type="button" class="btn btn-secondary btn-sm btn-return-pending"
+                                                data-id="@request.Id" title="Trả lại Chờ đồng bộ">
+                                                <i class="fas fa-undo"></i> Trả lại
+                                            </button>
+
+                                            @* Nút LINK PHIM (Modal) *@
+                                            <button type="button" class="btn btn-success btn-sm btn-link-movie"
+                                                data-bs-toggle="modal" data-bs-target="#linkMovieModal"
+                                                data-request-id="@request.Id" data-movie-title="@request.MovieTitle"
+                                                title="Liên kết phim thủ công">
+                                                <i class="fas fa-link"></i> Link Phim
+                                            </button>
+                                        }
+
+                                        @* === STATUS: NEEDS VERIFICATION === *@
+                                        @if (request.Status == RequestStatus.NeedsVerification)
+                                        {
+                                            @* Nút XEM CHI TIẾT (mở modal) *@
+                                            @if (request.MovieId.HasValue && request.Movie != null)
+                                            {
+                                                <button type="button" class="btn btn-info btn-sm btn-view-synced-movie"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#viewSyncedMovieModal"
+                                                        data-request-id="@request.Id"
+                                                        data-movie-id="@request.Movie.MovieId"
+                                                        data-movie-name="@request.Movie.Name"
+                                                        data-movie-year="@request.Movie.Year"
+                                                        data-movie-slug="@request.Movie.Slug"
+                                                        data-movie-poster="@request.Movie.PosterUrl"
+                                                        data-movie-type="@request.Movie.Type"
+                                                        data-admin-note="@request.AdminNote"
+                                                        title="Xem thông tin phim đã sync">
+                                                    <i class="fas fa-eye"></i> Chi tiết
+                                                </button>
+                                            }
+                                            
+                                            @* Nút XÁC NHẬN *@
+                                            <button type="button" class="btn btn-success btn-sm btn-confirm-request" 
+                                                    data-id="@request.Id"
+                                                    data-movie-name="@request.Movie?.Name"
+                                                    title="Xác nhận phim đúng">
+                                                <i class="fas fa-check"></i> Xác nhận
+                                            </button>
+                                            
+                                            @* Nút THỦ CÔNG (nếu sai, làm lại) *@
+                                            <button type="button" class="btn btn-warning btn-sm btn-process" 
+                                                    data-id="@request.Id" 
+                                                    title="Làm lại thủ công">
+                                                <i class="fas fa-hand-paper"></i> Làm lại
+                                            </button>
+                                        }
+                                        @* === STATUS: COMPLETED === *@
+                                        @if (request.Status == RequestStatus.Completed)
+                                        {
+                                            @* Nút GỬI THÔNG BÁO *@
+                                            <button type="button" class="btn btn-info btn-sm btn-send-notification"
+                                                data-id="@request.Id" data-movie-name="@request.Movie?.Name"
+                                                title="Gửi thông báo cho users">
+                                                <i class="fas fa-bell"></i> Gửi TB
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div> @if (totalPages > 1)
+            {
+                <div class="card-footer bg-white">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center mb-0">
+                            <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                <a class="page-link"
+                                   href="@Url.Action("MovieRequests", new { status = currentStatus, page = currentPage - 1, pageSize = pageSize })">Trước</a>
+                            </li>
+                            @for (int i = 1; i <= totalPages; i++)
+                            {
+                                @if (i == 1 || i == totalPages || (i >= currentPage - 2 && i <= currentPage + 2))
+                                {
+                                    <li class="page-item @(i == currentPage ? "active" : "")">
+                                        <a class="page-link"
+                                           href="@Url.Action("MovieRequests", new { status = currentStatus, page = i, pageSize = pageSize })">@i</a>
+                                    </li>
+                                }
+                                else if (i == currentPage - 3 || i == currentPage + 3)
+                                {
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                }
+                            }
+                            <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                <a class="page-link"
+                                   href="@Url.Action("MovieRequests", new { status = currentStatus, page = currentPage + 1, pageSize = pageSize })">Sau</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="modal fade" id="linkMovieModal" tabindex="-1" aria-labelledby="linkMovieModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="linkMovieModalLabel">
+                        <i class="bi bi-link-45deg me-2"></i>Liên kết Phim
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="alert alert-info mb-3">
+                        <strong>Yêu cầu:</strong> <span id="modalRequestTitle"></span>
+                    </div>
+
+                    <input type="hidden" id="modalRequestId" />
+                    <input type="hidden" id="selectedMovieId" />
+
+                    <div class="mb-3">
+                        <label for="movieSearchInput" class="form-label">
+                            <i class="bi bi-search me-1"></i>Tìm kiếm phim trong hệ thống:
+                        </label>
+                        <input type="text" class="form-control" id="movieSearchInput" placeholder="Nhập tên phim..."
+                            autocomplete="off">
+                        <div class="form-text">Nhập ít nhất 2 ký tự để tìm kiếm</div>
+                    </div>
+
+                    <div id="movieSearchResults" class="mb-3" style="max-height: 300px; overflow-y: auto;">
+                        <div class="text-center text-muted">
+                            <i class="bi bi-search me-1"></i>Nhập tên phim để bắt đầu tìm kiếm...
+                        </div>
+                    </div>
+
+                    <div class="alert alert-success mb-0">
+                        <strong>Phim đã chọn:</strong> <span id="selectedMovieInfo" class="text-muted">Chưa chọn phim
+                            nào</span>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Hủy
+                    </button>
+                    <button type="button" class="btn btn-success" id="confirmLinkMovieButton" disabled>
+                        <i class="bi bi-check-circle me-1"></i>Xác nhận Liên kết
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @* === MODAL XEM THÔNG TIN PHIM ĐÃ SYNC === *@
+<div class="modal fade" id="viewSyncedMovieModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle me-2"></i>Thông tin phim đã đồng bộ
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    @* Poster *@
+                    <div class="col-md-4 text-center">
+                        <img id="syncedMoviePoster" 
+                             src="" 
+                             alt="Poster" 
+                             class="img-fluid rounded shadow"
+                             onerror="this.src='/images/404_images.gif'">
+                    </div>
+                    
+                    @* Thông tin *@
+                    <div class="col-md-8">
+                        <h4 id="syncedMovieName" class="mb-3"></h4>
+                        
+                        <table class="table table-sm">
+                            <tr>
+                                <th>ID Phim:</th>
+                                <td id="syncedMovieId"></td>
+                            </tr>
+                            <tr>
+                                <th>Năm:</th>
+                                <td id="syncedMovieYear"></td>
+                            </tr>
+                            <tr>
+                                <th>Loại:</th>
+                                <td id="syncedMovieType"></td>
+                            </tr>
+                            <tr>
+                                <th>Slug:</th>
+                                <td>
+                                    <a id="syncedMovieLink" href="" target="_blank" class="text-primary">
+                                        <span id="syncedMovieSlug"></span>
+                                        <i class="fas fa-external-link-alt ms-1"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <div class="alert alert-secondary mt-3">
+                            <strong>Ghi chú Admin:</strong>
+                            <p id="syncedMovieAdminNote" class="mb-0 mt-2"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
+
+@functions {
+    // Helper để chọn màu badge cho status (Giữ nguyên)
+    string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            RequestStatus.Pending => "bg-secondary",
+            RequestStatus.Processing => "bg-warning text-dark",
+            RequestStatus.NeedsVerification => "bg-info text-dark",
+            RequestStatus.Completed => "bg-success",
+            _ => "bg-dark",
+        };
+    }
+}
+
+@section Styles {
+    <style>
+        /* Card hover effect */
+        .stats-card {
+            transition: transform 0.2s;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+
+        /* === FIX LAYOUT MODAL (Info Popup) === */
+        #viewSyncedMovieModal .table {
+            min-width: 0; /* Override admin.css min-width */
+            width: 100%;
+            table-layout: auto; /* Let browser adjust columns naturally */
+        }
+        #viewSyncedMovieModal .table th {
+            width: auto; /* Let label shrink */
+            white-space: nowrap;
+            padding-right: 1rem;
+        }
+        #viewSyncedMovieModal .table td {
+            width: 100%; /* Let value fill remaining space */
+        }
+        #syncedMovieLink {
+            white-space: normal;
+            word-break: break-all;
+        }
+
+        /* === FIX TABLE LAYOUT (Main Request List): Use min-width === */
+        /* Use default table-layout: auto */
+        .admin-table .table th,
+        .admin-table .table td {
+            white-space: nowrap; /* Prevent wrapping by default */
+        }
+
+        /* Set MINIMUM widths for columns that need it */
+        .admin-table .table th:nth-child(1), /* ID */
+        .admin-table .table td:nth-child(1) { min-width: 50px; }
+
+        .admin-table .table th:nth-child(3), /* Năm */
+        .admin-table .table td:nth-child(3) { min-width: 70px; }
+
+        .admin-table .table th:nth-child(4), /* Lượt YC */
+        .admin-table .table td:nth-child(4) { min-width: 80px; text-align: center; }
+
+        .admin-table .table th:nth-child(5), /* Trạng thái */
+        .admin-table .table td:nth-child(5) { min-width: 120px; }
+
+        .admin-table .table th:nth-child(6), /* Ngày Tạo */
+        .admin-table .table td:nth-child(6) { min-width: 140px; }
+
+        .admin-table .table th:nth-child(7), /* Phim LK */
+        .admin-table .table td:nth-child(7) { min-width: 100px; }
+
+        .admin-table .table th:nth-child(9), /* Hành động */
+        .admin-table .table td:nth-child(9) { min-width: 170px; } /* Min width for buttons */
+
+        /* Allow long text columns to wrap if needed */
+        .admin-table .table th:nth-child(2), /* Tiêu đề */
+        .admin-table .table td:nth-child(2),
+        .admin-table .table th:nth-child(8), /* Ghi chú */
+        .admin-table .table td:nth-child(8) {
+            white-space: normal; /* Allow wrapping */
+            word-break: break-word; /* Break long words */
+        }
+
+        /* Ensure buttons stay on one line */
+        .admin-table .table .btn-group {
+            white-space: nowrap;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="~/js/movie-requests.js" asp-append-version="true"></script>
+}

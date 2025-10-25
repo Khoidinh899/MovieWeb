@@ -1,4 +1,4 @@
-// File: Services/MovieSyncService.cs
+// File: Services/MovieSyncService.cs (UPDATED - HOÀN CHỈNH)
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MovieWeb.Data;
@@ -28,12 +28,29 @@ namespace MovieWeb.Services
         private readonly MovieWebDbContext _context;
         private readonly IOPhimService _oPhimService;
         private readonly ILogger<MovieSyncService> _logger;
+        
+        // === INJECT 4 SERVICES MỚI ===
+        private readonly ICategorySyncService _categorySyncService;
+        private readonly ICountrySyncService _countrySyncService;
+        private readonly IActorSyncService _actorSyncService;
+        private readonly IDirectorSyncService _directorSyncService;
 
-        public MovieSyncService(MovieWebDbContext context, IOPhimService oPhimService, ILogger<MovieSyncService> logger)
+        public MovieSyncService(
+            MovieWebDbContext context, 
+            IOPhimService oPhimService, 
+            ILogger<MovieSyncService> logger,
+            ICategorySyncService categorySyncService,
+            ICountrySyncService countrySyncService,
+            IActorSyncService actorSyncService,
+            IDirectorSyncService directorSyncService)
         {
             _context = context;
             _oPhimService = oPhimService;
             _logger = logger;
+            _categorySyncService = categorySyncService;
+            _countrySyncService = countrySyncService;
+            _actorSyncService = actorSyncService;
+            _directorSyncService = directorSyncService;
         }
 
         // =================================================================
@@ -56,10 +73,13 @@ namespace MovieWeb.Services
             }
             
             // Log chi tiết phim từ API
-            var movieYears = apiMovies.GroupBy(m => m.Year).OrderByDescending(g => g.Key);
-            foreach (var yearGroup in movieYears.Take(10))
+            var movieYears = apiMovies?.GroupBy(m => m.Year).OrderByDescending(g => g.Key);
+            if (movieYears != null)
             {
-                _logger.LogInformation($"   📊 Năm {yearGroup.Key}: {yearGroup.Count()} phim - {string.Join(", ", yearGroup.Take(3).Select(m => m.Name))}");
+                foreach (var yearGroup in movieYears.Take(10))
+                {
+                    _logger.LogInformation($"   📊 Năm {yearGroup.Key}: {yearGroup.Count()} phim - {string.Join(", ", yearGroup.Take(3).Select(m => m.Name))}");
+                }
             }
             
             // Lọc phim theo năm nếu có chỉ định
@@ -93,6 +113,16 @@ namespace MovieWeb.Services
                         var apiItem = apiResponse.Item;
                         _logger.LogInformation($"📺 Đang xử lý: {apiItem.Name} (Type: {apiItem.Type}, Year: {apiItem.Year})");
 
+                        // === SYNC CATEGORIES, COUNTRIES, ACTORS, DIRECTORS TRƯỚC ===
+                        _logger.LogInformation($"🔄 Bắt đầu sync metadata cho phim: {apiItem.Name}");
+                        
+                        var syncedCategories = await _categorySyncService.SyncCategoriesAsync(apiItem.Category ?? new List<MovieWeb.Models.API.Category>());
+                        var syncedCountries = await _countrySyncService.SyncCountriesAsync(apiItem.Country ?? new List<MovieWeb.Models.API.Country>());
+                        var syncedActors = await _actorSyncService.SyncActorsAsync(apiItem.Actor);
+                        var syncedDirectors = await _directorSyncService.SyncDirectorsAsync(apiItem.Director);
+
+                        _logger.LogInformation($"✅ Đã sync metadata: {syncedCategories.Count} categories, {syncedCountries.Count} countries, {syncedActors.Count} actors, {syncedDirectors.Count} directors");
+
                         var dbMovie = new DbMovie
                         {
                             ApiId = apiItem.Id,
@@ -118,6 +148,12 @@ namespace MovieWeb.Services
                             Content = apiResponse.SeoOnPage?.DescriptionHead,
                             Trailer = apiItem.TrailerUrl,
                         };
+
+                        // === LINK RELATIONSHIPS ===
+                        dbMovie.Categories = syncedCategories;
+                        dbMovie.Countries = syncedCountries;
+                        dbMovie.Actors = syncedActors;
+                        dbMovie.Directors = syncedDirectors;
 
                         // === LOGIC XỬ LÝ LINK XEM PHIM (M3U8) ===
                         if (apiItem.Type == "single")
@@ -259,6 +295,7 @@ namespace MovieWeb.Services
 
             _logger.LogInformation($"🎬 === HOÀN TẤT === Thêm mới: {addedCount}, Bỏ qua: {skippedCount}, Tổng xử lý: {processedCount}");
         }
+
         // =================================================================
         // HÀM SỬA LỖI TẬP PHIM (CHỈ CHẠY KHI BẠN GỌI THỦ CÔNG)
         // =================================================================

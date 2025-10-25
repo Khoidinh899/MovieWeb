@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
+<!DOCTYPE html>
 <html lang="vi">
 
 <head>
@@ -12,14 +13,21 @@
     <link rel="stylesheet" href="~/css/header.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/nangcap.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/notification.css" />
+    <link rel="stylesheet" href="~/css/chatbot.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link rel="icon" type="image/x-icon" href="~/favicon.ico">
     @await RenderSectionAsync("Styles", required: false)
 </head>
 
-<body class="@(ViewData["IsHomePage"] as bool? == true ? "home-page" : "")">    <!-- Header with Navigation -->
-    @await Html.PartialAsync("Partial/_Header")
+<body class="@(ViewData["IsHomePage"] as bool? == true ? "home-page" : "")">
+    
+    @{
+        var token = antiforgery.GetAndStoreTokens(Context).RequestToken;
+    }
+    <input type="hidden" id="RequestVerificationToken" value="@token" />
+     @await Html.PartialAsync("Partial/_Header")
     
     <!-- Mobile Search Overlay -->
     @await Html.PartialAsync("Partial/_MobileSearch")
@@ -39,8 +47,9 @@
     @await Html.PartialAsync("Partial/_Scripts")
     
     @await RenderSectionAsync("Scripts", required: false)
-    <script src="~/js/notification.js"></script>
-
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script src="~/js/notification.js" asp-append-version="true"></script>
+    <script src="~/js/chatbot.js" asp-append-version="true"></script>
 </body>
 
 </html>

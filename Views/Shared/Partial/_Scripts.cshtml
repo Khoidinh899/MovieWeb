@@ -16,7 +16,7 @@
     }
     
     function init() {
-        console.log("✅ DOM Ready. Initializing features...");
+        @* console.log("✅ DOM Ready. Initializing features..."); *@
         initNavbarAndScroll();
         initMobileSearch();
     }
@@ -31,9 +31,9 @@
             return;
         }
 
-        console.log("✅ Navbar found. Setting up scroll listener...");
+        @* console.log("✅ Navbar found. Setting up scroll listener...");
         console.log("📍 Body classes:", body.className);
-        console.log("📍 Is home page:", body.classList.contains('home-page'));
+        console.log("📍 Is home page:", body.classList.contains('home-page')); *@
 
         const isHomePage = body.classList.contains('home-page');
         
@@ -41,7 +41,7 @@
         if (isHomePage && window.innerWidth >= 992) {
             navbar.style.background = 'transparent';
             navbar.style.boxShadow = 'none';
-            console.log("🎨 Initial state: Transparent navbar (forced via JS)");
+            @* console.log("🎨 Initial state: Transparent navbar (forced via JS)"); *@
         }
 
         let ticking = false;
@@ -60,13 +60,13 @@
                             navbar.style.background = 'linear-gradient(135deg, #012c42 0%, #015487 50%, #0477eb 100%)';
                             navbar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
                             navbar.classList.add('navbar-scrolled');
-                            console.log("🎨 Navbar scrolled - Gradient applied (scroll: " + scrollPosition + "px)");
+                            @* console.log("🎨 Navbar scrolled - Gradient applied (scroll: " + scrollPosition + "px)"); *@
                         } else {
                             // Set transparent bằng inline style
                             navbar.style.background = 'transparent';
                             navbar.style.boxShadow = 'none';
                             navbar.classList.remove('navbar-scrolled');
-                            console.log("🎨 Navbar at top - Transparent (scroll: " + scrollPosition + "px)");
+                            @* console.log("🎨 Navbar at top - Transparent (scroll: " + scrollPosition + "px)"); *@
                         }
                     } else if (isHomePage && !isDesktop) {
                         // Mobile - luôn có màu
@@ -95,7 +95,7 @@
 
         // Lắng nghe scroll trên window
         window.addEventListener('scroll', handleScroll, { passive: true });
-        console.log("✅ Scroll listener attached to window.");
+        @* console.log("✅ Scroll listener attached to window."); *@
 
         // Xử lý resize
         window.addEventListener('resize', () => {
