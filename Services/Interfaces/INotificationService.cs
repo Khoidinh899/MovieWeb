@@ -38,7 +38,7 @@ namespace MovieWeb.Services.Interfaces
         /// <summary>
         /// Tạo notification mới
         /// </summary>
-        Task<Notification> CreateNotificationAsync(int userId, string title, string content, 
+        Task<Notification> CreateNotificationAsync(int userId, string title, string content,
             string type, string? url = null);
 
         /// <summary>
@@ -46,11 +46,22 @@ namespace MovieWeb.Services.Interfaces
         /// </summary>
         Task<List<Notification>> CreateNotificationsAsync(List<int> userIds, string title,
             string content, string type, string? url = null);
-        // ✅ HÀM MỚI CHO HANGFIRE JOB
+
         /// <summary>
         /// (Hangfire) Tạo notification nhắc nhở gia hạn cho 1 user
         /// </summary>
         Task CreatePaymentReminderAsync(int userId);
+
+        // ================================================================
+        // ✅ THÊM HÀM NÀY VÀO ĐỂ JOB MOVIE SYNC CÓ THỂ GỌI
+        // ================================================================
+        /// <summary>
+        /// (Hangfire) Tạo notification khi phim user yêu cầu đã có
+        /// </summary>
+        Task CreateMovieRequestCompletedAsync(int userId, int movieId, string movieName);
+        Task CreatePaymentSuccessNotificationAsync(int userId, string subscriptionType, DateTime subscriptionEndDate, decimal amountVND);
+        Task CreateCancelSubscriptionNotificationAsync(int userId, string planType, DateTime endDate, int daysRemaining);
+        Task CreateSubscriptionCancelledNotificationAsync(int userId, string planName, DateTime endDate, string? reason = null);
     }
 
     // ===== DTOs =====

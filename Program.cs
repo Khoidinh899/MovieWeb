@@ -10,6 +10,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using MovieWeb.Models;
 using DotNetEnv;
+using MovieWeb.Hubs;
+using Microsoft.AspNetCore.SignalR; // <-- THÊM DÒNG NÀY
 using StripeLib = Stripe;
 using Hangfire;
 using Hangfire.SqlServer;
@@ -137,6 +139,8 @@ builder.Services.AddHangfireServer(options =>
 
 // Register Hangfire Jobs
 builder.Services.AddScoped<PaymentReminderJob>();
+//  SignalR Job
+builder.Services.AddScoped<SendRealtimeNotificationJob>();
 
 // ===== EMAIL SETTINGS =====
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
@@ -163,7 +167,11 @@ builder.Services.AddScoped<IOPhimService, OPhimService>();
 builder.Services.AddScoped<IMovieSyncService, MovieSyncService>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 builder.Services.AddHostedService<BackgroundSyncService>();
-// == Hàm BackfillService chỉ chạy thủ công khi cần sửa lỗi tập phim ==
+builder.Services.AddScoped<ICategorySyncService, CategorySyncService>();
+builder.Services.AddScoped<ICountrySyncService, CountrySyncService>();
+builder.Services.AddScoped<IActorSyncService, ActorSyncService>();
+builder.Services.AddScoped<IDirectorSyncService, DirectorSyncService>();
+// == Hàm BackfillService chỉ chạy thủ công khi cần sửa lỗi tập phim, đạo diễn, quốc gia, diễn viên, thể loại ==
 // builder.Services.AddHostedService<BackfillService>();
 
 // ===== OTHER SERVICES =====
@@ -171,6 +179,19 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>(); // Đây là dòng của Bước 1
+// Đăng ký GeminiService
+builder.Services.AddHttpClient<IGeminiService, GeminiService>();
+// Đăng ký MovieRequestService
+builder.Services.AddScoped<IMovieRequestService, MovieRequestService>();
+// Thêm dịch vụ AntiForgery và cấu hình nó
+builder.Services.AddAntiforgery(options =>
+{
+    // Bảo nó tìm token trong header tên là "RequestVerificationToken"
+    options.HeaderName = "RequestVerificationToken";
+});
 
 // ===== CORS =====
 builder.Services.AddCors(options =>
@@ -211,6 +232,7 @@ app.UseRouting();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapHub<NotificationHub>("/notificationHub");
 
 // ===== HANGFIRE DASHBOARD =====
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
@@ -226,6 +248,16 @@ RecurringJob.AddOrUpdate<PaymentReminderJob>(
     recurringJobId: "payment-reminder-daily",
     methodCall: job => job.Execute(),
     cronExpression: "0 0 * * *",
+    options: new RecurringJobOptions
+    {
+        TimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")
+    }
+);
+// Gửi Realtime Notifications (Chạy mỗi 5 phút)
+RecurringJob.AddOrUpdate<SendRealtimeNotificationJob>(
+    recurringJobId: "send-realtime-notifications",
+    methodCall: job => job.ExecuteForAllUsers(),
+    cronExpression: "*/5 * * * *", // Mỗi 5 phút
     options: new RecurringJobOptions
     {
         TimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")

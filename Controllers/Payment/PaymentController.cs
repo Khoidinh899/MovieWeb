@@ -73,7 +73,7 @@ namespace MovieWeb.Controllers.API
 
                 var baseUrl = _configuration["AppSettings:BaseUrl"] ?? Request.Scheme + "://" + Request.Host;
                 var successUrl = request.SuccessUrl ?? $"{baseUrl}/api/payment/success?session_id={{CHECKOUT_SESSION_ID}}";
-                var cancelUrl = request.CancelUrl ?? $"{baseUrl}/payment/cancel";
+                var cancelUrl = request.CancelUrl ?? $"{baseUrl}/api/payment/cancel";
 
                 var session = await _stripeService.CreateCheckoutSessionAsync(
                     user,
@@ -128,8 +128,7 @@ namespace MovieWeb.Controllers.API
         [HttpGet("cancel")]
         public IActionResult PaymentCancel()
         {
-            // Redirect to frontend cancel page
-            return Redirect("/subscription?cancelled=true");
+            return Redirect("/NangCap/KetQuaThanhToan?success=false");
         }
 
         // POST: api/payment/webhook (Stripe webhook)

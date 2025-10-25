@@ -4,7 +4,27 @@
 }
 
 <div class="container text-center my-5" style="padding-top: 80px;">
-    <h1 class="display-4">Thông Báo Thanh Toán</h1>
-    <p class="lead">@ViewBag.Message</p>
-    <a href="/trangchu" class="btn btn-primary mt-3">Quay về trang chủ</a>
+    @if (ViewBag.IsSuccess == true)
+    {
+        <div class="alert alert-success" role="alert">
+            <i class="bi bi-check-circle-fill" style="font-size: 4rem; color: #28a745;"></i>
+            <h1 class="display-4 mt-3">Thanh Toán Thành Công!</h1>
+            <p class="lead">@ViewBag.Message</p>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-danger" role="alert">
+            <i class="bi bi-x-circle-fill" style="font-size: 4rem; color: #dc3545;"></i>
+            <h1 class="display-4 mt-3">Thanh Toán Thất Bại</h1>
+            <p class="lead">@ViewBag.Message</p>
+        </div>
+        <a href="/nang-cap" class="btn btn-warning mt-3 me-2">
+            <i class="bi bi-arrow-repeat"></i> Thử lại
+        </a>
+    }
+    
+    <a href="/trangchu" class="btn btn-primary mt-3">
+        <i class="bi bi-house-door-fill"></i> Quay về trang chủ
+    </a>
 </div>

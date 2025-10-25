@@ -482,3 +482,9 @@ table {
     table-layout: auto !important;
     min-width: 1000px;
 }
+/* FIX LỖI DASHBOARD: Giữ màu cho nút bg-purple khi hover */
+.card:hover .btn.bg-purple {
+    color: #fff !important;
+    background-color: #6f42c1 !important; /* Màu tím */
+    border-color: #6f42c1 !important;
+}
