@@ -164,7 +164,7 @@ builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 
 // ===== MOVIE SERVICES =====
 builder.Services.AddScoped<IOPhimService, OPhimService>();
-builder.Services.AddScoped<IMovieSyncService, MovieSyncService>();
+//builder.Services.AddScoped<IMovieSyncService, MovieSyncService>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 builder.Services.AddHostedService<BackgroundSyncService>();
 builder.Services.AddScoped<ICategorySyncService, CategorySyncService>();
