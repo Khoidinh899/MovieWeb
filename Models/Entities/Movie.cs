@@ -66,6 +66,7 @@ public partial class Movie
 
     public virtual ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
 
+
     public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
 
     public virtual ICollection<WatchHistory> WatchHistories { get; set; } = new List<WatchHistory>();
