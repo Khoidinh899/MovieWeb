@@ -1,3 +1,15 @@
-.env
+# Bỏ qua file môi trường
+.env # Environment variables
+.env.local  # Local environment variables
+# Bỏ qua thư mục .vs của Visual Studio
+/.vs
+
+# Bỏ qua file setting cá nhân của project
+*.csproj.user
+
+# Bỏ qua file build
 /bin
 /obj
+
+# Bỏ qua file cấu hình deploy
+Properties/PublishProfiles/

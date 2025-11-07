@@ -5,8 +5,9 @@
     ViewData["Title"] = "Quản lý người dùng";
 }
 
-@section Styles {
+@* @section Styles {
     <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
     <style>
         .stats-card {
             transition: transform 0.2s;
@@ -20,30 +21,8 @@
             border-radius: 10px;
             margin-bottom: 20px;
         }
-        .premium-badge {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .student-badge {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
     </style>
-}
+} *@
 
 <div class="container-fluid py-4">
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -62,7 +41,7 @@
 </div>
     <!-- Header với Statistics -->
     <div class="row mb-4">
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 <div class="card-body text-white">
                     <div class="d-flex justify-content-between align-items-center">
@@ -75,7 +54,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-6 col-md-2">
             <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                 <div class="card-body text-white">
                     <div class="d-flex justify-content-between align-items-center">
@@ -88,7 +67,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-6 col-md-2">
             <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
                 <div class="card-body text-white">
                     <div class="d-flex justify-content-between align-items-center">
@@ -101,7 +80,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-6 col-md-2">
             <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                 <div class="card-body text-white">
                     <div class="d-flex justify-content-between align-items-center">
@@ -114,7 +93,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-6 col-md-3">
             <div class="card stats-card border-0 shadow-sm" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
                 <div class="card-body text-white">
                     <div class="d-flex justify-content-between align-items-center">
@@ -150,14 +129,14 @@
     <!-- Search & Filter Section - FIXED -->
 <div class="search-section">
     <form method="get" asp-action="Users" class="row g-3">
-        <div class="col-md-3">
+        <div class="col-12 col-md-3">
             <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <input type="text" name="search" class="form-control" placeholder="Tìm theo tên, email, username..." value="@ViewBag.Search">
             </div>
         </div>
         
-        <div class="col-md-2">
+        <div class="col-6 col-md-2">
             <select name="roleId" class="form-select">
                 <option value="">Tất cả vai trò</option>
                 @foreach(var role in ViewBag.Roles)
@@ -167,7 +146,7 @@
             </select>
         </div>
         
-        <div class="col-md-2">
+        <div class="col-6 col-md-2">
             <select name="subscriptionType" class="form-select">
                 <option value="">Tất cả gói</option>
                 <option value="free" selected="@(ViewBag.SubscriptionType == "free")">Free</option>
@@ -177,7 +156,7 @@
         </div>
         
         <!-- ⭐ FIX: Tăng độ rộng cột cho Trạng thái -->
-        <div class="col-md-2">
+        <div class="col-6 col-md-2">
             <select name="isActive" class="form-select">
                 <option value="">Trạng thái</option>
                 <option value="true" selected="@(ViewBag.IsActive == true)">Hoạt động</option>
@@ -186,7 +165,7 @@
         </div>
         
         <!-- ⭐ FIX: Giảm độ rộng cột PageSize -->
-        <div class="col-md-1">
+        <div class="col-6 col-md-1">
             <select name="pageSize" class="form-select">
                 <option value="10" selected="@(ViewBag.PageSize == 10)">10</option>
                 <option value="20" selected="@(ViewBag.PageSize == 20)">20</option>
@@ -195,7 +174,7 @@
             </select>
         </div>
         
-        <div class="col-md-2">
+        <div class="col-12 col-md-2">
             <button type="submit" class="btn btn-primary w-100">
                 <i class="bi bi-funnel me-1"></i> Lọc
             </button>
@@ -247,11 +226,11 @@
                         {
                             <tr>
                                 <td>
-                                    <img src="@(user.Avatar ?? "/images/default-avatar.png")" 
+                                    <img src="@(user.Avatar ?? "/images/nouser.png")" 
                                          alt="Avatar" 
                                          class="rounded-circle"
                                          style="width: 40px; height: 40px; object-fit: cover;"
-                                         onerror="this.src='/images/default-avatar.png'">
+                                         onerror="this.src='/images/nouser.png'">
                                 </td>
                                 <td>
                                     <strong>@user.FullName</strong>

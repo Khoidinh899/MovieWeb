@@ -1,0 +1,251 @@
+/* ================== RESPONSIVE: MOVIES PAGE - MOBILE (< 768px) ================== */
+
+@media (max-width: 767px) {
+    /* ========== MOVIES TABLE → CARD LAYOUT (MOBILE) ========== */
+    
+    /* Chỉ áp dụng cho bảng Movies */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table-responsive {
+        overflow-x: hidden !important;
+        overflow-y: visible !important;
+        min-height: auto;
+        max-height: none;
+        padding: 0.75rem;
+    }
+
+    /* Ẩn table header */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table thead {
+        display: none !important;
+    }
+
+    /* Table, tbody, tr = block */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table {
+        display: block;
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0;
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody tr {
+        display: block;
+        width: 100%;
+        margin-bottom: 1rem;
+        border-radius: 12px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e9ecef;
+        padding: 0;
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody tr:hover {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        transform: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    /* TD = Flexbox row (label bên trái, data bên phải) */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.85rem 1rem !important;
+        border-bottom: 1px solid #f0f0f0 !important;
+        font-size: 0.875rem;
+        text-align: right;
+        position: relative;
+        min-height: 50px;
+        white-space: normal !important; /* Cho phép wrap */
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:last-child {
+        border-bottom: none !important;
+    }
+
+    /* Label (::before) ở bên trái */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td::before {
+        content: attr(data-label);
+        display: inline-block;
+        font-weight: 700;
+        color: #667eea;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: left;
+        flex-shrink: 0;
+        width: 110px;
+    }
+
+    /* Gán label cho 9 cột */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(1)::before { content: "Poster"; }
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(2)::before { content: "Tên phim"; }
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(3)::before { content: "Thông tin"; }
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(4)::before { content: "Số tập"; }
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(5)::before { content: "Đánh giá"; }
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(6)::before { content: "Lượt xem"; }
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(7)::before { content: "Nguồn"; }
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(8)::before { content: "Trạng thái"; }
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(9)::before { content: "Hành động"; }
+
+    /* Content (data) ở bên phải - MẶC ĐỊNH CĂN PHẢI */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td > * {
+        flex: 1;
+        text-align: right;
+        display: flex;
+        justify-content: flex-end; /* Mặc định căn phải */
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+        white-space: normal !important;
+        word-break: break-word;
+    }
+
+    /* Cột 1: Poster - căn giữa */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(1) > * {
+        justify-content: center;
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(1) img.movie-poster {
+        width: 60px !important;
+        height: 80px !important;
+        object-fit: cover;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        flex-shrink: 0;
+    }
+
+    /* Cột 2: Tên phim - căn trái, cho phép wrap */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(2) {
+        flex-direction: column;
+        align-items: flex-start;
+        min-height: 80px;
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(2) > * {
+        justify-content: flex-start; /* GHI ĐÈ: Căn trái */
+        text-align: left;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(2) strong {
+        font-size: 0.95rem;
+        line-height: 1.3;
+        word-break: break-word;
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(2) small {
+        font-size: 0.8rem;
+        opacity: 0.7;
+    }
+
+    /* Cột 3: Thông tin (Badges) - căn giữa */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(3) > * {
+        justify-content: center; /* GHI ĐÈ: Căn giữa */
+        gap: 4px;
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(3) .info-badges {
+        justify-content: center; /* GHI ĐÈ: Căn giữa */
+        flex-wrap: wrap;
+    }
+
+    /* Cột 4: Số tập - căn giữa */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(4) > * {
+        justify-content: center; /* GHI ĐÈ: Căn giữa */
+    }
+
+    /* Cột 5: Đánh giá - căn phải (Mặc định) */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(5) > * {
+        justify-content: flex-end; /* Căn phải */
+        gap: 4px;
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(5) .bi-star-fill {
+        font-size: 0.9rem;
+    }
+
+    /* Cột 6: Lượt xem - căn phải (Mặc định) */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(6) > * {
+        justify-content: flex-end; /* Căn phải */
+        gap: 4px;
+    }
+
+    /* Cột 7: Nguồn (Badge) - căn giữa */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(7) > * {
+        justify-content: center; /* GHI ĐÈ: Căn giữa */
+    }
+
+    /* Cột 8: Trạng thái (Badge) - căn giữa */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(8) > * {
+        justify-content: center; /* GHI ĐÈ: Căn giữa */
+    }
+
+    /* Cột 9: Hành động - căn phải, wrap buttons */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(9) {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(9)::before {
+        /* Ẩn label "Hành động" theo yêu cầu */
+        display: none; 
+    }
+
+    /* Sửa layout vỡ của .btn-group */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(9) .btn-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: flex-end; /* Căn phải */
+        margin-top: 0;
+        width: 100%; /* Đảm bảo .btn-group chiếm đủ không gian */
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(9) .btn-group .btn {
+        flex: 1 1 calc(33.333% - 4px); /* Chia 3 nút 1 hàng */
+        min-width: 45px;
+        padding: 0.5rem 0.4rem;
+        font-size: 0.9rem;
+    }
+
+    /* Empty state */
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody tr td[colspan] {
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 250px !important;
+        padding: 2rem 1rem !important;
+        text-align: center;
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody tr td[colspan]::before {
+        display: none !important;
+    }
+}
+
+/* ================== RESPONSIVE: MOVIES PAGE - TABLET (768px - 991px) ================== */
+
+@media (min-width: 768px) and (max-width: 991px) {
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(2) strong {
+        font-size: 0.9rem;
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .table tbody td:nth-of-type(2) small {
+        font-size: 0.75rem;
+    }
+
+    .card:has(table tbody tr td:nth-of-type(1) img.movie-poster) .info-badges .badge {
+        font-size: 0.65rem;
+        padding: 3px 6px;
+    }
+}

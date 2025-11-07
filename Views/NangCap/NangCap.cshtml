@@ -23,14 +23,19 @@
         {
             <div class="col-lg-4 col-md-6 mb-4">
                 <div class="pricing-card @(plan.IsPopular ? "recommended" : "")">
+                @if (plan.DisplayName.Contains("6 Tháng") || plan.DisplayName.Contains("12 Tháng"))
+                    {
+                        <div class="bonus-tag">
+                            <i class="bi bi-gift-fill"></i> Tặng 1 Tháng
+                        </div>
+                    }
                     <h3>@plan.DisplayName</h3>
                     <p class="price">@plan.PriceVND.ToString("N0") <span class="currency-icon"></span></p>
                     <ul class="list-unstyled features-list">
                         <li><i class="bi bi-check-circle-fill"></i> Tắt quảng cáo</li>
                         <li><i class="bi bi-check-circle-fill"></i> Xem phim chất lượng 4K</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Chat không cần chờ</li>
-                        <li><i class="bi bi-check-circle-fill"></i> Chat sử dụng stickers và Gifs</li>
                         <li><i class="bi bi-check-circle-fill"></i> Tải lên ảnh đại diện của bạn</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Yêu cầu phim cùng Mooner Al</li>
                         <li><i class="bi bi-check-circle-fill"></i> Tên được gắn nhãn MoonX</li>
                     </ul>
                     <button class="btn btn-primary mt-3 btn-purchase" data-plan-id="@plan.PlanId">
@@ -41,10 +46,6 @@
         }
     </div>
 </div>
-
-@* ======================================================= *@
-@* ===== SCRIPT XỬ LÝ THANH TOÁN (QUAN TRỌNG NHẤT) ===== *@
-@* ======================================================= *@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {

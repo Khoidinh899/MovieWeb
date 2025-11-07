@@ -51,9 +51,9 @@
 
 /* ========== DROPDOWN CONTAINER - CRITICAL FIX ========== */
 .notification-dropdown {
-    position: absolute !important;
-    right: 0 !important;
-    top: calc(100% + 15px) !important;
+    position: absolute;
+    right: 0 ;
+    top: calc(100% + 15px) ;
     width: 420px;
     max-height: 600px;
     background: white;

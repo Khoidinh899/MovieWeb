@@ -1,0 +1,56 @@
+/* File này chứa code Desktop */
+.profile-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 40px;
+    border-radius: 15px;
+    color: white;
+    margin-bottom: 30px;
+}
+.stat-box {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: transform 0.2s;
+    min-height: 150px; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.stat-box:hover {
+    transform: translateY(-5px);
+}
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 10px 0;
+}
+.info-card {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.action-button {
+    margin-bottom: 10px;
+}
+.table-responsive {
+    overflow: visible !important;
+}
+.table-borderless {
+    width: 100%;
+    min-width: auto !important;
+}
+
+/* Thêm các style desktop cho 2 bảng (để đảm bảo chúng không xung đột) */
+.info-card .table-borderless td {
+    vertical-align: middle;
+}
+
+.info-card table.table-hover {
+    width: 100%;
+}
+.info-card table.table-hover td {
+    vertical-align: middle;
+}

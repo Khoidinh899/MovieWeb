@@ -5,15 +5,16 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Hosting; // <-- THÊM THƯ VIỆN NÀY
-using System.IO;                  // <-- THÊM THƯ VIỆN NÀY
-using System.Collections.Generic; // <-- THÊM THƯ VIỆN NÀY
+using Microsoft.AspNetCore.Hosting;
+using System.IO;
+using System.Collections.Generic;
 
 namespace MovieWeb.Services
 {
     public interface IGeminiService
     {
-        Task<GeminiResponse> AnalyzeMovieRequestAsync(string userMessage, string conversationHistory = "");
+        Task<GeminiResponse> AnalyzeMovieRequestAsync(string userMessage, string conversationHistory = "", string mode = "by_name");
+        Task<GeminiRecommendationResponse> AnalyzeRecommendationRequestAsync(string userMessage, string conversationHistory = "");
     }
 
     public class GeminiService : IGeminiService
@@ -22,13 +23,14 @@ namespace MovieWeb.Services
         private readonly ILogger<GeminiService> _logger;
         private readonly string _apiKey;
         private readonly string _model;
-        private readonly string _systemPrompt; // <-- Sẽ lưu prompt ở đây
+        private readonly string _systemPrompt;
+        private readonly string _recommendationPrompt; // THÊM PROMPT MỚI
 
         public GeminiService(
             HttpClient httpClient,
             IConfiguration configuration,
             ILogger<GeminiService> logger,
-            IWebHostEnvironment env) // <-- THÊM IWebHostEnvironment
+            IWebHostEnvironment env)
         {
             _httpClient = httpClient;
             _logger = logger;
@@ -37,45 +39,56 @@ namespace MovieWeb.Services
                       ?? configuration["Gemini:ApiKey"]
                       ?? throw new Exception("GEMINI_API_KEY not found");
 
-            _model = configuration["Gemini:Model"] ?? "gemini-2.5-flash"; // Dùng model mới
+            _model = configuration["Gemini:Model"] ?? "gemini-2.5-flash";
 
             _httpClient.BaseAddress = new Uri("https://generativelanguage.googleapis.com");
 
-            // --- ĐỌC PROMPT TỪ FILE KHI SERVICE KHỞI ĐỘNG ---
+            // Đọc prompt cho movie request
             try
             {
-                // Lấy đường dẫn gốc của project
                 var rootPath = env.ContentRootPath;
-                // Nối đường dẫn đến file prompt
                 var promptFilePath = Path.Combine(rootPath, "AIPrompts", "ChatbotSystemPrompt.txt");
-                // Đọc file và lưu vào biến _systemPrompt
                 _systemPrompt = File.ReadAllText(promptFilePath);
                 _logger.LogInformation("Nạp System Prompt từ file thành công.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "LỖI CHẾT NGƯỜI: Không thể đọc file ChatbotSystemPrompt.txt");
-                _systemPrompt = "Bạn là một trợ lý AI."; // Một prompt dự phòng
+                _logger.LogError(ex, "LỖI: Không thể đọc file ChatbotSystemPrompt.txt");
+                _systemPrompt = "Bạn là một trợ lý AI.";
+            }
+
+            // Đọc prompt cho recommendation
+            try
+            {
+                var rootPath = env.ContentRootPath;
+                var promptFilePath = Path.Combine(rootPath, "AIPrompts", "RecommendationPrompt.txt");
+                _recommendationPrompt = File.ReadAllText(promptFilePath);
+                _logger.LogInformation("Nạp Recommendation Prompt từ file thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "LỖI: Không thể đọc file RecommendationPrompt.txt");
+                _recommendationPrompt = "Bạn là trợ lý gợi ý phim.";
             }
         }
 
-        public async Task<GeminiResponse> AnalyzeMovieRequestAsync(string userMessage, string conversationHistory = "")
+        // ===== METHOD CŨ (CẬP NHẬT NHẬN THAM SỐ MODE) =====
+        public async Task<GeminiResponse> AnalyzeMovieRequestAsync(string userMessage, string conversationHistory = "", string mode = "by_name")
         {
             try
             {
-                // === BƯỚC 1: QUAY VỀ CÁCH LÀM GỐC ===
-                // Gộp chung System Prompt và User Message làm 1
-                // (Sau này bạn có thể chèn conversationHistory vào giữa)
-                var fullPrompt = $"{_systemPrompt}\n\nUser: {userMessage}";
+                // Thêm thông tin mode vào prompt
+                var modeInstruction = mode == "by_description" 
+                    ? "\n\n[QUAN TRỌNG: User đang MÔ TẢ nội dung phim. Hãy SUY LUẬN ra tên phim chính thức từ mô tả đó.]"
+                    : "\n\n[User đang YÊU CẦU phim theo TÊN. Hãy trích xuất tên phim từ tin nhắn.]";
 
-                // 1. Chỉ tạo 'contents' (NỘI DUNG)
+                var fullPrompt = $"{_systemPrompt}{modeInstruction}\n\nUser: {userMessage}";
+
                 var contents = new List<object>
                 {
-                    // Lưu ý: API v1 không có 'role', chỉ có 'parts'
                     new { parts = new[] { new { text = fullPrompt } } }
                 };
 
-                // 2. Chỉ tạo 'safetySettings' (TẮT BỘ LỌC)
                 var safetySettings = new[]
                 {
                     new { category = "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold = "BLOCK_NONE" },
@@ -84,28 +97,18 @@ namespace MovieWeb.Services
                     new { category = "HARM_CATEGORY_DANGEROUS_CONTENT", threshold = "BLOCK_NONE" }
                 };
 
-                // 3. Gộp lại thành Request Body SIÊU ĐƠN GIẢN
-                // KHÔNG CÓ systemInstruction, KHÔNG CÓ generationConfig
                 var requestBody = new
                 {
                     contents = contents,
                     safetySettings = safetySettings
                 };
 
-                // === BƯỚC 2: QUAY VỀ ENDPOINT v1 ===
-                // (Vì v1 hỗ trợ gemini-2.5-flash)
                 var endpoint = $"/v1/models/{_model}:generateContent?key={_apiKey}";
 
-                // === BƯỚC 3: GỬI REQUEST ===
                 var jsonRequest = JsonSerializer.Serialize(requestBody);
                 var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
 
-                // === LOG DEBUG ===
-                _logger.LogWarning("==================================================");
-                _logger.LogWarning("GỌI LẦN CUỐI (v1): {endpoint}", endpoint);
-                _logger.LogWarning("VỚI JSON (v1): {jsonRequest}", jsonRequest);
-                _logger.LogWarning("==================================================");
-                // =================
+                _logger.LogInformation("Calling Gemini API (mode: {Mode})", mode);
 
                 var response = await _httpClient.PostAsync(endpoint, content);
 
@@ -124,19 +127,16 @@ namespace MovieWeb.Services
                 _logger.LogInformation("Gemini Raw JSON Response: {jsonResponse}", jsonResponse);
 
                 var deserializeOptions = new JsonSerializerOptions
-{
-    PropertyNameCaseInsensitive = true // <-- Bảo C# đừng phân biệt hoa/thường
-};
-var geminiResult = JsonSerializer.Deserialize<GeminiApiResponse>(jsonResponse, deserializeOptions);
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var geminiResult = JsonSerializer.Deserialize<GeminiApiResponse>(jsonResponse, deserializeOptions);
 
-                // KIỂM TRA LỖI DO BỘ LỌC (DÙ ĐÃ TẮT)
                 if (geminiResult?.Candidates == null || geminiResult.Candidates.Count == 0)
                 {
-                    // Đôi khi AI vẫn chặn dù đã set BLOCK_NONE
-                    // Kiểm tra xem có phải do bị chặn không
                     if (jsonResponse.Contains("finishReason") && jsonResponse.Contains("SAFETY"))
                     {
-                        _logger.LogWarning("Gemini returned empty response DO BỊ CHẶN AN TOÀN (dù đã tắt)");
+                        _logger.LogWarning("Gemini returned empty response due to safety");
                         return new GeminiResponse
                         {
                             Success = false,
@@ -144,7 +144,7 @@ var geminiResult = JsonSerializer.Deserialize<GeminiApiResponse>(jsonResponse, d
                         };
                     }
 
-                    _logger.LogWarning("Gemini returned empty response (Lý do không rõ)");
+                    _logger.LogWarning("Gemini returned empty response");
                     return new GeminiResponse
                     {
                         Success = false,
@@ -153,24 +153,20 @@ var geminiResult = JsonSerializer.Deserialize<GeminiApiResponse>(jsonResponse, d
                 }
 
                 var aiText = geminiResult.Candidates[0].Content.Parts[0].Text;
-                // 1. Tìm vị trí { đầu tiên
-var firstBrace = aiText.IndexOf('{');
-// 2. Tìm vị trí } cuối cùng
-var lastBrace = aiText.LastIndexOf('}');
+                var firstBrace = aiText.IndexOf('{');
+                var lastBrace = aiText.LastIndexOf('}');
 
-// 3. Kiểm tra xem có tìm thấy không
-if (firstBrace == -1 || lastBrace == -1 || lastBrace < firstBrace)
-{
-    _logger.LogWarning("Không tìm thấy JSON hợp lệ trong phản hồi của AI: {aiText}", aiText);
-    return new GeminiResponse 
-    { 
-        Success = false, 
-        AiMessage = "Xin lỗi, AI đã trả về một định dạng không hợp lệ 😥"
-    };
-}
+                if (firstBrace == -1 || lastBrace == -1 || lastBrace < firstBrace)
+                {
+                    _logger.LogWarning("Không tìm thấy JSON hợp lệ trong phản hồi của AI: {aiText}", aiText);
+                    return new GeminiResponse 
+                    { 
+                        Success = false, 
+                        AiMessage = "Xin lỗi, AI đã trả về một định dạng không hợp lệ 😥"
+                    };
+                }
 
-// 4. Cắt chuỗi JSON ra
-var cleanJson = aiText.Substring(firstBrace, lastBrace - firstBrace + 1);
+                var cleanJson = aiText.Substring(firstBrace, lastBrace - firstBrace + 1);
 
                 _logger.LogInformation("Cleaned JSON for parsing: {cleanJson}", cleanJson);
 
@@ -190,10 +186,116 @@ var cleanJson = aiText.Substring(firstBrace, lastBrace - firstBrace + 1);
             }
             catch (Exception ex)
             {
-                // Lỗi này thường xảy ra khi AI không trả về JSON (ví dụ trả về "OK")
-                // khiến hàm JsonSerializer.Deserialize<GeminiMovieAnalysis>(cleanJson) bị crash
                 _logger.LogError(ex, "Lỗi khi parse JSON từ Gemini");
                 return new GeminiResponse
+                {
+                    Success = false,
+                    AiMessage = $"Lỗi hệ thống AI: {ex.Message} 😵"
+                };
+            }
+        }
+
+        // ===== METHOD MỚI: PHÂN TÍCH YÊU CẦU GỢI Ý PHIM =====
+        public async Task<GeminiRecommendationResponse> AnalyzeRecommendationRequestAsync(string userMessage, string conversationHistory = "")
+        {
+            try
+            {
+                var fullPrompt = $"{_recommendationPrompt}\n\nConversation History:\n{conversationHistory}\n\nUser: {userMessage}";
+
+                var contents = new List<object>
+                {
+                    new { parts = new[] { new { text = fullPrompt } } }
+                };
+
+                var safetySettings = new[]
+                {
+                    new { category = "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold = "BLOCK_NONE" },
+                    new { category = "HARM_CATEGORY_HATE_SPEECH", threshold = "BLOCK_NONE" },
+                    new { category = "HARM_CATEGORY_HARASSMENT", threshold = "BLOCK_NONE" },
+                    new { category = "HARM_CATEGORY_DANGEROUS_CONTENT", threshold = "BLOCK_NONE" }
+                };
+
+                var requestBody = new
+                {
+                    contents = contents,
+                    safetySettings = safetySettings
+                };
+
+                var endpoint = $"/v1/models/{_model}:generateContent?key={_apiKey}";
+
+                var jsonRequest = JsonSerializer.Serialize(requestBody);
+                var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+
+                _logger.LogInformation("Calling Gemini API for recommendation");
+
+                var response = await _httpClient.PostAsync(endpoint, content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    _logger.LogError($"Gemini API Error: {response.StatusCode} - {error}");
+                    return new GeminiRecommendationResponse
+                    {
+                        Success = false, 
+                        AiMessage = "Xin lỗi, AI đang tạm thời không hoạt động 😔"
+                    };
+                }
+
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                _logger.LogInformation("Gemini Recommendation Response: {jsonResponse}", jsonResponse);
+
+                var deserializeOptions = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var geminiResult = JsonSerializer.Deserialize<GeminiApiResponse>(jsonResponse, deserializeOptions);
+
+                if (geminiResult?.Candidates == null || geminiResult.Candidates.Count == 0)
+                {
+                    _logger.LogWarning("Gemini returned empty response");
+                    return new GeminiRecommendationResponse
+                    {
+                        Success = false,
+                        AiMessage = "Rất tiếc, AI không thể xử lý yêu cầu này 😥"
+                    };
+                }
+
+                var aiText = geminiResult.Candidates[0].Content.Parts[0].Text;
+                var firstBrace = aiText.IndexOf('{');
+                var lastBrace = aiText.LastIndexOf('}');
+
+                if (firstBrace == -1 || lastBrace == -1 || lastBrace < firstBrace)
+                {
+                    _logger.LogWarning("Không tìm thấy JSON hợp lệ: {aiText}", aiText);
+                    return new GeminiRecommendationResponse 
+                    { 
+                        Success = false, 
+                        AiMessage = "Xin lỗi, AI đã trả về một định dạng không hợp lệ 😥"
+                    };
+                }
+
+                var cleanJson = aiText.Substring(firstBrace, lastBrace - firstBrace + 1);
+
+                _logger.LogInformation("Cleaned JSON for parsing: {cleanJson}", cleanJson);
+
+                var parsedResponse = JsonSerializer.Deserialize<GeminiRecommendationAnalysis>(cleanJson, deserializeOptions);
+
+                return new GeminiRecommendationResponse
+                {
+                    Success = true,
+                    NeedMoreInfo = parsedResponse?.NeedMoreInfo ?? false,
+                    AiMessage = parsedResponse?.AiMessage ?? "Xin lỗi, tôi không hiểu yêu cầu của bạn. 😊",
+                    Genre = parsedResponse?.Genre,
+                    Country = parsedResponse?.Country,
+                    Type = parsedResponse?.Type,
+                    Year = parsedResponse?.Year,
+                    RawAiResponse = aiText
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi parse JSON recommendation từ Gemini");
+                return new GeminiRecommendationResponse
                 {
                     Success = false,
                     AiMessage = $"Lỗi hệ thống AI: {ex.Message} 😵"
@@ -209,12 +311,13 @@ var cleanJson = aiText.Substring(firstBrace, lastBrace - firstBrace + 1);
         public bool Success { get; set; }
         public string? MovieTitle { get; set; }
         public int? MovieYear { get; set; }
-        public string Confidence { get; set; } = "low"; // high, medium, low
+        public string Confidence { get; set; } = "low";
         public bool NeedMoreInfo { get; set; }
         public string? FollowUpQuestion { get; set; }
-        public string AiMessage { get; set; } = ""; // Tin nhắn thân thiện từ Mooner
+        public string AiMessage { get; set; } = "";
         public string? Error { get; set; }
         public string? RawAiResponse { get; set; }
+        public string? MovieUrl { get; set; } // Thêm để trả về URL phim
     }
 
     public class GeminiMovieAnalysis
@@ -224,7 +327,31 @@ var cleanJson = aiText.Substring(firstBrace, lastBrace - firstBrace + 1);
         public string Confidence { get; set; } = "low";
         public bool NeedMoreInfo { get; set; }
         public string? FollowUpQuestion { get; set; }
-        public string AiMessage { get; set; } = ""; // Tin nhắn từ Mooner
+        public string AiMessage { get; set; } = "";
+    }
+
+    // ===== RECOMMENDATION MODELS (MỚI) =====
+
+    public class GeminiRecommendationResponse
+    {
+        public bool Success { get; set; }
+        public bool NeedMoreInfo { get; set; }
+        public string AiMessage { get; set; } = "";
+        public string? Genre { get; set; }
+        public string? Country { get; set; }
+        public string? Type { get; set; }
+        public int? Year { get; set; }
+        public string? RawAiResponse { get; set; }
+    }
+
+    public class GeminiRecommendationAnalysis
+    {
+        public bool NeedMoreInfo { get; set; }
+        public string AiMessage { get; set; } = "";
+        public string? Genre { get; set; }
+        public string? Country { get; set; }
+        public string? Type { get; set; }
+        public int? Year { get; set; }
     }
 
     // ===== GEMINI API RESPONSE MODELS =====

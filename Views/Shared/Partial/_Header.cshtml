@@ -8,32 +8,38 @@
 }
 
 <header>
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom"
-         id="mainNavbar"
-         data-is-homepage="@isHomePage.ToString().ToLower()">
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom" id="mainNavbar"
+        data-is-homepage="@isHomePage.ToString().ToLower()">
         <div class="container-fluid">
-            <!-- Logo -->
             <a class="navbar-brand d-flex align-items-center" href="/trang-chu">
-                <img src="~/images/iconmoon.png" alt="MoonPhim Logo" style="height:60px; margin-right:8px;">
+                <img src="~/images/iconmoon.png" alt="MoonPhim Logo" class="logo-img"
+                    style="height:60px; margin-right:8px;">
                 <div style="display:flex; flex-direction:column; line-height:1.2;">
-                    <span style="font-weight:bold; font-size:28px; color:white;">MoonPhim</span>
-                    <span style="font-size:14px; color:rgba(255,255,255,0.7);">Bay bổng cùng điện ảnh</span>
+                    <span class="logo-text-main" style="font-weight:bold; font-size:28px; color:white;">MoonPhim</span>
+                    <span class="logo-text-sub" style="font-size:14px; color:rgba(255,255,255,0.7);">Bay bổng cùng điện
+                        ảnh</span>
                 </div>
             </a>
 
-            <!-- Mobile controls -->
-            <div class="d-lg-none d-flex align-items-center">
-                <button class="btn btn-link text-white me-2" id="mobileSearchBtn">
+            <div class="d-lg-none d-flex align-items-center" style="gap: 12px;">
+                @if (currentUser != null)
+                {
+                    <button class="btn btn-link text-white p-0 mobile-notification-btn notification-trigger" type="button"
+                        id="mobileNotificationBtn">
+                        <i class="bi bi-bell"></i>
+                        <span class="badge bg-danger rounded-pill notification-badge"
+                            style="display: none; position: absolute; top: 8px; right: 8px; font-size: 10px; padding: 2px 5px; min-width: 16px; height: 16px;">0</span>
+                    </button>
+                }
+                <button class="btn btn-link text-white p-0" id="mobileSearchBtn">
                     <i class="fas fa-search"></i>
                 </button>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <button class="navbar-toggler" type="button" id="myMenuToggleButton">
                     <span class="navbar-toggler-icon"></span>
                 </button>
             </div>
 
-            <!-- Navbar content -->
             <div class="collapse navbar-collapse" id="navbarNav">
-                <!-- Navigation links -->
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="/trang-chu">Trang chủ</a></li>
                     <li class="nav-item"><a class="nav-link" href="/the-loai/phim-le">Phim lẻ</a></li>
@@ -50,95 +56,95 @@
                         </div>
                         </div>
                         @if (currentUser?.IsAdmin == true)
-                    {
+                        {
                         <li class="nav-item">
                             <a class="nav-link" href="@Url.Action("Dashboard", "Admin")">
                                 <i class="bi bi-shield-lock-fill"></i> Admin
                             </a>
                         </li>
                     }
-                    </div>
                     </li>
                 </ul>
 
-                <!-- Desktop search -->
                 <form class="search-box d-none d-lg-flex" action="/tim-kiem" method="get">
                     <div class="search-input-wrapper">
                         <input type="search" name="keyword" placeholder="Tìm kiếm phim..." aria-label="Search">
                         <button type="submit"><i class="fas fa-search"></i></button>
                     </div>
                 </form>
-<!-- Notification Bell -->
-<div class="notification-wrapper d-none d-lg-block position-relative" id="notificationBell">
-    <button class="btn btn-link text-white position-relative p-2 notification-trigger" 
-            type="button" 
-            aria-label="Thông báo">
-        <i class="bi bi-bell fs-4"></i>
-        <span class="badge bg-danger position-absolute rounded-pill notification-badge" 
-              style="display: none;">0</span>
-    </button>
-    
-    <div class="notification-dropdown" style="display: none;">
-        <div class="notification-header">
-            <ul class="nav nav-tabs border-0 mb-0">
-                <li class="nav-item flex-fill">
-                    <button class="nav-link active w-100 border-0" data-tab="payment" type="button">
-                        <i class="bi bi-credit-card me-1"></i> Thanh toán 
-                        <span class="badge bg-danger ms-1" id="paymentBadge" style="display: none;">0</span>
+
+                <div class="notification-wrapper d-none d-lg-block position-relative" id="notificationBell">
+                    <button class="btn btn-link text-white position-relative p-2 notification-trigger" type="button"
+                        aria-label="Thông báo">
+                        <i class="bi bi-bell fs-4"></i>
+                        <span class="badge bg-danger position-absolute rounded-pill notification-badge"
+                            style="display: none;">0</span>
                     </button>
-                </li>
-                <li class="nav-item flex-fill">
-                    <button class="nav-link w-100 border-0" data-tab="movie" type="button">
-                        <i class="bi bi-film me-1"></i> Phim 
-                        <span class="badge bg-danger ms-1" id="movieBadge" style="display: none;">0</span>
-                    </button>
-                </li>
-            </ul>
-            <button class="btn btn-sm btn-outline-light mark-all-read" type="button">
-                <i class="bi bi-check-all"></i> Đã đọc
-            </button>
-        </div>
-        
-        <div class="notification-body" id="notificationList">
-            <div class="text-center text-muted">
-                <i class="bi bi-bell-slash d-block mb-2"></i>
-                <p class="mb-0">Không có thông báo nào</p>
-            </div>
-        </div>
-        
-        <div class="notification-footer">
-            <a href="/thong-bao" class="btn btn-link w-100 text-decoration-none">
-                Xem toàn bộ <i class="bi bi-arrow-right"></i>
-            </a>
-        </div>
-    </div>
-</div>
-                <!-- Desktop user menu -->
+
+                    <div class="notification-dropdown" style="display: none;">
+                        <div class="notification-header">
+                            <ul class="nav nav-tabs border-0 mb-0">
+                                <li class="nav-item flex-fill">
+                                    <button class="nav-link active w-100 border-0" data-tab="payment" type="button">
+                                        <i class="bi bi-credit-card me-1"></i> Thanh toán
+                                        <span class="badge bg-danger ms-1" id="paymentBadge"
+                                            style="display: none;">0</span>
+                                    </button>
+                                </li>
+                                <li class="nav-item flex-fill">
+                                    <button class="nav-link w-100 border-0" data-tab="movie" type="button">
+                                        <i class="bi bi-film me-1"></i> Phim
+                                        <span class="badge bg-danger ms-1" id="movieBadge"
+                                            style="display: none;">0</span>
+                                    </button>
+                                </li>
+                            </ul>
+                            <button class="btn btn-sm btn-outline-light mark-all-read" type="button">
+                                <i class="bi bi-check-all"></i> Đã đọc
+                            </button>
+                        </div>
+
+                        <div class="notification-body" id="notificationList">
+                            <div class="text-center text-muted">
+                                <i class="bi bi-bell-slash d-block mb-2"></i>
+                                <p class="mb-0">Không có thông báo nào</p>
+                            </div>
+                        </div>
+
+                        <div class="notification-footer">
+                            <a href="/thong-bao" class="btn btn-link w-100 text-decoration-none">
+                                Xem toàn bộ <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="dropdown ms-3 position-relative d-none d-lg-block">
                     @if (currentUser != null)
                     {
                         <a href="#"
-                           class="d-flex align-items-center text-decoration-none dropdown-toggle user-dropdown-trigger"
-                           id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            class="d-flex align-items-center text-decoration-none dropdown-toggle user-dropdown-trigger"
+                            id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                             <img src="@(string.IsNullOrEmpty(currentUser.Avatar) ? "/images/nouser.png" : currentUser.Avatar)"
-                                 alt="Avatar" class="avatar-circle">
+                                alt="Avatar" class="avatar-circle">
                             <span class="ms-2 text-white user-name">@(currentUser.FullName ?? currentUser.UserName)</span>
                         </a>
 
                         <div class="dropdown-menu dropdown-menu-end shadow user-dropdown-custom"
-                             aria-labelledby="userDropdown">
+                            aria-labelledby="userDropdown">
                             <div class="user-info-header">
                                 <div class="d-flex align-items-center mb-3">
                                     <img src="@(string.IsNullOrEmpty(currentUser.Avatar) ? "/images/nouser.png" : currentUser.Avatar)"
-                                         alt="Avatar" class="avatar-circle-large me-3">
+                                        alt="Avatar" class="avatar-circle-large me-3">
                                     <div>
                                         <h5 class="mb-1 text-white">@(currentUser.FullName ?? currentUser.UserName)</h5>
                                         <p class="text-light small mb-0">@currentUser.Email</p>
                                     </div>
                                 </div>
-                                <p class="text-light small mb-2">Nâng cấp tài khoản MoonX để có trải nghiệm đẳng cấp hơn.</p>
+                                <p class="text-light small mb-2">Nâng cấp tài khoản MoonX để có trải nghiệm đẳng cấp hơn.
+                                </p>
                                 <a href="/nang-cap" class="btn-upgrade w-100">
-                                    <i class="bi bi-star-fill me-1"></i>Nâng cấp ngay
+                                    <i class="bi bi-star-fill me-1"></i> Nâng cấp ngay
                                 </a>
                             </div>
 
@@ -147,86 +153,37 @@
                             @if (currentUser.IsAdmin)
                             {
                                 <a class="dropdown-item dropdown-item-custom" href="@Url.Action("Dashboard", "Admin")">
-                                    <i class="bi bi-shield-lock-fill me-2"></i>
-                                    <span>Admin Panel</span>
+                                    <i class="bi bi-shield-lock-fill me-2"></i> <span>Admin Panel</span>
                                 </a>
                                 <div class="dropdown-divider"></div>
                             }
 
                             <a class="dropdown-item dropdown-item-custom" href="/yeu-thich">
-                                <i class="bi bi-heart me-2"></i>
-                                <span>Yêu thích</span>
+                                <i class="bi bi-heart me-2"></i> <span>Yêu thích</span>
                             </a>
                             <a class="dropdown-item dropdown-item-custom" href="#">
-                                <i class="bi bi-collection me-2"></i>
-                                <span>Danh sách</span>
+                                <i class="bi bi-collection me-2"></i> <span>Danh sách</span>
                             </a>
                             <a class="dropdown-item dropdown-item-custom" href="#">
-                                <i class="bi bi-clock-history me-2"></i>
-                                <span>Xem tiếp</span>
+                                <i class="bi bi-clock-history me-2"></i> <span>Xem tiếp</span>
                             </a>
                             <a class="dropdown-item dropdown-item-custom" href="/user/profile">
-                                <i class="bi bi-person me-2"></i>
-                                <span>Tài khoản</span>
+                                <i class="bi bi-person me-2"></i> <span>Tài khoản</span>
                             </a>
 
                             <div class="dropdown-divider"></div>
 
                             <a class="dropdown-item dropdown-item-custom text-danger" href="#"
-                               onclick="event.preventDefault(); document.getElementById('logoutForm').submit();">
-                                <i class="bi bi-box-arrow-right me-2"></i>
-                                <span>Đăng xuất</span>
+                                onclick="event.preventDefault(); document.getElementById('logoutForm').submit();">
+                                <i class="bi bi-box-arrow-right me-2"></i> <span>Đăng xuất</span>
                             </a>
                         </div>
                     }
                     else
                     {
                         <button class="btn btn-outline-light d-flex align-items-center btn-login" data-bs-toggle="modal"
-                                data-bs-target="#authModal">
-                            <i class="bi bi-person-circle me-2"></i>
-                            Thành viên
-                        </button>
-                    }                           
-                </div>
-D
-                <!-- Mobile user menu -->
-                <div class="d-lg-none mt-3 pt-3 border-top border-secondary">
-                    @if (currentUser != null)
-                    {
-                        <div class="d-flex align-items-center mb-3">
-                            <img src="@(string.IsNullOrEmpty(currentUser.Avatar) ? "/images/nouser.png" : currentUser.Avatar)"
-                                 alt="Avatar" class="avatar-circle me-3">
-                            <div>
-                                <div class="text-white fw-bold">@(currentUser.FullName ?? currentUser.UserName)</div>
-                                <small class="text-muted">@currentUser.Email</small>
-                            </div>
-                        </div>
-                        <ul class="navbar-nav">
-                            @if (currentUser.IsAdmin)
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link" href="@Url.Action("Dashboard", "Admin")">
-                                        <i class="bi bi-shield-lock-fill me-2"></i>Admin Panel
-                                    </a>
-                                </li>
-                            }
-                            <li class="nav-item"><a class="nav-link" href="/user/profile"><i class="bi bi-person me-2"></i>Quản lý tài khoản</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/yeu-thich"><i class="bi bi-heart me-2"></i>Yêu thích</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/thong-bao"><i class="bi bi-bell me-2"></i>Thông báo</a></li>
-                            <li class="nav-item">
-                                <a class="nav-link text-danger" href="#"
-                                   onclick="event.preventDefault(); document.getElementById('logoutForm').submit();">
-                                    <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
-                                </a>
-                            </li>
-                        </ul>
-                    }
-                    else
-                    {
-                        <button class="btn btn-outline-light w-100 d-flex align-items-center justify-content-center"
-                                data-bs-toggle="modal" data-bs-target="#authModal">
-                            <i class="bi bi-person-circle me-2"></i>
-                            Đăng nhập / Đăng ký
+                            data-bs-target="#authModal">
+                            <i class="bi bi-person-circle me-2"></i> Thành viên
                         </button>
                     }
                 </div>
@@ -234,8 +191,161 @@ D
         </div>
     </nav>
 
-    <!-- Logout form -->
     <form id="logoutForm" method="post" asp-controller="Auth" asp-action="Logout" style="display:none;">
         @Html.AntiForgeryToken()
     </form>
 </header>
+
+<div id="mobileSearchOverlay" class="mobile-search-overlay" style="z-index: 10001;">
+    <div class="mobile-search-container">
+        <button class="mobile-search-close" id="mobileSearchClose" type="button" aria-label="Đóng">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <form action="/tim-kiem" method="get" class="mobile-search-form">
+            <div class="mobile-search-input-wrapper">
+                <input type="search" name="keyword" placeholder="Tìm kiếm phim..." id="mobileSearchInput"
+                    autocomplete="off" aria-label="Tìm kiếm phim">
+                <button type="submit" class="mobile-search-submit" aria-label="Tìm kiếm">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+
+        <div class="mobile-search-suggestions">
+            <div class="suggestion-title">Tìm kiếm phổ biến</div>
+            <div class="suggestion-tags">
+                <span class="suggestion-tag">Phim hành động</span>
+                <span class="suggestion-tag">Phim tình cảm</span>
+                <span class="suggestion-tag">Phim kinh dị</span>
+                <span class="suggestion-tag">Anime</span>
+                <span class="suggestion-tag">Marvel</span>
+                <span class="suggestion-tag">Phim Hàn Quốc</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="offcanvas offcanvas-start" tabindex="-1" id="mobileMenuOffcanvas" aria-labelledby="mobileMenuLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="mobileMenuLabel">
+            <a class="navbar-brand d-flex align-items-center" href="/trang-chu">
+                <img src="~/images/iconmoon.png" alt="MoonPhim Logo" style="height:40px; margin-right:10px;">
+                <span style="font-weight:bold; font-size:22px; color:white;">MoonPhim</span>
+            </a>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+
+    <div class="offcanvas-body">
+        <ul class="navbar-nav me-auto">
+            <li class="nav-item"><a class="nav-link" href="/trang-chu"><i class="bi bi-house-door me-2"></i>Trang
+                    chủ</a></li>
+            <li class="nav-item"><a class="nav-link" href="/the-loai/phim-le"><i class="bi bi-film me-2"></i>Phim lẻ</a>
+            </li>
+            <li class="nav-item"><a class="nav-link" href="/the-loai/phim-bo"><i
+                        class="bi bi-collection-play me-2"></i>Phim bộ</a></li>
+            <li class="nav-item"><a class="nav-link" href="/the-loai/hoat-hinh"><i
+                        class="bi bi-emoji-smile me-2"></i>Hoạt hình</a></li>
+
+            <li class="nav-item">
+                <a class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse"
+                    href="#theLoaiCollapse" role="button" aria-expanded="false" aria-controls="theLoaiCollapse">
+                    <span><i class="bi bi-grid me-2"></i>Thể loại</span>
+                    <i class="bi bi-chevron-down small"></i>
+                </a>
+                <div class="collapse" id="theLoaiCollapse">
+                    <div class="offcanvas-collapse-menu ms-3">
+                        <a class="nav-link" href="#">Hành Động</a>
+                        <a class="nav-link" href="#">Kinh Dị</a>
+                        <a class="nav-link" href="#">Phiêu Lưu</a>
+                        <a class="nav-link" href="#">Tình Cảm</a>
+                        <a class="nav-link" href="#">Lãng Mạn</a>
+                        <a class="nav-link" href="#">Cổ Trang</a>
+                        <a class="nav-link" href="#">Hài Hước</a>
+                        <a class="nav-link" href="#">Hoạt Hình</a>
+                        <a class="nav-link" href="#">Tâm Lý</a>
+                        <a class="nav-link" href="#">Thần Thoại</a>
+                        <a class="nav-link" href="#">Marvel</a>
+                        <a class="nav-link" href="#">Anime</a>
+                        <a class="nav-link" href="#">TV Show</a>
+                        <a class="nav-link" href="#">Chiếu Rạp</a>
+                        <a class="nav-link" href="#">Bí Ẩn</a>
+                        <a class="nav-link" href="#">Hình Sự</a>
+                        <a class="nav-link" href="#">Học Đường</a>
+                        <a class="nav-link" href="#">Xuyên Không</a>
+                        <a class="nav-link" href="#">Game Show</a>
+                        <a class="nav-link" href="#">Thể Thao</a>
+                    </div>
+                </div>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse"
+                    href="#quocGiaCollapse" role="button" aria-expanded="false" aria-controls="quocGiaCollapse">
+                    <span><i class="bi bi-geo-alt me-2"></i>Quốc gia</span>
+                    <i class="bi bi-chevron-down small"></i>
+                </a>
+                <div class="collapse" id="quocGiaCollapse">
+                    <div class="offcanvas-collapse-menu ms-3">
+                        <a class="nav-link" href="#">Việt Nam</a>
+                        <a class="nav-link" href="#">Hàn Quốc</a>
+                        <a class="nav-link" href="#">Trung Quốc</a>
+                        <a class="nav-link" href="#">Nhật Bản</a>
+                        <a class="nav-link" href="#">Thái Lan</a>
+                        <a class="nav-link" href="#">Âu Mỹ</a>
+                    </div>
+                </div>
+            </li>
+        </ul>
+
+        <div class="mt-3 pt-3 border-top border-secondary">
+            @if (currentUser != null)
+            {
+                <div class="d-flex align-items-center mb-3">
+                    <img src="@(string.IsNullOrEmpty(currentUser.Avatar) ? "/images/nouser.png" : currentUser.Avatar)"
+                        alt="Avatar" class="avatar-circle me-3">
+                    <div>
+                        <div class="text-white fw-bold">@(currentUser.FullName ?? currentUser.UserName)</div>
+                        <small class="text-muted">@currentUser.Email</small>
+                    </div>
+                </div>
+
+                <a href="/nang-cap" class="btn-upgrade w-100 mb-3"
+                    style="display:block;text-align:center;background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:white;padding:0.6rem 1.2rem;border-radius:25px;text-decoration:none;font-weight:600;">
+                    <i class="bi bi-star-fill me-1"></i> Nâng cấp ngay
+                </a>
+
+                <ul class="navbar-nav">
+                    @if (currentUser.IsAdmin)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" href="@Url.Action("Dashboard", "Admin")">
+                                <i class="bi bi-shield-lock-fill me-2"></i> Admin Panel
+                            </a>
+                        </li>
+                    }
+                    <li class="nav-item"><a class="nav-link" href="/user/profile"><i class="bi bi-person me-2"></i>Quản lý
+                            tài khoản</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/yeu-thich"><i class="bi bi-heart me-2"></i>Yêu thích</a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="/thong-bao"><i class="bi bi-bell me-2"></i>Thông báo</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-danger" href="#"
+                            onclick="event.preventDefault(); document.getElementById('logoutForm').submit();">
+                            <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
+                        </a>
+                    </li>
+                </ul>
+            }
+            else
+            {
+                <button class="btn btn-outline-light w-100 d-flex align-items-center justify-content-center"
+                    data-bs-toggle="modal" data-bs-target="#authModal">
+                    <i class="bi bi-person-circle me-2"></i> Đăng nhập / Đăng ký
+                </button>
+            }
+        </div>
+    </div>
+</div>

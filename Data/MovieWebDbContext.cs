@@ -221,7 +221,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
 
             entity.HasOne(d => d.User).WithMany(p => p.Transactions)
                 .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.Cascade)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("FK__Transactions__UserId");
 
             entity.HasOne(d => d.SubscriptionPlan).WithMany(p => p.Transactions)

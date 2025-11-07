@@ -1,85 +1,88 @@
 // wwwroot/js/notification.js - FINAL FIXED VERSION (HANDLES ALL TIMEZONES)
-(function() {
+(function () {
     'use strict';
 
     let currentTab = 'payment';
     let isDropdownOpen = false;
     let signalRConnection = null;
-    
+
     // ========== CACHE NOTIFICATIONS ==========
     let notificationCache = {
         payment: null,
         movie: null
     };
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         initNotifications();
         initSignalR();
     });
 
     // ========== SIGNALR INITIALIZATION ==========
-    function initSignalR() {
-        if (typeof signalR === 'undefined') {
-            console.error('❌ SignalR library not loaded!');
-            return;
-        }
-
-        signalRConnection = new signalR.HubConnectionBuilder()
-            .withUrl("/notificationHub")
-            .withAutomaticReconnect()
-            .build();
-
-        // ========== RECEIVE NOTIFICATION FROM SIGNALR ==========
-        signalRConnection.on("ReceiveNotification", function (notificationObject) {
-            console.log("✅ [SignalR] Received notification:", notificationObject);
-
-            const notifType = (notificationObject.type || '').toLowerCase();
-            const isPaymentNotif = notifType.includes('payment') || notifType.includes('subscription');
-            const isMovieNotif = notifType.includes('movie');
-
-            // ========== INVALIDATE CACHE ==========
-            if (isPaymentNotif) notificationCache.payment = null;
-            if (isMovieNotif) notificationCache.movie = null;
-
-            // ========== CỘNG BADGE NGAY LẬP TỨC ==========
-            const mainBadge = document.querySelector('.notification-badge');
-            const paymentBadge = document.getElementById('paymentBadge');
-            const movieBadge = document.getElementById('movieBadge');
-
-            if (mainBadge) incrementBadgeCount(mainBadge);
-            if (isPaymentNotif && paymentBadge) incrementBadgeCount(paymentBadge);
-            if (isMovieNotif && movieBadge) incrementBadgeCount(movieBadge);
-
-            console.log("✅ [Badge] Updated immediately after SignalR");
-
-            // ========== THÊM VÀO DANH SÁCH NẾU DROPDOWN ĐANG MỞ ==========
-            if (isDropdownOpen) {
-                // Chỉ thêm nếu đúng tab
-                if ((currentTab === 'payment' && isPaymentNotif) ||
-                    (currentTab === 'movie' && isMovieNotif)) {
-                    prependNotificationToList(notificationObject);
-                }
-            }
-
-            // ========== HIỂN THỊ TOAST ==========
-            showToast('info', notificationObject.title || 'Bạn có thông báo mới!');
-
-            // ========== SYNC LẠI SỐ BADGE SAU 3 GIÂY ==========
-            setTimeout(() => {
-                console.log("🔄 [Badge] Syncing with server...");
-                updateBadges();
-            }, 3000);
-        });
-
-        signalRConnection.start()
-            .then(() => console.log("✅ [SignalR] Connected successfully"))
-            .catch(err => console.error("❌ [SignalR] Connection error:", err));
-
-        signalRConnection.onclose(error => {
-            console.warn("⚠️ [SignalR] Connection closed", error);
-        });
+    // (HÀM ĐÃ SỬA)
+function initSignalR() {
+    if (typeof signalR === 'undefined') {
+        console.error('❌ SignalR library not loaded!');
+        return;
     }
 
+    signalRConnection = new signalR.HubConnectionBuilder()
+        .withUrl("/notificationHub")
+        .withAutomaticReconnect()
+        .build();
+
+    // ========== RECEIVE NOTIFICATION FROM SIGNALR (ĐÃ SỬA) ==========
+    signalRConnection.on("ReceiveNotification", function (notificationObject) {
+        console.log("✅ [SignalR] Received notification:", notificationObject);
+
+        const notifType = (notificationObject.type || '').toLowerCase();
+        const isPaymentNotif = notifType.includes('payment') || notifType.includes('subscription');
+        const isMovieNotif = notifType.includes('movie');
+
+        // ========== INVALIDATE CACHE ==========
+        if (isPaymentNotif) notificationCache.payment = null;
+        if (isMovieNotif) notificationCache.movie = null;
+
+        // ========== CỘNG BADGE NGAY LẬP TỨC (ĐÃ SỬA) ==========
+        // (MỚI) Chọn TẤT CẢ chuông chính
+        const mainBadges = document.querySelectorAll('.notification-badge'); 
+        const paymentBadge = document.getElementById('paymentBadge');
+        const movieBadge = document.getElementById('movieBadge');
+
+        // (MỚI) Lặp qua TẤT CẢ chuông chính để cộng
+        if (mainBadges.length > 0) mainBadges.forEach(incrementBadgeCount);
+        
+        if (isPaymentNotif && paymentBadge) incrementBadgeCount(paymentBadge);
+        if (isMovieNotif && movieBadge) incrementBadgeCount(movieBadge);
+
+        console.log("✅ [Badge] Updated immediately after SignalR");
+
+        // ========== THÊM VÀO DANH SÁCH NẾU DROPDOWN ĐANG MỞ ==========
+        if (isDropdownOpen) {
+            // Chỉ thêm nếu đúng tab
+            if ((currentTab === 'payment' && isPaymentNotif) ||
+                (currentTab === 'movie' && isMovieNotif)) {
+                prependNotificationToList(notificationObject);
+            }
+        }
+
+        // ========== HIỂN THỊ TOAST ==========
+        showToast('info', notificationObject.title || 'Bạn có thông báo mới!');
+
+        // ========== SYNC LẠI SỐ BADGE SAU 3 GIÂY ==========
+        setTimeout(() => {
+            console.log("🔄 [Badge] Syncing with server...");
+            updateBadges();
+        }, 3000);
+    });
+
+    signalRConnection.start()
+        .then(() => console.log("✅ [SignalR] Connected successfully"))
+        .catch(err => console.error("❌ [SignalR] Connection error:", err));
+
+    signalRConnection.onclose(error => {
+        console.warn("⚠️ [SignalR] Connection closed", error);
+    });
+}
     // ========== INCREMENT BADGE COUNT ==========
     function incrementBadgeCount(badgeElement) {
         if (!badgeElement) return;
@@ -91,7 +94,7 @@
 
         const newCount = currentCount + 1;
         badgeElement.textContent = newCount > 99 ? '99+' : newCount;
-        
+
         if (badgeElement.classList.contains('notification-badge')) {
             badgeElement.style.display = 'block';
         } else {
@@ -102,7 +105,7 @@
     // ========== PREPEND NOTIFICATION TO LIST ==========
     function prependNotificationToList(notif) {
         const listContainer = document.getElementById('notificationList');
-        
+
         if (!listContainer) {
             console.warn('⚠️ notificationList not found');
             return;
@@ -162,7 +165,7 @@
 
     // ========== ATTACH READ EVENT ==========
     function attachReadEvent(itemElement) {
-        itemElement.addEventListener('click', function(e) {
+        itemElement.addEventListener('click', function (e) {
             e.preventDefault();
             const notifId = parseInt(this.dataset.id);
             const url = this.getAttribute('href');
@@ -177,29 +180,51 @@
 
     // ========== NOTIFICATION UI ==========
     function initNotifications() {
-        const bellBtn = document.querySelector('.notification-trigger');
+        // (MỚI) Dùng querySelectorAll để tìm TẤT CẢ các nút chuông
+        const bellTriggers = document.querySelectorAll('.notification-trigger');
         const dropdown = document.querySelector('.notification-dropdown');
 
-        if (!bellBtn || !dropdown) {
-            console.warn('⚠️ Notification elements not found');
+        if (bellTriggers.length === 0 || !dropdown) {
+            console.warn('⚠️ Notification elements not found (triggers or dropdown)');
             return;
         }
 
-        bellBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleDropdown();
+        // *** (MỚI) LOGIC VISUAL QUAN TRỌNG ***
+        // Di chuyển dropdown ra <body> và set 'fixed'
+        // (Đây là logic từ file script cũ của mình, giờ ta merge vào đây)
+        document.body.appendChild(dropdown);
+        dropdown.style.position = 'fixed';
+        dropdown.style.zIndex = '1050'; // Đảm bảo nó nổi lên trên navbar
+        // *** HẾT LOGIC VISUAL ***
+
+        // (MỚI) Dùng vòng lặp (forEach) để gán sự kiện cho TỪNG NÚT
+        bellTriggers.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // (MỚI) Truyền 'e.currentTarget' (nút vừa bấm) vào
+                toggleDropdown(e.currentTarget);
+            });
         });
 
+        // (MỚI) Sửa logic click-outside để check nhiều trigger
         document.addEventListener('click', (e) => {
-            if (isDropdownOpen && !dropdown.contains(e.target) && !bellBtn.contains(e.target)) {
+            let clickedOnTrigger = false;
+            bellTriggers.forEach(btn => {
+                if (btn.contains(e.target)) {
+                    clickedOnTrigger = true;
+                }
+            });
+
+            if (isDropdownOpen && !dropdown.contains(e.target) && !clickedOnTrigger) {
                 closeDropdown();
             }
         });
 
+        // --- GIỮ NGUYÊN LOGIC CŨ CỦA BẠN ---
         // Tab buttons
         const tabButtons = document.querySelectorAll('.nav-link[data-tab]');
         tabButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function () {
                 currentTab = this.dataset.tab;
                 setActiveTab(currentTab);
                 loadNotifications(); // Load lại khi switch tab
@@ -216,24 +241,32 @@
         setInterval(updateBadges, 300000); // Poll mỗi 5 phút
     }
 
-    function toggleDropdown() {
+    function toggleDropdown(anchorBtn) { // (MỚI) Nhận 'anchorBtn'
         const dropdown = document.querySelector('.notification-dropdown');
 
         if (isDropdownOpen) {
             closeDropdown();
         } else {
+            // *** (MỚI) LOGIC CĂN CHỈNH VỊ TRÍ ***
+            // (Đây là logic từ file script cũ của mình, giờ ta merge vào đây)
+            const rect = anchorBtn.getBoundingClientRect();
+            dropdown.style.top = `${rect.bottom + 5}px`;
+            dropdown.style.right = `${window.innerWidth - rect.right}px`;
+            dropdown.style.left = 'auto';
+            if (window.innerWidth < 480) {
+                dropdown.style.right = '10px';
+                dropdown.style.left = '10px';
+            }
+            // *** HẾT LOGIC CĂN CHỈNH VỊ TRÍ ***
+
             dropdown.style.display = 'block';
             isDropdownOpen = true;
-            setActiveTab(currentTab);
 
-            // ========== FIX: PREFETCH CẢ 2 LOẠI NOTIFICATION ==========
+            // --- GIỮ NGUYÊN LOGIC LOAD DATA CŨ CỦA BẠN ---
+            setActiveTab(currentTab);
             console.log("🔄 [Dropdown] Opening - Prefetching both notification types...");
-            
-            // Prefetch cả 2 loại (không đợi)
             prefetchNotifications('payment');
             prefetchNotifications('movie');
-            
-            // Load tab hiện tại
             loadNotifications();
         }
     }
@@ -278,11 +311,11 @@
     // ========== LOAD NOTIFICATIONS FROM CACHE OR API ==========
     function loadNotifications() {
         const listContainer = document.getElementById('notificationList');
-        
+
         // Nếu có cache, dùng luôn
         if (notificationCache[currentTab] !== null) {
             console.log(`✅ [Cache] Loading ${currentTab} from cache`);
-            
+
             if (notificationCache[currentTab].length > 0) {
                 renderNotifications(notificationCache[currentTab]);
             } else {
@@ -309,7 +342,7 @@
                         title: n.title || n.Title,
                         createdAt: n.createdAt || n.CreatedAt
                     })));
-                    
+
                     notificationCache[currentTab] = data.data;
                     renderNotifications(data.data);
                 } else {
@@ -331,7 +364,7 @@
 
     function renderNotifications(notifications) {
         const listContainer = document.getElementById('notificationList');
-        
+
         // ✅ Sort lại ở frontend để đảm bảo mới nhất trước
         const sortedNotifications = [...notifications].sort((a, b) => {
             // Sử dụng hàm formatDateTime để lấy Date object đã được xử lý timezone
@@ -339,7 +372,7 @@
             const dateB = parseUtcDate(b.createdAt || b.CreatedAt);
             return dateB - dateA; // Mới nhất trước
         });
-        
+
         listContainer.innerHTML = sortedNotifications.map(createNotificationItemHtml).join('');
         listContainer.querySelectorAll('.notification-item').forEach(attachReadEvent);
     }
@@ -367,17 +400,24 @@
             .catch(error => console.error('❌ Error updating badges:', error));
     }
 
-    function updateBadgeElement(selector, count) {
-        const badge = document.querySelector(selector);
-        if (badge) {
+    // (HÀM ĐÃ SỬA)
+function updateBadgeElement(selector, count) {
+    // (MỚI) Dùng querySelectorAll để chọn TẤT CẢ các element
+    const badges = document.querySelectorAll(selector);
+    
+    if (badges.length > 0) {
+        // (MỚI) Dùng vòng lặp forEach để cập nhật TẤT CẢ
+        badges.forEach(badge => {
             if (count > 0) {
                 badge.textContent = count > 99 ? '99+' : count;
-                badge.style.display = selector === '.notification-badge' ? 'block' : 'inline-block';
+                // (MỚI) Sửa lại logic check class
+                badge.style.display = badge.classList.contains('notification-badge') ? 'block' : 'inline-block';
             } else {
                 badge.style.display = 'none';
             }
-        }
+        });
     }
+}
 
     // ========== MARK AS READ ==========
     function markAsRead(notifId, redirectUrl) {
@@ -388,13 +428,13 @@
                     // Invalidate cache
                     notificationCache.payment = null;
                     notificationCache.movie = null;
-                    
+
                     updateBadges();
                     if (redirectUrl && redirectUrl !== '#') {
                         window.location.href = redirectUrl;
                     } else {
                         const item = document.querySelector(`.notification-item[data-id="${notifId}"]`);
-                        if(item) item.classList.remove('unread');
+                        if (item) item.classList.remove('unread');
                     }
                 }
             })
@@ -410,7 +450,7 @@
                 if (data.success) {
                     // Invalidate cache
                     notificationCache[currentTab] = null;
-                    
+
                     updateBadges();
                     loadNotifications();
                     showToast('success', 'Đã đánh dấu tất cả là đã đọc');
@@ -465,9 +505,9 @@
             if (isNaN(date.getTime())) {
                 // Nếu parse lỗi (rất hiếm), trả về 'Vừa xong'
                 console.error(`❌ [Time] Invalid Date: ${dateStr} -> ${processedDateStr}`);
-                return new Date(); 
+                return new Date();
             }
-            
+
             // Log để debug
             // console.log(`✅ [Time] Parsed: ${dateStr} -> ${processedDateStr} -> ${date.toISOString()}`);
             return date;
@@ -487,7 +527,7 @@
         try {
             // Sử dụng helper mới để parse
             const date = parseUtcDate(dateStr);
-            
+
             const now = new Date();
             const diff = now - date; // Đây là diff mili-giây chính xác
             const seconds = Math.floor(diff / 1000);
@@ -496,7 +536,7 @@
             const days = Math.floor(hours / 24);
 
             // Xử lý trường hợp thời gian tương lai (do server/client lệch nhau < 5s)
-            if (seconds < 5) return 'Vừa xong'; 
+            if (seconds < 5) return 'Vừa xong';
             if (minutes === 0) return 'Vừa xong'; // Fix cho 0 phút trước
             if (minutes < 60) return `${minutes} phút trước`;
             if (hours < 24) return `${hours} giờ trước`;
@@ -518,14 +558,14 @@
     function showToast(type, message) {
         const typeClass = type === 'success' ? 'success' : (type === 'info' ? 'info' : 'danger');
         const iconClass = type === 'success' ? 'check-circle' : (type === 'info' ? 'info-circle' : 'exclamation-triangle');
-        
+
         const toast = document.createElement('div');
         toast.className = `alert alert-${typeClass} d-flex align-items-center toast-notification`;
         toast.innerHTML = `
             <i class="bi bi-${iconClass} me-2 fs-5"></i>
             <span>${escapeHtml(message)}</span>
         `;
-        
+
         document.body.appendChild(toast);
         setTimeout(() => {
             toast.style.opacity = '0';
