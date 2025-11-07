@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="~/css/nangcap.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/notification.css" />
     <link rel="stylesheet" href="~/css/chatbot.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" >
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
@@ -29,27 +30,24 @@
     <input type="hidden" id="RequestVerificationToken" value="@token" />
      @await Html.PartialAsync("Partial/_Header")
     
-    <!-- Mobile Search Overlay -->
     @await Html.PartialAsync("Partial/_MobileSearch")
-    
-    <!-- Auth Modal (Login/Register) -->
     @await Html.PartialAsync("Partial/_AuthModal")
     
-    <!-- Main Content -->
     <main role="main">
         @RenderBody()
     </main>
-    
-    <!-- Footer -->
     @await Html.PartialAsync("Partial/_Footer")
     
-    <!-- JavaScript -->
     @await Html.PartialAsync("Partial/_Scripts")
     
     @await RenderSectionAsync("Scripts", required: false)
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
     <script src="~/js/notification.js" asp-append-version="true"></script>
-    <script src="~/js/chatbot.js" asp-append-version="true"></script>
+
+    @if (User.Identity.IsAuthenticated && (User.HasClaim("IsPremium", "true") || User.IsInRole("Admin")))
+    {
+        <script src="~/js/chatbot.js" asp-append-version="true"></script>
+    }
     <script src="~/js/search.js" asp-append-version="true"></script>
 
 </body>

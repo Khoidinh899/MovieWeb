@@ -420,3 +420,242 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+/* ================== RESPONSIVE: REVENUE PAGE - MOBILE (< 768px) ================== */
+
+@media (max-width: 767px) {
+
+    /* ========== REVENUE FILTER CARD ========== */
+    .revenue-filter-card .revenue-header .btn-group {
+        flex-wrap: wrap;
+        gap: 5px;
+        width: 100%; /* Cho nhóm nút chiếm toàn bộ chiều rộng */
+    }
+    
+    .revenue-filter-card .revenue-header .btn-group .btn {
+        flex-grow: 1; /* Cho các nút tự dãn ra */
+    }
+
+    .revenue-stat-box-large {
+        padding: 1.5rem 1rem !important;
+    }
+
+    .revenue-stat-box-large h1 {
+        font-size: 3rem !important; /* Giảm kích thước font số tiền */
+    }
+
+    .revenue-stat-box-large .stat-icon-background {
+        font-size: 5rem; /* Thu nhỏ icon nền */
+        top: 10px;
+        right: 10px;
+        opacity: 0.05;
+    }
+
+    .revenue-stat-box-large h6 {
+        font-size: 0.8rem;
+    }
+    .revenue-stat-box-large .lead {
+        font-size: 0.9rem;
+    }
+
+    .revenue-stat-box {
+        padding: 1rem;
+    }
+    
+    .revenue-stat-box h2 {
+        font-size: 1.75rem;
+    }
+
+    /* Stack 2 chart */
+    .row.mb-4 > .col-md-8,
+    .row.mb-4 > .col-md-4 {
+        width: 100% !important;
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    
+    /* Nút filter của bảng giao dịch */
+    .card-header .btn-group-sm {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 10px;
+    }
+
+    /* ========== TRANSACTIONS TABLE → CARD LAYOUT (MOBILE) ========== */
+    
+    /* Sử dụng :has() để chỉ nhắm vào thẻ .card chứa bảng #recentTransactionsTable */
+
+    .card:has(table#recentTransactionsTable) .table-responsive {
+        overflow-x: hidden !important;
+        overflow-y: visible !important;
+        min-height: auto;
+        max-height: none;
+        padding: 0.75rem;
+    }
+
+    /* Ẩn table header */
+    .card:has(table#recentTransactionsTable) .table thead {
+        display: none !important;
+    }
+
+    /* Table, tbody, tr = block */
+    .card:has(table#recentTransactionsTable) .table {
+        display: block;
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0;
+        table-layout: auto !important;
+    }
+
+    .card:has(table#recentTransactionsTable) .table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .card:has(table#recentTransactionsTable) .table tbody tr {
+        display: block;
+        width: 100%;
+        margin-bottom: 1rem;
+        border-radius: 12px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e9ecef;
+        padding: 0;
+        height: auto !important;
+    }
+
+    .card:has(table#recentTransactionsTable) .table tbody tr:hover {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        transform: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    /* TD = Flexbox row (label bên trái, data bên phải) */
+    .card:has(table#recentTransactionsTable) .table tbody td {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.85rem 1rem !important;
+        border-bottom: 1px solid #f0f0f0 !important;
+        font-size: 0.875rem;
+        text-align: right;
+        position: relative;
+        min-height: 50px;
+        white-space: normal !important;
+        height: auto !important;
+    }
+    .card:has(table#recentTransactionsTable) .table tbody td code {
+        white-space: normal !important; /* <-- [MỚI] Cho phép chữ dài xuống hàng */
+        word-break: break-all !important; /* <-- [MỚI] Bẻ gãy chữ nếu cần */
+    }
+
+    .card:has(table#recentTransactionsTable) .table tbody td:last-child {
+        border-bottom: none !important;
+    }
+
+    /* Label (::before) ở bên trái */
+    .card:has(table#recentTransactionsTable) .table tbody td::before {
+        content: attr(data-label);
+        display: inline-block;
+        font-weight: 700;
+        color: #667eea;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: left;
+        flex-shrink: 0;
+        width: 110px;
+    }
+
+    /* Gán label cho 8 cột */
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(1)::before { content: "Mã GD"; }
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(2)::before { content: "User"; }
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(3)::before { content: "Gói"; }
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(4)::before { content: "Số Tiền"; }
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(5)::before { content: "Phương Thức"; }
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(6)::before { content: "Trạng Thái"; }
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(7)::before { content: "Ngày"; }
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(8)::before { content: "Thao Tác"; }
+
+    /* Content (data) ở bên phải - MẶC ĐỊNH CĂN PHẢI */
+    .card:has(table#recentTransactionsTable) .table tbody td > * {
+        flex: 1;
+        text-align: right;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+        white-space: normal !important;
+        word-break: break-all;
+    }
+
+    /* GHI ĐÈ: Căn trái cho các cột text */
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(1) > *, /* Mã GD */
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(2) > *, /* User */
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(7) > * /* Ngày */ {
+        justify-content: flex-start;
+        text-align: left;
+    }
+    
+    /* GHI ĐÈ: Căn giữa cho các cột data ngắn/badge */
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(3) > *, /* Gói */
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(5) > *, /* Phương Thức */
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(6) > * /* Trạng thái */ {
+        justify-content: center;
+        text-align: center;
+    }
+    
+    /* GHI ĐÈ: Căn phải cho cột tiền */
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(4) > * {
+        justify-content: flex-end;
+        font-weight: 600;
+    }
+
+    /* Cột 8: Action buttons cell */
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(8) {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+
+    .card:has(table#recentTransactionsTable) .table tbody td:nth-of-type(8)::before {
+        position: absolute;
+        top: 0.85rem;
+        left: 1rem;
+    }
+
+    /* Button group - full width, wrap buttons */
+    .card:has(table#recentTransactionsTable) .table tbody td .btn-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: flex-end;
+        margin-top: 0;
+    }
+
+    .card:has(table#recentTransactionsTable) .table tbody td .btn-group .btn {
+        flex: 1 1 calc(50% - 3px); /* 2 nút 1 hàng */
+        min-width: 45px;
+        padding: 0.5rem 0.4rem;
+        font-size: 0.9rem;
+    }
+
+    /* Empty state */
+    .card:has(table#recentTransactionsTable) .table tbody tr td[colspan] {
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 250px !important;
+        padding: 2rem 1rem !important;
+        text-align: center;
+    }
+
+    .card:has(table#recentTransactionsTable) .table tbody tr td[colspan]::before {
+        display: none !important;
+    }
+}

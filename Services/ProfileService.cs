@@ -1,8 +1,16 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MovieWeb.Models.Entities;
-using MovieWeb.Models.DTOs;
+using MovieWeb.Models.DTOs; // Giả sử DTOs của bạn ở đây
+using MovieWeb.Models; // Giả sử PaymentHistoryViewModel ở đây
 using MovieWeb.Data;
+using Microsoft.AspNetCore.Hosting; 
+using Microsoft.Extensions.Logging; 
+using System.IO; 
+using System.Linq; 
+using System.Threading.Tasks; 
+using System.Collections.Generic; 
+using System; 
 
 namespace MovieWeb.Services
 {
@@ -13,6 +21,10 @@ namespace MovieWeb.Services
         Task<ProfileResult> ChangePasswordAsync(int userId, ChangePasswordDto model);
         Task<ProfileResult> UpdateAvatarAsync(int userId, IFormFile avatarFile);
         Task<ProfileResult> DeleteAvatarAsync(int userId);
+        
+        // ===== THÊM HÀM MỚI NÀY =====
+        Task<PaymentHistoryDto> GetPaymentHistoryAsync(int userId, int page, int pageSize = 10);
+        // =============================
 
         // Admin methods
         Task<List<UserProfileDto>> GetAllUsersAsync();
@@ -28,6 +40,10 @@ namespace MovieWeb.Services
         private readonly MovieWebDbContext _context;
         private readonly ILogger<ProfileService> _logger;
         private readonly IWebHostEnvironment _environment;
+        
+        private const string _userUploadPath = "/images/uploads/avatars/";
+        private const string _defaultAvatarPath = "/images/nouser.png";
+
 
         public ProfileService(
             UserManager<User> userManager,
@@ -41,70 +57,71 @@ namespace MovieWeb.Services
             _environment = environment;
         }
 
+        // (Các hàm GetUserProfileAsync, UpdateProfileAsync, ChangePasswordAsync, UpdateAvatarAsync, DeleteAvatarAsync giữ nguyên như file trước)
+        
+        #region User Profile Methods
         // Lấy thông tin profile đầy đủ
         public async Task<UserProfileDto?> GetUserProfileAsync(int userId)
-{
-    try
-    {
-        var user = await _context.Users
-            .Include(u => u.Favorites)
-            .Include(u => u.Comments)
-            .Include(u => u.Ratings)
-            .Include(u => u.WatchHistories)
-            .FirstOrDefaultAsync(u => u.Id == userId);
-
-        if (user == null) return null;
-
-        // 🆕 LẤY SUBSCRIPTION ĐỂ CHECK STATUS
-        var activeSubscription = await _context.UserSubscriptions
-            .Where(s => s.UserId == userId
-                && s.EndDate > DateTime.Now
-                && (s.Status == "active" || s.Status == "cancelled"))
-            .OrderByDescending(s => s.EndDate)
-            .FirstOrDefaultAsync();
-
-        return new UserProfileDto
         {
-            UserId = user.Id,
-            Username = user.UserName ?? "",
-            Email = user.Email ?? "",
-            FirstName = user.FirstName ?? "",
-            LastName = user.LastName ?? "",
-            Avatar = user.Avatar,
-            IsActive = user.IsActive ?? false,
-            EmailConfirmed = user.EmailConfirmed,
-            CreatedAt = user.CreatedAt ?? DateTime.Now,
-            LastLogin = user.LastLogin,
-            RoleId = user.RoleId,
-            TotalFavorites = user.Favorites.Count,
-            TotalComments = user.Comments.Count,
-            TotalRatings = user.Ratings.Count,
-            TotalWatchHistory = user.WatchHistories.Count,
+            try
+            {
+                var userProfile = await _context.Users
+                    .Where(u => u.Id == userId)
+                    .Select(user => new UserProfileDto 
+                    {
+                        UserId = user.Id,
+                        Username = user.UserName ?? "",
+                        Email = user.Email ?? "",
+                        FirstName = user.FirstName ?? "",
+                        LastName = user.LastName ?? "",
+                        Avatar = string.IsNullOrEmpty(user.Avatar) ? _defaultAvatarPath : user.Avatar,
+                        IsActive = user.IsActive ?? false,
+                        EmailConfirmed = user.EmailConfirmed,
+                        CreatedAt = user.CreatedAt ?? DateTime.Now,
+                        LastLogin = user.LastLogin,
+                        RoleId = user.RoleId,
+                        
+                        TotalFavorites = (user.Favorites == null) ? 0 : user.Favorites.Count,
+                        TotalComments = (user.Comments == null) ? 0 : user.Comments.Count,
+                        TotalRatings = (user.Ratings == null) ? 0 : user.Ratings.Count,
+                        TotalWatchHistory = (user.WatchHistories == null) ? 0 : user.WatchHistories.Count,
 
-            // ✅ SUBSCRIPTION INFO
-            SubscriptionType = user.SubscriptionType ?? "free",
-            SubscriptionStartDate = user.SubscriptionStartDate,
-            SubscriptionEndDate = user.SubscriptionEndDate,
-            RemainingDaysFromPreviousPackage = activeSubscription?.BonusDaysFromPreviousPackage ?? 0,
-            
-            // 🆕 CHECK NẾU GÓI BỊ HỦY NHƯNG CÒN HẠN
-            IsCancelled = activeSubscription != null 
-                && activeSubscription.Status == "cancelled" 
-                && activeSubscription.EndDate > DateTime.Now,
-            
-            // ✅ STUDENT VERIFICATION
-            IsStudentVerified = user.IsStudentVerified,
-            StudentEmail = user.StudentEmail,
-            StudentEmailVerifiedAt = user.StudentEmailVerifiedAt,
-            StudentEmailVerificationExpiry = user.StudentEmailVerificationExpiry
-        };
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error getting user profile for userId: {UserId}", userId);
-        return null;
-    }
-}
+                        SubscriptionType = user.SubscriptionType ?? "free",
+                        SubscriptionStartDate = user.SubscriptionStartDate,
+                        SubscriptionEndDate = user.SubscriptionEndDate,
+                        
+                        IsStudentVerified = user.IsStudentVerified,
+                        StudentEmail = user.StudentEmail,
+                        StudentEmailVerifiedAt = user.StudentEmailVerifiedAt,
+                        StudentEmailVerificationExpiry = user.StudentEmailVerificationExpiry
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (userProfile == null) return null;
+
+                var activeSubscription = await _context.UserSubscriptions
+                    .Where(s => s.UserId == userId
+                        && s.EndDate > DateTime.Now
+                        && (s.Status == "active" || s.Status == "cancelled"))
+                    .OrderByDescending(s => s.EndDate)
+                    .FirstOrDefaultAsync();
+
+                if (activeSubscription != null)
+                {
+                    userProfile.RemainingDaysFromPreviousPackage = activeSubscription.BonusDaysFromPreviousPackage;
+                    userProfile.IsCancelled = activeSubscription.Status == "cancelled" 
+                                              && activeSubscription.EndDate > DateTime.Now;
+                }
+
+                return userProfile;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user profile for userId: {UserId}", userId);
+                return null;
+            }
+        }
+
         // Cập nhật thông tin cá nhân
         public async Task<ProfileResult> UpdateProfileAsync(int userId, UpdateProfileDto model)
         {
@@ -114,11 +131,9 @@ namespace MovieWeb.Services
                 if (user == null)
                     return ProfileResult.Failed("Người dùng không tồn tại");
 
-                // Cập nhật thông tin
                 user.FirstName = model.FirstName;
                 user.LastName = model.LastName;
 
-                // Kiểm tra email mới có trùng không
                 if (model.Email != user.Email)
                 {
                     var existingUser = await _userManager.FindByEmailAsync(model.Email);
@@ -126,7 +141,7 @@ namespace MovieWeb.Services
                         return ProfileResult.Failed("Email đã được sử dụng bởi tài khoản khác");
 
                     user.Email = model.Email;
-                    user.EmailConfirmed = false; // Yêu cầu xác thực lại email mới
+                    user.EmailConfirmed = false; 
                 }
 
                 user.UpdatedAt = DateTime.Now;
@@ -178,30 +193,43 @@ namespace MovieWeb.Services
                 if (user == null)
                     return ProfileResult.Failed("Người dùng không tồn tại");
 
-                // Validate file
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-                var extension = Path.GetExtension(avatarFile.FileName).ToLowerInvariant();
+                if (!user.IsPremium)
+                {
+                    return ProfileResult.Failed("Chỉ thành viên MoonPro/MoonStu mới được tải avatar.");
+                }
 
-                if (!allowedExtensions.Contains(extension))
-                    return ProfileResult.Failed("Chỉ chấp nhận file ảnh (.jpg, .jpeg, .png, .gif)");
+                if (avatarFile == null || avatarFile.Length == 0)
+                {
+                    return ProfileResult.Failed("Không có file nào được chọn.");
+                }
 
-                if (avatarFile.Length > 5 * 1024 * 1024) // 5MB
-                    return ProfileResult.Failed("Kích thước file không được vượt quá 5MB");
+                long maxFileSize = 5 * 1024 * 1024; // 5MB
+                if (avatarFile.Length > maxFileSize)
+                {
+                    return ProfileResult.Failed("File quá lớn. Vui lòng chọn file dưới 5MB.");
+                }
 
-                // Xóa avatar cũ nếu có
-                if (!string.IsNullOrEmpty(user.Avatar))
+                var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
+                if (!allowedTypes.Contains(avatarFile.ContentType.ToLower()))
+                {
+                    return ProfileResult.Failed("Định dạng file không hợp lệ. Chỉ chấp nhận .jpg, .png, .gif, .webp.");
+                }
+
+                if (!string.IsNullOrEmpty(user.Avatar) && user.Avatar.StartsWith(_userUploadPath))
                 {
                     var oldAvatarPath = Path.Combine(_environment.WebRootPath, user.Avatar.TrimStart('/'));
                     if (File.Exists(oldAvatarPath))
+                    {
                         File.Delete(oldAvatarPath);
+                    }
                 }
 
-                // Lưu avatar mới
-                var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "avatars");
+                var uploadsFolder = Path.Combine(_environment.WebRootPath, _userUploadPath.TrimStart('/'));
                 if (!Directory.Exists(uploadsFolder))
                     Directory.CreateDirectory(uploadsFolder);
 
-                var uniqueFileName = $"{userId}_{Guid.NewGuid()}{extension}";
+                var extension = Path.GetExtension(avatarFile.FileName).ToLowerInvariant();
+                var uniqueFileName = $"user_{userId}_{Guid.NewGuid()}{extension}";
                 var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
                 using (var fileStream = new FileStream(filePath, FileMode.Create))
@@ -209,8 +237,7 @@ namespace MovieWeb.Services
                     await avatarFile.CopyToAsync(fileStream);
                 }
 
-                // Cập nhật database
-                user.Avatar = $"/uploads/avatars/{uniqueFileName}";
+                user.Avatar = $"{_userUploadPath}{uniqueFileName}";
                 user.UpdatedAt = DateTime.Now;
                 await _userManager.UpdateAsync(user);
 
@@ -233,18 +260,21 @@ namespace MovieWeb.Services
                 if (user == null)
                     return ProfileResult.Failed("Người dùng không tồn tại");
 
-                if (!string.IsNullOrEmpty(user.Avatar))
+                if (!string.IsNullOrEmpty(user.Avatar) && user.Avatar.StartsWith(_userUploadPath))
                 {
                     var avatarPath = Path.Combine(_environment.WebRootPath, user.Avatar.TrimStart('/'));
                     if (File.Exists(avatarPath))
+                    {
                         File.Delete(avatarPath);
-
-                    user.Avatar = null;
-                    user.UpdatedAt = DateTime.Now;
-                    await _userManager.UpdateAsync(user);
+                    }
                 }
 
-                return ProfileResult.Success("Xóa avatar thành công");
+                user.Avatar = _defaultAvatarPath;
+                user.UpdatedAt = DateTime.Now;
+                await _userManager.UpdateAsync(user);
+                
+                var profileDto = await GetUserProfileAsync(userId); 
+                return ProfileResult.Success("Xóa avatar thành công", profileDto);
             }
             catch (Exception ex)
             {
@@ -252,8 +282,63 @@ namespace MovieWeb.Services
                 return ProfileResult.Failed("Có lỗi xảy ra khi xóa avatar");
             }
         }
+        
+        // ===== THÊM HÀM MỚI NÀY VÀO =====
+        public async Task<PaymentHistoryDto> GetPaymentHistoryAsync(int userId, int page, int pageSize = 10)
+        {
+            try
+            {
+                var totalTransactions = await _context.Transactions
+                    .Where(t => t.UserId == userId)
+                    .CountAsync();
 
-        // ==================== ADMIN METHODS ====================
+                var transactions = await _context.Transactions
+                    .Where(t => t.UserId == userId)
+                    .Include(t => t.SubscriptionPlan)
+                    .Include(t => t.UserSubscription)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(t => new PaymentHistoryViewModel // Giả sử VM này đã được định nghĩa
+                    {
+                        TransactionId = t.TransactionId,
+                        SubscriptionId = t.SubscriptionId,
+                        TransactionCode = t.TransactionCode,
+                        PlanName = t.SubscriptionPlan != null ? t.SubscriptionPlan.DisplayName : "Không xác định",
+                        AmountVND = t.AmountVND,
+                        Currency = t.Currency,
+                        Status = t.Status,
+                        PaymentMethod = t.PaymentMethod,
+                        CreatedAt = t.CreatedAt,
+                        StatusDisplay = t.StatusDisplay,
+                        SubscriptionStatus = t.UserSubscription != null ? t.UserSubscription.Status : null,
+                        SubscriptionEndDate = t.UserSubscription != null ? t.UserSubscription.EndDate : null
+                    })
+                    .ToListAsync();
+
+                var totalPages = (int)Math.Ceiling(totalTransactions / (double)pageSize);
+
+                return new PaymentHistoryDto
+                {
+                    Transactions = transactions,
+                    CurrentPage = page,
+                    TotalPages = totalPages,
+                    TotalTransactions = totalTransactions,
+                    PageSize = pageSize
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting payment history for userId: {UserId}", userId);
+                // Trả về DTO rỗng khi có lỗi
+                return new PaymentHistoryDto { CurrentPage = page, PageSize = pageSize };
+            }
+        }
+        // ===================================
+        #endregion
+
+        #region Admin Methods
+        // (Tất cả Admin Methods giữ nguyên như file trước)
 
         // Lấy danh sách tất cả users
         public async Task<List<UserProfileDto>> GetAllUsersAsync()
@@ -261,42 +346,35 @@ namespace MovieWeb.Services
             try
             {
                 var users = await _context.Users
-                    .Include(u => u.Favorites)
-                    .Include(u => u.Comments)
-                    .Include(u => u.Ratings)
-                    .Include(u => u.WatchHistories)
                     .OrderByDescending(u => u.CreatedAt)
+                    .Select(u => new UserProfileDto
+                    {
+                        UserId = u.Id,
+                        Username = u.UserName ?? "",
+                        Email = u.Email ?? "",
+                        FirstName = u.FirstName ?? "",
+                        LastName = u.LastName ?? "",
+                        Avatar = string.IsNullOrEmpty(u.Avatar) ? _defaultAvatarPath : u.Avatar,
+                        IsActive = u.IsActive ?? false,
+                        EmailConfirmed = u.EmailConfirmed,
+                        CreatedAt = u.CreatedAt ?? DateTime.Now,
+                        LastLogin = u.LastLogin,
+                        RoleId = u.RoleId,
+                        TotalFavorites = (u.Favorites == null) ? 0 : u.Favorites.Count,
+                        TotalComments = (u.Comments == null) ? 0 : u.Comments.Count,
+                        TotalRatings = (u.Ratings == null) ? 0 : u.Ratings.Count,
+                        TotalWatchHistory = (u.WatchHistories == null) ? 0 : u.WatchHistories.Count,
+                        SubscriptionType = u.SubscriptionType ?? "free",
+                        SubscriptionStartDate = u.SubscriptionStartDate,
+                        SubscriptionEndDate = u.SubscriptionEndDate,
+                        IsStudentVerified = u.IsStudentVerified,
+                        StudentEmail = u.StudentEmail,
+                        StudentEmailVerifiedAt = u.StudentEmailVerifiedAt,
+                        StudentEmailVerificationExpiry = u.StudentEmailVerificationExpiry
+                    })
                     .ToListAsync();
 
-                return users.Select(u => new UserProfileDto
-                {
-                    UserId = u.Id,
-                    Username = u.UserName ?? "",
-                    Email = u.Email ?? "",
-                    FirstName = u.FirstName ?? "",
-                    LastName = u.LastName ?? "",
-                    Avatar = u.Avatar,
-                    IsActive = u.IsActive ?? false,
-                    EmailConfirmed = u.EmailConfirmed,
-                    CreatedAt = u.CreatedAt ?? DateTime.Now,
-                    LastLogin = u.LastLogin,
-                    RoleId = u.RoleId,
-                    TotalFavorites = u.Favorites.Count,
-                    TotalComments = u.Comments.Count,
-                    TotalRatings = u.Ratings.Count,
-                    TotalWatchHistory = u.WatchHistories.Count,
-
-                    // ✅ THÊM CÁC DÒNG NÀY - SUBSCRIPTION
-                    SubscriptionType = u.SubscriptionType ?? "free",
-                    SubscriptionStartDate = u.SubscriptionStartDate,
-                    SubscriptionEndDate = u.SubscriptionEndDate,
-
-                    // ✅ STUDENT VERIFICATION
-                    IsStudentVerified = u.IsStudentVerified,
-                    StudentEmail = u.StudentEmail,
-                    StudentEmailVerifiedAt = u.StudentEmailVerifiedAt,
-                    StudentEmailVerificationExpiry = u.StudentEmailVerificationExpiry
-                }).ToList();
+                return users;
             }
             catch (Exception ex)
             {
@@ -304,6 +382,7 @@ namespace MovieWeb.Services
                 return new List<UserProfileDto>();
             }
         }
+
         // Admin cập nhật user
         public async Task<ProfileResult> AdminUpdateUserAsync(AdminUpdateUserDto model)
         {
@@ -313,13 +392,11 @@ namespace MovieWeb.Services
                 if (user == null)
                     return ProfileResult.Failed("Người dùng không tồn tại");
 
-                // Cập nhật thông tin
                 user.FirstName = model.FirstName;
                 user.LastName = model.LastName;
                 user.RoleId = model.RoleId;
                 user.IsActive = model.IsActive;
 
-                // Kiểm tra email mới
                 if (model.Email != user.Email)
                 {
                     var existingUser = await _userManager.FindByEmailAsync(model.Email);
@@ -354,16 +431,25 @@ namespace MovieWeb.Services
                 if (user == null)
                     return ProfileResult.Failed("Người dùng không tồn tại");
 
-                // Xóa mật khẩu cũ và đặt mật khẩu mới
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var resetResult = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
+                
+                if (resetResult.Succeeded)
+                {
+                     return ProfileResult.Success("Đổi mật khẩu thành công");
+                }
+                
                 var removeResult = await _userManager.RemovePasswordAsync(user);
-                if (!removeResult.Succeeded)
-                    return ProfileResult.Failed("Không thể xóa mật khẩu cũ");
-
                 var addResult = await _userManager.AddPasswordAsync(user, model.NewPassword);
-                if (!addResult.Succeeded)
-                    return ProfileResult.Failed(addResult.Errors.Select(e => e.Description).ToList());
-
-                return ProfileResult.Success("Đổi mật khẩu thành công");
+                
+                if (addResult.Succeeded)
+                {
+                    return ProfileResult.Success("Đổi mật khẩu thành công");
+                }
+                
+                return ProfileResult.Failed(resetResult.Errors.Any() ? 
+                    resetResult.Errors.Select(e => e.Description).ToList() :
+                    addResult.Errors.Select(e => e.Description).ToList());
             }
             catch (Exception ex)
             {
@@ -380,8 +466,7 @@ namespace MovieWeb.Services
                 var user = await _userManager.FindByIdAsync(userId.ToString());
                 if (user == null)
                     return ProfileResult.Failed("Người dùng không tồn tại");
-
-                // Không cho phép vô hiệu hóa chính mình
+                
                 user.IsActive = !(user.IsActive ?? false);
                 user.UpdatedAt = DateTime.Now;
 
@@ -408,12 +493,13 @@ namespace MovieWeb.Services
                 if (user == null)
                     return ProfileResult.Failed("Người dùng không tồn tại");
 
-                // Xóa avatar nếu có
-                if (!string.IsNullOrEmpty(user.Avatar))
+                if (!string.IsNullOrEmpty(user.Avatar) && user.Avatar.StartsWith(_userUploadPath))
                 {
                     var avatarPath = Path.Combine(_environment.WebRootPath, user.Avatar.TrimStart('/'));
                     if (File.Exists(avatarPath))
+                    {
                         File.Delete(avatarPath);
+                    }
                 }
 
                 var result = await _userManager.DeleteAsync(user);
@@ -427,6 +513,31 @@ namespace MovieWeb.Services
                 _logger.LogError(ex, "Error deleting user: {UserId}", userId);
                 return ProfileResult.Failed("Có lỗi xảy ra khi xóa người dùng");
             }
+        }
+        #endregion
+    }
+
+    // Class helper để trả về kết quả
+    public class ProfileResult
+    {
+        public bool IsSuccess { get; set; }
+        public List<string> Errors { get; set; } = new List<string>();
+        public string Message { get; set; } = string.Empty;
+        public UserProfileDto? Profile { get; set; }
+
+        public static ProfileResult Success(string message, UserProfileDto? profile = null)
+        {
+            return new ProfileResult { IsSuccess = true, Message = message, Profile = profile };
+        }
+
+        public static ProfileResult Failed(string error)
+        {
+            return new ProfileResult { IsSuccess = false, Errors = new List<string> { error }, Message = error };
+        }
+
+        public static ProfileResult Failed(List<string> errors)
+        {
+            return new ProfileResult { IsSuccess = false, Errors = errors, Message = errors.FirstOrDefault() ?? "Lỗi" };
         }
     }
 }

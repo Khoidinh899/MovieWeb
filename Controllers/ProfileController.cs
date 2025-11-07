@@ -5,8 +5,8 @@ using MovieWeb.Services;
 using MovieWeb.Models.DTOs;
 using MovieWeb.Models.Entities;
 using System.Security.Claims;
-using MovieWeb.Data;
-using Microsoft.EntityFrameworkCore;
+// using MovieWeb.Data; // <-- KHÔNG CẦN NỮA
+// using Microsoft.EntityFrameworkCore; // <-- KHÔNG CẦN NỮA
 using MovieWeb.Models;
 
 namespace MovieWeb.Controllers
@@ -15,7 +15,7 @@ namespace MovieWeb.Controllers
     [Route("user")]
     public class ProfileController : Controller
     {
-        private readonly MovieWebDbContext _context;
+        // private readonly MovieWebDbContext _context; // <-- ĐÃ XÓA
         private readonly IStudentEmailService _studentEmailService;
         private readonly IProfileService _profileService;
         private readonly ILogger<ProfileController> _logger;
@@ -23,18 +23,18 @@ namespace MovieWeb.Controllers
         private readonly SignInManager<User> _signInManager;
 
         public ProfileController(
-            MovieWebDbContext context,
+            // MovieWebDbContext context, // <-- ĐÃ XÓA
             IProfileService profileService,
             ILogger<ProfileController> logger,
             UserManager<User> userManager,
             SignInManager<User> signInManager,
             IStudentEmailService studentEmailService)
         {
-            _context = context;
+            // _context = context; // <-- ĐÃ XÓA
             _profileService = profileService;
             _logger = logger;
-            _userManager = userManager;
-            _signInManager = signInManager;
+            _userManager = userManager; 
+            _signInManager = signInManager; 
             _studentEmailService = studentEmailService;
         }
 
@@ -47,6 +47,7 @@ namespace MovieWeb.Controllers
         private bool IsAdmin() => User.HasClaim("RoleId", "1");
 
         // ====================== API khu vực profile ======================
+        // (Các API StudentEmailService giữ nguyên)
 
         [HttpPost("/api/profile/send-student-otp")]
         public async Task<IActionResult> SendStudentEmailOtp([FromBody] SendStudentOtpRequest request)
@@ -116,6 +117,7 @@ namespace MovieWeb.Controllers
         }
 
         // ====================== View Routes ======================
+        // (Profile, Edit GET, Edit POST, ChangePassword GET đã ổn)
 
         [HttpGet("profile")]
         public async Task<IActionResult> Profile()
@@ -178,111 +180,74 @@ namespace MovieWeb.Controllers
             return View("~/Views/User/ChangePassword.cshtml");
         }
 
+        // ====================== CÁC HÀNH ĐỘNG ĐƯỢC REFACTOR ======================
+
         [HttpPost("change-password")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(ChangePasswordDto model)
         {
-            // Giữ nguyên phần kiểm tra ModelState
             if (!ModelState.IsValid)
                 return View("~/Views/User/ChangePassword.cshtml", model);
 
-            var user = await _userManager.GetUserAsync(User);
+            var user = await _userManager.GetUserAsync(User); // Cần user để RefreshSignIn
             if (user == null)
                 return NotFound();
 
-            // === THÊM LOGIC KIỂM TRA MẬT KHẨU MỚI VÀ CŨ Ở ĐÂY ===
-            var isSameAsOldPassword = await _userManager.CheckPasswordAsync(user, model.NewPassword);
-            if (isSameAsOldPassword)
-            {
-                // Nếu mật khẩu mới trùng mật khẩu cũ, thêm lỗi và trả về view
-                ModelState.AddModelError("NewPassword", "Mật khẩu mới không được trùng với mật khẩu cũ.");
-                return View("~/Views/User/ChangePassword.cshtml", model);
-            }
-            // =======================================================
+            var result = await _profileService.ChangePasswordAsync(user.Id, model);
 
-            // Giữ nguyên logic đổi mật khẩu của bạn
-            var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
-
-            if (result.Succeeded)
+            if (result.IsSuccess)
             {
                 await _signInManager.RefreshSignInAsync(user);
                 TempData["SuccessMessage"] = "Đổi mật khẩu thành công!";
-                return RedirectToAction("Profile", "Profile");
+                return RedirectToAction(nameof(Profile));
             }
 
             foreach (var error in result.Errors)
             {
-                // Sửa nhỏ: nên gán lỗi vào một key cụ thể nếu có thể
-                // Ví dụ: lỗi "Incorrect password" thì nên gán vào CurrentPassword
-                if (error.Code == "PasswordMismatch")
+                if (error.Contains("Mật khẩu hiện tại không đúng") || error.Contains("Incorrect password"))
                 {
                     ModelState.AddModelError("CurrentPassword", "Mật khẩu hiện tại không đúng.");
                 }
                 else
                 {
-                    ModelState.AddModelError(string.Empty, error.Description);
+                    ModelState.AddModelError(string.Empty, error);
                 }
             }
 
             return View("~/Views/User/ChangePassword.cshtml", model);
         }
-        [HttpGet("payment-history")]
-        public async Task<IActionResult> PaymentHistory(int page = 1)
+
+        [HttpPost("upload-avatar")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadAvatar(IFormFile avatarFile)
         {
-            var userId = GetCurrentUserId();
-            if (userId == 0)
-                return RedirectToAction("Login", "Auth");
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == 0)
+                    return Json(new { success = false, message = "Vui lòng đăng nhập" });
 
-            const int pageSize = 10;
+                var result = await _profileService.UpdateAvatarAsync(userId, avatarFile);
 
-            var totalTransactions = await _context.Transactions
-                .Where(t => t.UserId == userId)
-                .CountAsync();
-
-            var transactions = await _context.Transactions
-                .Where(t => t.UserId == userId)
-                .Include(t => t.SubscriptionPlan)
-                .Include(t => t.UserSubscription) // ✅ QUAN TRỌNG!
-                .OrderByDescending(t => t.CreatedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(t => new PaymentHistoryViewModel
+                if (result.IsSuccess)
                 {
-                    TransactionId = t.TransactionId,
-                    SubscriptionId = t.SubscriptionId,
-                    TransactionCode = t.TransactionCode,
-                    PlanName = t.SubscriptionPlan != null ? t.SubscriptionPlan.DisplayName : "Không xác định",
-                    AmountVND = t.AmountVND,
-                    Currency = t.Currency,
-                    Status = t.Status,
-                    PaymentMethod = t.PaymentMethod,
-                    CreatedAt = t.CreatedAt,
-                    StatusDisplay = t.StatusDisplay,
-
-                    // ✅ LẤY STATUS TỪ UserSubscription
-                    SubscriptionStatus = t.UserSubscription != null
-                        ? t.UserSubscription.Status
-                        : null,
-
-                    // 🆕 THÊM NGÀY HẾT HẠN
-                    SubscriptionEndDate = t.UserSubscription != null
-                        ? t.UserSubscription.EndDate
-                        : null
-                })
-                .ToListAsync();
-
-            var totalPages = (int)Math.Ceiling(totalTransactions / (double)pageSize);
-
-            ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = totalPages;
-            ViewBag.TotalTransactions = totalTransactions;
-            ViewBag.PageSize = pageSize;
-
-            if (!transactions.Any() && page == 1)
-                ViewBag.Message = "Bạn chưa có giao dịch nào.";
-
-            return View("~/Views/User/PaymentsHistory.cshtml", transactions);
+                    return Json(new
+                    {
+                        success = true,
+                        message = result.Message,
+                        avatar = result.Profile?.Avatar // Trả về avatar mới từ service
+                    });
+                }
+                
+                return Json(new { success = false, message = result.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error uploading avatar");
+                return Json(new { success = false, message = "Có lỗi server xảy ra: " + ex.Message });
+            }
         }
+
         [HttpPost("select-avatar")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SelectAvatar([FromBody] SelectAvatarRequest request)
@@ -292,19 +257,21 @@ namespace MovieWeb.Controllers
                 var userId = GetCurrentUserId();
                 if (userId == 0)
                     return Json(new { success = false, message = "Vui lòng đăng nhập" });
-
+                
                 var allowedAvatars = new[] {
-            "default0.png", "default1.png", "default2.png", "default3.png",
-            "default4.png", "default5.png", "default6.png", "default7.png",
-            "default8.png", "default9.png", "default10.png", "default11.png",
-            "default12.png", "nouser.png"
-        };
+                    "default0.png", "default1.png", "default2.png", "default3.png",
+                    "default4.png", "default5.png", "default6.png", "default7.png",
+                    "default8.png", "default9.png", "default10.png", "default11.png",
+                    "default12.png", "nouser.png"
+                };
 
                 if (!allowedAvatars.Contains(request.AvatarName))
                     return Json(new { success = false, message = "Avatar không hợp lệ" });
 
+                await _profileService.DeleteAvatarAsync(userId);
+
                 var user = await _userManager.FindByIdAsync(userId.ToString());
-                if (user == null)
+                if (user == null) 
                     return Json(new { success = false, message = "Không tìm thấy người dùng" });
 
                 user.Avatar = $"/images/{request.AvatarName}";
@@ -328,27 +295,62 @@ namespace MovieWeb.Controllers
                 return Json(new { success = false, message = "Có lỗi xảy ra: " + ex.Message });
             }
         }
-        // Thêm Request DTO
-        public class SelectAvatarRequest
-        {
-            public string AvatarName { get; set; } = string.Empty;
-        }
-
+        
         [HttpPost("delete-avatar")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAvatar()
         {
             var userId = GetCurrentUserId();
+            if (userId == 0)
+                return Json(new { success = false, message = "Vui lòng đăng nhập" });
+
             var result = await _profileService.DeleteAvatarAsync(userId);
 
-            return Json(new
+            if (result.IsSuccess)
             {
-                success = result.IsSuccess,
-                message = result.Message
-            });
+                return Json(new { 
+                    success = true, 
+                    message = result.Message, 
+                    avatar = result.Profile?.Avatar // Trả về avatar mặc định mới
+                });
+            }
+            
+            return Json(new { success = false, message = result.Message });
         }
 
-        // ===== Request DTOs =====
+
+        // ===== [REFACTORED] =====
+        [HttpGet("payment-history")]
+        public async Task<IActionResult> PaymentHistory(int page = 1)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == 0)
+                return RedirectToAction("Login", "Auth");
+
+            const int pageSize = 10; 
+            
+            // === GỌI SERVICE ===
+            var historyDto = await _profileService.GetPaymentHistoryAsync(userId, page, pageSize);
+
+            // Gán dữ liệu cho ViewBag từ DTO
+            ViewBag.CurrentPage = historyDto.CurrentPage;
+            ViewBag.TotalPages = historyDto.TotalPages;
+            ViewBag.TotalTransactions = historyDto.TotalTransactions;
+            ViewBag.PageSize = historyDto.PageSize;
+
+            if (!historyDto.HasTransactions && page == 1)
+                ViewBag.Message = "Bạn chưa có giao dịch nào.";
+
+            // Trả về list transactions từ DTO
+            return View("~/Views/User/PaymentsHistory.cshtml", historyDto.Transactions);
+        }
+
+        // ====================== Request DTOs (giữ nguyên) ======================
+        public class SelectAvatarRequest
+        {
+            public string AvatarName { get; set; } = string.Empty;
+        }
+
         public class SendStudentOtpRequest
         {
             public string StudentEmail { get; set; } = string.Empty;

@@ -1,0 +1,19 @@
+/* ================== PRINT STYLES ================== */
+
+@media print {
+    body.admin-page {
+        padding-top: 0;
+    }
+
+    .search-section,
+    .btn,
+    .card-header .btn,
+    .btn-group {
+        display: none !important;
+    }
+
+    .table-responsive {
+        overflow: visible;
+        max-height: none;
+    }
+}

@@ -532,12 +532,12 @@
         font-size: 1.5rem;
     }
     
-    .payment-container table {
+    /* .payment-container table {
         display: block;
         overflow-x: auto;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
-    }
+    } */
     
     .payment-container thead th,
     .payment-container tbody td {
@@ -569,6 +569,72 @@
         font-size: 0.85rem;
         margin: 0.3rem;
     }
+    /* ===== BẮT ĐẦU: Code sửa bảng Lịch sử thanh toán cho mobile ===== */
+
+/* 1. Ẩn hàng tiêu đề (Mã GD, Gói...) trên mobile */
+.payment-container thead {
+    display: none;
+}
+
+/* 2. Biến mỗi hàng <tr> thành một "card" */
+.payment-container table,
+.payment-container tbody,
+.payment-container tr {
+    display: block;
+    width: 100%;
+}
+
+.payment-container tr {
+    margin-bottom: 1rem; /* Khoảng cách giữa các "card" */
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: #fff;
+}
+
+/* 3. Biến mỗi ô <td> thành một hàng, và căn lề phải cho data */
+.payment-container td {
+    display: block;
+    padding: 0.8rem 1rem;
+    text-align: right; /* Căn lề phải cho data */
+    position: relative; /* Cần thiết cho ::before */
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9rem;
+    white-space: normal; /* Cho phép chữ tự xuống hàng */
+}
+
+/* 4. Thêm "label" (tiêu đề) vào trước mỗi data */
+.payment-container td::before {
+    content: attr(data-label); /* Sẽ lấy từ HTML (xem bước 5) */
+    position: absolute;
+    left: 1rem;
+    font-weight: 600;
+    color: #333;
+    text-align: left;
+    padding-right: 15px;
+}
+
+/* 5. Gán "label" cho từng cột bằng thứ tự */
+.payment-container td:nth-of-type(1)::before { content: "Mã GD:"; }
+.payment-container td:nth-of-type(2)::before { content: "Gói:"; }
+.payment-container td:nth-of-type(3)::before { content: "Số tiền:"; }
+.payment-container td:nth-of-type(4)::before { content: "Trạng thái:"; }
+.payment-container td:nth-of-type(5)::before { content: "Ngày thanh toán:"; }
+.payment-container td:nth-of-type(6)::before { content: "Ngày hết hạn:"; }
+.payment-container td:nth-of-type(7)::before { content: "Ghi chú:"; }
+
+/* 6. Căn chỉnh lại cho đẹp */
+.payment-container td:last-child {
+    border-bottom: none; /* Bỏ viền ở ô cuối */
+}
+.payment-container td:nth-of-type(7) {
+    text-align: left; /* Ô "Ghi chú" nên căn trái */
+}
+.payment-container td:nth-of-type(7)::before {
+    display: none; /* Ẩn label "Ghi chú:" vì nút Hủy gói đã rõ ràng */
+}
+
+/* ===== KẾT THÚC: Code sửa bảng Lịch sử thanh toán ===== */
 }
 
 @media (max-width: 480px) {
@@ -901,4 +967,23 @@
         grid-template-columns: repeat(2, 1fr);
     }
 }
+/* ===== Thêm code responsive cho trang Profile ===== */
+@media (max-width: 767px) {
+    
+    /* Căn chỉnh card Thông tin cơ bản */
+    .card-body .row > .col-md-3.text-muted {
+        color: #343a40 !important; /* Cho label đậm hơn, không bị mờ */
+        font-weight: 600;
+        padding-bottom: 0; /* Giảm khoảng cách dưới label */
+        margin-bottom: 0;
+    }
 
+    .card-body .row > .col-md-9 {
+        padding-top: 4px; /* Thêm 1 chút khoảng cách trên value */
+    }
+
+    /* Căn chỉnh tiêu đề "label" và "value" cho đồng bộ */
+    .card-body .row.mb-3 {
+        margin-bottom: 0.5rem !important; /* Giảm khoảng cách giữa các cặp label/value */
+    }
+}

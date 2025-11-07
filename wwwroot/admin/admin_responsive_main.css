@@ -1,0 +1,476 @@
+/* ================== RESPONSIVE: MOBILE (< 768px) ================== */
+
+@media (max-width: 767px) {
+    /* Body & Container */
+    body.admin-page {
+        padding-top: 60px;
+    }
+
+    .admin-container {
+        padding: 10px;
+    }
+
+    /* Header Section - Stack vertically */
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px;
+    }
+
+    .d-flex.justify-content-between.align-items-center.mb-4 > div:first-child {
+        width: 100%;
+    }
+
+    .d-flex.justify-content-between.align-items-center.mb-4 .text-muted {
+        width: 100%;
+        text-align: right;
+        font-size: 0.8rem;
+    }
+
+    /* Stats Cards - Full width, 1 column */
+    .row.mb-4 > [class*="col-"] {
+        width: 100% !important;
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .stats-card {
+        min-height: 90px;
+        height: 90px;
+        margin-bottom: 0.75rem;
+    }
+
+    .stats-card .card-body {
+        padding: 0.75rem 1rem;
+    }
+
+    .stats-card h6 {
+        font-size: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .stats-card h2 {
+        font-size: 1.5rem;
+        margin-top: 0.25rem !important;
+    }
+
+    .stats-card .bi {
+        font-size: 2rem !important;
+    }
+
+    /* Alert Messages - Full width */
+    .alert {
+        font-size: 0.85rem;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .alert.position-fixed {
+        left: 10px !important;
+        right: 10px !important;
+        top: 70px !important;
+        min-width: auto !important;
+        max-width: calc(100% - 20px) !important;
+    }
+
+    /* Search Section - Full width stack */
+    .search-section {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    .search-section .row.g-3 {
+        row-gap: 10px !important;
+        margin: 0;
+    }
+
+    .search-section .row.g-3 > [class*="col-"] {
+        width: 100% !important;
+        flex: 0 0 100%;
+        max-width: 100%;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .search-section .form-control,
+    .search-section .form-select,
+    .search-section .btn {
+        font-size: 0.9rem;
+        height: 44px;
+    }
+
+    /* Card Container */
+    .card.shadow-sm {
+        border-radius: 15px;
+        overflow: visible;
+    }
+
+    /* Card Header - Stack button */
+    .card-header {
+        padding: 1rem !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        height: auto !important;
+        gap: 10px;
+    }
+
+    .card-header h5 {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-header .btn {
+        width: 100%;
+        font-size: 0.9rem;
+        padding: 0.6rem 1rem;
+    }
+
+    /* Card Body */
+    .card-body.p-0 {
+        padding: 0 !important;
+    }
+
+    /* ========== TABLE → CARD LAYOUT (MOBILE) ========== */
+    
+    /* Container không scroll ngang */
+    .table-responsive {
+        overflow-x: hidden !important;
+        overflow-y: visible !important;
+        min-height: auto;
+        max-height: none;
+        padding: 0.75rem;
+    }
+
+    /* Ẩn table header */
+    .table-responsive .table thead {
+        display: none !important;
+    }
+
+    /* Table, tbody, tr = block */
+    .table-responsive .table {
+        display: block;
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0;
+    }
+
+    .table-responsive .table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .table-responsive .table tbody tr {
+        display: block;
+        width: 100%;
+        margin-bottom: 1rem;
+        border-radius: 12px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e9ecef;
+        padding: 0;
+    }
+
+    .table-responsive .table tbody tr:hover {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        transform: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    /* TD = Flexbox row (label bên trái, data bên phải) */
+    .table-responsive .table tbody td {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.85rem 1rem !important;
+        border-bottom: 1px solid #f0f0f0 !important;
+        font-size: 0.875rem;
+        text-align: right;
+        position: relative;
+        min-height: 50px;
+    }
+
+    .table-responsive .table tbody td:last-child {
+        border-bottom: none !important;
+    }
+
+    /* Label (::before) ở bên trái */
+    .table-responsive .table tbody td::before {
+        content: attr(data-label);
+        display: inline-block;
+        font-weight: 700;
+        color: #667eea;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: left;
+        flex-shrink: 0;
+        width: 110px;
+    }
+
+    /* Gán label cho 8 cột */
+    .table-responsive .table tbody td:nth-of-type(1)::before { content: "Avatar"; }
+    .table-responsive .table tbody td:nth-of-type(2)::before { content: "Họ tên"; }
+    .table-responsive .table tbody td:nth-of-type(3)::before { content: "Email"; }
+    .table-responsive .table tbody td:nth-of-type(4)::before { content: "Username"; }
+    .table-responsive .table tbody td:nth-of-type(5)::before { content: "Vai trò"; }
+    .table-responsive .table tbody td:nth-of-type(6)::before { content: "Gói"; }
+    .table-responsive .table tbody td:nth-of-type(7)::before { content: "Trạng thái"; }
+    .table-responsive .table tbody td:nth-of-type(8)::before { content: "Hành động"; }
+
+    
+    /* ======== BẮT ĐẦU KHỐI SỬA LỖI QUAN TRỌNG ======== */
+
+    /* Content (data) ở bên phải - MẶC ĐỊNH CĂN PHẢI */
+    .table-responsive .table tbody td > * {
+        flex: 1;
+        text-align: right; /* Mặc định text-align */
+        display: flex;
+        justify-content: flex-end; /* Mặc định căn phải */
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    /* GHI ĐÈ: Căn trái cho các cột 1, 2, 3, 4 */
+    .table-responsive .table tbody td:nth-of-type(1) > *,
+    .table-responsive .table tbody td:nth-of-type(2) > *,
+    .table-responsive .table tbody td:nth-of-type(3) > *,
+    .table-responsive .table tbody td:nth-of-type(4) > * {
+        justify-content: flex-start;
+        text-align: left;
+        gap: 0.5rem;
+    }
+
+    /* GHI ĐÈ: CĂN GIỮA cho các cột Vai trò (5) và Trạng thái (7) */
+    .table-responsive .table tbody td:nth-of-type(5) > *,
+    .table-responsive .table tbody td:nth-of-type(7) > * {
+        justify-content: center; /* Căn giữa nội dung */
+        text-align: center;      /* Căn giữa text (nếu có) */
+    }
+
+    /* GHI ĐÈ: Căn phải + xếp dọc cho cột Gói (cột 6) */
+    .table-responsive .table tbody td:nth-of-type(6) > * {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+    }
+    
+    /* ======== KẾT THÚC KHỐI SỬA LỖI QUAN TRỌNG ======== */
+
+
+    /* Avatar cell - center align */
+    .table-responsive .table tbody td:nth-of-type(1) {
+        /* CSS cho cell 1 nếu cần */
+    }
+
+    .table-responsive .table tbody td:nth-of-type(1) img {
+        width: 50px !important;   /* Tăng kích thước nhẹ để phù hợp với viền */
+        height: 50px !important;  /* Tăng kích thước nhẹ */
+        flex-shrink: 0;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 2px solid #fff; /* VIỀN TRẮNG */
+        box-shadow: 0 0 0 2px rgba(0,0,0,0.1); /* HIỆU ỨNG VIỀN NHẸ */
+    }
+
+    /* Full name - allow wrap */
+    .table-responsive .table tbody td:nth-of-type(2) {
+        flex-wrap: wrap;
+    }
+
+    .table-responsive .table tbody td:nth-of-type(2) strong {
+        /* flex: 1; */ /* Xóa đi để không bị rớt hàng */
+        text-align: left;
+        word-break: break-word;
+    }
+
+    /* Email - break long emails */
+    .table-responsive .table tbody td:nth-of-type(3) {
+        flex-wrap: wrap;
+    }
+
+    .table-responsive .table tbody td:nth-of-type(3) small {
+        flex: 1;
+        text-align: left;
+        word-break: break-all;
+        font-size: 0.8rem;
+    }
+
+    /* Username */
+    .table-responsive .table tbody td:nth-of-type(4) code {
+        font-size: 0.8rem;
+        padding: 2px 6px;
+        text-align: left;
+    }
+
+    /* Subscription cell - stack badge + date */
+    .table-responsive .table tbody td:nth-of-type(6) {
+        flex-wrap: wrap;
+        /* Xóa các quy tắc cũ ở đây, vì đã được xử lý ở khối "GHI ĐÈ" bên trên */
+    }
+
+    /* Action buttons cell */
+    .table-responsive .table tbody td:nth-of-type(8) {
+        flex-direction: column;
+        align-items: flex-end; /* SỬA LỖI: Căn phải các nhóm nút */
+        gap: 6px;               /* THÊM: Khoảng cách giữa các nhóm (nếu có) */
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+
+    .table-responsive .table tbody td:nth-of-type(8)::before {
+        position: absolute;
+        top: 0.85rem;
+        left: 1rem;
+    }
+
+    /* Button group - full width, wrap buttons */
+    .table-responsive .table tbody td .btn-group {
+        /* width: 100%; */ /* XÓA LỖI: Bỏ để nút không bị dãn */
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: flex-end;
+        margin-top: 0;
+    }
+
+    .table-responsive .table tbody td .btn-group .btn {
+        flex: 1 1 calc(33.333% - 4px);
+        min-width: 45px;
+        padding: 0.5rem 0.4rem;
+        font-size: 0.9rem;
+    }
+
+    /* Badges - smaller on mobile */
+    .premium-badge,
+    .student-badge {
+        font-size: 0.7rem;
+        padding: 3px 7px;
+    }
+
+    .badge {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+
+    /* Empty state */
+    .table-responsive .table tbody tr td[colspan] {
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 250px !important;
+        padding: 2rem 1rem !important;
+        text-align: center;
+    }
+
+    .table-responsive .table tbody tr td[colspan]::before {
+        display: none !important;
+    }
+
+    .table-responsive .table tbody tr td[colspan] .bi-inbox {
+        font-size: 3rem !important;
+        margin-bottom: 1rem;
+    }
+
+    /* Modal Mobile */
+    .modal.show .modal-dialog {
+        margin: 10px !important;
+        margin-top: 60px !important;
+        max-width: calc(100% - 20px);
+    }
+
+    .modal-content {
+        border-radius: 15px;
+    }
+
+    .modal-header {
+        padding: 1rem;
+    }
+
+    .modal-header .modal-title {
+        font-size: 1.1rem;
+    }
+
+    .modal-body {
+        padding: 1rem;
+    }
+
+    .modal-body .row.g-3 {
+        row-gap: 12px !important;
+    }
+
+    .modal-body .col-md-6,
+    .modal-body .col-md-12,
+    .modal-body .col-12 {
+        width: 100% !important;
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .modal-footer {
+        flex-direction: column;
+        gap: 8px;
+        padding: 1rem;
+    }
+
+    .modal-footer .btn {
+        width: 100%;
+    }
+
+    /* Admin Card Mobile */
+    .admin-card {
+        min-height: auto;
+        margin-bottom: 1rem;
+    }
+
+    /* Form inputs */
+    .form-control,
+    .form-select {
+        font-size: 0.9rem;
+    }
+
+    .form-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+}
+
+/* ================== RESPONSIVE: TABLET (768px - 991px) ================== */
+
+@media (min-width: 768px) and (max-width: 991px) {
+    .admin-container {
+        padding: 15px;
+    }
+
+    .stats-card {
+        min-height: 110px;
+        height: 110px;
+    }
+
+    .table-responsive {
+        min-height: 450px;
+        max-height: 550px;
+    }
+
+    .info-badges .badge {
+        font-size: 0.7rem;
+        padding: 3px 6px;
+    }
+}
+
+/* ================== RESPONSIVE: SMALL DESKTOP (992px - 1199px) ================== */
+
+@media (min-width: 992px) and (max-width: 1199px) {
+    .admin-table table,
+    .table {
+        min-width: 1100px;
+    }
+
+    .info-badges .badge {
+        font-size: 0.72rem;
+        padding: 3px 7px;
+    }
+}
