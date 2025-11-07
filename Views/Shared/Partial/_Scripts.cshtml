@@ -16,11 +16,14 @@
     }
     
     function init() {
-        @* console.log("✅ DOM Ready. Initializing features..."); *@
+        console.log("✅ DOM Ready. Initializing features...");
         initNavbarAndScroll();
         initMobileSearch();
+        initMobileMenu();
+        initNotifications();
     }
     
+    // ===== NAVBAR & SCROLL =====
     function initNavbarAndScroll() {
         const navbar = document.getElementById('mainNavbar');
         const scrollBtn = document.getElementById('scrollTopBtn');
@@ -31,9 +34,7 @@
             return;
         }
 
-        @* console.log("✅ Navbar found. Setting up scroll listener...");
-        console.log("📍 Body classes:", body.className);
-        console.log("📍 Is home page:", body.classList.contains('home-page')); *@
+        console.log("✅ Navbar found. Setting up scroll listener...");
 
         const isHomePage = body.classList.contains('home-page');
         
@@ -41,7 +42,6 @@
         if (isHomePage && window.innerWidth >= 992) {
             navbar.style.background = 'transparent';
             navbar.style.boxShadow = 'none';
-            @* console.log("🎨 Initial state: Transparent navbar (forced via JS)"); *@
         }
 
         let ticking = false;
@@ -53,37 +53,27 @@
                 window.requestAnimationFrame(() => {
                     const isDesktop = window.innerWidth >= 992;
                     
-                    // Chỉ áp dụng hiệu ứng transparent cho trang chủ ở desktop
                     if (isHomePage && isDesktop) {
                         if (scrollPosition > 50) {
-                            // Set gradient xanh bằng inline style
                             navbar.style.background = 'linear-gradient(135deg, #012c42 0%, #015487 50%, #0477eb 100%)';
                             navbar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
                             navbar.classList.add('navbar-scrolled');
-                            @* console.log("🎨 Navbar scrolled - Gradient applied (scroll: " + scrollPosition + "px)"); *@
                         } else {
-                            // Set transparent bằng inline style
                             navbar.style.background = 'transparent';
                             navbar.style.boxShadow = 'none';
                             navbar.classList.remove('navbar-scrolled');
-                            @* console.log("🎨 Navbar at top - Transparent (scroll: " + scrollPosition + "px)"); *@
                         }
                     } else if (isHomePage && !isDesktop) {
-                        // Mobile - luôn có màu
                         navbar.style.background = 'linear-gradient(135deg, #012c42 0%, #015487 50%, #0477eb 100%)';
                         navbar.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.3)';
                         navbar.classList.remove('navbar-scrolled');
-                        console.log("📱 Mobile - Navbar always colored");
                     }
 
-                    // Hiển thị/ẩn nút scroll to top
                     if (scrollBtn) {
                         if (scrollPosition > 300) {
                             scrollBtn.classList.add('show');
-                            console.log("⬆️ Scroll button shown (scroll: " + scrollPosition + "px)");
                         } else {
                             scrollBtn.classList.remove('show');
-                            console.log("⬇️ Scroll button hidden (scroll: " + scrollPosition + "px)");
                         }
                     }
                     
@@ -93,13 +83,9 @@
             }
         }
 
-        // Lắng nghe scroll trên window
         window.addEventListener('scroll', handleScroll, { passive: true });
-        @* console.log("✅ Scroll listener attached to window."); *@
 
-        // Xử lý resize
         window.addEventListener('resize', () => {
-            console.log("📐 Window resized. Width:", window.innerWidth);
             if (window.innerWidth < 992 && isHomePage) {
                 navbar.style.background = 'linear-gradient(135deg, #012c42 0%, #015487 50%, #0477eb 100%)';
                 navbar.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.3)';
@@ -111,10 +97,8 @@
             handleScroll();
         });
 
-        // Chạy lần đầu để set trạng thái ban đầu
         handleScroll();
         
-        // Xử lý click nút scroll to top
         if (scrollBtn) {
             scrollBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -125,11 +109,10 @@
                 console.log("🚀 Scrolling to top...");
             });
             console.log("✅ Scroll to top button initialized.");
-        } else {
-            console.log("⚠️ Scroll to top button not found.");
         }
     }
 
+    // ===== MOBILE SEARCH =====
     function initMobileSearch() {
         const mobileSearchBtn = document.getElementById('mobileSearchBtn');
         const mobileSearchOverlay = document.getElementById('mobileSearchOverlay');
@@ -137,25 +120,35 @@
         const mobileSearchInput = document.getElementById('mobileSearchInput');
         
         if (!mobileSearchBtn || !mobileSearchOverlay) {
+            console.log("⚠️ Mobile search elements not found.");
             return;
         }
+        
+        console.log("✅ Initializing mobile search...");
         
         function closeMobileSearch() {
             mobileSearchOverlay.classList.remove('active');
             document.body.classList.remove('search-overlay-active');
+            console.log("🔍 Mobile search closed");
         }
         
         mobileSearchBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             mobileSearchOverlay.classList.add('active');
             document.body.classList.add('search-overlay-active');
+            console.log("🔍 Mobile search opened");
             setTimeout(() => {
                 if (mobileSearchInput) mobileSearchInput.focus();
             }, 300);
         });
         
         if (mobileSearchClose) {
-            mobileSearchClose.addEventListener('click', closeMobileSearch);
+            mobileSearchClose.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeMobileSearch();
+            });
         }
         
         mobileSearchOverlay.addEventListener('click', function(e) {
@@ -179,6 +172,159 @@
                 }
             });
         });
+        
+        console.log("✅ Mobile search initialized successfully!");
     }
+
+    // ===== MOBILE MENU (OFFCANVAS) =====
+    function initMobileMenu() {
+        const menuToggleBtn = document.getElementById('myMenuToggleButton');
+        const offcanvasElement = document.getElementById('mobileMenuOffcanvas');
+        
+        if (!menuToggleBtn || !offcanvasElement) {
+            console.log("⚠️ Mobile menu elements not found.");
+            return;
+        }
+        
+        console.log("✅ Initializing mobile menu...");
+        
+        // Khởi tạo Bootstrap Offcanvas
+        const bsOffcanvas = new bootstrap.Offcanvas(offcanvasElement);
+        
+        // Toggle menu khi click button
+        menuToggleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("📱 Mobile menu toggle clicked");
+            bsOffcanvas.toggle();
+        });
+        
+        // Event listeners cho offcanvas
+        offcanvasElement.addEventListener('show.bs.offcanvas', function () {
+            console.log("📱 Mobile menu opening...");
+        });
+        
+        offcanvasElement.addEventListener('shown.bs.offcanvas', function () {
+            console.log("✅ Mobile menu opened!");
+        });
+        
+        offcanvasElement.addEventListener('hide.bs.offcanvas', function () {
+            console.log("📱 Mobile menu closing...");
+        });
+        
+        console.log("✅ Mobile menu initialized successfully!");
+    }
+
+// ===== NOTIFICATIONS =====
+function initNotifications() {
+    const notificationTriggers = document.querySelectorAll('.notification-trigger');
+    const notificationDropdown = document.querySelector('.notification-dropdown');
+
+    if (!notificationDropdown || notificationTriggers.length === 0) {
+        console.log("⚠️ Notification elements not found.");
+        return;
+    }
+
+    console.log("✅ Initializing notifications (universal)...");
+
+    // Di chuyển dropdown ra <body>
+    document.body.appendChild(notificationDropdown);
+    
+    // *** THAY ĐỔI QUAN TRỌNG SỐ 1 ***
+    // Chuyển sang 'fixed' để nó "dính" vào cửa sổ trình duyệt,
+    // và sẽ di chuyển CÙNG với header khi cuộn trang.
+    notificationDropdown.style.position = 'fixed'; 
+    notificationDropdown.style.zIndex = '1050'; // Đảm bảo nó nổi lên trên navbar (1030)
+
+    // Hàm toggle dropdown (ĐÃ CẬP NHẬT)
+    function toggleNotificationDropdown(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const triggerBtn = e.currentTarget;
+        const isVisible = notificationDropdown.style.display === 'block';
+
+        if (isVisible) {
+            notificationDropdown.style.display = 'none';
+            notificationDropdown.classList.remove('show');
+            console.log("🔕 Notification dropdown closed");
+        } else {
+            // Tìm "mỏ neo" để căn chỉnh (desktop hoặc mobile)
+            const desktopWrapper = triggerBtn.closest('#notificationBell');
+            const anchorElement = desktopWrapper ? desktopWrapper : triggerBtn;
+            
+            // Lấy tọa độ của "mỏ neo" (so với viewport)
+            const rect = anchorElement.getBoundingClientRect();
+            
+            // *** THAY ĐỔI QUAN TRỌNG SỐ 2 ***
+            // Vì đã dùng 'position: fixed', vị trí được tính so với viewport.
+            // Chúng ta KHÔNG CẦN cộng 'window.scrollY' nữa.
+            notificationDropdown.style.top = `${rect.bottom + 5}px`; // +5px bên dưới icon
+            
+            // Căn lề phải (logic này vẫn đúng vì nó dựa trên viewport)
+            notificationDropdown.style.right = `${window.innerWidth - rect.right}px`;
+            notificationDropdown.style.left = 'auto'; // Reset lề trái
+
+            // Tùy chỉnh cho màn hình mobile quá nhỏ
+            if (window.innerWidth < 480) {
+                notificationDropdown.style.right = '10px';
+                notificationDropdown.style.left = '10px';
+            }
+
+            notificationDropdown.style.display = 'block';
+            notificationDropdown.classList.add('show');
+            console.log("🔔 Notification dropdown opened");
+        }
+    }
+
+    // Gán sự kiện cho cả 2 chuông
+    notificationTriggers.forEach(trigger => {
+        trigger.addEventListener('click', toggleNotificationDropdown);
+    });
+
+    // Đóng dropdown khi click ra ngoài (giữ nguyên)
+    document.addEventListener('click', function (e) {
+        let clickedOnTrigger = false;
+        notificationTriggers.forEach(trigger => {
+            if (trigger.contains(e.target)) {
+                clickedOnTrigger = true;
+            }
+        });
+
+        if (
+            notificationDropdown.style.display === 'block' &&
+            !notificationDropdown.contains(e.target) &&
+            !clickedOnTrigger
+        ) {
+            notificationDropdown.style.display = 'none';
+            notificationDropdown.classList.remove('show');
+        }
+    });
+
+    // --- Logic bên trong dropdown (giữ nguyên) ---
+
+    // Tab switching
+    const notificationTabs = document.querySelectorAll('.notification-header .nav-link');
+    notificationTabs.forEach(tab => {
+        tab.addEventListener('click', function () {
+            notificationTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            console.log(`🔔 Switched to ${this.dataset.tab} tab`);
+        });
+    });
+
+    // Mark all as read
+    const markAllReadBtn = document.querySelector('.mark-all-read');
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            console.log("✅ Mark all notifications as read");
+        });
+    }
+
+    console.log("✅ Notifications initialized successfully for all devices!");
+}
 })();
 </script>
+<script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+<script src="~/js/notification.js" asp-append-version="true"></script>

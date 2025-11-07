@@ -14,6 +14,79 @@ document.addEventListener('DOMContentLoaded', function () {
     loadRecentTransactions();
 });
 
+// ================================================================
+// ===== BỘ XỬ LÝ LỖI API VÀ HẾT HẠN COOKIE (ĐÃ THÊM MỚI) =====
+// ================================================================
+
+/**
+ * Hàm mới: Xử lý tất cả các phản hồi từ fetch
+ * Tự động phát hiện lỗi 401 (Hết hạn) và 403 (Cấm)
+ */
+async function handleApiResponse(response) {
+    if (response.ok) {
+        // 200 OK - Trả về JSON
+        return await response.json();
+    }
+
+    if (response.status === 401) {
+        // Lỗi 401 - Hết hạn Cookie
+        showError('Phiên đăng nhập đã hết hạn. Đang tải lại trang đăng nhập...');
+        // Tự động chuyển về trang login sau 3 giây
+        setTimeout(() => {
+            // Chuyển hướng về trang đăng nhập và đính kèm URL hiện tại để quay lại
+            window.location.href = '/Auth/Login?returnUrl=' + encodeURIComponent(window.location.pathname + window.location.search);
+        }, 3000);
+        return Promise.reject(new Error('Session expired (401)'));
+    }
+
+    if (response.status === 403) {
+        // Lỗi 403 - Cấm (Không có quyền Admin)
+        showError('Bạn không có quyền thực hiện hành động này (403).');
+        return Promise.reject(new Error('Forbidden (403)'));
+    }
+
+    // Các lỗi server khác (500, 404, etc.)
+    const errorText = await response.text();
+    console.error('Server error:', response.status, errorText);
+    showError(`Lỗi máy chủ (${response.status}). Vui lòng thử lại.`);
+    return Promise.reject(new Error(`Server error (${response.status})`));
+}
+
+/**
+ * Nâng cấp hàm showError: Dùng "toast" thay vì "alert"
+ */
+function showError(message) {
+    console.error(message);
+    
+    // Tạo một "toast" alert
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+    alertDiv.style.zIndex = '9999'; // Nằm trên tất cả
+    alertDiv.style.minWidth = '300px';
+    alertDiv.innerHTML = `
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Tự động xóa sau 5 giây
+    setTimeout(() => {
+        // Dùng bootstrap (nếu có) để fade out
+        if (typeof bootstrap !== 'undefined') {
+            const bsAlert = new bootstrap.Alert(alertDiv);
+            bsAlert.close();
+        } else {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// ================================================================
+// ===== CÁC HÀM GỌI API (ĐÃ SỬA ĐỂ BẮT LỖI 401) =====
+// ================================================================
+
 /**
  * Load main revenue statistics with date filter
  */
@@ -29,11 +102,12 @@ async function loadRevenueStats(startDate = null, endDate = null) {
             url += `?startDate=${startDate}&endDate=${endDate}`;
         }
 
-        const response = await fetch(url, {
-            credentials: 'include'
-        });
-        const result = await response.json();
+        const response = await fetch(url, { credentials: 'include' });
+        
+        // ===== [SỬA LẠI] Dùng hàm xử lý lỗi mới =====
+        const result = await handleApiResponse(response);
 
+        // (Code bên dưới chỉ chạy nếu response.ok)
         if (result.success) {
             const { revenue, totalActiveSubscriptions, totalPremiumUsers } = result.data;
 
@@ -56,12 +130,13 @@ async function loadRevenueStats(startDate = null, endDate = null) {
 
             console.log('Revenue stats loaded successfully');
         } else {
-            console.error('Failed to load revenue stats:', result.message);
-            showError('Không thể tải thống kê doanh thu');
+            // Lỗi logic từ API (ví dụ: success = false)
+            showError(result.message || 'Không thể tải thống kê doanh thu');
         }
     } catch (error) {
-        console.error('Error loading revenue stats:', error);
-        showError('Lỗi kết nối server');
+        // Bắt lỗi (network, hoặc lỗi 401, 500...)
+        // Lỗi đã được hiển thị bởi handleApiResponse, chỉ cần log
+        console.error('Error in loadRevenueStats:', error.message);
     }
 }
 
@@ -73,61 +148,65 @@ async function loadRevenueTrend(days = 30) {
         const response = await fetch(`/api/admin/subscription/revenue-trend?days=${days}`, {
             credentials: 'include'
         });
-        const result = await response.json();
+        
+        // ===== [SỬA LẠI] Dùng hàm xử lý lỗi mới =====
+        const result = await handleApiResponse(response);
 
         if (result.success && result.data && result.data.length > 0) {
+            // ... (toàn bộ code vẽ biểu đồ của bạn giữ nguyên) ...
+            
             // ✅ Smart label formatting based on number of days
-            let labels;
-            if (days === 1) {
-                // Hôm nay: Hiển thị giờ (00:00, 06:00, 12:00...)
-                labels = result.data.map(d => {
-                    const date = new Date(d.date);
-                    return `${date.getHours().toString().padStart(2, '0')}:00`;
-                });
-            } else if (days <= 7) {
-                // Tuần: Hiển thị ngày + thứ (T2, T3...)
-                labels = result.data.map(d => {
-                    const date = new Date(d.date);
-                    const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-                    return `${dayNames[date.getDay()]} ${date.getDate()}/${date.getMonth() + 1}`;
-                });
-            } else if (days <= 31) {
-                // Tháng: Hiển thị dd/MM
-                labels = result.data.map(d => {
-                    const date = new Date(d.date);
-                    return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-                });
-            } else if (days <= 90) {
-                // 3 tháng: Hiển thị dd/MM
-                labels = result.data.map(d => {
-                    const date = new Date(d.date);
-                    return `${date.getDate()}/${date.getMonth() + 1}`;
-                });
-            } else {
-                // Năm: Hiển thị tháng (T1, T2...)
-                labels = result.data.map(d => {
-                    const date = new Date(d.date);
-                    return `T${date.getMonth() + 1}`;
-                });
-            }
+            let labels;
+            if (days === 1) {
+                // Hôm nay: Hiển thị giờ (00:00, 06:00, 12:00...)
+                labels = result.data.map(d => {
+                    const date = new Date(d.date);
+                    return `${date.getHours().toString().padStart(2, '0')}:00`;
+                });
+            } else if (days <= 7) {
+                // Tuần: Hiển thị ngày + thứ (T2, T3...)
+                labels = result.data.map(d => {
+                    const date = new Date(d.date);
+                    const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+                    return `${dayNames[date.getDay()]} ${date.getDate()}/${date.getMonth() + 1}`;
+                });
+            } else if (days <= 31) {
+                // Tháng: Hiển thị dd/MM
+                labels = result.data.map(d => {
+                    const date = new Date(d.date);
+                    return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+                });
+            } else if (days <= 90) {
+                // 3 tháng: Hiển thị dd/MM
+                labels = result.data.map(d => {
+                    const date = new Date(d.date);
+                    return `${date.getDate()}/${date.getMonth() + 1}`;
+                });
+            } else {
+                // Năm: Hiển thị tháng (T1, T2...)
+                labels = result.data.map(d => {
+                    const date = new Date(d.date);
+                    return `T${date.getMonth() + 1}`;
+                });
+            }
 
-            const data = result.data.map(d => d.revenue);
+            const data = result.data.map(d => d.revenue);
 
-            const ctx = document.getElementById('revenueChart');
-            if (!ctx) {
-                console.warn('Revenue chart canvas not found');
-                return;
-            }
+            const ctx = document.getElementById('revenueChart');
+            if (!ctx) {
+                console.warn('Revenue chart canvas not found');
+                return;
+            }
 
-            // Destroy existing chart
-            if (revenueChart) {
-                revenueChart.destroy();
-            }
+            // Destroy existing chart
+            if (revenueChart) {
+                revenueChart.destroy();
+            }
 
-            // ✅ Calculate optimal tick limits based on data length
-            const maxTicksLimit = days <= 7 ? days : days <= 31 ? 15 : days <= 90 ? 12 : 12;
+            // ✅ Calculate optimal tick limits based on data length
+            const maxTicksLimit = days <= 7 ? days : days <= 31 ? 15 : days <= 90 ? 12 : 12;
 
-            // ✅ Create new chart with FIXED options
+            // (Toàn bộ code `new Chart(...)` của bạn giữ nguyên)
             revenueChart = new Chart(ctx.getContext('2d'), {
                 type: 'line',
                 data: {
@@ -231,7 +310,7 @@ async function loadRevenueTrend(days = 30) {
             console.warn('No revenue trend data available');
         }
     } catch (error) {
-        console.error('Error loading revenue trend:', error);
+        console.error('Error in loadRevenueTrend:', error.message);
     }
 }
 
@@ -243,34 +322,38 @@ async function loadPlanRevenue() {
         const response = await fetch('/api/admin/subscription/revenue-by-plan', {
             credentials: 'include'
         });
-        const result = await response.json();
+        
+        // ===== [SỬA LẠI] Dùng hàm xử lý lỗi mới =====
+        const result = await handleApiResponse(response);
 
         if (result.success && result.data && result.data.length > 0) {
+            // ... (toàn bộ code vẽ biểu đồ của bạn giữ nguyên) ...
+            
             const labels = result.data.map(d => d.displayName);
-            const data = result.data.map(d => d.totalRevenue);
-            const colors = [
-                '#667eea',
-                '#764ba2',
-                '#f093fb',
-                '#f5576c',
-                '#4facfe',
-                '#00f2fe',
-                '#43e97b',
-                '#38f9d7'
-            ];
+            const data = result.data.map(d => d.totalRevenue);
+            const colors = [
+                '#667eea',
+                '#764ba2',
+                '#f093fb',
+                '#f5576c',
+                '#4facfe',
+                '#00f2fe',
+                '#43e97b',
+                '#38f9d7'
+            ];
 
-            const ctx = document.getElementById('planRevenueChart');
-            if (!ctx) {
-                console.warn('Plan revenue chart canvas not found');
-                return;
-            }
+            const ctx = document.getElementById('planRevenueChart');
+            if (!ctx) {
+                console.warn('Plan revenue chart canvas not found');
+                return;
+            }
 
-            // Destroy existing chart
-            if (planRevenueChart) {
-                planRevenueChart.destroy();
-            }
+            // Destroy existing chart
+            if (planRevenueChart) {
+                planRevenueChart.destroy();
+            }
 
-            // ✅ Create new chart with FIXED options
+            // (Toàn bộ code `new Chart(...)` của bạn giữ nguyên)
             planRevenueChart = new Chart(ctx.getContext('2d'), {
                 type: 'doughnut',
                 data: {
@@ -335,7 +418,7 @@ async function loadPlanRevenue() {
             console.warn('No plan revenue data available');
         }
     } catch (error) {
-        console.error('Error loading plan revenue:', error);
+        console.error('Error in loadPlanRevenue:', error.message);
     }
 }
 
@@ -353,7 +436,8 @@ async function loadRecentTransactions(page = 1, status = 'all') {
             credentials: 'include'
         });
 
-        const result = await response.json();
+        // ===== [SỬA LẠI] Dùng hàm xử lý lỗi mới =====
+        const result = await handleApiResponse(response);
 
         if (result.success && result.data && result.data.items) {
             const tbody = document.querySelector('#recentTransactionsTable tbody');
@@ -374,6 +458,7 @@ async function loadRecentTransactions(page = 1, status = 'all') {
                     </tr>
                 `;
                 updatePaginationInfo(0, 0);
+                renderPagination(0, 1); // Fix: Hiển thị 0 trang
                 return;
             }
 
@@ -405,19 +490,26 @@ async function loadRecentTransactions(page = 1, status = 'all') {
             renderPagination(result.data.totalPages, page);
 
             console.log('✅ Recent transactions loaded successfully');
+        } else {
+            // Trường hợp `result.success` là `false`
+            throw new Error(result.message || 'Failed to load transactions');
         }
     } catch (error) {
-        console.error('❌ Error loading recent transactions:', error);
-        const tbody = document.querySelector('#recentTransactionsTable tbody');
-        if (tbody) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="text-center text-danger py-4">
-                        <i class="bi bi-exclamation-triangle fs-3"></i>
-                        <p class="mt-2 mb-0">Lỗi tải dữ liệu</p>
-                    </td>
-                </tr>
-            `;
+        console.error('Error in loadRecentTransactions:', error.message);
+        // Lỗi 401, 500... đã được handleApiResponse xử lý
+        // Chỉ xử lý lỗi giao diện nếu là lỗi network
+        if (!error.message.includes('401') && !error.message.includes('Server error')) {
+            const tbody = document.querySelector('#recentTransactionsTable tbody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center text-danger py-4">
+                            <i class="bi bi-exclamation-triangle fs-3"></i>
+                            <p class="mt-2 mb-0">Lỗi tải dữ liệu. Vui lòng kiểm tra kết nối.</p>
+                        </td>
+                    </tr>
+                `;
+            }
         }
     }
 }
@@ -516,10 +608,13 @@ function changePage(page) {
  */
 async function viewTransactionDetails(transactionId) {
     try {
+        // [SỬA LẠI] API này không có phân trang, nhưng ta vẫn dùng hàm check lỗi
         const response = await fetch(`/api/admin/subscription/all-transactions?page=1&pageSize=100`, {
             credentials: 'include'
         });
-        const result = await response.json();
+        
+        // ===== [SỬA LẠI] Dùng hàm xử lý lỗi mới =====
+        const result = await handleApiResponse(response);
 
         if (result.success && result.data) {
             const transaction = result.data.items.find(t => t.transactionId === transactionId);
@@ -529,6 +624,7 @@ async function viewTransactionDetails(transactionId) {
                 return;
             }
 
+            // (Code HTML của modal giữ nguyên)
             const modalHtml = `
                 <div class="modal fade" id="transactionModal" tabindex="-1">
                     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -597,8 +693,7 @@ async function viewTransactionDetails(transactionId) {
             });
         }
     } catch (error) {
-        console.error(error);
-        showError('Lỗi khi tải chi tiết giao dịch');
+        console.error('Error in viewTransactionDetails:', error.message);
     }
 }
 
@@ -749,7 +844,7 @@ function applyCustomDateFilter() {
     loadRevenueTrend(diffDays);
 }
 
-// ================== UTILITY FUNCTIONS ==================
+// ================== UTILITY FUNCTIONS (Giữ nguyên) ==================
 
 /**
  * ✅ NEW: Format currency SHORT for charts (3M, 500K)
@@ -766,9 +861,6 @@ function formatCurrencyShort(value) {
     return value.toString();
 }
 
-/**
- * Format currency to VND (đầy đủ)
- */
 function formatCurrency(value) {
     if (value === null || value === undefined) return '0 ₫';
     return new Intl.NumberFormat('vi-VN', {
@@ -829,12 +921,7 @@ function escapeHtml(text) {
     return text.toString().replace(/[&<>"']/g, m => map[m]);
 }
 
-function showError(message) {
-    console.error(message);
-    alert(message);
-}
-
-// ================== ADD SPINNING ANIMATION STYLE ==================
+// ================== ADD SPINNING ANIMATION STYLE (Giữ nguyên) ==================
 
 if (!document.getElementById('spinning-style')) {
     const style = document.createElement('style');

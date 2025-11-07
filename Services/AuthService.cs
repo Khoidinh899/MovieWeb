@@ -184,6 +184,10 @@ namespace MovieWeb.Services
                         new Claim(ClaimTypes.Role, user.RoleId == 1 ? "Admin" : "User"),
                         new Claim("RoleId", user.RoleId.ToString())
                     };
+                    if (user.IsPremium) // Dùng thuộc tính IsPremium trong User.cs
+                    {
+                        claims.Add(new Claim("IsPremium", "true"));
+                    }
                     await _signInManager.SignInWithClaimsAsync(user, model.RememberMe, claims);
                     var token = GenerateJwtToken(user);
                     return AuthResult.Success("Đăng nhập thành công", token, user);
@@ -231,8 +235,20 @@ namespace MovieWeb.Services
 
             if (result.Succeeded)
             {
-                await _signInManager.SignInAsync(user, isPersistent: true);
-                return AuthResult.Success("Xác thực email thành công!"); // Sửa lại để trả về Success
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Role, user.RoleId == 1 ? "Admin" : "User"),
+                    new Claim("RoleId", user.RoleId.ToString())
+                };
+
+                if (user.IsPremium) 
+                {
+                    claims.Add(new Claim("IsPremium", "true"));
+                }
+
+                await _signInManager.SignInWithClaimsAsync(user, isPersistent: true, claims);
+                
+                return AuthResult.Success("Xác thực email thành công!");
             }
 
             return AuthResult.Failed("Token xác thực không hợp lệ hoặc đã hết hạn");
@@ -332,7 +348,8 @@ namespace MovieWeb.Services
                 new Claim("FirstName", user.FirstName ?? ""),
                 new Claim("LastName", user.LastName ?? ""),
                 new Claim("RoleId", user.RoleId.ToString()),
-                new Claim(ClaimTypes.Role, user.RoleId == 1 ? "Admin" : "User")
+                new Claim(ClaimTypes.Role, user.RoleId == 1 ? "Admin" : "User"),
+                new Claim("IsPremium", user.IsPremium.ToString().ToLower())
             };
 
             var token = new JwtSecurityToken(

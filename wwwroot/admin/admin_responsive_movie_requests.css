@@ -1,0 +1,221 @@
+/* ================== RESPONSIVE: MOVIE REQUESTS PAGE - MOBILE (< 768px) ================== */
+
+@media (max-width: 767px) {
+    
+    /* ========== REQUESTS TABLE → CARD LAYOUT (MOBILE) ========== */
+    
+    .card:has(table tbody tr[id^="request-row-"]) .table-responsive {
+        overflow-x: hidden !important;
+        overflow-y: visible !important;
+        min-height: auto;
+        max-height: none;
+        padding: 0.75rem;
+    }
+
+    /* Ẩn table header */
+    .card:has(table tbody tr[id^="request-row-"]) .table thead {
+        display: none !important;
+    }
+
+    /* Table, tbody, tr = block */
+    .card:has(table tbody tr[id^="request-row-"]) .table {
+        display: block;
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0;
+    }
+
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody tr {
+        display: block;
+        width: 100%;
+        margin-bottom: 1rem;
+        border-radius: 12px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e9ecef;
+        padding: 0;
+    }
+
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody tr:hover {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        transform: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    /* TD = Flexbox row (label bên trái, data bên phải) */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td {
+        display: flex !important;
+        justify-content: space-between; 
+        align-items: center; /* MẶC ĐỊNH CĂN GIỮA DỌC */
+        padding: 0.85rem 1rem !important;
+        border-bottom: 1px solid #f0f0f0 !important;
+        font-size: 0.875rem;
+        text-align: right;
+        position: relative;
+        min-height: 50px;
+        white-space: normal !important; 
+    }
+
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:last-child {
+        border-bottom: none !important;
+    }
+
+    /* Label (::before) ở bên trái */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td::before {
+        content: attr(data-label);
+        display: inline-block;
+        font-weight: 700;
+        color: #667eea;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: left;
+        flex-shrink: 0;
+        width: 110px;
+    }
+
+    /* Gán label cho 9 cột */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(1)::before { content: "ID"; }
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(2)::before { content: "Tiêu đề Phim"; }
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(3)::before { content: "Năm"; }
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(4)::before { content: "Lượt YC"; }
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(5)::before { content: "Trạng thái"; }
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(6)::before { content: "Ngày Tạo"; }
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(7)::before { content: "Phim liên kết"; }
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(8)::before { content: "Ghi chú Admin"; }
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(9)::before { content: "Hành động"; }
+
+    /* Content (data) ở bên phải - MẶC ĐỊNH CĂN PHẢI */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td > * {
+        flex: 1;
+        text-align: right;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+        white-space: normal !important;
+        word-break: break-word; 
+    }
+
+    /* GHI ĐÈ: Căn trái cho các cột text dài */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(2) > *, /* Tiêu đề */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(6) > *, /* Ngày tạo */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(7) > * /* Phim LK */ {
+        justify-content: flex-start;
+        text-align: left;
+    }
+    
+    /* GHI ĐÈ: Căn giữa cho các cột data ngắn */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(1) > *, /* ID */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(3) > *, /* Năm */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(4) > *, /* Lượt YC */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(5) > * /* Trạng thái */ {
+        justify-content: center;
+        text-align: center;
+    }
+
+    
+    /* * ======================================
+     * SỬA LỖI GHI CHÚ ADMIN (VÌ ĐÃ CÓ SPAN)
+     * ======================================
+    */
+    /* 1. Ghi đè CĂN DỌC TỪ GIỮA -> LÊN TRÊN */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(8) {
+        align-items: flex-start !important; /* Dóng label và span lên trên cùng */
+    }
+
+    /* 2. Căn lề dọc cho label khớp với dòng text đầu tiên */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(8)::before {
+        padding-top: 3px;   /* Đẩy label xuống 3px cho khớp dòng text */
+    }
+    
+    /* 3. Đây là phần SỬA LỖI: Nhắm vào thẻ <span> bạn đã thêm */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(8) > span {
+        display: block !important; /* **SỬA LỖI**: Ngăn kế thừa display:flex */
+        flex: 1; /* Cho phép span chiếm hết phần còn lại */
+        text-align: right; /* Căn phải text bên trong span */
+        justify-content: flex-end; 
+        margin-left: 101px; /* **QUAN TRỌNG**: Tạo khoảng cách với label */
+        word-break: break-word;
+        white-space: normal;
+    }
+    /* ======================================
+     * KẾT THÚC SỬA LỖI
+     * ======================================
+    */
+
+
+    /* Cột 9: Action buttons cell */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(9) {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+
+    /* Label "Hành động" */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td:nth-of-type(9)::before {
+        position: absolute;
+        top: 0.85rem;
+        left: 1rem;
+    }
+
+    /* Button group - full width, wrap buttons */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td .btn-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: flex-end;
+        margin-top: 0;
+        width: 100%; 
+    }
+
+    /* Sửa lỗi nút to nút nhỏ */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td .btn-group .btn {
+        flex: 1 1 0;
+        min-width: 45px;
+        padding: 0.5rem 0.4rem;
+        font-size: 0.9rem;
+    }
+
+    /* Empty state */
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td[colspan] {
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 250px !important;
+        padding: 2rem 1rem !important;
+        text-align: center;
+    }
+
+    .card:has(table tbody tr[id^="request-row-"]) .table tbody td[colspan]::before {
+        display: none !important;
+    }
+    
+    /* === FIX MODAL (View Synced Movie) === */
+    #viewSyncedMovieModal .row {
+        flex-direction: column;
+    }
+    #viewSyncedMovieModal .col-md-4,
+    #viewSyncedMovieModal .col-md-8 {
+        width: 100% !important;
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    #viewSyncedMovieModal img {
+        max-width: 200px;
+        margin-bottom: 1rem;
+    }
+    #viewSyncedMovieModal .table th {
+        width: 100px; /* Thu hẹp label */
+    }
+}

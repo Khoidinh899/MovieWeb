@@ -1,8 +1,6 @@
-<!-- Footer -->
 <footer class="bg-dark text-white pt-5 pb-4">
     <div class="container text-md-left">
         <div class="row text-md-left">
-            <!-- Logo + mô tả -->
             <div class="col-md-4 col-lg-4 mb-4">
                 <a class="navbar-brand d-flex align-items-center" href="/trang-chu">
                     <img src="~/images/iconmoon.png" alt="MoonPhim Logo" style="height:80px; margin-right:8px;">
@@ -13,7 +11,6 @@
                 </a>
             </div>
 
-            <!-- Danh mục -->
             <div class="col-md-2 col-lg-2 col-xl-2 mx-auto mt-3">
                 <h5 class="text-uppercase mb-4 font-weight-bold">Danh mục</h5>
                 <p><a href="/trang-chu" class="text-white text-decoration-none">Trang chủ</a></p>
@@ -22,7 +19,6 @@
                 <p><a href="/the-loai/phim-bo" class="text-white text-decoration-none">Phim bộ</a></p>
             </div>
 
-            <!-- Liên kết -->
             <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3">
                 <h5 class="text-uppercase mb-4 font-weight-bold">Liên kết</h5>
                 <p><a href="/about" class="text-white text-decoration-none">Giới thiệu</a></p>
@@ -30,7 +26,6 @@
                 <p><a href="/contact" class="text-white text-decoration-none">Liên hệ</a></p>
             </div>
 
-            <!-- Mạng xã hội -->
             <div class="col-md-3 col-lg-3 col-xl-3 mx-auto mt-3">
                 <h5 class="text-uppercase mb-4 font-weight-bold">Theo dõi chúng tôi</h5>
                 <a href="https://facebook.com" target="_blank" class="text-white me-3 fs-4"><i
@@ -43,7 +38,6 @@
             </div>
         </div>
         <hr class="mb-4 mt-4 border-secondary" />
-        <!-- Copyright -->
         <div class="row align-items-center">
             <div class="col-md-8 col-lg-8">
                 <p class="mb-0">© 2025 <strong>MoonPhim</strong>. All rights reserved.</p>
@@ -52,67 +46,66 @@
     </div>
 </footer>
 
-<!-- Scroll to Top Button -->
 <button id="scrollTopBtn" aria-label="Scroll to top">
     <i class="fas fa-arrow-up"></i>
 </button>
-<!-- Nút FAB -->
-<div id="chatbotFloatingBtn" class="chatbot-fab">
-    <img src="/images/mooner.png" alt="Mooner" style="width: 35px; height: 35px; border-radius: 50%;">
-    <span class="chatbot-tooltip">Hỏi Mooner AI 🌙</span>
-</div>
-
-<!-- Popup Chatbot -->
-<div id="chatbotPopup" class="chatbot-popup" style="display: none;">
-    <!-- Header -->
-    <div class="chatbot-popup-header">
-        <h5>
-            <span>🌙</span>
-            Hỏi Mooner AI
-        </h5>
-        <button type="button" id="closeChatbotPopup" class="btn-close" aria-label="Close"></button>
+@if (User.Identity.IsAuthenticated && (User.HasClaim("IsPremium", "true") || User.IsInRole("Admin")))
+{
+    <div id="chatbotFloatingBtn" class="chatbot-fab">
+        <img src="/images/mooner.png" alt="Mooner" style="width: 35px; height: 35px; border-radius: 50%;">
+        <span class="chatbot-tooltip">Trò chuyện cùng Mooner AI 🌙</span>
     </div>
 
-    <!-- Body (Chat Messages) -->
-    <div class="chatbot-popup-body">
-        <ul id="popupMessagesList" class="chat-messages list-unstyled">
-            <!-- Messages sẽ được thêm vào đây bằng JavaScript -->
-        </ul>
-        
-        <!-- Typing Indicator -->
-        <div id="popupTypingIndicator" style="display: none; padding: 10px 15px;">
-            <div class="message-bubble" style="background-color: #f0f0f0; padding: 8px 12px; border-radius: 18px; display: inline-block;">
-                <span>Mooner đang nhập</span>
-                <span class="typing-dots">
-                    <span>.</span><span>.</span><span>.</span>
-                </span>
+    <div id="chatbotPopup" class="chatbot-popup" style="display: none;">
+        <div class="chatbot-popup-header">
+            <h5>
+                <span>🌙</span>
+                Trò chuyện cùng Mooner AI
+            </h5>
+            <button type="button" id="closeChatbotPopup" class="btn-close" aria-label="Close"></button>
+        </div>
+
+        <div class="chatbot-mode-selector">
+            <button class="btn btn-mode active" data-mode="by_name">Yêu cầu theo tên</button>
+            <button class="btn btn-mode" data-mode="by_description">Theo mô tả</button>
+            <button class="btn btn-mode" data-mode="recommendation">Gợi ý</button>
+        </div>
+        <div class="chatbot-popup-body">
+            <ul id="popupMessagesList" class="chat-messages list-unstyled">
+                </ul>
+            
+            <div id="popupTypingIndicator" style="display: none; padding: 10px 15px;">
+                <div class="message-bubble" style="background-color: #f0f0f0; padding: 8px 12px; border-radius: 18px; display: inline-block;">
+                    <span>Mooner đang nhập</span>
+                    <span class="typing-dots">
+                        <span>.</span><span>.</span><span>.</span>
+                    </span>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Footer (Input Form) -->
-    <div class="chatbot-popup-footer">
-        <form id="popupMessageForm" class="d-flex gap-2 align-items-center">
-            <input 
-                type="text" 
-                id="popupMessageInput" 
-                class="form-control" 
-                placeholder="Nhập yêu cầu phim..." 
-                autocomplete="off"
-                required
-            />
-            <button 
-                type="submit" 
-                id="popupSendButton" 
-                class="btn btn-primary"
-            >
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </form>
+        <div class="chatbot-popup-footer">
+            <form id="popupMessageForm" class="d-flex gap-2 align-items-center">
+                <input 
+                    type="text" 
+                    id="popupMessageInput" 
+                    class="form-control" 
+                    placeholder="Nhập yêu cầu phim..." 
+                    autocomplete="off"
+                    required
+                />
+                <button 
+                    type="submit" 
+                    id="popupSendButton" 
+                    class="btn btn-primary"
+                >
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
     </div>
-</div>
+}
 
-<!-- CSS cho typing animation -->
 @* <style>
 @keyframes typingDots {
     0%, 20% { opacity: 0.2; }

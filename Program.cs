@@ -17,12 +17,41 @@ using Hangfire;
 using Hangfire.SqlServer;
 using MovieWeb.Filters;
 using MovieWeb.Jobs;
+using SendGrid.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Load .env file first
-Env.Load();
+// ✅ Load .env file - Ưu tiên .env.local cho local development
+if (builder.Environment.IsDevelopment())
+{
+    if (File.Exists(".env.local"))
+    {
+        Env.Load(".env.local");
+        Console.WriteLine("✅ Loaded .env.local");  // ← THÊM DÒNG NÀY
+    }
+    else if (File.Exists(".env"))
+    {
+        Env.Load();
+        Console.WriteLine("⚠️ Loaded .env (fallback)");  // ← THÊM DÒNG NÀY
+    }
+}
+else
+{
+    if (File.Exists(".env"))
+    {
+        Env.Load();
+        Console.WriteLine("🌐 Loaded .env (production)");  // ← THÊM DÒNG NÀY
+    }
+}
+
 builder.Configuration.AddEnvironmentVariables();
+
+// ✅ THÊM ĐOẠN NÀY ĐỂ DEBUG
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+Console.WriteLine($"🔍 Environment: {builder.Environment.EnvironmentName}");
+Console.WriteLine($"🗄️ Connection String: {connectionString?[..Math.Min(60, connectionString?.Length ?? 0)]}...");
+Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
 // Kết nối DbContext với SQL Server
 builder.Services.AddDbContext<MovieWebDbContext>(options =>
@@ -142,9 +171,34 @@ builder.Services.AddScoped<PaymentReminderJob>();
 //  SignalR Job
 builder.Services.AddScoped<SendRealtimeNotificationJob>();
 
-// ===== EMAIL SETTINGS =====
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-builder.Services.AddScoped<IEmailService, EmailService>();
+// // ===== EMAIL SETTINGS =====
+// builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+// builder.Services.AddScoped<IEmailService, EmailService>();
+// builder.Services.AddScoped<IStudentEmailService, StudentEmailService>();
+
+// ===== SENDGRID EMAIL SENDER =====
+// ===== CẤU HÌNH SENDGRID MỚI (ĐÃ SỬA LỖI) =====
+
+// 1. Đăng ký lớp SendGridOptions để đọc cấu hình từ .env
+builder.Services.Configure<SendGridOptions>(builder.Configuration.GetSection("SendGrid"));
+
+// 2. Đăng ký SendGrid client
+builder.Services.AddSendGrid(options =>
+{
+    // Tự động đọc API Key từ file .env (SendGrid__ApiKey)
+    options.ApiKey = builder.Configuration.GetSection("SendGrid")["ApiKey"];
+});
+
+// Dòng này cho Identity UI (như 'Quên mật khẩu')
+builder.Services.AddTransient<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender, SendGridEmailSender>();
+
+// Dòng này cho Identity Core (dùng lớp "User" của bạn)
+builder.Services.AddTransient<IEmailSender<User>, SendGridEmailSender>();
+
+// DÒNG NÀY SỬA LỖI CRASH:
+// Dòng này cung cấp IEmailService cho AuthService của bạn
+builder.Services.AddTransient<IEmailService, SendGridEmailSender>();
+// Dòng này cung cấp IStudentEmailService cho StudentEmailService của bạn
 builder.Services.AddScoped<IStudentEmailService, StudentEmailService>();
 
 // ===== STRIPE CONFIGURATION =====
@@ -175,13 +229,18 @@ builder.Services.AddScoped<IDirectorSyncService, DirectorSyncService>();
 // builder.Services.AddHostedService<BackfillService>();
 
 // ===== OTHER SERVICES =====
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
-
 builder.Services.AddSignalR();
-builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>(); // Đây là dòng của Bước 1
+builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+// Đăng ký RecommendationService
+builder.Services.AddScoped<IRecommendationService,RecommendationService>();
 // Đăng ký GeminiService
 builder.Services.AddHttpClient<IGeminiService, GeminiService>();
 // Đăng ký MovieRequestService
@@ -208,6 +267,45 @@ builder.Services.AddLogging();
 
 var app = builder.Build();
 
+// ===== AUTO MIGRATE DATABASE =====
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        var context = services.GetRequiredService<MovieWebDbContext>();
+
+        logger.LogInformation("🔄 Checking for pending database migrations...");
+
+        // Kiểm tra xem có migrations chưa apply không
+        var pendingMigrations = context.Database.GetPendingMigrations();
+
+        if (pendingMigrations.Any())
+        {
+            logger.LogWarning($"⚠️ Found {pendingMigrations.Count()} pending migrations. Applying...");
+
+            // Apply migrations
+            context.Database.Migrate();
+
+            logger.LogInformation("✅ Database migrations applied successfully!");
+        }
+        else
+        {
+            logger.LogInformation("✅ Database is up to date. No pending migrations.");
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "❌ An error occurred while migrating the database.");
+
+        // KHÔNG throw exception để app vẫn có thể start
+        // Nhưng ghi log để debug
+        logger.LogError("⚠️ App will continue but database may not be in sync!");
+    }
+}
+
 // ===== MIDDLEWARE CONFIGURATION =====
 if (!app.Environment.IsDevelopment())
 {
@@ -215,7 +313,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 // ===== STRIPE WEBHOOK RAW BODY MIDDLEWARE =====

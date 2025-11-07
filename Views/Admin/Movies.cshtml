@@ -317,16 +317,13 @@
                                                     title="@(movie.IsBanner ? "Bỏ khỏi banner" : "Thêm vào banner")">
                                                 <i class="bi bi-layout-sidebar-inset-reverse@(movie.IsBanner ? "-reverse" : "")"></i>
                                             </button>
-                                            
-                                            @if (movie.IsManual)
-                                            {
-                                                <button type="button" 
-                                                        class="btn btn-outline-danger"
-                                                        onclick="deleteMovie(@movie.MovieId, '@movie.Name')"
-                                                        title="Xóa">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            }
+                                            <button 
+                                                    type="button" 
+                                                    class="btn btn-outline-danger"
+                                                    onclick="deleteMovie(@movie.MovieId, '@movie.Name')"
+                                                    title="Xóa">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>

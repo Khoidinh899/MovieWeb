@@ -1,0 +1,290 @@
+/* File này chứa code Responsive (Đã sửa lỗi xung đột) */
+
+/* ================== RESPONSIVE: USER DETAIL PAGE - MOBILE (< 768px) ================== */
+@media (max-width: 767.98px) {
+    /* ========== PROFILE HEADER ========== */
+    .profile-header {
+        padding: 20px 15px !important;
+        margin-bottom: 20px !important;
+        border-radius: 12px !important;
+    }
+    .profile-header .row { row-gap: 15px; }
+    .profile-header .col-md-2,
+    .profile-header .col-md-7,
+    .profile-header .col-md-3 {
+        width: 100% !important;
+        flex: 0 0 100%;
+        max-width: 100%;
+        text-align: center !important;
+    }
+    .profile-header img {
+        width: 100px !important;
+        height: 100px !important;
+        margin: 0 auto;
+    }
+    .profile-header h2 {
+        font-size: 1.5rem !important;
+        text-align: center;
+        margin-top: 1rem;
+    }
+    .profile-header p {
+        font-size: 0.9rem;
+        text-align: center;
+    }
+    .profile-header .badge {
+        font-size: 0.8rem;
+        margin: 0 4px;
+    }
+    .profile-header .text-end {
+        text-align: center !important;
+        margin-top: 1rem;
+    }
+
+    /* ========== STAT BOXES (4 CARDS) ========== */
+    .stat-box {
+        min-height: 100px;
+        height: 100px;
+        margin-bottom: 1rem;
+        padding: 1rem;
+    }
+    .stat-box .bi { font-size: 2rem !important; }
+    .stat-box .stat-number {
+        font-size: 1.8rem !important;
+        margin: 0.5rem 0 !important;
+    }
+    .stat-box .text-muted { font-size: 0.85rem; }
+    .row.mb-4 > .col-md-3 {
+        width: 100% !important;
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 0.75rem;
+    }
+
+    /* ========== INFO CARD & MANAGEMENT CARD ========== */
+    .info-card {
+        padding: 1.25rem !important;
+        margin-bottom: 1.5rem;
+        border-radius: 12px !important;
+    }
+    .info-card h5 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem !important;
+    }
+    .row > .col-md-8,
+    .row > .col-md-4 {
+        width: 100% !important;
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    /* ========== INFO TABLE (Thông tin cá nhân) ========== */
+    .info-card .table-responsive:has(.table-borderless) {
+        overflow-x: hidden !important;
+        overflow-y: visible !important;
+    }
+
+    /* Tắt responsive bảng chung (của file leaky) cho table này */
+    .info-card .table-borderless {
+        display: block !important; /* Hủy 'display: table' */
+        width: 100% !important;
+        table-layout: auto !important; /* Hủy 'table-layout: fixed' */
+    }
+    .info-card .table-borderless tbody {
+        display: block !important; /* Hủy 'display: table-row-group' */
+        width: 100%;
+    }
+
+    /* Đây là khối CSS quan trọng nhất: Buộc layout Key-Value xếp dọc */
+    .info-card .table-borderless tr {
+        display: flex !important; /* BẮT BUỘC */
+        flex-direction: column !important; /* BẮT BUỘC: Key trên, Value dưới */
+        padding: 0.85rem 0.25rem !important; /* Thêm padding cho đẹp */
+        border-bottom: 1px solid #f0f0f0;
+        
+        /* Hủy các style của card-leaky */
+        margin-bottom: 0 !important;
+        border-radius: 0 !important;
+        background: none !important;
+        box-shadow: none !important;
+        height: auto !important;
+    }
+    .info-card .table-borderless tr:last-child {
+        border-bottom: none;
+    }
+
+    .info-card .table-borderless td {
+        /* BẮT BUỘC: Hủy style 'display: flex' của card-leaky */
+        display: block !important; 
+        width: 100% !important;
+        padding: 0.1rem 0 !important; /* Padding nhỏ cho key và value */
+        text-align: left !important;
+        height: auto !important;
+        border: none !important;
+    }
+
+    /* BẮT BUỘC: Tắt hoàn toàn ::before (nhãn "AVATAR") của file leaky */
+    .info-card .table-borderless td::before {
+        display: none !important;
+        content: "" !important;
+    }
+
+    /* Style cho Key (User ID:, Username:, etc.) */
+    .info-card .table-borderless td:first-child {
+        font-weight: 700;
+        color: #667eea;
+        font-size: 0.7rem; /* Cho nhỏ lại */
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px; /* Khoảng cách nhỏ giữa Key và Value */
+    }
+
+    /* Style cho Value (#9, @nhatkhoi1899, etc.) */
+    .info-card .table-borderless td:last-child {
+        font-size: 0.95rem;
+        color: #333;
+        font-weight: 500;
+        word-break: break-all; /* Cho code, email... tự xuống hàng */
+    }
+    
+    .info-card .table-borderless td code {
+        font-size: 0.85rem;
+        padding: 3px 6px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        word-break: break-all;
+    }
+    .info-card .table-borderless td .badge {
+        font-size: 0.75rem; /* Cho badge to hơn chút */
+        padding: 4px 8px;
+    }
+
+    /* ========== MANAGEMENT CARD (Quản lý tài khoản) ========== */
+    .info-card form .input-group { flex-wrap: nowrap; }
+    .info-card .form-select { font-size: 0.9rem; }
+    .info-card .d-grid .btn {
+        font-size: 0.9rem;
+        padding: 0.65rem 1rem;
+        margin-bottom: 0.5rem !important;
+    }
+    .info-card .alert-warning {
+        font-size: 0.85rem;
+        padding: 0.75rem;
+    }
+
+    /* ========== ACTIVITY TABLE (Hoạt động gần đây) ========== */
+    .info-card:has(table.table-hover) .table-responsive {
+        overflow-x: hidden !important;
+        overflow-y: visible !important;
+        padding: 0;
+    }
+    .info-card table.table-hover {
+        display: block;
+        width: 100% !important;
+        table-layout: auto !important; /* ✅ Hủy 'table-layout: fixed' */
+    }
+    .info-card table.table-hover thead { display: none !important; }
+    .info-card table.table-hover tbody {
+        display: block;
+        width: 100%;
+    }
+    .info-card table.table-hover tbody tr {
+        display: block;
+        width: 100%;
+        margin-bottom: 0.75rem;
+        border-radius: 10px;
+        background: #f8f9fa;
+        padding: 1rem;
+        border: 1px solid #e9ecef;
+        height: auto !important; /* ✅ Hủy height (nếu có) */
+    }
+    .info-card table.table-hover tbody tr:hover {
+        background: #f8f9fa;
+        transform: none;
+    }
+    .info-card table.table-hover tbody td {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0 !important;
+        border: none !important;
+        font-size: 0.875rem;
+        height: auto !important; /* ✅ Hủy height (nếu có) */
+    }
+    .info-card table.table-hover tbody td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: #667eea;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        flex-shrink: 0;
+        width: 140px;
+    }
+    /* Gán label cho 3 cột */
+    .info-card table.table-hover tbody td:nth-of-type(1)::before { content: "Loại hoạt động"; }
+    .info-card table.table-hover tbody td:nth-of-type(2)::before { content: "Số lượng"; }
+    .info-card table.table-hover tbody td:nth-of-type(3)::before { content: "Hành động"; }
+    
+    .info-card table.table-hover tbody td > * {
+        flex: 1;
+        text-align: right;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 6px;
+    }
+    /* Cột 1: Loại hoạt động - căn trái */
+    .info-card table.table-hover tbody td:nth-of-type(1) > * {
+        justify-content: flex-start;
+        text-align: left;
+    }
+    .info-card table.table-hover tbody td:nth-of-type(1) .bi { font-size: 1.1rem; }
+    /* Cột 2: Số lượng - căn giữa */
+    .info-card table.table-hover tbody td:nth-of-type(2) > * { justify-content: center; }
+    .info-card table.table-hover tbody td:nth-of-type(2) strong { font-size: 1.2rem; }
+    /* Cột 3: Button - full width */
+    .info-card table.table-hover tbody td:nth-of-type(3) > * { width: 100%; }
+    .info-card table.table-hover tbody td:nth-of-type(3) .btn {
+        width: 100%;
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* ========== BACK BUTTON ========== */
+    .container .mb-3 .btn {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    /* ========== ALERTS ========== */
+    .container .alert {
+        font-size: 0.85rem;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    /* ========== HIDDEN FORMS ========== */
+    #statusForm,
+    #deleteForm {
+        display: none !important;
+    }
+}
+
+/* ================== RESPONSIVE: USER DETAIL - TABLET (768px - 991px) ================== */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .profile-header {
+        padding: 30px 20px !important;
+    }
+    .profile-header h2 {
+        font-size: 1.75rem !important;
+    }
+    .stat-box {
+        min-height: 110px;
+        height: 110px;
+    }
+    .info-card {
+        padding: 1.5rem !important;
+    }
+    .info-card h5 {
+        font-size: 1.15rem;
+    }
+}

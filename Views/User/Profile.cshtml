@@ -344,28 +344,28 @@
                 </div>
                 <div class="card-body">
                     <div class="row text-center">
-                        <div class="col-md-3 mb-3">
+                        <div class="col-6 col-md-3 mb-3">
                             <div class="stat-box">
                                 <i class="bi bi-heart-fill text-danger stat-icon"></i>
                                 <h3 class="stat-number">@Model.TotalFavorites</h3>
                                 <p class="stat-label">Yêu thích</p>
                             </div>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-6 col-md-3 mb-3">
                             <div class="stat-box">
                                 <i class="bi bi-chat-fill text-primary stat-icon"></i>
                                 <h3 class="stat-number">@Model.TotalComments</h3>
                                 <p class="stat-label">Bình luận</p>
                             </div>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-6 col-md-3 mb-3">
                             <div class="stat-box">
                                 <i class="bi bi-star-fill text-warning stat-icon"></i>
                                 <h3 class="stat-number">@Model.TotalRatings</h3>
                                 <p class="stat-label">Đánh giá</p>
                             </div>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-6 col-md-3 mb-3">
                             <div class="stat-box">
                                 <i class="bi bi-clock-history text-info stat-icon"></i>
                                 <h3 class="stat-number">@Model.TotalWatchHistory</h3>
@@ -478,358 +478,160 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="avatar-grid">
-                    <div class="avatar-option" onclick="selectAvatar('default0.png')">
-                        <img src="/images/default0.png" alt="Avatar 0">
+
+                @* Logic đã được cập nhật dựa trên User.cs model *@
+                @if (Model.IsPremium)
+                {
+                    <ul class="nav nav-tabs" id="avatarTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="upload-tab" data-bs-toggle="tab"
+                                data-bs-target="#uploadTabPane" type="button" role="tab" aria-controls="uploadTabPane"
+                                aria-selected="true">
+                                <i class="bi bi-upload me-1"></i> Tải ảnh lên
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="select-tab" data-bs-toggle="tab"
+                                data-bs-target="#selectTabPane" type="button" role="tab" aria-controls="selectTabPane"
+                                aria-selected="false">
+                                <i class="bi bi-grid-3x3-gap me-1"></i> Chọn avatar có sẵn
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="avatarTabContent">
+                        <div class="tab-pane fade show active" id="uploadTabPane" role="tabpanel"
+                            aria-labelledby="upload-tab" tabindex="0">
+                            <div class="text-center p-4">
+                                <img id="avatarPreview" src="/images/placeholder-avatar.png" alt="Xem trước"
+                                    class="img-thumbnail rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                                
+                                <input type="file" class="form-control" id="avatarUploadInput" accept="image/*">
+                                
+                                <button id="saveUploadAvatarBtn" class="btn btn-primary mt-3">
+                                    <i class="bi bi-save me-1"></i> Lưu avatar này
+                                </button>
+                                <div id="uploadMessageBox" class="mt-3" style="display: none;"></div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="selectTabPane" role="tabpanel" aria-labelledby="select-tab"
+                            tabindex="0">
+                            <div class="avatar-grid mt-3">
+                                <div class="avatar-option" onclick="selectAvatar('default0.png')">
+                                    <img src="/images/default0.png" alt="Avatar 0">
+                                </div>
+                                <div class="avatar-option" onclick="selectAvatar('default1.png')">
+                                    <img src="/images/default1.png" alt="Avatar 1">
+                                </div>
+                                <div class="avatar-option" onclick="selectAvatar('default2.png')">
+                                    <img src="/images/default2.png" alt="Avatar 2">
+                                </div>
+                                <div class="avatar-option" onclick="selectAvatar('default3.png')">
+                                    <img src="/images/default3.png" alt="Avatar 3">
+                                </div>
+                                <div class="avatar-option" onclick="selectAvatar('default4.png')">
+                                    <img src="/images/default4.png" alt="Avatar 4">
+                                </div>
+                                <div class="avatar-option" onclick="selectAvatar('default5.png')">
+                                    <img src="/images/default5.png" alt="Avatar 5">
+                                </div>
+                                <div class="avatar-option" onclick="selectAvatar('default6.png')">
+                                    <img src="/images/default6.png" alt="Avatar 6">
+                                </div>
+                                <div class="avatar-option" onclick="selectAvatar('default7.png')">
+                                    <img src="/images/default7.png" alt="Avatar 7">
+                                </div>
+                                <div class="avatar-option" onclick="selectAvatar('default8.png')">
+                                    <img src="/images/default8.png" alt="Avatar 8">
+                                </div>
+                                <div class="avatar-option" onclick="selectAvatar('default9.png')">
+                                    <img src="/images/default9.png" alt="Avatar 9">
+                                </div>
+                                <div class="avatar-option" onclick="selectAvatar('default10.png')">
+                                    <img src="/images/default10.png" alt="Avatar 10">
+                                </div>
+                                <div class="avatar-option" onclick="selectAvatar('default11.png')">
+                                    <img src="/images/default11.png" alt="Avatar 11">
+                                </div>
+                                <div class="avatar-option" onclick="selectAvatar('default12.png')">
+                                    <img src="/images/default12.png" alt="Avatar 12">
+                                </div>
+                                <div class="avatar-option" onclick="selectAvatar('nouser.png')">
+                                    <img src="/images/nouser.png" alt="Avatar 13">
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="avatar-option" onclick="selectAvatar('default1.png')">
-                        <img src="/images/default1.png" alt="Avatar 1">
+                }
+                else
+                {
+                    <div class="alert alert-info text-center">
+                        <i class="bi bi-star-fill me-1"></i>
+                        Nâng cấp lên <strong>MoonPro</strong> hoặc <strong>MoonStu</strong> để tải lên avatar của riêng bạn!
                     </div>
-                    <div class="avatar-option" onclick="selectAvatar('default2.png')">
-                        <img src="/images/default2.png" alt="Avatar 2">
+                    
+                    <h6 class="text-center mb-3">Chọn avatar có sẵn</h6>
+                    <div class="avatar-grid">
+                         <div class="avatar-option" onclick="selectAvatar('default0.png')">
+                            <img src="/images/default0.png" alt="Avatar 0">
+                        </div>
+                        <div class="avatar-option" onclick="selectAvatar('default1.png')">
+                            <img src="/images/default1.png" alt="Avatar 1">
+                        </div>
+                        <div class="avatar-option" onclick="selectAvatar('default2.png')">
+                            <img src="/images/default2.png" alt="Avatar 2">
+                        </div>
+                        <div class="avatar-option" onclick="selectAvatar('default3.png')">
+                            <img src="/images/default3.png" alt="Avatar 3">
+                        </div>
+                        <div class="avatar-option" onclick="selectAvatar('default4.png')">
+                            <img src="/images/default4.png" alt="Avatar 4">
+                        </div>
+                        <div class="avatar-option" onclick="selectAvatar('default5.png')">
+                            <img src="/images/default5.png" alt="Avatar 5">
+                        </div>
+                        <div class="avatar-option" onclick="selectAvatar('default6.png')">
+                            <img src="/images/default6.png" alt="Avatar 6">
+                        </div>
+                        <div class="avatar-option" onclick="selectAvatar('default7.png')">
+                            <img src="/images/default7.png" alt="Avatar 7">
+                        </div>
+                        <div class="avatar-option" onclick="selectAvatar('default8.png')">
+                            <img src="/images/default8.png" alt="Avatar 8">
+                        </div>
+                        <div class="avatar-option" onclick="selectAvatar('default9.png')">
+                            <img src="/images/default9.png" alt="Avatar 9">
+                        </div>
+                        <div class="avatar-option" onclick="selectAvatar('default10.png')">
+                            <img src="/images/default10.png" alt="Avatar 10">
+                        </div>
+                        <div class="avatar-option" onclick="selectAvatar('default11.png')">
+                            <img src="/images/default11.png" alt="Avatar 11">
+                        </div>
+                        <div class="avatar-option" onclick="selectAvatar('default12.png')">
+                            <img src="/images/default12.png" alt="Avatar 12">
+                        </div>
+                        <div class="avatar-option" onclick="selectAvatar('nouser.png')">
+                            <img src="/images/nouser.png" alt="Avatar 13">
+                        </div>
                     </div>
-                    <div class="avatar-option" onclick="selectAvatar('default3.png')">
-                        <img src="/images/default3.png" alt="Avatar 3">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar('default4.png')">
-                        <img src="/images/default4.png" alt="Avatar 4">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar('default5.png')">
-                        <img src="/images/default5.png" alt="Avatar 5">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar('default6.png')">
-                        <img src="/images/default6.png" alt="Avatar 6">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar('default7.png')">
-                        <img src="/images/default7.png" alt="Avatar 7">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar('default8.png')">
-                        <img src="/images/default8.png" alt="Avatar 8">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar('default9.png')">
-                        <img src="/images/default9.png" alt="Avatar 9">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar('default10.png')">
-                        <img src="/images/default10.png" alt="Avatar 10">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar('default11.png')">
-                        <img src="/images/default11.png" alt="Avatar 11">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar('default12.png')">
-                        <img src="/images/default12.png" alt="Avatar 12">
-                    </div>
-                    <div class="avatar-option" onclick="selectAvatar('nouser.png')">
-                        <img src="/images/nouser.png" alt="Avatar 13">
-                    </div>
-                </div>
+                }
+
                 <div id="avatarMessageBox" class="mt-3" style="display: none;"></div>
             </div>
         </div>
     </div>
 </div>
 @section Scripts {
+    <script src="~/js/profile.js" asp-append-version="true"></script>
     <script>
-        let avatarModal;
-        let verificationModal;
-        let countdownInterval;
-
-        document.addEventListener('DOMContentLoaded', function () {
-            avatarModal = new bootstrap.Modal(document.getElementById('avatarSelectionModal'));
-            verificationModal = new bootstrap.Modal(document.getElementById('studentVerificationModal'));
-            checkStudentEmailStatus();
-
-            const otpInput = document.getElementById('modalOtpCode');
-            if (otpInput) {
-                otpInput.addEventListener('input', function (e) {
-                    this.value = this.value.replace(/[^0-9]/g, '');
-                });
-            }
+        document.addEventListener('DOMContentLoaded', function() {
+            // Lấy dữ liệu từ C# Model
+            var isVerified = @Model.IsStudentVerified.ToString().ToLower();
+            var verifiedDate = "@Model.StudentEmailVerifiedAt?.ToString("yyyy-MM-dd")";
+            
+            // Gọi hàm trong file profile.js và truyền dữ liệu C# vào
+            checkStudentEmailStatus(isVerified, verifiedDate);
         });
-
-        // Open avatar modal
-        function openAvatarModal() {
-            document.getElementById('avatarMessageBox').style.display = 'none';
-            avatarModal.show();
-        }
-        async function selectAvatar(avatarName) {
-            try {
-                // ✅ Lấy CSRF token
-                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
-                const headers = {
-                    'Content-Type': 'application/json'
-                };
-
-                if (tokenInput) {
-                    headers['RequestVerificationToken'] = tokenInput.value;
-                }
-
-                const response = await fetch('/user/select-avatar', {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({ avatarName: avatarName })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-
-                if (result.success) {
-                    const avatarUrl = result.avatar + '?t=' + new Date().getTime();
-
-                    // Update tất cả avatar
-                    document.getElementById('profileAvatar').src = avatarUrl;
-                    document.querySelectorAll('.avatar-circle, .avatar-circle-large').forEach(img => {
-                        img.src = avatarUrl;
-                    });
-
-                    // Hide loading, show success
-                    showAvatarMessage('✅ Cập nhật avatar thành công!', 'success');
-
-                    setTimeout(() => {
-                        avatarModal.hide();
-                        location.reload();
-                    }, 1500);
-                } else {
-                    showAvatarMessage(result.message || '❌ Cập nhật thất bại!', 'danger');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showAvatarMessage('⚠️ Không thể kết nối server! ' + error.message, 'danger');
-            }
-        }
-        function showAvatarMessage(message, type) {
-            const messageBox = document.getElementById('avatarMessageBox');
-            messageBox.className = 'alert alert-' + type + ' mt-3';
-            const icon = type === 'success' ? 'check-circle' : 'x-circle';
-            messageBox.innerHTML = '<i class="bi bi-' + icon + ' me-2"></i>' + message;
-            messageBox.style.display = 'block';
-        }
-        // Initialize modal
-        document.addEventListener('DOMContentLoaded', function () {
-            verificationModal = new bootstrap.Modal(document.getElementById('studentVerificationModal'));
-
-            // Check student email verification status
-            checkStudentEmailStatus();
-
-            // OTP input only numbers
-            const otpInput = document.getElementById('modalOtpCode');
-            if (otpInput) {
-                otpInput.addEventListener('input', function (e) {
-                    this.value = this.value.replace(/[^0-9]/g, '');
-                });
-            }
-        });
-
-        // Check student email verification status
-        function checkStudentEmailStatus() {
-            @if (Model.IsStudentVerified && Model.StudentEmailVerifiedAt.HasValue)
-                {
-                    var verifiedDateStr = Model.StudentEmailVerifiedAt.Value.ToString("yyyy-MM-dd");
-                    <text>
-                        const verifiedDate = new Date('@verifiedDateStr');
-                        const now = new Date();
-                        const daysDiff = Math.floor((now - verifiedDate) / (1000 * 60 * 60 * 24));
-
-                                                    if (daysDiff > 365) {
-                            document.getElementById('studentVerifiedBadge').style.display = 'none';
-                        document.getElementById('studentExpiredBadge').style.display = 'inline-block';
-                        document.getElementById('reverifyStudentBtn').style.display = 'inline-block';
-                                                    } else if (daysDiff >= 358) {
-                            document.getElementById('studentExpiringSoonBadge').style.display = 'inline-block';
-                        document.getElementById('renewStudentBtn').style.display = 'inline-block';
-                                                    }
-                    </text>
-            }
-                        }
-
-        // Open verification modal
-        function openVerificationModal() {
-            document.getElementById('modalStep1').style.display = 'block';
-            document.getElementById('modalStep2').style.display = 'none';
-            document.getElementById('modalOtpCode').value = '';
-            document.getElementById('modalMessageBox').style.display = 'none';
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-            }
-            verificationModal.show();
-        }
-
-        // Gửi OTP
-        async function sendOTP() {
-            const email = document.getElementById('modalStudentEmail').value.trim();
-            if (!email) {
-                showModalMessage('Vui lòng nhập email sinh viên!', 'danger');
-                return;
-            }
-
-            const studentEmailPattern = /^[^\s@@]+@@[^\s@@]+\.(edu|edu\.vn|ac\.vn)$/i;
-            if (!studentEmailPattern.test(email)) {
-                showModalMessage('Email phải có đuôi .edu, .edu.vn hoặc .ac.vn', 'danger');
-                return;
-            }
-            showModalLoading(true);
-            disableModalButton('modalSendOtpBtn', true);
-
-            try {
-                const response = await fetch('/api/profile/send-student-otp', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ studentEmail: email })
-                });
-
-                let result;
-                const text = await response.text();
-                try {
-                    result = text ? JSON.parse(text) : {};
-                } catch (e) {
-                    result = { isSuccess: false, message: 'Server trả về dữ liệu không hợp lệ' };
-                }
-
-                if (result.isSuccess) {
-                    document.getElementById('modalStep1').style.display = 'none';
-                    document.getElementById('modalStep2').style.display = 'block';
-                    document.getElementById('modalSentEmailDisplay').textContent = email;
-                    startCountdown(300);
-                    showModalMessage('Mã OTP đã được gửi đến email của bạn!', 'success');
-
-                    setTimeout(() => {
-                        document.getElementById('modalOtpCode').focus();
-                    }, 300);
-                } else {
-                    showModalMessage(result.message || 'Email đã được sử dụng, vui lòng nhập email khác!', 'danger');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showModalMessage('Không thể kết nối đến server!', 'danger');
-            } finally {
-                showModalLoading(false);
-                disableModalButton('modalSendOtpBtn', false);
-            }
-        }
-
-        // Xác thực OTP
-        async function verifyOTP() {
-            const otp = document.getElementById('modalOtpCode').value.trim();
-
-            if (!otp || otp.length !== 6) {
-                showModalMessage('Vui lòng nhập đủ 6 chữ số OTP!', 'danger');
-                return;
-            }
-
-            showModalLoading(true);
-            disableModalButton('modalVerifyOtpBtn', true);
-
-            try {
-                const response = await fetch('/api/profile/verify-student-email', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ otpCode: otp })
-                });
-
-                let result;
-                const text = await response.text();
-                try {
-                    result = text ? JSON.parse(text) : {};
-                } catch (e) {
-                    result = { isSuccess: false, message: 'Server trả về dữ liệu không hợp lệ' };
-                }
-
-                if (result.isSuccess) {
-                    showModalMessage('Xác thực email sinh viên thành công!', 'success');
-                    if (countdownInterval) {
-                        clearInterval(countdownInterval);
-                    }
-                    setTimeout(() => {
-                        verificationModal.hide();
-                        window.location.reload();
-                    }, 2000);
-                } else {
-                    showModalMessage(result.message || 'Mã OTP không đúng hoặc đã hết hạn!', 'danger');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showModalMessage('Không thể kết nối đến server!', 'danger');
-            } finally {
-                showModalLoading(false);
-                disableModalButton('modalVerifyOtpBtn', false);
-            }
-        }
-
-        async function resendOTP() {
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-            }
-            document.getElementById('modalOtpCode').value = '';
-            document.getElementById('modalStep2').style.display = 'none';
-            document.getElementById('modalStep1').style.display = 'block';
-            await sendOTP();
-        }
-
-        function cancelVerification() {
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-            }
-            document.getElementById('modalStep2').style.display = 'none';
-            document.getElementById('modalStep1').style.display = 'block';
-            document.getElementById('modalOtpCode').value = '';
-            document.getElementById('modalMessageBox').style.display = 'none';
-        }
-
-        function startCountdown(seconds) {
-            let timeLeft = seconds;
-            const countdownElement = document.getElementById('modalCountdown');
-
-            countdownInterval = setInterval(() => {
-                const minutes = Math.floor(timeLeft / 60);
-                const secs = timeLeft % 60;
-                countdownElement.textContent = minutes.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
-
-                if (timeLeft <= 0) {
-                    clearInterval(countdownInterval);
-                    showModalMessage('Mã OTP đã hết hạn. Vui lòng gửi lại mã mới!', 'warning');
-                    disableModalButton('modalVerifyOtpBtn', true);
-                }
-                timeLeft--;
-            }, 1000);
-        }
-
-        function showModalLoading(show) {
-            document.getElementById('modalLoadingSpinner').style.display = show ? 'block' : 'none';
-            document.getElementById('modalStep1').style.display = show ? 'none' : (document.getElementById('modalStep2').style.display === 'none' ? 'block' : 'none');
-            document.getElementById('modalStep2').style.display = show ? 'none' : document.getElementById('modalStep2').style.display;
-        }
-
-        function disableModalButton(buttonId, disable) {
-            const button = document.getElementById(buttonId);
-            if (button) {
-                button.disabled = disable;
-            }
-        }
-
-        function showModalMessage(message, type) {
-            const messageBox = document.getElementById('modalMessageBox');
-            messageBox.className = 'alert alert-' + type + ' mt-3';
-            const icon = type === 'success' ? 'check-circle' : (type === 'warning' ? 'exclamation-triangle' : 'x-circle');
-            messageBox.innerHTML = '<i class="bi bi-' + icon + ' me-2"></i>' + message;
-            messageBox.style.display = 'block';
-
-            if (type === 'success') {
-                setTimeout(() => {
-                    messageBox.style.display = 'none';
-                }, 5000);
-            }
-        }
-        // Open renew modal (for student email renewal)
-        function openRenewModal() {
-            if (confirm('Bạn muốn gia hạn xác thực email sinh viên?')) {
-                openVerificationModal();
-            }
-        }
     </script>
 }
