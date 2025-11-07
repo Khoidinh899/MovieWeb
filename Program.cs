@@ -225,6 +225,7 @@ builder.Services.AddScoped<ICategorySyncService, CategorySyncService>();
 builder.Services.AddScoped<ICountrySyncService, CountrySyncService>();
 builder.Services.AddScoped<IActorSyncService, ActorSyncService>();
 builder.Services.AddScoped<IDirectorSyncService, DirectorSyncService>();
+builder.Services.AddScoped<IMovieSyncService, MovieSyncService>();
 // == Hàm BackfillService chỉ chạy thủ công khi cần sửa lỗi tập phim, đạo diễn, quốc gia, diễn viên, thể loại ==
 // builder.Services.AddHostedService<BackfillService>();
 
