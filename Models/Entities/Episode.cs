@@ -16,7 +16,7 @@ namespace MovieWeb.Models.Entities
         public virtual Movie Movie { get; set; }
 
         [StringLength(200)]
-        public string? ServerName { get; set; }
+        public string? ServerName { get; set; } 
 
         [Required]
         [StringLength(100)]

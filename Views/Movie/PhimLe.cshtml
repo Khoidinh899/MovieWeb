@@ -1,0 +1,42 @@
+@model List<MovieWeb.Models.Entities.Movie>
+@{
+    Layout = "_Layout";
+    string name = ViewBag.CategoryName ?? "Phim lẻ";
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/phimbo.css" asp-append-version="true" />
+}
+<div class="container py-4">
+    <h2 class="text-white mb-4">@name</h2>
+
+    <div class="row g-3">
+        @foreach (var movie in Model)
+        {
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                <a href="/phim/@movie.Slug" class="text-decoration-none text-white">
+                    <div class="movie-card">
+                        <img src="@(movie.ThumbUrl?.StartsWith("http") == true 
+                                    ? movie.ThumbUrl 
+                                    : "https://img.ophim.live/uploads/movies/" + movie.ThumbUrl)"
+                             class="movie-thumb" />
+                        <div class="movie-title">@movie.Name</div>
+                    </div>
+                </a>
+            </div>
+        }
+    </div>
+
+    @if (ViewBag.TotalPages > 1)
+    {
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                @for (int i = 1; i <= (int)ViewBag.TotalPages; i++)
+                {
+                    <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                        <a class="page-link" href="/the-loai/phim-le?page=@i">@i</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+</div>
