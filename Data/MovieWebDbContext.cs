@@ -493,7 +493,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
         });
 
         // ===== IGNORE API MODELS =====
-        modelBuilder.Ignore<MovieWeb.Models.API.Movie>();
+        modelBuilder.Ignore<MovieWeb.Models.API.ApiMovie>();
         modelBuilder.Ignore<MovieWeb.Models.API.Category>();
         modelBuilder.Ignore<MovieWeb.Models.API.Country>();
         modelBuilder.Ignore<MovieWeb.Models.API.OPhimResponse>();

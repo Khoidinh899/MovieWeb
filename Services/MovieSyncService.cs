@@ -195,13 +195,30 @@ namespace MovieWeb.Services
                                         _logger.LogInformation($"   ✅ Đã gán TrailerUrl: {linkM3u8}");
                                     }
 
+                                    // === Tạo bản Vietsub ===
                                     dbMovie.Episodes.Add(new DbEpisode
                                     {
-                                        ServerName = server.ServerName,
+                                        ServerName = "Vietsub",
                                         EpisodeName = episodeData.Name,
                                         Slug = episodeData.Slug,
                                         LinkM3u8 = linkM3u8
                                     });
+
+                                    // === Tạo bản Thuyết minh song song ===
+                                    var thuyetMinhSlug = episodeData.Slug + "-thuyet-minh";
+                                    bool hasThuyetMinh = dbMovie.Episodes.Any(e => e.Slug == thuyetMinhSlug && e.ServerName == "Thuyết minh");
+
+                                    if (!hasThuyetMinh)
+                                    {
+                                        dbMovie.Episodes.Add(new DbEpisode
+                                        {
+                                            ServerName = "Thuyết minh",
+                                            EpisodeName = episodeData.Name,
+                                            Slug = thuyetMinhSlug,
+                                            LinkM3u8 = linkM3u8.Replace("vip.", "cdn.") // tuỳ chỉnh nếu link khác
+                                        });
+                                    }
+
                                 }
                             }
 
