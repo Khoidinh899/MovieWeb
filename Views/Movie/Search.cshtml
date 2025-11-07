@@ -1,0 +1,90 @@
+@model List<MovieWeb.Models.Entities.Movie>
+@{
+    Layout = "_Layout";
+    string keyword = ViewBag.Keyword as string ?? "";
+}
+
+@functions {
+    // Hàm tiện lợi để lấy URL ảnh an toàn
+    // - Nếu là URL đầy đủ (http(s):// hoặc //) => giữ nguyên
+    // - Nếu bắt đầu bằng '/' => giữ (relative root)
+    // - Nếu null/empty => trả về ảnh mặc định ~/images/no-image.jpg
+    // - Nếu là tên file hoặc path ngắn => prepend fallbackBase
+    private string GetPosterUrl(MovieWeb.Models.Entities.Movie m)
+    {
+        var candidate = !string.IsNullOrEmpty(m.ThumbUrl) ? m.ThumbUrl : m.PosterUrl;
+        if (string.IsNullOrEmpty(candidate))
+            return Url.Content("~/images/no-image.jpg");
+
+        candidate = candidate.Trim();
+
+        // URL đầy đủ (http:// hoặc https://) hoặc protocol-relative (//)
+        if (candidate.StartsWith("http://", System.StringComparison.OrdinalIgnoreCase) ||
+            candidate.StartsWith("https://", System.StringComparison.OrdinalIgnoreCase) ||
+            candidate.StartsWith("//"))
+        {
+            return candidate;
+        }
+
+        // Đã là đường dẫn từ root
+        if (candidate.StartsWith("/"))
+        {
+            return candidate;
+        }
+
+        // Nếu candidate có dạng "uploads/..." hoặc chứa 'uploads' -> trả nguyên (nhiều hệ thống lưu path như vậy)
+        if (candidate.IndexOf("uploads", System.StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            // đảm bảo bắt đầu bằng '/'
+            return candidate.StartsWith("/") ? candidate : "/" + candidate;
+        }
+
+        // Nếu tới đây, candidate có thể chỉ là filename (ví dụ "abc.jpg") -> thêm fallback (tùy bạn đổi base này)
+        // Mặc định mình dùng domain public của ophim để minh họa; bạn đổi thành base của bạn nếu lưu ảnh local.
+        var fallbackBase = "https://img.ophim.live/uploads/movies/"; // <-- nếu bạn lưu trên server khác, đổi ở đây
+        return fallbackBase + candidate;
+    }
+}
+
+<section class="container py-5">
+    <h2 class="text-white mb-4">
+        Kết quả tìm kiếm cho: <span class="text-warning">"@keyword"</span>
+    </h2>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-secondary text-center">
+            Không tìm thấy phim nào phù hợp với từ khóa "<strong>@keyword</strong>".
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var movie in Model)
+            {
+                var imgUrl = GetPosterUrl(movie);
+                <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                    <div class="movie-card position-relative overflow-hidden rounded shadow-sm">
+                        <a href="/phim/@movie.Slug" class="text-decoration-none text-white">
+                            <img src="@imgUrl"
+                                 alt="@movie.Name"
+                                 class="img-fluid w-100"
+                                 style="aspect-ratio: 2/3; object-fit: cover;" 
+                                 onerror="this.src='@Url.Content("~/images/no-image.jpg")'" />
+                            <div class="p-2">
+                                <h6 class="text-truncate mb-0">@movie.Name</h6>
+                                <small class="text-muted">@movie.Categories.FirstOrDefault()?.Name ?? "Không rõ thể loại"</small>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+<style>
+/* Một số style nhỏ để poster hiển thị đẹp */
+.movie-card img { transition: opacity .25s ease; }
+.movie-card:hover img { opacity: .85; }
+</style>

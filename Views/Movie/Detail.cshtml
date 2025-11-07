@@ -6,6 +6,12 @@
     var bgImage = !string.IsNullOrEmpty(Model.ThumbUrl)
         ? (Model.ThumbUrl.StartsWith("http") ? Model.ThumbUrl : "https://img.ophim.live/uploads/movies/" + Model.ThumbUrl)
         : (Model.PosterUrl?.StartsWith("http") == true ? Model.PosterUrl : "https://img.ophim.live/uploads/movies/" + Model.PosterUrl);
+
+    // dữ liệu server/tập đã chuẩn hoá từ Controller
+    var grouped = ViewBag.GroupedEpisodes as Dictionary<string, List<MovieWeb.Models.Entities.Episode>>; // key chuẩn (lower)
+    var serverDisplay = ViewBag.ServerDisplayNames as Dictionary<string, string>; // key chuẩn -> tên hiển thị
+    var servers = ViewBag.Servers as List<string>; // key chuẩn
+    string defaultServer = ViewBag.DefaultServer as string ?? "";
 }
 
 @section Styles {
@@ -37,9 +43,6 @@
                     <span>@Model.Language</span>
                 </div>
 
-                <p class="description">@Html.Raw(Model.Content)</p>
-
-                <!-- Nút xem phim / trailer -->
                 <div class="buttons">
                     @if (!string.IsNullOrEmpty(Model.TrailerUrl))
                     {
@@ -48,108 +51,105 @@
                         </button>
                     }
 
-                    @if (!string.IsNullOrEmpty(Model.Trailer))
-                    {
-                        <button class="btn-trailer" id="trailerBtn">
-                            <i class="fa-solid fa-film"></i> Trailer
-                        </button>
-                    }
-                    else
-                    {
-                        <button class="btn-trailer disabled" id="trailerBtn">
-                            <i class="fa-solid fa-film"></i> Trailer (đang cập nhật)
-                        </button>
-                    }
+                    <button class="btn-trailer @(string.IsNullOrEmpty(Model.Trailer) ? "disabled" : "")" id="trailerBtn">
+                        <i class="fa-solid fa-film"></i> @(string.IsNullOrEmpty(Model.Trailer) ? "Trailer (đang cập nhật)" : "Trailer")
+                    </button>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Player Section -->
-    @if (!string.IsNullOrEmpty(Model.TrailerUrl))
-    {
-        <div class="container" id="playerContainer" style="margin-top:20px; display:none;">
-            <video id="player" controls playsinline preload="metadata" poster="@Model.ThumbUrl"></video>
-        </div>
-    }
-
-    <!-- Trailer Modal -->
-    <div class="modal" id="trailerModal">
-        <div class="modal-content">
-            <span class="close" id="closeTrailer">&times;</span>
-            <iframe id="trailerFrame" width="100%" height="480" frameborder="0" allowfullscreen></iframe>
-        </div>
+    <!-- ============ PLAYER XEM PHIM ============ -->
+    <div id="videoContainer" style="display:none; position:relative; margin-top:20px;" class="container">
+        <video id="moviePlayer" controls width="100%" style="max-height: 500px; border-radius: 10px; background:#000;"></video>
     </div>
 
-    <!-- Meta Info -->
+    <!-- ============ DANH SÁCH TẬP PHIM (Vietsub / Thuyết minh) ============ -->
+    @if (grouped != null && grouped.Any())
+    {
+        <section class="episode-section container" style="margin-top:25px;">
+            <h2 class="meta-title"><i class="fa-solid fa-list"></i> Danh sách tập phim</h2>
+
+            <!-- Tabs chọn server (dùng key chuẩn để data-server, dùng tên hiển thị để text) -->
+            <div class="server-tabs" style="margin-top:10px; position:relative; z-index:10;">
+                @foreach (var group in grouped)
+                {
+                    var key = group.Key;
+                    var isActive = string.Equals(key, defaultServer, StringComparison.OrdinalIgnoreCase);
+
+                    <button class="server-tab @(isActive ? "active" : "")"
+                            data-server="@key"
+                            style="background:#374151;color:#fff;border:none;padding:6px 12px;margin-right:8px;border-radius:5px;cursor:pointer;z-index:20;">
+                        @(serverDisplay.ContainsKey(key) ? serverDisplay[key] : key)
+                    </button>
+                }
+            </div>
+
+
+
+            <!-- Danh sách tập -->
+           @foreach (var group in grouped)
+        {
+            var key = group.Key;
+            var show = string.Equals(key, defaultServer, StringComparison.OrdinalIgnoreCase) ? "block" : "none";
+
+            <div class="episode-group" data-server="@key" style="margin-top:15px; display:@show;">
+                <div class="episodes" style="display:flex; flex-wrap:wrap; gap:10px;">
+                    @foreach (var ep in group.Value.OrderBy(e => e.EpisodeName))
+                    {
+                        <button class="episode-btn"
+                                data-src="@ep.LinkM3u8"
+                                style="background:#facc15;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-weight:bold;">
+                            Tập @ep.EpisodeName
+                        </button>
+                    }
+            
+                    </div>
+                </div>
+            }
+        </section>
+    }
+
+    <!-- Thông tin -->
     <section class="meta-section container">
-    <h2 class="meta-title"><i class="fa-solid fa-circle-info"></i> Thông tin phim</h2>
+        <h2 class="meta-title"><i class="fa-solid fa-circle-info"></i> Thông tin phim</h2>
 
-    <div class="meta-item">
-        <strong>Đạo diễn:</strong>
-        @if (Model.Directors != null && Model.Directors.Any())
-        {
-            @string.Join(", ", Model.Directors.Select(d => d.Name))
-        }
-        else
-        {
-            <span>Đang cập nhật</span>
-        }
-    </div>
-
-    <div class="meta-item">
-        <strong>Diễn viên:</strong>
-        @if (Model.Actors != null && Model.Actors.Any())
-        {
-            @string.Join(", ", Model.Actors.Select(a => a.Name))
-        }
-        else
-        {
-            <span>Đang cập nhật</span>
-        }
-    </div>
-
-    <div class="meta-item">
-        <strong>Thể loại:</strong>
-        @if (Model.Categories != null && Model.Categories.Any())
-        {
-            @foreach (var c in Model.Categories)
+        <div class="meta-item"><strong>Đạo diễn:</strong> @(Model.Directors?.Any() == true ? string.Join(", ", Model.Directors.Select(d => d.Name)) : "Đang cập nhật")</div>
+        <div class="meta-item"><strong>Diễn viên:</strong> @(Model.Actors?.Any() == true ? string.Join(", ", Model.Actors.Select(a => a.Name)) : "Đang cập nhật")</div>
+        <div class="meta-item">
+            <strong>Thể loại:</strong>
+            @if (Model.Categories?.Any() == true)
             {
-                <a href="/the-loai/@c.Slug">@c.Name</a><text>, </text>
+                @foreach (var c in Model.Categories)
+                {
+                    <a href="/the-loai/@c.Slug">@c.Name</a><text>, </text>
+                }
             }
-        }
-        else
-        {
-            <span>Đang cập nhật</span>
-        }
-    </div>
-
-    <div class="meta-item">
-        <strong>Quốc gia:</strong>
-        @if (Model.Countries != null && Model.Countries.Any())
-        {
-            @foreach (var c in Model.Countries)
-            {
-                <a href="/quoc-gia/@c.Slug">@c.Name</a><text>, </text>
-            }
-        }
-        else
-        {
-            <span>Đang cập nhật</span>
-        }
-    </div>
-
-    @if (!string.IsNullOrEmpty(Model.Description))
-    {
-        <div class="meta-item movie-description">
-            <strong>Nội dung phim:</strong>
-            <p>@Html.Raw(Model.Description)</p>
+            else { <span>Đang cập nhật</span> }
         </div>
-    }
-</section>
+        <div class="meta-item">
+            <strong>Quốc gia:</strong>
+            @if (Model.Countries?.Any() == true)
+            {
+                @foreach (var c in Model.Countries)
+                {
+                    <a href="/quoc-gia/@c.Slug">@c.Name</a><text>, </text>
+                }
+            }
+            else { <span>Đang cập nhật</span> }
+        </div>
 
-    <!-- Related Movies -->
-    @if (relatedMovies != null && relatedMovies.Any())
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <div class="meta-item movie-description">
+                <strong>Nội dung phim:</strong>
+                <p>@Html.Raw(Model.Description)</p>
+            </div>
+        }
+    </section>
+
+    <!-- Phim liên quan -->
+    @if (relatedMovies?.Any() == true)
     {
         <section class="related container">
             <h3><i class="fa-solid fa-clone"></i> Phim liên quan</h3>
@@ -173,67 +173,259 @@
             </div>
         </section>
     }
+
+    <!-- ============ BÌNH LUẬN & ĐÁNH GIÁ ============ -->
+    <section class="comment-section container">
+        <h3><i class="fa-solid fa-comments"></i> Bình luận </h3>
+
+        <div class="comment-tabs">
+            <button class="tab-btn active" data-tab="comments">Bình luận</button>
+            <button class="tab-btn" data-tab="rating">Đánh giá</button>
+        </div>
+
+        <div class="tab-content active" id="tab-comments">
+            <div class="comment-box">
+                <textarea id="commentContent" placeholder="Viết bình luận..." maxlength="1000"></textarea>
+                <div class="comment-bottom">
+                    <label class="spoiler"><input type="checkbox"> Tiết lộ nội dung?</label>
+                    <button class="btn-send"><i class="fa-solid fa-paper-plane"></i> Gửi</button>
+                </div>
+            </div>
+            <div id="comment-list"></div>
+        </div>
+
+        <div class="tab-content" id="tab-rating">
+            <p>⭐ Hãy đánh giá phim này nhé!</p>
+            <div class="rating-stars">
+                <span data-star="1">★</span>
+                <span data-star="2">★</span>
+                <span data-star="3">★</span>
+                <span data-star="4">★</span>
+                <span data-star="5">★</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="login-popup" id="loginPopup">
+        <div class="popup-content">
+            <h4>Bạn cần đăng nhập để bình luận</h4>
+            <p>
+                Vui lòng 
+                <a href="#" id="openLoginPopup">đăng nhập</a> 
+                hoặc 
+                <a href="#" id="openRegisterPopup">đăng ký</a> 
+                tài khoản.
+            </p>
+            <button id="closePopup">Đóng</button>
+
+        </div>
+    </div>
 </div>
 
-<!-- Scripts -->
+@section Scripts {
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
-    const watchBtn = document.getElementById('watchBtn');
-    const playerContainer = document.getElementById('playerContainer');
-    const video = document.getElementById('player');
-    const hlsUrl = "@Model.TrailerUrl";
+    const movieId = @Model.MovieId;
+    const isLoggedIn = @(User.Identity.IsAuthenticated ? "true" : "false");
+    let selectedRating = 0;
 
-    const trailerBtn = document.getElementById('trailerBtn');
-    const trailerModal = document.getElementById('trailerModal');
-    const trailerFrame = document.getElementById('trailerFrame');
-    const closeTrailer = document.getElementById('closeTrailer');
-    const trailerLink = "@Model.Trailer";
+    document.addEventListener("DOMContentLoaded", () => {
+        // ✅ SỰ KIỆN MỞ POPUP ĐĂNG NHẬP / ĐĂNG KÝ
+        const openLoginPopup = document.getElementById("openLoginPopup");
+        const openRegisterPopup = document.getElementById("openRegisterPopup");
 
-    // Xử lý xem phim
-    if (watchBtn) {
-        watchBtn.addEventListener('click', () => {
-            playerContainer.style.display = 'block';
-            watchBtn.style.display = 'none';
-            initHlsAndPlay();
-            video.play().catch(()=>{});
-        });
-    }
+        if (openLoginPopup) {
+            openLoginPopup.addEventListener("click", (e) => {
+                e.preventDefault();
+                loginPopup.classList.remove("show");
+                const loginModal = new bootstrap.Modal(document.getElementById("authModal"));
+                const modalTitle = document.getElementById("authModalTitle");
+                const loginForm = document.getElementById("loginForm");
+                const registerForm = document.getElementById("registerForm");
 
-    function initHlsAndPlay() {
-        if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = hlsUrl;
-        } else if (Hls.isSupported()) {
-            const hls = new Hls();
-            hls.loadSource(hlsUrl);
-            hls.attachMedia(video);
-        } else {
-            alert('Trình duyệt không hỗ trợ HLS (.m3u8)');
+                // Hiển thị form đăng nhập
+                loginForm.classList.remove("d-none");
+                registerForm.classList.add("d-none");
+                modalTitle.textContent = "Đăng nhập";
+
+                loginModal.show();
+            });
         }
-    }
 
-    // Xử lý trailer
-    if (trailerBtn && !trailerBtn.classList.contains('disabled')) {
-        trailerBtn.addEventListener('click', () => {
-            trailerModal.style.display = 'flex';
-            trailerFrame.src = trailerLink.includes("youtube")
-                ? trailerLink.replace("watch?v=", "embed/") + "?autoplay=1"
-                : trailerLink;
-        });
-    } else if (trailerBtn) {
-        trailerBtn.addEventListener('click', () => {
-            alert('Trailer đang được cập nhật, vui lòng quay lại sau!');
-        });
-    }
+        if (openRegisterPopup) {
+            openRegisterPopup.addEventListener("click", (e) => {
+                e.preventDefault();
+                loginPopup.classList.remove("show");
+                const loginModal = new bootstrap.Modal(document.getElementById("authModal"));
+                const modalTitle = document.getElementById("authModalTitle");
+                const loginForm = document.getElementById("loginForm");
+                const registerForm = document.getElementById("registerForm");
 
-    closeTrailer.addEventListener('click', () => {
-        trailerModal.style.display = 'none';
-        trailerFrame.src = '';
+                // Hiển thị form đăng ký
+                loginForm.classList.add("d-none");
+                registerForm.classList.remove("d-none");
+                modalTitle.textContent = "Đăng ký";
+
+                loginModal.show();
+            });
+        }
+
+
+        // ✅✅✅ THÊM ĐÚNG ĐÂY - SỰ KIỆN ĐÓNG POPUP
+        const loginPopup = document.getElementById("loginPopup");
+        const closePopup = document.getElementById("closePopup");
+
+        if (closePopup) {
+            closePopup.addEventListener("click", () => {
+                loginPopup.classList.remove("show");
+            });
+            
+        }
+        // ✅✅✅ END FIX
+
+
+        // ==== TAB ĐÁNH GIÁ / BÌNH LUẬN ====
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.rating-stars span').forEach(star => {
+            star.addEventListener('click', () => {
+                selectedRating = parseInt(star.dataset.star);
+                document.querySelectorAll('.rating-stars span').forEach(s =>
+                    s.classList.toggle('active', parseInt(s.dataset.star) <= selectedRating)
+                );
+            });
+        });
+
+        // ==== GỬI BÌNH LUẬN ====
+        document.querySelector('.btn-send')?.addEventListener('click', async () => {
+            if (!isLoggedIn) {
+                document.getElementById("loginPopup").classList.add("show");
+                return;
+            }
+
+            const contentBox = document.querySelector(".comment-box textarea");
+            const content = contentBox.value.trim();
+
+            if (!content) {
+                alert("Vui lòng nhập nội dung bình luận!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("movieId", movieId);
+            formData.append("content", content);
+            formData.append("rating", selectedRating);
+
+            const res = await fetch("/api/comment/add", { method: "POST", body: formData });
+            const result = await res.json();
+
+            if (result.success) {
+                contentBox.value = "";
+                alert("Gửi bình luận thành công!");
+            } else {
+                alert(result.message || "Lỗi khi gửi bình luận!");
+            }
+        });
+        
+
+        // ==== PLAYER TRAILER ====
+        const watchBtn = document.getElementById("watchBtn");
+        const videoContainer = document.getElementById("videoContainer");
+        const video = document.getElementById("moviePlayer");
+        const trailerUrl = "@(Model.TrailerUrl ?? "")";
+        let currentHls = null;
+
+        if (watchBtn) {
+            watchBtn.addEventListener("click", () => {
+                if (!trailerUrl || trailerUrl.trim() === "") {
+                    alert("Phim này chưa có link TrailerUrl trong cơ sở dữ liệu!");
+                    return;
+                }
+
+                videoContainer.style.display = "block";
+                video.scrollIntoView({ behavior: "smooth", block: "center" });
+
+                if (Hls.isSupported()) {
+                    if (currentHls) currentHls.destroy();
+                    const hls = new Hls();
+                    hls.loadSource(trailerUrl);
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+                    currentHls = hls;
+                } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                    video.src = trailerUrl;
+                    video.play();
+                } else {
+                    alert("Trình duyệt của bạn không hỗ trợ phát định dạng .m3u8!");
+                }
+            });
+        }
+
+        // ==== SERVER TAB ====
+        const serverTabs = document.querySelectorAll(".server-tab");
+        const episodeGroups = document.querySelectorAll(".episode-group");
+
+        if (serverTabs.length > 0) {
+            serverTabs.forEach(tab => {
+                tab.addEventListener("click", () => {
+                    const selectedKey = tab.getAttribute("data-server");
+
+                    serverTabs.forEach(t => t.classList.remove("active"));
+                    tab.classList.add("active");
+
+                    episodeGroups.forEach(g => {
+                        g.style.display = g.getAttribute("data-server") === selectedKey ? "block" : "none";
+                    });
+                });
+            });
+        }
+
+        // ==== CHỌN TẬP PHIM ====
+        const episodeButtons = document.querySelectorAll(".episode-btn");
+
+        if (episodeButtons.length > 0) {
+            episodeButtons.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const src = btn.getAttribute("data-src");
+                    if (!src) {
+                        alert("Tập này chưa có link video!");
+                        return;
+                    }
+
+                    videoContainer.style.display = "block";
+                    video.scrollIntoView({ behavior: "smooth", block: "center" });
+
+                    if (currentHls) {
+                        currentHls.destroy();
+                        currentHls = null;
+                    }
+
+                    episodeButtons.forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+
+                    if (Hls.isSupported()) {
+                        const hls = new Hls();
+                        hls.loadSource(src);
+                        hls.attachMedia(video);
+                        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+                        currentHls = hls;
+                    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                        video.src = src;
+                        video.play();
+                    } else {
+                        alert("Trình duyệt không hỗ trợ phát .m3u8!");
+                    }
+                });
+            });
+        }
     });
-
-    window.onclick = (e) => {
-        if (e.target === trailerModal) {
-            trailerModal.style.display = 'none';
-            trailerFrame.src = '';
-        }
-    };
 </script>
+}
+

@@ -1,0 +1,23 @@
+@model MovieWeb.ViewModels.CategoryMenuViewModel
+
+<div class="mega-container">
+    <div class="row">
+        @for (int col = 0; col < Model.ColCount; col++)
+        {
+            <div class="col-md-3 col-6">
+                <ul class="list-unstyled">
+                    @{
+                        int start = col * Model.ItemsPerCol;
+                        int end = Math.Min(start + Model.ItemsPerCol, Model.Categories.Count);
+                        for (int i = start; i < end; i++)
+                        {
+                            var cat = Model.Categories[i];
+                            <li><a href="/the-loai/@cat.Slug">@cat.Name</a></li>
+                        }
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+</div>
+
