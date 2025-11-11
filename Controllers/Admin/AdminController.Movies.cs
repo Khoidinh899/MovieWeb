@@ -214,8 +214,8 @@ namespace MovieWeb.Controllers
                     Slug = model.Slug,
                     Name = model.Name,
                     OriginalName = model.OriginalName,
-                    Description = model.Description,  
-                    Content = MovieHelper.GetBannerDescription(model.Description ?? ""), 
+                    Description = model.Description,
+                    Content = MovieHelper.GetBannerDescription(model.Description ?? ""),
                     Type = model.Type,
                     Status = model.Status,
                     PosterUrl = string.IsNullOrWhiteSpace(model.PosterUrl)
@@ -388,7 +388,7 @@ namespace MovieWeb.Controllers
                 movie.Slug = model.Slug;
                 movie.Name = model.Name;
                 movie.OriginalName = model.OriginalName;
-                movie.Description = model.Description; 
+                movie.Description = model.Description;
                 movie.Content = MovieHelper.GetBannerDescription(model.Description ?? "");
                 movie.Type = model.Type;
                 movie.Status = model.Status;
@@ -625,20 +625,30 @@ namespace MovieWeb.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleMovieBanner(int movieId, bool isBanner)
         {
+            // 🔒 Kiểm tra quyền admin
             if (!await IsAdminAsync())
             {
-                return Json(new { success = false, message = "Không có quyền truy cập" });
+                return Json(new
+                {
+                    success = false,
+                    message = "Không có quyền truy cập"
+                });
             }
 
             try
             {
+                // 🔍 Tìm phim theo ID
                 var movie = await _context.Movies.FindAsync(movieId);
                 if (movie == null)
                 {
-                    return Json(new { success = false, message = "Phim không tồn tại" });
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Phim không tồn tại"
+                    });
                 }
 
-                // Giới hạn tối đa 5 phim làm banner
+                // ⚠️ Giới hạn tối đa 5 phim được gắn banner
                 if (isBanner)
                 {
                     var currentBannerCount = await _context.Movies
@@ -654,16 +664,22 @@ namespace MovieWeb.Controllers
                     }
                 }
 
+                // ✅ Cập nhật trạng thái banner
                 movie.IsBanner = isBanner;
-                movie.UpdatedAt = DateTime.Now;
-                await _context.SaveChangesAsync();
-                
-                // Xóa cache để TrangChu load lại danh sách mới
-                _cache.Remove("banner_movies_with_content");
-                await LogAdminActionAsync("TOGGLE_MOVIE_BANNER",
-                    $"Changed movie {movie.Name} banner status to {isBanner}",
-                    movieId.ToString());
 
+                await _context.SaveChangesAsync();
+
+                // 🧹 Xóa cache banner để tải lại dữ liệu mới
+                _cache.Remove("banner_movies_entities");
+
+                // 🧾 Ghi log hành động admin
+                await LogAdminActionAsync(
+                    "TOGGLE_MOVIE_BANNER",
+                    $"Changed movie {movie.Name} banner status to {isBanner}",
+                    movieId.ToString()
+                );
+
+                // 🎉 Phản hồi thành công
                 return Json(new
                 {
                     success = true,
@@ -672,8 +688,14 @@ namespace MovieWeb.Controllers
             }
             catch (Exception ex)
             {
+                // ❌ Ghi log lỗi
                 _logger.LogError(ex, "Error toggling movie banner for ID: {MovieId}", movieId);
-                return Json(new { success = false, message = "Có lỗi xảy ra" });
+
+                return Json(new
+                {
+                    success = false,
+                    message = "Có lỗi xảy ra khi cập nhật banner"
+                });
             }
         }
     }

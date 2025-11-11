@@ -1,0 +1,208 @@
+/* ================== RESPONSIVE: ADVERTISEMENTS PAGE - MOBILE (< 768px) ================== */
+
+@media (max-width: 767px) {
+    /* ========== ADS TABLE → CARD LAYOUT (MOBILE) ========== */
+    
+    /* Chỉ áp dụng cho bảng Advertisements */
+    #ads-table-wrapper .table-responsive {
+        overflow-x: hidden !important;
+        overflow-y: visible !important;
+        min-height: auto;
+        max-height: none;
+        padding: 0.75rem;
+    }
+
+    /* Ẩn table header */
+    #ads-table-wrapper .table thead {
+        display: none !important;
+    }
+
+    /* Table, tbody, tr = block */
+    #ads-table-wrapper .table {
+        display: block;
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0;
+    }
+
+    #ads-table-wrapper .table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    #ads-table-wrapper .table tbody tr {
+        display: block;
+        width: 100%;
+        margin-bottom: 1rem;
+        border-radius: 12px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e9ecef;
+        padding: 0;
+    }
+
+    #ads-table-wrapper .table tbody tr:hover {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        transform: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    /* TD = Flexbox row (label bên trái, data bên phải) */
+    #ads-table-wrapper .table tbody td {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.85rem 1rem !important;
+        border-bottom: 1px solid #f0f0f0 !important;
+        font-size: 0.875rem;
+        text-align: right;
+        position: relative;
+        min-height: 50px;
+        white-space: normal !important;
+    }
+
+    #ads-table-wrapper .table tbody td:last-child {
+        border-bottom: none !important;
+    }
+
+    /* Label (::before) ở bên trái */
+    #ads-table-wrapper .table tbody td::before {
+        content: attr(data-label);
+        display: inline-block;
+        font-weight: 700;
+        color: #667eea;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: left;
+        flex-shrink: 0;
+        width: 110px;
+    }
+
+    /* Content (data) ở bên phải - MẶC ĐỊNH CĂN PHẢI */
+    #ads-table-wrapper .table tbody td > * {
+        flex: 1;
+        text-align: right;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+        white-space: normal !important;
+        word-break: break-word;
+    }
+
+    /* Cột 1: Tên Quảng Cáo - căn trái, cho phép wrap */
+    #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"] {
+        flex-direction: column;
+        align-items: flex-start;
+        min-height: 80px;
+    }
+
+    #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"] > * {
+        justify-content: flex-start; /* GHI ĐÈ: Căn trái */
+        text-align: left;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"] strong {
+        font-size: 0.95rem;
+        line-height: 1.3;
+        word-break: break-word;
+        color: #667eea;
+    }
+
+    #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"] small {
+        font-size: 0.8rem;
+        opacity: 0.7;
+    }
+
+    /* Ẩn label của cột Tên Quảng Cáo */
+    #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"]::before {
+        display: none;
+    }
+
+    /* Cột 2: Vị trí (Badge) - căn giữa */
+    #ads-table-wrapper .table tbody td[data-label="Vị trí"] > * {
+        justify-content: center; /* GHI ĐÈ: Căn giữa */
+    }
+
+    /* Cột 3: Thứ tự - căn giữa */
+    #ads-table-wrapper .table tbody td[data-label="Thứ tự"] > * {
+        justify-content: center; /* GHI ĐÈ: Căn giữa */
+    }
+
+    /* Cột 4: Trạng thái (Badge) - căn giữa */
+    #ads-table-wrapper .table tbody td[data-label="Trạng thái"] > * {
+        justify-content: center; /* GHI ĐÈ: Căn giữa */
+    }
+
+    /* Cột 5: Hành động - căn phải, wrap buttons */
+    #ads-table-wrapper .table tbody td[data-label="Hành động"] {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+
+    #ads-table-wrapper .table tbody td[data-label="Hành động"]::before {
+        /* Ẩn label "Hành động" */
+        display: none;
+    }
+
+    /* Sửa layout của các nút hành động */
+    #ads-table-wrapper .table tbody td[data-label="Hành động"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: flex-end; /* Căn phải */
+    }
+
+    #ads-table-wrapper .table tbody td[data-label="Hành động"] .btn {
+        flex: 0 1 auto;
+        min-width: 70px;
+        padding: 0.5rem 0.6rem;
+        font-size: 0.85rem;
+    }
+
+    #ads-table-wrapper .table tbody td[data-label="Hành động"] form {
+        display: inline-block;
+    }
+
+    /* Empty state */
+    #ads-table-wrapper .table tbody tr td[colspan] {
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 250px !important;
+        padding: 2rem 1rem !important;
+        text-align: center;
+    }
+
+    #ads-table-wrapper .table tbody tr td[colspan]::before {
+        display: none !important;
+    }
+}
+
+/* ================== RESPONSIVE: ADVERTISEMENTS PAGE - TABLET (768px - 991px) ================== */
+
+@media (min-width: 768px) and (max-width: 991px) {
+    #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"] strong {
+        font-size: 0.9rem;
+    }
+
+    #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"] small {
+        font-size: 0.75rem;
+    }
+
+    #ads-table-wrapper .table .badge {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+}

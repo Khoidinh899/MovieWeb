@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace MovieWeb.Models.API
+namespace MovieWeb.Models.Entities
 {
     public class HomeViewModel
     {

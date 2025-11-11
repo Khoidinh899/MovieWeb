@@ -87,14 +87,30 @@
 
 .discount-badge {
     position: absolute;
-    top: 15px;
-    right: -30px;
+    /* Lùi sâu vào trong: Tăng 'top' và làm 'right' âm hơn */
+    top: 25px;   /* <-- Tăng (ví dụ: từ 18px) */
+    right: -45px; /* <-- Giảm (ví dụ: từ -35px) */
+    
     background-color: #dc3545;
     color: white;
-    padding: 5px 30px;
+    padding: 15px 0;
+    
+    /* Làm to khoảng chứa chữ */
+    width: 160px; /* <-- Tăng (ví dụ: từ 140px) */
+    height: 32px; /* <-- Tăng nhẹ (ví dụ: từ 30px) */
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
     transform: rotate(45deg);
-    font-size: 0.8rem;
+    
+    /* Cho chữ to hơn xíu */
+    font-size: 1rem; /* <-- Tăng (ví dụ: từ 0.9rem) */
     font-weight: bold;
+    text-align: center;
+    z-index: 10;
+    overflow: hidden;
 }
 
 /* Popup Warning Styles */
@@ -254,4 +270,9 @@
     .btn-warning-cancel {
         width: 100%;
     }
+}
+/* Thêm class này để tạo khung đỏ cho gói 12 tháng */
+.pricing-card.recommended-red {
+  border-color: #dc3545; /* Màu đỏ */
+  box-shadow: 0 0 20px rgba(220, 53, 69, 0.5); /* Shadow đỏ */
 }

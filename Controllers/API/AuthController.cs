@@ -110,17 +110,27 @@ namespace MovieWeb.Controllers
         }
 
         // GET: /Auth/Login
-        [HttpGet]
-        public IActionResult Login(string? returnUrl = null)
-        {
-            if (User.Identity?.IsAuthenticated == true)
-            {
-                return RedirectToAction("TrangChu", "TrangChu");
-            }
+        // Tìm method Login [HttpGet] và sửa thành:
 
-            ViewData["ReturnUrl"] = returnUrl;
-            return PartialView("~/Views/Shared/Partial/_AuthModal.cshtml", new LoginDto());
-        }
+[HttpGet]
+public IActionResult Login(string? returnUrl = null)
+{
+    // Nếu đã đăng nhập rồi thì về trang chủ
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        return RedirectToAction("TrangChu", "TrangChu");
+    }
+
+    // ✅ Lưu returnUrl vào TempData và redirect về trang chủ
+    if (!string.IsNullOrEmpty(returnUrl))
+    {
+        TempData["LoginReturnUrl"] = returnUrl;
+        _logger.LogInformation("Saving LoginReturnUrl: {ReturnUrl}", returnUrl);
+    }
+
+    // ✅ Redirect về trang chủ (không render PartialView nữa)
+    return RedirectToAction("TrangChu", "TrangChu");
+}
 
         // POST: /Auth/Login
         [HttpPost]
@@ -284,11 +294,8 @@ public IActionResult ResetPassword(string userId, string token)
         return RedirectToAction("TrangChu", "TrangChu");
     }
 
-    // Lưu vào TempData thay vì query params
-    TempData["ResetPasswordUserId"] = userId;
-    TempData["ResetPasswordToken"] = token;
-    
-    return RedirectToAction("TrangChu", "TrangChu");
+    // ✅ Redirect với query params
+    return RedirectToAction("TrangChu", "TrangChu", new { userId, token });
 }
 
         // POST: /Auth/ResetPassword

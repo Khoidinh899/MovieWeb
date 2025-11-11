@@ -7,26 +7,38 @@
         ? (Model.ThumbUrl.StartsWith("http") ? Model.ThumbUrl : "https://img.ophim.live/uploads/movies/" + Model.ThumbUrl)
         : (Model.PosterUrl?.StartsWith("http") == true ? Model.PosterUrl : "https://img.ophim.live/uploads/movies/" + Model.PosterUrl);
 
-    // dữ liệu server/tập đã chuẩn hoá từ Controller
-    var grouped = ViewBag.GroupedEpisodes as Dictionary<string, List<MovieWeb.Models.Entities.Episode>>; // key chuẩn (lower)
-    var serverDisplay = ViewBag.ServerDisplayNames as Dictionary<string, string>; // key chuẩn -> tên hiển thị
-    var servers = ViewBag.Servers as List<string>; // key chuẩn
+    var grouped = ViewBag.GroupedEpisodes as Dictionary<string, List<MovieWeb.Models.Entities.Episode>>;
+    var serverDisplay = ViewBag.ServerDisplayNames as Dictionary<string, string>;
+    var servers = ViewBag.Servers as List<string>;
     string defaultServer = ViewBag.DefaultServer as string ?? "";
+
+    var shouldShowAds = ViewBag.ShouldShowAds ?? true;
+    var isSeriesMovie = ViewBag.IsSeriesType ?? false;
+    var episode1Url = ViewBag.Episode1Url as string ?? "";
+
+    // ✅ Chỉ hiển thị danh sách tập cho phim bộ hoặc hoạt hình
+    bool shouldShowEpisodeList = (Model.Type?.ToLower() == "series" || Model.Type?.ToLower() == "hoathinh")
+                                 && grouped != null
+                                 && grouped.Any();
+
+    // ⭐ Quảng cáo
+    var advertisements = ViewBag.Advertisements as IEnumerable<MovieWeb.Models.Entities.Advertisement> ?? new List<MovieWeb.Models.Entities.Advertisement>();
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/detail.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/ad-modal.css" asp-append-version="true" />
 }
 
 <div class="detail-wrapper">
-    <!-- Hero Section -->
+    <!-- HERO SECTION -->
     <section class="hero" style="background-image: url('@bgImage')">
         <div class="overlay"></div>
         <div class="container hero-content">
             <div class="poster-box">
-                <img src="@(Model.PosterUrl?.StartsWith("http") == true 
-                    ? Model.PosterUrl 
-                    : "https://img.ophim.live/uploads/movies/" + Model.PosterUrl)" 
+                <img src="@(Model.PosterUrl?.StartsWith("http") == true
+                    ? Model.PosterUrl
+                    : "https://img.ophim.live/uploads/movies/" + Model.PosterUrl)"
                     alt="@Model.Name" />
             </div>
 
@@ -43,15 +55,14 @@
                     <span>@Model.Language</span>
                 </div>
 
-                <div class="buttons">
-                    @if (!string.IsNullOrEmpty(Model.TrailerUrl))
-                    {
-                        <button class="btn-watch" id="watchBtn">
-                            <i class="fa-solid fa-play"></i> Xem phim
-                        </button>
-                    }
+                <div class="buttons" id="heroButtons">
+                    <button class="btn-watch" id="watchBtn">
+                        <i class="fa-solid fa-play"></i> Xem phim
+                    </button>
 
-                    <button class="btn-trailer @(string.IsNullOrEmpty(Model.Trailer) ? "disabled" : "")" id="trailerBtn">
+                    <button class="btn-trailer @(string.IsNullOrEmpty(Model.Trailer) ? "disabled" : "")"
+                            id="trailerBtn"
+                            @(string.IsNullOrEmpty(Model.Trailer) ? "disabled" : "")>
                         <i class="fa-solid fa-film"></i> @(string.IsNullOrEmpty(Model.Trailer) ? "Trailer (đang cập nhật)" : "Trailer")
                     </button>
                 </div>
@@ -59,63 +70,109 @@
         </div>
     </section>
 
-    <!-- ============ PLAYER XEM PHIM ============ -->
-    <div id="videoContainer" style="display:none; position:relative; margin-top:20px;" class="container">
-        <video id="moviePlayer" controls width="100%" style="max-height: 500px; border-radius: 10px; background:#000;"></video>
+    <!-- VIDEO SECTION -->
+    <div id="videoContainer" style="display:none;" class="container mt-4">
+        <div class="video-wrapper">
+            <video id="moviePlayer"
+                   controls
+                   width="100%"
+                   style="max-height: 500px; border-radius: 10px; background:#000;"
+                   data-current-episode-index="-1">
+            </video>
+
+            <!-- QUẢNG CÁO VIDEO -->
+            <div id="ad-modal" class="ad-modal-overlay" style="display: none;">
+                <div class="ad-modal-container">
+                    <div id="ad-modal-video-content"></div>
+                    <div class="ad-modal-actions">
+                        <div class="ad-modal-info">
+                            Bạn có thể bỏ qua sau: <span id="ad-countdown-timer">5</span>s
+                        </div>
+                        <div class="ad-modal-buttons">
+                            <button id="ad-skip-button" class="btn btn-secondary" disabled>
+                                Bỏ qua (<span id="skip-countdown">5</span>)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="nextEpisodeButton" class="next-episode-btn" style="display: none;">
+                Tập tiếp theo <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
     </div>
 
-    <!-- ============ DANH SÁCH TẬP PHIM (Vietsub / Thuyết minh) ============ -->
-    @if (grouped != null && grouped.Any())
+    <!-- QUẢNG CÁO TRANG XEM -->
+    <div id="watchpage-banner-slot" class="container" style="margin-top: 20px;">
+        @{
+            ViewBag.AdPlacement = "WatchPage_Banner";
+        }
+        @await Html.PartialAsync("Partial/_Advertisement", advertisements)
+    </div>
+
+    <!-- DANH SÁCH TẬP -->
+    @if (shouldShowEpisodeList)
     {
         <section class="episode-section container" style="margin-top:25px;">
-            <h2 class="meta-title"><i class="fa-solid fa-list"></i> Danh sách tập phim</h2>
+            <h2 class="meta-title">
+                <i class="fa-solid fa-list"></i> Danh sách tập phim
+            </h2>
 
-            <!-- Tabs chọn server (dùng key chuẩn để data-server, dùng tên hiển thị để text) -->
-            <div class="server-tabs" style="margin-top:10px; position:relative; z-index:10;">
+            <div class="server-tabs" style="margin-top:10px;">
                 @foreach (var group in grouped)
                 {
                     var key = group.Key;
                     var isActive = string.Equals(key, defaultServer, StringComparison.OrdinalIgnoreCase);
 
                     <button class="server-tab @(isActive ? "active" : "")"
-                            data-server="@key"
-                            style="background:#374151;color:#fff;border:none;padding:6px 12px;margin-right:8px;border-radius:5px;cursor:pointer;z-index:20;">
+                            data-server="@key">
                         @(serverDisplay.ContainsKey(key) ? serverDisplay[key] : key)
                     </button>
                 }
             </div>
 
+            @{ int episodeIndex = 0; }
 
+            @foreach (var group in grouped)
+            {
+                var key = group.Key;
+                var show = string.Equals(key, defaultServer, StringComparison.OrdinalIgnoreCase) ? "block" : "none";
 
-            <!-- Danh sách tập -->
-           @foreach (var group in grouped)
-        {
-            var key = group.Key;
-            var show = string.Equals(key, defaultServer, StringComparison.OrdinalIgnoreCase) ? "block" : "none";
-
-            <div class="episode-group" data-server="@key" style="margin-top:15px; display:@show;">
-                <div class="episodes" style="display:flex; flex-wrap:wrap; gap:10px;">
-                    @foreach (var ep in group.Value.OrderBy(e => e.EpisodeName))
+                var sortedEpisodes = group.Value
+                    .OrderBy(e =>
                     {
-                        <button class="episode-btn"
-                                data-src="@ep.LinkM3u8"
-                                style="background:#facc15;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-weight:bold;">
-                            Tập @ep.EpisodeName
-                        </button>
-                    }
-            
+                        var match = System.Text.RegularExpressions.Regex.Match(e.EpisodeName, @"\d+");
+                        return match.Success ? int.Parse(match.Value) : 0;
+                    })
+                    .ToList();
+
+                <div class="episode-group" data-server="@key" style="margin-top:15px; display:@show;">
+                    <div class="episodes" style="display:flex; flex-wrap:wrap; gap:10px;">
+                        @foreach (var ep in sortedEpisodes)
+                        {
+                            <a href="#"
+                               class="episode-list-item"
+                               data-index="@episodeIndex"
+                               data-url="@ep.LinkM3u8"
+                               data-episode-name="@ep.EpisodeName">
+                                Tập @ep.EpisodeName
+                            </a>
+                            episodeIndex++;
+                        }
                     </div>
                 </div>
             }
         </section>
     }
 
-    <!-- Thông tin -->
+    <!-- THÔNG TIN PHIM -->
     <section class="meta-section container">
         <h2 class="meta-title"><i class="fa-solid fa-circle-info"></i> Thông tin phim</h2>
 
         <div class="meta-item"><strong>Đạo diễn:</strong> @(Model.Directors?.Any() == true ? string.Join(", ", Model.Directors.Select(d => d.Name)) : "Đang cập nhật")</div>
         <div class="meta-item"><strong>Diễn viên:</strong> @(Model.Actors?.Any() == true ? string.Join(", ", Model.Actors.Select(a => a.Name)) : "Đang cập nhật")</div>
+
         <div class="meta-item">
             <strong>Thể loại:</strong>
             @if (Model.Categories?.Any() == true)
@@ -127,6 +184,7 @@
             }
             else { <span>Đang cập nhật</span> }
         </div>
+
         <div class="meta-item">
             <strong>Quốc gia:</strong>
             @if (Model.Countries?.Any() == true)
@@ -148,7 +206,7 @@
         }
     </section>
 
-    <!-- Phim liên quan -->
+    <!-- PHIM LIÊN QUAN -->
     @if (relatedMovies?.Any() == true)
     {
         <section class="related container">
@@ -158,9 +216,9 @@
                 {
                     <a href="/phim/@movie.Slug" class="related-card">
                         <div class="poster">
-                            <img src="@(movie.PosterUrl?.StartsWith("http") == true 
-                                ? movie.PosterUrl 
-                                : "https://img.ophim.live/uploads/movies/" + movie.PosterUrl)" 
+                            <img src="@(movie.PosterUrl?.StartsWith("http") == true
+                                ? movie.PosterUrl
+                                : "https://img.ophim.live/uploads/movies/" + movie.PosterUrl)"
                                 alt="@movie.Name" />
                             <span class="badge">@movie.Quality</span>
                         </div>
@@ -174,9 +232,9 @@
         </section>
     }
 
-    <!-- ============ BÌNH LUẬN & ĐÁNH GIÁ ============ -->
+    <!-- BÌNH LUẬN -->
     <section class="comment-section container">
-        <h3><i class="fa-solid fa-comments"></i> Bình luận </h3>
+        <h3><i class="fa-solid fa-comments"></i> Bình luận</h3>
 
         <div class="comment-tabs">
             <button class="tab-btn active" data-tab="comments">Bình luận</button>
@@ -206,226 +264,135 @@
         </div>
     </section>
 
+    <!-- POPUP ĐĂNG NHẬP -->
     <div class="login-popup" id="loginPopup">
         <div class="popup-content">
             <h4>Bạn cần đăng nhập để bình luận</h4>
             <p>
-                Vui lòng 
-                <a href="#" id="openLoginPopup">đăng nhập</a> 
-                hoặc 
-                <a href="#" id="openRegisterPopup">đăng ký</a> 
-                tài khoản.
+                Vui lòng <a href="#" id="openLoginPopup">đăng nhập</a> hoặc
+                <a href="#" id="openRegisterPopup">đăng ký</a> tài khoản.
             </p>
             <button id="closePopup">Đóng</button>
-
         </div>
     </div>
 </div>
 
 @section Scripts {
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<script>
-    const movieId = @Model.MovieId;
-    const isLoggedIn = @(User.Identity.IsAuthenticated ? "true" : "false");
-    let selectedRating = 0;
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="~/js/video-ads-handler.js" asp-append-version="true"></script>
 
-    document.addEventListener("DOMContentLoaded", () => {
-        // ✅ SỰ KIỆN MỞ POPUP ĐĂNG NHẬP / ĐĂNG KÝ
-        const openLoginPopup = document.getElementById("openLoginPopup");
-        const openRegisterPopup = document.getElementById("openRegisterPopup");
+    <script>
+        const movieId = @Model.MovieId;
+        const isLoggedIn = @(User.Identity.IsAuthenticated ? "true" : "false");
+        let selectedRating = 0;
 
-        if (openLoginPopup) {
-            openLoginPopup.addEventListener("click", (e) => {
-                e.preventDefault();
-                loginPopup.classList.remove("show");
-                const loginModal = new bootstrap.Modal(document.getElementById("authModal"));
-                const modalTitle = document.getElementById("authModalTitle");
-                const loginForm = document.getElementById("loginForm");
-                const registerForm = document.getElementById("registerForm");
+        window.shouldShowAds = @Json.Serialize(shouldShowAds);
+        window.isSeriesType = @Json.Serialize(isSeriesMovie);
+        window.trailerUrl = "@Html.Raw(Model.Trailer ?? "")";
+        window.movieMainUrl = "@Html.Raw(Model.TrailerUrl ?? "")";
+        window.episode1Url = "@Html.Raw(episode1Url)";
 
-                // Hiển thị form đăng nhập
-                loginForm.classList.remove("d-none");
-                registerForm.classList.add("d-none");
-                modalTitle.textContent = "Đăng nhập";
+        document.addEventListener("DOMContentLoaded", () => {
+            const loginPopup = document.getElementById("loginPopup");
+            const closePopup = document.getElementById("closePopup");
+            const openLoginPopup = document.getElementById("openLoginPopup");
+            const openRegisterPopup = document.getElementById("openRegisterPopup");
 
-                loginModal.show();
-            });
-        }
-
-        if (openRegisterPopup) {
-            openRegisterPopup.addEventListener("click", (e) => {
-                e.preventDefault();
-                loginPopup.classList.remove("show");
-                const loginModal = new bootstrap.Modal(document.getElementById("authModal"));
-                const modalTitle = document.getElementById("authModalTitle");
-                const loginForm = document.getElementById("loginForm");
-                const registerForm = document.getElementById("registerForm");
-
-                // Hiển thị form đăng ký
-                loginForm.classList.add("d-none");
-                registerForm.classList.remove("d-none");
-                modalTitle.textContent = "Đăng ký";
-
-                loginModal.show();
-            });
-        }
-
-
-        // ✅✅✅ THÊM ĐÚNG ĐÂY - SỰ KIỆN ĐÓNG POPUP
-        const loginPopup = document.getElementById("loginPopup");
-        const closePopup = document.getElementById("closePopup");
-
-        if (closePopup) {
-            closePopup.addEventListener("click", () => {
-                loginPopup.classList.remove("show");
-            });
-            
-        }
-        // ✅✅✅ END FIX
-
-
-        // ==== TAB ĐÁNH GIÁ / BÌNH LUẬN ====
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-            });
-        });
-
-        document.querySelectorAll('.rating-stars span').forEach(star => {
-            star.addEventListener('click', () => {
-                selectedRating = parseInt(star.dataset.star);
-                document.querySelectorAll('.rating-stars span').forEach(s =>
-                    s.classList.toggle('active', parseInt(s.dataset.star) <= selectedRating)
-                );
-            });
-        });
-
-        // ==== GỬI BÌNH LUẬN ====
-        document.querySelector('.btn-send')?.addEventListener('click', async () => {
-            if (!isLoggedIn) {
-                document.getElementById("loginPopup").classList.add("show");
-                return;
+            if (closePopup) {
+                closePopup.addEventListener("click", () => loginPopup.classList.remove("show"));
             }
 
-            const contentBox = document.querySelector(".comment-box textarea");
-            const content = contentBox.value.trim();
-
-            if (!content) {
-                alert("Vui lòng nhập nội dung bình luận!");
-                return;
+            if (openLoginPopup) {
+                openLoginPopup.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    loginPopup.classList.remove("show");
+                    const modal = new bootstrap.Modal(document.getElementById("authModal"));
+                    document.getElementById("authModalTitle").textContent = "Đăng nhập";
+                    document.getElementById("loginForm").classList.remove("d-none");
+                    document.getElementById("registerForm").classList.add("d-none");
+                    modal.show();
+                });
             }
 
-            const formData = new FormData();
-            formData.append("movieId", movieId);
-            formData.append("content", content);
-            formData.append("rating", selectedRating);
-
-            const res = await fetch("/api/comment/add", { method: "POST", body: formData });
-            const result = await res.json();
-
-            if (result.success) {
-                contentBox.value = "";
-                alert("Gửi bình luận thành công!");
-            } else {
-                alert(result.message || "Lỗi khi gửi bình luận!");
+            if (openRegisterPopup) {
+                openRegisterPopup.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    loginPopup.classList.remove("show");
+                    const modal = new bootstrap.Modal(document.getElementById("authModal"));
+                    document.getElementById("authModalTitle").textContent = "Đăng ký";
+                    document.getElementById("loginForm").classList.add("d-none");
+                    document.getElementById("registerForm").classList.remove("d-none");
+                    modal.show();
+                });
             }
-        });
-        
 
-        // ==== PLAYER TRAILER ====
-        const watchBtn = document.getElementById("watchBtn");
-        const videoContainer = document.getElementById("videoContainer");
-        const video = document.getElementById("moviePlayer");
-        const trailerUrl = "@(Model.TrailerUrl ?? "")";
-        let currentHls = null;
+            // Tab chuyển giữa Bình luận / Đánh giá
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+                });
+            });
 
-        if (watchBtn) {
-            watchBtn.addEventListener("click", () => {
-                if (!trailerUrl || trailerUrl.trim() === "") {
-                    alert("Phim này chưa có link TrailerUrl trong cơ sở dữ liệu!");
+            // Chọn sao đánh giá
+            document.querySelectorAll('.rating-stars span').forEach(star => {
+                star.addEventListener('click', () => {
+                    selectedRating = parseInt(star.dataset.star);
+                    document.querySelectorAll('.rating-stars span').forEach(s =>
+                        s.classList.toggle('active', parseInt(s.dataset.star) <= selectedRating)
+                    );
+                });
+            });
+
+            // Gửi bình luận
+            document.querySelector('.btn-send')?.addEventListener('click', async () => {
+                if (!isLoggedIn) {
+                    loginPopup.classList.add("show");
                     return;
                 }
 
-                videoContainer.style.display = "block";
-                video.scrollIntoView({ behavior: "smooth", block: "center" });
+                const contentBox = document.querySelector(".comment-box textarea");
+                const content = contentBox.value.trim();
 
-                if (Hls.isSupported()) {
-                    if (currentHls) currentHls.destroy();
-                    const hls = new Hls();
-                    hls.loadSource(trailerUrl);
-                    hls.attachMedia(video);
-                    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-                    currentHls = hls;
-                } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-                    video.src = trailerUrl;
-                    video.play();
+                if (!content) {
+                    alert("Vui lòng nhập nội dung bình luận!");
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append("movieId", movieId);
+                formData.append("content", content);
+                formData.append("rating", selectedRating);
+
+                const res = await fetch("/api/comment/add", { method: "POST", body: formData });
+                const result = await res.json();
+
+                if (result.success) {
+                    contentBox.value = "";
+                    alert("Gửi bình luận thành công!");
                 } else {
-                    alert("Trình duyệt của bạn không hỗ trợ phát định dạng .m3u8!");
+                    alert(result.message || "Lỗi khi gửi bình luận!");
                 }
             });
-        }
 
-        // ==== SERVER TAB ====
-        const serverTabs = document.querySelectorAll(".server-tab");
-        const episodeGroups = document.querySelectorAll(".episode-group");
+            // Chuyển tab server
+            const serverTabs = document.querySelectorAll(".server-tab");
+            const episodeGroups = document.querySelectorAll(".episode-group");
 
-        if (serverTabs.length > 0) {
-            serverTabs.forEach(tab => {
-                tab.addEventListener("click", () => {
-                    const selectedKey = tab.getAttribute("data-server");
-
-                    serverTabs.forEach(t => t.classList.remove("active"));
-                    tab.classList.add("active");
-
-                    episodeGroups.forEach(g => {
-                        g.style.display = g.getAttribute("data-server") === selectedKey ? "block" : "none";
+            if (serverTabs.length > 0) {
+                serverTabs.forEach(tab => {
+                    tab.addEventListener("click", () => {
+                        const selectedKey = tab.getAttribute("data-server");
+                        serverTabs.forEach(t => t.classList.remove("active"));
+                        tab.classList.add("active");
+                        episodeGroups.forEach(g => {
+                            g.style.display = g.getAttribute("data-server") === selectedKey ? "block" : "none";
+                        });
                     });
                 });
-            });
-        }
-
-        // ==== CHỌN TẬP PHIM ====
-        const episodeButtons = document.querySelectorAll(".episode-btn");
-
-        if (episodeButtons.length > 0) {
-            episodeButtons.forEach(btn => {
-                btn.addEventListener("click", () => {
-                    const src = btn.getAttribute("data-src");
-                    if (!src) {
-                        alert("Tập này chưa có link video!");
-                        return;
-                    }
-
-                    videoContainer.style.display = "block";
-                    video.scrollIntoView({ behavior: "smooth", block: "center" });
-
-                    if (currentHls) {
-                        currentHls.destroy();
-                        currentHls = null;
-                    }
-
-                    episodeButtons.forEach(b => b.classList.remove("active"));
-                    btn.classList.add("active");
-
-                    if (Hls.isSupported()) {
-                        const hls = new Hls();
-                        hls.loadSource(src);
-                        hls.attachMedia(video);
-                        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-                        currentHls = hls;
-                    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-                        video.src = src;
-                        video.play();
-                    } else {
-                        alert("Trình duyệt không hỗ trợ phát .m3u8!");
-                    }
-                });
-            });
-        }
-    });
-</script>
+            }
+        });
+    </script>
 }
-

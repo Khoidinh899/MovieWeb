@@ -42,6 +42,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
     public virtual DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
     public virtual DbSet<UserSubscription> UserSubscriptions { get; set; }
     public virtual DbSet<Transaction> Transactions { get; set; }
+    public virtual DbSet<Advertisement> Advertisements { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -498,6 +499,24 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
         modelBuilder.Ignore<MovieWeb.Models.API.Country>();
         modelBuilder.Ignore<MovieWeb.Models.API.OPhimResponse>();
 
+        // ===== ADVERTISEMENTS =====
+        modelBuilder.Entity<Advertisement>(entity =>
+        {
+            entity.HasKey(e => e.AdId).HasName("PK__Advertisements");
+
+            entity.Property(e => e.AdName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Placement).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.AdContentUrl).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.ClickUrl).HasMaxLength(1000);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasIndex(e => e.Placement, "IX_Advertisements_Placement");
+            entity.HasIndex(e => e.IsActive, "IX_Advertisements_IsActive");
+        });
+        
         OnModelCreatingPartial(modelBuilder);
     }
 

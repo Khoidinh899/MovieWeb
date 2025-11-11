@@ -1,8 +1,12 @@
+let isAuthInitialized = false;
+
 document.addEventListener('DOMContentLoaded', function () {
     initializeAuth();
 });
 
 function initializeAuth() {
+    if (isAuthInitialized) return; // <-- THÊM DÒNG NÀY
+    isAuthInitialized = true;
     const authModal = new bootstrap.Modal(document.getElementById('authModal'));
     const loginBtn = document.getElementById('loginBtn');
     const mobileLoginBtn = document.getElementById('mobileLoginBtn');
@@ -30,18 +34,22 @@ function initializeAuth() {
             switchToLogin();
         });
 
-        document.getElementById('backToLogin')?.addEventListener('click', e => {
-            e.preventDefault();
-            switchToLogin();
-        });
-
-        // NEW: Forgot Password toggles
         document.getElementById('showForgotPassword')?.addEventListener('click', e => {
             e.preventDefault();
             switchToForgotPassword();
         });
 
         document.getElementById('backToLoginFromForgot')?.addEventListener('click', e => {
+            e.preventDefault();
+            switchToLogin();
+        });
+
+        document.getElementById('backToLoginFromReset')?.addEventListener('click', e => {
+            e.preventDefault();
+            switchToLogin();
+        });
+
+        document.getElementById('goToLoginFromVerification')?.addEventListener('click', e => {
             e.preventDefault();
             switchToLogin();
         });
@@ -98,16 +106,18 @@ function initializeAuth() {
     // ===== Check URL for Reset Password =====
     function checkResetPasswordURL() {
         const urlParams = new URLSearchParams(window.location.search);
-        const openResetPassword = urlParams.get('openResetPassword');
         const userId = urlParams.get('userId');
         const token = urlParams.get('token');
 
-        if (openResetPassword === 'true' && userId && token) {
+        if (userId && token) {
+            console.log('🔑 Reset password detected:', { userId, token });
+            
             switchToResetPassword(userId, token);
             authModal.show();
 
             // Clean URL sau khi mở modal
-            window.history.replaceState({}, document.title, window.location.pathname);
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
         }
     }
 
@@ -155,13 +165,11 @@ function initializeAuth() {
             await handleRegister();
         });
 
-        // NEW: Forgot Password submission
         document.getElementById('forgotPasswordFormSubmit')?.addEventListener('submit', async e => {
             e.preventDefault();
             await handleForgotPassword();
         });
 
-        // NEW: Reset Password submission
         document.getElementById('resetPasswordFormSubmit')?.addEventListener('submit', async e => {
             e.preventDefault();
             await handleResetPassword();
@@ -198,7 +206,6 @@ function initializeAuth() {
             } else {
                 showAlert(result.message, 'danger');
 
-                // Nếu email chưa xác thực, hiện alert
                 if (result.message && result.message.includes('chưa được xác thực')) {
                     const emailVerificationAlert = document.getElementById('emailVerificationAlert');
                     if (emailVerificationAlert) {
@@ -221,9 +228,13 @@ function initializeAuth() {
         const password = document.getElementById('registerPassword').value;
         const confirmPassword = document.getElementById('registerConfirmPassword').value;
 
-        // Validate password match
         if (password !== confirmPassword) {
             showAlert('Mật khẩu xác nhận không khớp!', 'danger');
+            return;
+        }
+
+        if (password.length < 6) {
+            showAlert('Mật khẩu phải có ít nhất 6 ký tự!', 'danger');
             return;
         }
 
@@ -268,7 +279,6 @@ function initializeAuth() {
         }
     }
 
-    // NEW: Handle Forgot Password
     async function handleForgotPassword() {
         const email = document.getElementById('forgotEmail').value.trim();
 
@@ -307,55 +317,51 @@ function initializeAuth() {
         }
     }
 
-    // NEW: Handle Reset Password
-async function handleResetPassword() {
-    const newPassword = document.getElementById('resetNewPassword').value;
-    const confirmPassword = document.getElementById('resetConfirmPassword').value;
+    // ✅ FIX: Sửa ID field cho đúng với HTML
+    async function handleResetPassword() {
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmNewPassword').value;
 
-    // Validate
-    if (newPassword !== confirmPassword) {
-        showAlert('Mật khẩu xác nhận không khớp!', 'danger');
-        return;
-    }
-
-    if (newPassword.length < 6) {
-        showAlert('Mật khẩu phải có ít nhất 6 ký tự!', 'danger');
-        return;
-    }
-
-    setLoadingState('reset', true);
-
-    const formData = new FormData(document.getElementById('resetPasswordFormSubmit'));
-
-    try {
-        const response = await fetch('/Auth/ResetPassword', {
-            method: 'POST',
-            body: formData  // FormData tự động gửi Anti-Forgery Token
-        });
-
-        if (response.ok) {
-            showAlert('Đặt lại mật khẩu thành công! Đang chuyển đến trang đăng nhập...', 'success');
-            
-            setTimeout(() => {
-                const authModal = bootstrap.Modal.getInstance(document.getElementById('authModal'));
-                if (authModal) {
-                    authModal.hide();
-                }
-                window.location.href = '/';
-            }, 2000);
-        } else {
-            const text = await response.text();
-            console.error('Reset password failed:', text);
-            showAlert('Đặt lại mật khẩu thất bại. Link có thể đã hết hạn hoặc không hợp lệ!', 'danger');
+        if (newPassword !== confirmPassword) {
+            showAlert('Mật khẩu xác nhận không khớp!', 'danger');
+            return;
         }
-    } catch (error) {
-        console.error('Reset password error:', error);
-        showAlert('Có lỗi xảy ra khi đặt lại mật khẩu.', 'danger');
-    } finally {
-        setLoadingState('reset', false);
+
+        if (newPassword.length < 6) {
+            showAlert('Mật khẩu phải có ít nhất 6 ký tự!', 'danger');
+            return;
+        }
+
+        setLoadingState('reset', true);
+
+        const formData = new FormData(document.getElementById('resetPasswordFormSubmit'));
+
+        try {
+            const response = await fetch('/Auth/ResetPassword', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                showAlert('Đặt lại mật khẩu thành công! Đang chuyển đến trang đăng nhập...', 'success');
+                
+                setTimeout(() => {
+                    authModal.hide();
+                    window.location.href = '/';
+                }, 2000);
+            } else {
+                const text = await response.text();
+                console.error('Reset password failed:', text);
+                showAlert('Đặt lại mật khẩu thất bại. Link có thể đã hết hạn hoặc không hợp lệ!', 'danger');
+            }
+        } catch (error) {
+            console.error('Reset password error:', error);
+            showAlert('Có lỗi xảy ra khi đặt lại mật khẩu.', 'danger');
+        } finally {
+            setLoadingState('reset', false);
+        }
     }
-}
-    // NEW: Handle Resend Email Verification
+
     async function handleResendVerification() {
         const emailVerificationAlert = document.getElementById('emailVerificationAlert');
         const email = emailVerificationAlert?.dataset.email;
