@@ -86,7 +86,8 @@
             </div>
         </div>
 
-        </div> <div class="row g-4">
+    </div>
+    <div class="row g-4">
         <div class="col-6 col-md-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-primary text-white">
@@ -121,7 +122,8 @@
 
         <div class="col-6 col-md-4">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-purple text-white"> <h5 class="mb-0">
+                <div class="card-header bg-purple text-white">
+                    <h5 class="mb-0">
                         <i class="bi bi-envelope-paper"></i> Quản Lý Yêu Cầu Phim
                     </h5>
                 </div>
@@ -166,7 +168,7 @@
             </div>
         </div> *@
 
-         <div class="col-6 col-md-4">
+        <div class="col-6 col-md-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0">
@@ -216,7 +218,25 @@
             </div>
         </div>
 
-    </div> @if (stats.UnconfirmedEmails > 0)
+        <div class="col-6 col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">
+                <i class="bi bi-badge-ad-fill"></i> Quản Lý Quảng Cáo
+            </h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">
+                Thêm, sửa, xóa các quảng cáo giả lập.
+            </p>
+            <a href="@Url.Action("Advertisements", "Admin")" class="btn btn-warning text-dark w-100">
+                <i class="bi bi-arrow-right-circle"></i> Xem Chi Tiết
+            </a>
+        </div>
+    </div>
+</div>
+        </div>
+    @if (stats.UnconfirmedEmails > 0)
     {
         <div class="alert alert-warning mt-4 shadow-sm border-0" role="alert">
             <div class="d-flex align-items-center">

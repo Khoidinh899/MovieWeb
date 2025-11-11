@@ -1,12 +1,12 @@
 @model MovieWeb.Models.NangCapViewModel
 @{
     ViewData["Title"] = "Nâng Cấp Tài Khoản";
-        Layout = "_Layout";
+    Layout = "_Layout";
 }
 
 <div class="container upgrade-page-container my-5">
     <div class="text-center mb-5">
-        <h1 class="display-4">TÀI KHOẢN MooX</h1>
+        <h1 class="display-4">TÀI KHOẢN MoonX</h1>
         <p class="lead">Sở hữu tài khoản MoonX để nhận nhiều quyền lợi và tăng trải nghiệm xem phim.</p>
 
         <div class="user-status my-4">
@@ -21,14 +21,30 @@
     <div class="row justify-content-center">
         @foreach (var plan in Model.Plans)
         {
+            // --- BẮT ĐẦU THAY ĐỔI ---
+            // Logic để xác định class cho card
+            string cardClass = "pricing-card";
+            if (plan.DisplayName.Contains("12 Tháng"))
+            {
+                cardClass += " recommended-red"; // Thêm class mới cho khung đỏ
+            }
+            else if (plan.IsPopular) // Giữ lại logic cũ cho các gói popular khác (vd: 6 tháng)
+            {
+                cardClass += " recommended";
+            }
+            // --- KẾT THÚC THAY ĐỔI ---
+            
             <div class="col-lg-4 col-md-6 mb-4">
-                <div class="pricing-card @(plan.IsPopular ? "recommended" : "")">
-                @if (plan.DisplayName.Contains("6 Tháng") || plan.DisplayName.Contains("12 Tháng"))
+                <div class="@cardClass">  @* <-- Sử dụng class động ở đây *@
+                    
+                    @if (plan.DisplayName.Contains("6 Tháng") || plan.DisplayName.Contains("12 Tháng"))
                     {
-                        <div class="bonus-tag">
-                            <i class="bi bi-gift-fill"></i> Tặng 1 Tháng
+                        // --- THAY ĐỔI: Sử dụng class "discount-badge" đã có trong CSS của bạn ---
+                        <div class="discount-badge">
+                            Tặng 1 Tháng
                         </div>
                     }
+                    
                     <h3>@plan.DisplayName</h3>
                     <p class="price">@plan.PriceVND.ToString("N0") <span class="currency-icon"></span></p>
                     <ul class="list-unstyled features-list">
@@ -48,6 +64,7 @@
 </div>
 @section Scripts {
     <script>
+        // (Toàn bộ code script của bạn giữ nguyên, không thay đổi)
         document.addEventListener('DOMContentLoaded', function () {
             const purchaseButtons = document.querySelectorAll('.btn-purchase');
 
@@ -56,7 +73,6 @@
                     event.preventDefault();
                     const planId = this.dataset.planId;
                     
-                    // Kiểm tra subscription hiện tại trước
                     try {
                         const checkResponse = await fetch('/api/subscription/check-active', {
                             method: 'GET',
@@ -66,13 +82,11 @@
                         const checkData = await checkResponse.json();
                         
                         if (checkData.success && checkData.data.hasActiveSubscription) {
-                            // Hiển thị popup cảnh báo
                             const sub = checkData.data.subscription;
                             showWarningPopup(sub.planName, sub.daysRemaining);
                             return;
                         }
                         
-                        // Nếu không có gói active, tiếp tục thanh toán
                         await processPurchase(planId, this);
                         
                     } catch (error) {
@@ -83,7 +97,6 @@
             });
         });
 
-        // Hàm hiển thị popup cảnh báo
         function showWarningPopup(planName, daysRemaining) {
             const popup = document.createElement('div');
             popup.className = 'warning-overlay';
@@ -116,7 +129,6 @@
             if (popup) popup.remove();
         }
 
-        // Hàm xử lý thanh toán
         async function processPurchase(planId, button) {
             button.disabled = true;
             button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang xử lý...';

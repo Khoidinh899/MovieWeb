@@ -4,32 +4,28 @@
         <div class="modal-content auth-modal">
             <div class="modal-header border-0">
                 <h5 class="modal-title text-white" id="authModalTitle">Đăng nhập</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <!-- Logo -->
-                <div class="text-center mb-4">
-                    <img src="~/images/iconmoon.png" alt="MoonPhim" style="height: 60px;">
-                    <h4 class="text-white mt-2">MoonPhim</h4>
-                    <p class="text-muted">Bay bổng cùng điện ảnh</p>
-                </div>
-
                 <!-- ============= LOGIN FORM ============= -->
                 <div id="loginForm">
+                    <div class="text-center mb-4">
+                        <img src="~/images/iconmoon.png" alt="MoonPhim" style="height: 60px;">
+                        <h4 class="text-white mt-2">MoonPhim</h4>
+                        <p class="text-muted">Bay bổng cùng điện ảnh</p>
+                    </div>
+
                     <form id="loginFormSubmit" asp-controller="Auth" asp-action="Login" method="post">
+                        @Html.AntiForgeryToken()
+                        
                         <div class="mb-3">
                             <label for="loginEmail" class="form-label text-white">Email</label>
-                            <input type="email" class="form-control auth-input" id="loginEmail" name="Email" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="loginPassword" class="form-label text-white">Mật khẩu</label>
-                            <input type="password" class="form-control auth-input" id="loginPassword" name="Password" required>
+                            <input type="email" class="form-control auth-input" id="loginEmail" name="Email" required placeholder="example@gmail.com">
                         </div>
 
-                        <!-- Email verification alert -->
-                        <div id="emailVerificationAlert" class="alert alert-warning d-none">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            Email chưa được xác thực. <a href="#" id="resendVerification" class="alert-link">Gửi lại email xác thực</a>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label text-white">Mật khẩu</label>
+                            <input type="password" class="form-control auth-input" id="loginPassword" name="Password" required placeholder="••••••••">
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100 mb-3 auth-btn">
@@ -38,55 +34,69 @@
                         </button>
                     </form>
 
-                    <div class="text-center">
+                    <div class="text-center mb-3">
                         <a href="#" id="showForgotPassword" class="text-muted">Quên mật khẩu?</a>
                     </div>
 
-                    <hr class="my-4 border-secondary">
+                    <hr class="bg-secondary">
 
                     <div class="text-center">
-                        <p class="text-muted">Nếu bạn chưa có tài khoản, <a href="#" id="showRegister" class="text-primary">đăng ký ngay</a></p>
+                        <p class="text-muted mb-0">
+                            Chưa có tài khoản? 
+                            <a href="#" id="showRegister" class="text-primary fw-bold">Đăng ký ngay</a>
+                        </p>
                     </div>
                 </div>
 
                 <!-- ============= REGISTER FORM ============= -->
                 <div id="registerForm" class="d-none">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-person-plus-fill text-primary" style="font-size: 3rem;"></i>
+                        <h5 class="text-white mt-3">Tạo tài khoản mới</h5>
+                        <p class="text-muted">Đăng ký để trải nghiệm đầy đủ tính năng</p>
+                    </div>
+
                     <form id="registerFormSubmit" asp-controller="Auth" asp-action="Register" method="post">
+                        @Html.AntiForgeryToken()
+                        
                         <div class="mb-3">
                             <label for="registerEmail" class="form-label text-white">Email</label>
-                            <input type="email" class="form-control auth-input" id="registerEmail" name="Email" required>
+                            <input type="email" class="form-control auth-input" id="registerEmail" name="Email" required placeholder="example@gmail.com">
                         </div>
 
                         <div class="mb-3">
                             <label for="registerUsername" class="form-label text-white">Tên đăng nhập</label>
-                            <input type="text" class="form-control auth-input" id="registerUsername" name="Username" required pattern="^[a-zA-Z0-9_.]+$">
-                            <small class="form-text text-muted">Chỉ chữ, số, dấu gạch dưới (_) hoặc chấm (.)</small>
+                            <input type="text" class="form-control auth-input" id="registerUsername" name="Username" required placeholder="Tên hiển thị">
+                            <small class="form-text text-muted">Chỉ chứa chữ cái, số, dấu gạch dưới (_) hoặc chấm (.)</small>
                         </div>
 
                         <div class="mb-3">
                             <label for="registerPassword" class="form-label text-white">Mật khẩu</label>
-                            <input type="password" class="form-control auth-input" id="registerPassword" name="Password" required minlength="6">
+                            <input type="password" class="form-control auth-input" id="registerPassword" name="Password" required placeholder="Tối thiểu 6 ký tự">
                             <small class="form-text text-muted">Mật khẩu tối thiểu 6 ký tự</small>
                         </div>
 
                         <div class="mb-3">
                             <label for="registerConfirmPassword" class="form-label text-white">Xác nhận mật khẩu</label>
-                            <input type="password" class="form-control auth-input" id="registerConfirmPassword" name="ConfirmPassword" required>
+                            <input type="password" class="form-control auth-input" id="registerConfirmPassword" name="ConfirmPassword" required placeholder="Nhập lại mật khẩu">
                         </div>
 
                         <div class="mb-3">
                             <label for="registerFullName" class="form-label text-white">Họ và tên</label>
-                            <input type="text" class="form-control auth-input" id="registerFullName" name="FullName" required>
+                            <input type="text" class="form-control auth-input" id="registerFullName" name="FullName" required placeholder="Nguyễn Văn A">
                         </div>
 
-                        <button type="submit" class="btn btn-success w-100 mb-3 auth-btn">
+                        <button type="submit" class="btn btn-primary w-100 mb-3 auth-btn">
                             <span id="registerBtnText">Đăng ký</span>
                             <span id="registerLoader" class="spinner-border spinner-border-sm d-none ms-2"></span>
                         </button>
                     </form>
 
                     <div class="text-center">
-                        <p class="text-muted">Đã có tài khoản? <a href="#" id="showLogin" class="text-primary">Đăng nhập</a></p>
+                        <p class="text-muted mb-0">
+                            Đã có tài khoản? 
+                            <a href="#" id="showLogin" class="text-primary fw-bold">Đăng nhập</a>
+                        </p>
                     </div>
                 </div>
 
@@ -98,7 +108,10 @@
                         <p class="text-muted">Nhập email của bạn, chúng tôi sẽ gửi link đặt lại mật khẩu</p>
                     </div>
 
-                    <form id="forgotPasswordFormSubmit" asp-controller="Auth" asp-action="ForgotPassword" method="post">
+                    <form id="forgotPasswordFormSubmit" method="post">
+                        @* ✅ THÊM TOKEN *@
+                        @Html.AntiForgeryToken()
+                        
                         <div class="mb-3">
                             <label for="forgotEmail" class="form-label text-white">Email</label>
                             <input type="email" class="form-control auth-input" id="forgotEmail" name="Email" required placeholder="example@gmail.com">
@@ -125,21 +138,22 @@
                         <p class="text-muted">Nhập mật khẩu mới cho tài khoản của bạn</p>
                     </div>
 
-                    <form id="resetPasswordFormSubmit" asp-controller="Auth" asp-action="ResetPassword" method="post">
+                    <form id="resetPasswordFormSubmit" method="post">
+                        @* ✅ THÊM TOKEN *@
                         @Html.AntiForgeryToken()
                         
                         <input type="hidden" id="resetUserId" name="UserId">
                         <input type="hidden" id="resetToken" name="Token">
 
                         <div class="mb-3">
-                            <label for="resetNewPassword" class="form-label text-white">Mật khẩu mới</label>
-                            <input type="password" class="form-control auth-input" id="resetNewPassword" name="NewPassword" required minlength="6">
+                            <label for="newPassword" class="form-label text-white">Mật khẩu mới</label>
+                            <input type="password" class="form-control auth-input" id="newPassword" name="NewPassword" required placeholder="Tối thiểu 6 ký tự">
                             <small class="form-text text-muted">Mật khẩu tối thiểu 6 ký tự</small>
                         </div>
 
                         <div class="mb-3">
-                            <label for="resetConfirmPassword" class="form-label text-white">Xác nhận mật khẩu</label>
-                            <input type="password" class="form-control auth-input" id="resetConfirmPassword" name="ConfirmPassword" required>
+                            <label for="confirmNewPassword" class="form-label text-white">Xác nhận mật khẩu mới</label>
+                            <input type="password" class="form-control auth-input" id="confirmNewPassword" name="ConfirmPassword" required placeholder="Nhập lại mật khẩu">
                         </div>
 
                         <button type="submit" class="btn btn-success w-100 mb-3 auth-btn">
@@ -147,99 +161,32 @@
                             <span id="resetLoader" class="spinner-border spinner-border-sm d-none ms-2"></span>
                         </button>
                     </form>
+
+                    <div class="text-center">
+                        <a href="#" id="backToLoginFromReset" class="text-muted">
+                            <i class="bi bi-arrow-left me-1"></i>Quay lại đăng nhập
+                        </a>
+                    </div>
                 </div>
 
-                <!-- ============= EMAIL VERIFICATION SUCCESS ============= -->
+                <!-- ============= VERIFICATION SUCCESS MESSAGE ============= -->
                 <div id="verificationSuccess" class="d-none text-center">
-                    <div class="mb-4">
-                        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
-                    </div>
-                    <h5 class="text-white mb-3">Đăng ký thành công!</h5>
-                    <p class="text-muted mb-4">Vui lòng kiểm tra email để xác thực tài khoản trước khi đăng nhập.</p>
-                    <button class="btn btn-primary" id="backToLogin">Quay lại đăng nhập</button>
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                    <h4 class="text-white mt-3">Xác thực thành công!</h4>
+                    <p class="text-muted">Email của bạn đã được xác thực. Bạn có thể đăng nhập ngay bây giờ.</p>
+                    <button id="goToLoginFromVerification" class="btn btn-primary auth-btn">
+                        Đăng nhập ngay
+                    </button>
                 </div>
+
+                <!-- Alert Container -->
+                <div id="authAlert" class="alert d-none mt-3" role="alert"></div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    // ============= FORM SWITCHING =============
-    document.addEventListener('DOMContentLoaded', function() {
-        const loginForm = document.getElementById('loginForm');
-        const registerForm = document.getElementById('registerForm');
-        const forgotPasswordForm = document.getElementById('forgotPasswordForm');
-        const resetPasswordForm = document.getElementById('resetPasswordForm');
-        const verificationSuccess = document.getElementById('verificationSuccess');
-        const modalTitle = document.getElementById('authModalTitle');
-
-        // Show Register
-        document.getElementById('showRegister')?.addEventListener('click', function(e) {
-            e.preventDefault();
-            hideAllForms();
-            registerForm.classList.remove('d-none');
-            modalTitle.textContent = 'Đăng ký';
-        });
-
-        // Show Login
-        document.getElementById('showLogin')?.addEventListener('click', function(e) {
-            e.preventDefault();
-            hideAllForms();
-            loginForm.classList.remove('d-none');
-            modalTitle.textContent = 'Đăng nhập';
-        });
-
-        document.getElementById('backToLogin')?.addEventListener('click', function(e) {
-            e.preventDefault();
-            hideAllForms();
-            loginForm.classList.remove('d-none');
-            modalTitle.textContent = 'Đăng nhập';
-        });
-
-        // Show Forgot Password
-        document.getElementById('showForgotPassword')?.addEventListener('click', function(e) {
-            e.preventDefault();
-            hideAllForms();
-            forgotPasswordForm.classList.remove('d-none');
-            modalTitle.textContent = 'Quên mật khẩu';
-        });
-
-        // Back to Login from Forgot Password
-        document.getElementById('backToLoginFromForgot')?.addEventListener('click', function(e) {
-            e.preventDefault();
-            hideAllForms();
-            loginForm.classList.remove('d-none');
-            modalTitle.textContent = 'Đăng nhập';
-        });
-
-        function hideAllForms() {
-            loginForm.classList.add('d-none');
-            registerForm.classList.add('d-none');
-            forgotPasswordForm.classList.add('d-none');
-            resetPasswordForm.classList.add('d-none');
-            verificationSuccess.classList.add('d-none');
-        }
-
-        // ============= CHECK TEMPDATA FOR RESET PASSWORD =============
-         // ✅ SỬA DỤNG Html.Raw() để tránh HTML encode
-        var resetUserId = '@Html.Raw(TempData["ResetPasswordUserId"])';
-        var resetToken = '@Html.Raw(TempData["ResetPasswordToken"])';
-
-        if (resetUserId && resetToken && resetUserId !== '' && resetToken !== '') {
-            console.log('Found reset password data from TempData');
-            
-            // Hiển thị form reset password
-            hideAllForms();
-            resetPasswordForm.classList.remove('d-none');
-            modalTitle.textContent = 'Đặt lại mật khẩu';
-            
-            // Điền userId và token vào form
-            document.getElementById('resetUserId').value = resetUserId;
-            document.getElementById('resetToken').value = resetToken;
-            
-            // Mở modal
-            var authModal = new bootstrap.Modal(document.getElementById('authModal'));
-            authModal.show();
-        }
-    });
-</script>
+@section Styles {
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="~/css/auth.css" rel="stylesheet" />
+}

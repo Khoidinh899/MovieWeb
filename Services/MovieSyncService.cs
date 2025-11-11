@@ -1,4 +1,4 @@
-// File: Services/MovieSyncService.cs (UPDATED - HOÀN CHỈNH)
+// File: Services/MovieSyncService.cs (FIXED - CHỈ LƯU SERVER THẬT TỪ API)
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MovieWeb.Data;
@@ -28,16 +28,14 @@ namespace MovieWeb.Services
         private readonly MovieWebDbContext _context;
         private readonly IOPhimService _oPhimService;
         private readonly ILogger<MovieSyncService> _logger;
-        
-        // === INJECT 4 SERVICES MỚI ===
         private readonly ICategorySyncService _categorySyncService;
         private readonly ICountrySyncService _countrySyncService;
         private readonly IActorSyncService _actorSyncService;
         private readonly IDirectorSyncService _directorSyncService;
 
         public MovieSyncService(
-            MovieWebDbContext context, 
-            IOPhimService oPhimService, 
+            MovieWebDbContext context,
+            IOPhimService oPhimService,
             ILogger<MovieSyncService> logger,
             ICategorySyncService categorySyncService,
             ICountrySyncService countrySyncService,
@@ -65,14 +63,13 @@ namespace MovieWeb.Services
         {
             int apiMovieCount = apiMovies?.Count ?? 0;
             _logger.LogInformation($"🎬🎬🎬 BẮT ĐẦU SYNC - API trả về: {apiMovieCount} phim, Lọc từ năm: {(minYear > 0 ? minYear : "không giới hạn")}");
-            
+
             if (apiMovieCount == 0)
             {
                 _logger.LogWarning("❌ Danh sách phim trống! Không có gì để sync.");
                 return;
             }
-            
-            // Log chi tiết phim từ API
+
             var movieYears = apiMovies?.GroupBy(m => m.Year).OrderByDescending(g => g.Key);
             if (movieYears != null)
             {
@@ -81,10 +78,9 @@ namespace MovieWeb.Services
                     _logger.LogInformation($"   📊 Năm {yearGroup.Key}: {yearGroup.Count()} phim - {string.Join(", ", yearGroup.Take(3).Select(m => m.Name))}");
                 }
             }
-            
-            // Lọc phim theo năm nếu có chỉ định
-            var moviesToSync = minYear > 0 
-                ? apiMovies.Where(m => m.Year >= minYear).ToList() 
+
+            var moviesToSync = minYear > 0
+                ? apiMovies.Where(m => m.Year >= minYear).ToList()
                 : apiMovies;
 
             _logger.LogInformation($"✅ Sau khi lọc: {moviesToSync.Count} phim sẽ được xử lý");
@@ -115,7 +111,7 @@ namespace MovieWeb.Services
 
                         // === SYNC CATEGORIES, COUNTRIES, ACTORS, DIRECTORS TRƯỚC ===
                         _logger.LogInformation($"🔄 Bắt đầu sync metadata cho phim: {apiItem.Name}");
-                        
+
                         var syncedCategories = await _categorySyncService.SyncCategoriesAsync(apiItem.Category ?? new List<MovieWeb.Models.API.Category>());
                         var syncedCountries = await _countrySyncService.SyncCountriesAsync(apiItem.Country ?? new List<MovieWeb.Models.API.Country>());
                         var syncedActors = await _actorSyncService.SyncActorsAsync(apiItem.Actor);
@@ -149,7 +145,6 @@ namespace MovieWeb.Services
                             Trailer = apiItem.TrailerUrl,
                         };
 
-                        // === LINK RELATIONSHIPS ===
                         dbMovie.Categories = syncedCategories;
                         dbMovie.Countries = syncedCountries;
                         dbMovie.Actors = syncedActors;
@@ -159,7 +154,7 @@ namespace MovieWeb.Services
                         if (apiItem.Type == "single")
                         {
                             var playbackLink = apiItem.Episodes?.FirstOrDefault()?.ServerData?.FirstOrDefault()?.LinkM3u8;
-                            dbMovie.TrailerUrl = playbackLink; // Gán link xem phim
+                            dbMovie.TrailerUrl = playbackLink;
                         }
                         else if (apiItem.Type == "series" || apiItem.Type == "hoathinh")
                         {
@@ -172,53 +167,57 @@ namespace MovieWeb.Services
 
                             bool hasValidEpisodes = false;
                             int episodeCount = 0;
+                            
+                            // ✅ HASHSET CHỐNG TRÙNG LẶP THEO SLUG + SERVER
+                            var addedEpisodeKeys = new HashSet<string>();
 
                             foreach (var server in apiItem.Episodes)
                             {
+                                string serverName = server.ServerName?.Trim() ?? "Vietsub";
+                                
+                                _logger.LogInformation($"   🖥️  Server: {serverName}");
+
                                 foreach (var episodeData in server.ServerData)
                                 {
                                     episodeCount++;
                                     string linkM3u8 = episodeData.LinkM3u8;
-                                    
-                                    _logger.LogInformation($"   📹 Episode: {episodeData.Name}, LinkM3u8: {(string.IsNullOrEmpty(linkM3u8) ? "NULL ❌" : "OK ✓")}");
+
+                                    _logger.LogInformation($"      📹 Episode: {episodeData.Name}, LinkM3u8: {(string.IsNullOrEmpty(linkM3u8) ? "NULL ❌" : "OK ✓")}");
 
                                     if (string.IsNullOrEmpty(linkM3u8))
                                     {
-                                        _logger.LogWarning($"   ⚠️  Episode '{episodeData.Slug}' không có LinkM3u8");
+                                        _logger.LogWarning($"      ⚠️  Episode '{episodeData.Slug}' không có LinkM3u8");
                                         continue;
                                     }
 
-                                    hasValidEpisodes = true;
-                                    if (string.IsNullOrEmpty(dbMovie.TrailerUrl))
-                                    {
-                                        dbMovie.TrailerUrl = linkM3u8;
-                                        _logger.LogInformation($"   ✅ Đã gán TrailerUrl: {linkM3u8}");
-                                    }
+                                    // ✅ TẠO KEY DUY NHẤT: slug + serverName
+                                    string uniqueKey = $"{episodeData.Slug}|{serverName}";
 
-                                    // === Tạo bản Vietsub ===
-                                    dbMovie.Episodes.Add(new DbEpisode
+                                    if (addedEpisodeKeys.Add(uniqueKey))
                                     {
-                                        ServerName = "Vietsub",
-                                        EpisodeName = episodeData.Name,
-                                        Slug = episodeData.Slug,
-                                        LinkM3u8 = linkM3u8
-                                    });
+                                        hasValidEpisodes = true;
+                                        
+                                        if (string.IsNullOrEmpty(dbMovie.TrailerUrl))
+                                        {
+                                            dbMovie.TrailerUrl = linkM3u8;
+                                            _logger.LogInformation($"      ✅ Đã gán TrailerUrl: {linkM3u8}");
+                                        }
 
-                                    // === Tạo bản Thuyết minh song song ===
-                                    var thuyetMinhSlug = episodeData.Slug + "-thuyet-minh";
-                                    bool hasThuyetMinh = dbMovie.Episodes.Any(e => e.Slug == thuyetMinhSlug && e.ServerName == "Thuyết minh");
-
-                                    if (!hasThuyetMinh)
-                                    {
+                                        // ✅ CHỈ LƯU SERVER THẬT TỪ API (KHÔNG TẠO FAKE)
                                         dbMovie.Episodes.Add(new DbEpisode
                                         {
-                                            ServerName = "Thuyết minh",
+                                            ServerName = serverName,
                                             EpisodeName = episodeData.Name,
-                                            Slug = thuyetMinhSlug,
-                                            LinkM3u8 = linkM3u8.Replace("vip.", "cdn.") // tuỳ chỉnh nếu link khác
+                                            Slug = episodeData.Slug,
+                                            LinkM3u8 = linkM3u8
                                         });
-                                    }
 
+                                        _logger.LogInformation($"      ✅ Đã thêm: Server={serverName}, Tập={episodeData.Name}");
+                                    }
+                                    else
+                                    {
+                                        _logger.LogInformation($"      ⏭️  Bỏ qua tập trùng: {episodeData.Name} (Server: {serverName})");
+                                    }
                                 }
                             }
 
@@ -239,45 +238,38 @@ namespace MovieWeb.Services
                     else
                     {
                         var movieToUpdate = await _context.Movies.Include(m => m.Episodes).FirstOrDefaultAsync(m => m.MovieId == existingMovie.MovieId);
-                        if(movieToUpdate != null)
+                        if (movieToUpdate != null)
                         {
-                            // Cập nhật tập phim hiện tại
-                            if(movieToUpdate.EpisodeCurrent != apiMovie.EpisodeCurrent)
+                            if (movieToUpdate.EpisodeCurrent != apiMovie.EpisodeCurrent)
                             {
                                 movieToUpdate.EpisodeCurrent = apiMovie.EpisodeCurrent;
                                 movieToUpdate.UpdatedAt = DateTime.Now;
                                 _logger.LogInformation($"📝 Cập nhật tập phim: {movieToUpdate.Name}");
                             }
 
-                            // Nếu phim bộ/hoạt hình thiếu TrailerUrl (link m3u8 tập 1), thêm vào
                             if ((movieToUpdate.Type == "series" || movieToUpdate.Type == "hoathinh") && string.IsNullOrEmpty(movieToUpdate.TrailerUrl))
                             {
                                 var apiResponse = await _oPhimService.GetMovieDetailAsync(apiMovie.Slug);
                                 var apiItem = apiResponse?.Item;
-                                
+
                                 if (apiItem?.Episodes != null && apiItem.Episodes.Any())
                                 {
                                     _logger.LogInformation($"🔧 Phim '{movieToUpdate.Name}' thiếu TrailerUrl, đang lấy link tập 1...");
-                                    
+
                                     foreach (var server in apiItem.Episodes)
                                     {
                                         foreach (var episodeData in server.ServerData)
                                         {
                                             string linkM3u8 = episodeData.LinkM3u8;
-                                            
-                                            if (string.IsNullOrEmpty(linkM3u8))
-                                            {
-                                                continue;
-                                            }
 
-                                            // Lấy tập đầu tiên làm TrailerUrl
+                                            if (string.IsNullOrEmpty(linkM3u8)) continue;
+
                                             movieToUpdate.TrailerUrl = linkM3u8;
                                             movieToUpdate.UpdatedAt = DateTime.Now;
                                             _logger.LogInformation($"✅ Đã gán TrailerUrl (tập 1): {linkM3u8}");
                                             break;
                                         }
-                                        if (!string.IsNullOrEmpty(movieToUpdate.TrailerUrl))
-                                            break;
+                                        if (!string.IsNullOrEmpty(movieToUpdate.TrailerUrl)) break;
                                     }
 
                                     if (string.IsNullOrEmpty(movieToUpdate.TrailerUrl))
@@ -289,7 +281,6 @@ namespace MovieWeb.Services
                         }
                     }
 
-                    // Lưu theo lô
                     if (processedCount % 10 == 0 && _context.ChangeTracker.HasChanges())
                     {
                         await _context.SaveChangesAsync();
@@ -303,7 +294,6 @@ namespace MovieWeb.Services
                 }
             }
 
-            // Lưu lô cuối cùng
             if (_context.ChangeTracker.HasChanges())
             {
                 await _context.SaveChangesAsync();
@@ -314,7 +304,7 @@ namespace MovieWeb.Services
         }
 
         // =================================================================
-        // HÀM SỬA LỖI TẬP PHIM (CHỈ CHẠY KHI BẠN GỌI THỦ CÔNG)
+        // HÀM SỬA LỖI TẬP PHIM CHO PHIM BỘ/HOẠT HÌNH (CHỈ CHẠY THỦ CÔNG)
         // =================================================================
         public async Task BackfillAllEpisodesAsync()
         {
@@ -344,28 +334,49 @@ namespace MovieWeb.Services
                     var apiEpisodes = apiResponse?.Item?.Episodes;
 
                     if (apiEpisodes == null || !apiEpisodes.Any()) continue;
+                    
+                    if (movie.Episodes.Any())
+                    {
+                        _context.Episodes.RemoveRange(movie.Episodes);
+                        movie.Episodes.Clear();
+                    }
 
-                    foreach(var server in apiEpisodes) {
-                        foreach(var episodeData in server.ServerData) {
+                    // ✅ HASHSET CHỐNG TRÙNG LẶP THEO SLUG + SERVER
+                    var addedEpisodeKeys = new HashSet<string>();
+
+                    foreach (var server in apiEpisodes)
+                    {
+                        string serverName = server.ServerName?.Trim() ?? "Vietsub";
+
+                        foreach (var episodeData in server.ServerData)
+                        {
                             string linkM3u8 = episodeData.LinkM3u8;
-                            
-                            // Lấy link m3u8 đầu tiên làm trailer
-                            if (string.IsNullOrEmpty(movie.TrailerUrl) && !string.IsNullOrEmpty(linkM3u8))
+                            if (string.IsNullOrEmpty(linkM3u8)) continue;
+
+                            if (string.IsNullOrEmpty(movie.TrailerUrl))
                             {
                                 movie.TrailerUrl = linkM3u8;
                             }
 
-                            movie.Episodes.Add(new DbEpisode {
-                                ServerName = server.ServerName, 
-                                EpisodeName = episodeData.Name, 
-                                Slug = episodeData.Slug, 
-                                LinkM3u8 = linkM3u8
-                            });
+                            // ✅ TẠO KEY DUY NHẤT: slug + serverName
+                            string uniqueKey = $"{episodeData.Slug}|{serverName}";
+
+                            if (addedEpisodeKeys.Add(uniqueKey))
+                            {
+                                movie.Episodes.Add(new DbEpisode
+                                {
+                                    ServerName = serverName,
+                                    EpisodeName = episodeData.Name,
+                                    Slug = episodeData.Slug,
+                                    LinkM3u8 = linkM3u8
+                                });
+                            }
                         }
                     }
 
                     movie.UpdatedAt = DateTime.Now;
                     updatedMovieCount++;
+                    _logger.LogInformation($"✅ Đã xử lý: {movie.Name} - {movie.Episodes.Count} episodes");
                 }
                 catch (Exception ex)
                 {
@@ -386,9 +397,9 @@ namespace MovieWeb.Services
             _logger.LogInformation($"*** HOÀN TẤT: Đã cập nhật tập phim cho {updatedMovieCount} phim. ***");
         }
 
-        /// <summary>
-        /// Backfill episodes cho phim lẻ (movie) bị thiếu
-        /// </summary>
+        // =================================================================
+        // HÀM SỬA LỖI TẬP PHIM CHO PHIM LẺ (CHỈ CHẠY THỦ CÔNG)
+        // =================================================================
         public async Task BackfillSingleMoviesAsync()
         {
             _logger.LogInformation(">>> Bắt đầu tác vụ rà soát và điền tập phim cho phim lẻ.");
@@ -422,15 +433,20 @@ namespace MovieWeb.Services
                         continue;
                     }
 
-                    // Xoá episodes cũ nếu có
-                    if(movie.Episodes.Any()) 
+                    if (movie.Episodes.Any())
                         _context.Episodes.RemoveRange(movie.Episodes);
 
                     bool hasValidEpisodes = false;
-                    foreach(var server in apiItem.Episodes) {
-                        foreach(var episodeData in server.ServerData) {
+                    
+                    // ✅ PHIM LẺ: LẤY TẤT CẢ SERVER TỪ API (KHÔNG TẠO FAKE)
+                    foreach (var server in apiItem.Episodes)
+                    {
+                        string serverName = server.ServerName?.Trim() ?? "Vietsub";
+
+                        foreach (var episodeData in server.ServerData)
+                        {
                             string linkM3u8 = episodeData.LinkM3u8;
-                            
+
                             if (string.IsNullOrEmpty(linkM3u8))
                             {
                                 _logger.LogWarning($"   ⚠️  Episode '{episodeData.Slug}' không có LinkM3u8");
@@ -438,15 +454,17 @@ namespace MovieWeb.Services
                             }
 
                             hasValidEpisodes = true;
+                            
                             if (string.IsNullOrEmpty(movie.TrailerUrl))
                             {
                                 movie.TrailerUrl = linkM3u8;
                             }
 
-                            movie.Episodes.Add(new DbEpisode {
-                                ServerName = server.ServerName, 
-                                EpisodeName = episodeData.Name, 
-                                Slug = episodeData.Slug, 
+                            movie.Episodes.Add(new DbEpisode
+                            {
+                                ServerName = serverName,
+                                EpisodeName = episodeData.Name,
+                                Slug = episodeData.Slug,
                                 LinkM3u8 = linkM3u8
                             });
                         }
@@ -456,7 +474,7 @@ namespace MovieWeb.Services
                     {
                         movie.UpdatedAt = DateTime.Now;
                         updatedMovieCount++;
-                        _logger.LogInformation($"✅ Đã cập nhật {movie.Episodes.Count} episodes cho phim lẻ '{movie.Name}'");
+                        _logger.LogInformation($"✅ Đã cập nhật {movie.Episodes.Count} server cho phim lẻ '{movie.Name}'");
                     }
                     else
                     {
@@ -473,7 +491,7 @@ namespace MovieWeb.Services
                     await _context.SaveChangesAsync();
                 }
             }
-            
+
             if (_context.ChangeTracker.HasChanges())
             {
                 await _context.SaveChangesAsync();

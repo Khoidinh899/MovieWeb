@@ -1,5 +1,6 @@
 ﻿﻿@using MovieWeb.Helpers
-@model MovieWeb.Models.API.HomeViewModel
+@using MovieWeb.Models.Entities;
+@model MovieWeb.Models.Entities.HomeViewModel
 @{
     ViewData["Title"] = "Trang Chủ - Xem Phim Online";
     ViewData["IsHomePage"] = true; //gắn cờ đánh dấu đây là trang chủ
@@ -7,7 +8,7 @@
 }
 
 @functions {
-    public string GetMoviePosterUrl(MovieWeb.Models.API.Movie movie)
+    public string GetMoviePosterUrl(MovieWeb.Models.Entities.Movie movie)
     {
         if (!string.IsNullOrEmpty(movie.PosterUrl) && movie.PosterUrl.StartsWith("http"))
         {
@@ -54,16 +55,16 @@
                                     <div class="col-lg-6">
                                         <div class="hero-content">
                                             <h1 class="hero-title">@movie.Name</h1>
-                                            <p class="hero-subtitle mb-3">@movie.OriginName</p>
+                                            <p class="hero-subtitle mb-3">@movie.OriginalName</p>
 
                                             <div class="hero-meta mb-4">
                                                 <span class="badge badge-warning me-3">
                                                     <i class="fas fa-star"></i> @movie.Year
                                                 </span>
                                                 <span class="badge badge-success me-3">@movie.Quality</span>
-                                                <span class="badge badge-info me-3">@movie.Lang</span>
+                                                <span class="badge badge-info me-3">@movie.Language</span>
                                                 <span class="text-light">
-                                                    <i class="fas fa-eye me-1"></i> @movie.View.ToString("N0") lượt xem
+                                                    <i class="fas fa-eye me-1"></i> @((movie.ViewCount ?? 0).ToString("N0")) lượt xem
                                                 </span>
                                             </div>
 
@@ -325,4 +326,87 @@
 }
 
 @section Scripts {
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        // Hàm gọi API để lấy quảng cáo Pop-up
+        async function fetchPopupAd() {
+            try {
+                const response = await fetch('/api/ads/get-placements?placements=HomePage_Popup');
+                
+                if (!response.ok) {
+                    console.error('Lỗi API (Popup Ad):', response.statusText);
+                    return;
+                }
+
+                const banners = await response.json();
+
+                if (banners && banners.length > 0) {
+                    const banner = banners[0]; 
+                    
+                    // 3. Tạo HTML cho Modal
+                    const modalHtml = createAdModalHtml(banner);
+                    
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    
+                    var adModalElement = document.getElementById('homeAdModal');
+                    if (adModalElement) {
+                        var adModal = new bootstrap.Modal(adModalElement);
+                        adModal.show(); 
+
+                        adModalElement.addEventListener('hidden.bs.modal', function () {
+                            adModalElement.remove();
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Lỗi khi tải popup ad:', error);
+            }
+        }
+
+        // Hàm trợ giúp: Tạo chuỗi HTML cho Bootstrap 5 Modal
+        function createAdModalHtml(banner) {
+            
+            let closeButtonCss = `
+                position: absolute; 
+                top: -15px; 
+                right: -10px; 
+                background-color: white; 
+                border-radius: 50%; 
+                opacity: 1; 
+                box-shadow: 0 0 10px rgba(0,0,0,0.5);
+                width: 30px;
+                height: 30px;
+                padding: 0;
+            `;
+
+            // =============================================
+            // 📢 SỬA LỖI Ở ĐÂY
+            // Đã đổi "banner.imageUrl" thành "banner.adContentUrl"
+            // Và "banner.clickUrl" (đã đúng từ trước)
+            // =============================================
+            return `
+            <div class="modal fade" id="homeAdModal" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content" style="background-color: transparent; border: none;">
+                  
+                  <div class="modal-body" style="padding: 0; position: relative;">
+                    
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" 
+                            aria-label="Close" style="${closeButtonCss}"></button>
+
+                    <a href="${banner.clickUrl}" target="_blank" rel="noopener noreferrer">
+                        <img src="${banner.adContentUrl}" class="img-fluid rounded" alt="${banner.adName}">
+                    </a>
+                  </div>
+
+                </div>
+              </div>
+            </div>`;
+        }
+
+        // Chạy hàm chính!
+        fetchPopupAd();
+    });
+</script>
 }

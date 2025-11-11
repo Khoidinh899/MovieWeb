@@ -131,10 +131,11 @@
         padding: 0 !important;
     }
 
-    /* ========== TABLE → CARD LAYOUT (MOBILE) ========== */
+/* ========== TABLE → CARD LAYOUT (MOBILE) - CHO USERS & ADVERTISEMENTS ========== */
     
     /* Container không scroll ngang */
-    .table-responsive {
+    #users-table-wrapper .table-responsive,
+    #ads-table-wrapper .table-responsive {
         overflow-x: hidden !important;
         overflow-y: visible !important;
         min-height: auto;
@@ -143,24 +144,28 @@
     }
 
     /* Ẩn table header */
-    .table-responsive .table thead {
+    #users-table-wrapper .table-responsive .table thead,
+    #ads-table-wrapper .table thead {
         display: none !important;
     }
 
     /* Table, tbody, tr = block */
-    .table-responsive .table {
+    #users-table-wrapper .table-responsive .table,
+    #ads-table-wrapper .table {
         display: block;
         width: 100% !important;
         min-width: 0 !important;
         margin: 0;
     }
 
-    .table-responsive .table tbody {
+    #users-table-wrapper .table-responsive .table tbody,
+    #ads-table-wrapper .table tbody {
         display: block;
         width: 100%;
     }
 
-    .table-responsive .table tbody tr {
+    #users-table-wrapper .table-responsive .table tbody tr,
+    #ads-table-wrapper .table tbody tr {
         display: block;
         width: 100%;
         margin-bottom: 1rem;
@@ -172,14 +177,16 @@
         padding: 0;
     }
 
-    .table-responsive .table tbody tr:hover {
+    #users-table-wrapper .table-responsive .table tbody tr:hover,
+    #ads-table-wrapper .table tbody tr:hover {
         background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
         transform: none;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     }
 
     /* TD = Flexbox row (label bên trái, data bên phải) */
-    .table-responsive .table tbody td {
+    #users-table-wrapper .table-responsive .table tbody td,
+    #ads-table-wrapper .table tbody td {
         display: flex !important;
         justify-content: space-between;
         align-items: center;
@@ -189,14 +196,17 @@
         text-align: right;
         position: relative;
         min-height: 50px;
+        white-space: normal !important;
     }
 
-    .table-responsive .table tbody td:last-child {
+    #users-table-wrapper .table-responsive .table tbody td:last-child,
+    #ads-table-wrapper .table tbody td:last-child {
         border-bottom: none !important;
     }
 
     /* Label (::before) ở bên trái */
-    .table-responsive .table tbody td::before {
+    #users-table-wrapper .table-responsive .table tbody td::before,
+    #ads-table-wrapper .table tbody td::before {
         content: attr(data-label);
         display: inline-block;
         font-weight: 700;
@@ -209,154 +219,218 @@
         width: 110px;
     }
 
-    /* Gán label cho 8 cột */
-    .table-responsive .table tbody td:nth-of-type(1)::before { content: "Avatar"; }
-    .table-responsive .table tbody td:nth-of-type(2)::before { content: "Họ tên"; }
-    .table-responsive .table tbody td:nth-of-type(3)::before { content: "Email"; }
-    .table-responsive .table tbody td:nth-of-type(4)::before { content: "Username"; }
-    .table-responsive .table tbody td:nth-of-type(5)::before { content: "Vai trò"; }
-    .table-responsive .table tbody td:nth-of-type(6)::before { content: "Gói"; }
-    .table-responsive .table tbody td:nth-of-type(7)::before { content: "Trạng thái"; }
-    .table-responsive .table tbody td:nth-of-type(8)::before { content: "Hành động"; }
+    /* Gán label cho 8 cột - USERS TABLE */
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(1)::before { content: "Avatar"; }
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(2)::before { content: "Họ tên"; }
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(3)::before { content: "Email"; }
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(4)::before { content: "Username"; }
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(5)::before { content: "Vai trò"; }
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(6)::before { content: "Gói"; }
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(7)::before { content: "Trạng thái"; }
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(8)::before { content: "Hành động"; }
 
     
-    /* ======== BẮT ĐẦU KHỐI SỬA LỖI QUAN TRỌNG ======== */
+    /* ======== KHỐI CHUNG CHO USERS & ADS ======== */
 
     /* Content (data) ở bên phải - MẶC ĐỊNH CĂN PHẢI */
-    .table-responsive .table tbody td > * {
+    #users-table-wrapper .table-responsive .table tbody td > *,
+    #ads-table-wrapper .table tbody td > * {
         flex: 1;
-        text-align: right; /* Mặc định text-align */
+        text-align: right;
         display: flex;
-        justify-content: flex-end; /* Mặc định căn phải */
+        justify-content: flex-end;
         align-items: center;
         flex-wrap: wrap;
         gap: 4px;
+        white-space: normal !important;
+        word-break: break-word;
     }
 
-    /* GHI ĐÈ: Căn trái cho các cột 1, 2, 3, 4 */
-    .table-responsive .table tbody td:nth-of-type(1) > *,
-    .table-responsive .table tbody td:nth-of-type(2) > *,
-    .table-responsive .table tbody td:nth-of-type(3) > *,
-    .table-responsive .table tbody td:nth-of-type(4) > * {
+    /* GHI ĐÈ: Căn trái cho các cột 1, 2, 3, 4 - USERS */
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(1) > *,
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(2) > *,
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(3) > *,
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(4) > * {
         justify-content: flex-start;
         text-align: left;
         gap: 0.5rem;
     }
 
-    /* GHI ĐÈ: CĂN GIỮA cho các cột Vai trò (5) và Trạng thái (7) */
-    .table-responsive .table tbody td:nth-of-type(5) > *,
-    .table-responsive .table tbody td:nth-of-type(7) > * {
-        justify-content: center; /* Căn giữa nội dung */
-        text-align: center;      /* Căn giữa text (nếu có) */
+    /* GHI ĐÈ: CĂN GIỮA cho các cột Vai trò (5) và Trạng thái (7) - USERS */
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(5) > *,
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(7) > * {
+        justify-content: center;
+        text-align: center;
     }
 
-    /* GHI ĐÈ: Căn phải + xếp dọc cho cột Gói (cột 6) */
-    .table-responsive .table tbody td:nth-of-type(6) > * {
+    /* GHI ĐÈ: Căn phải + xếp dọc cho cột Gói (cột 6) - USERS */
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(6) > * {
         flex-direction: column;
         align-items: flex-end;
         gap: 2px;
     }
-    
-    /* ======== KẾT THÚC KHỐI SỬA LỖI QUAN TRỌNG ======== */
 
+    /* ======== RIÊNG CHO ADVERTISEMENTS TABLE ======== */
 
-    /* Avatar cell - center align */
-    .table-responsive .table tbody td:nth-of-type(1) {
-        /* CSS cho cell 1 nếu cần */
+    /* Ẩn label của cột Tên Quảng Cáo */
+    #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"]::before {
+        display: none;
     }
 
-    .table-responsive .table tbody td:nth-of-type(1) img {
-        width: 50px !important;   /* Tăng kích thước nhẹ để phù hợp với viền */
-        height: 50px !important;  /* Tăng kích thước nhẹ */
-        flex-shrink: 0;
-        object-fit: cover;
-        border-radius: 50%;
-        border: 2px solid #fff; /* VIỀN TRẮNG */
-        box-shadow: 0 0 0 2px rgba(0,0,0,0.1); /* HIỆU ỨNG VIỀN NHẸ */
-    }
-
-    /* Full name - allow wrap */
-    .table-responsive .table tbody td:nth-of-type(2) {
-        flex-wrap: wrap;
-    }
-
-    .table-responsive .table tbody td:nth-of-type(2) strong {
-        /* flex: 1; */ /* Xóa đi để không bị rớt hàng */
-        text-align: left;
-        word-break: break-word;
-    }
-
-    /* Email - break long emails */
-    .table-responsive .table tbody td:nth-of-type(3) {
-        flex-wrap: wrap;
-    }
-
-    .table-responsive .table tbody td:nth-of-type(3) small {
-        flex: 1;
-        text-align: left;
-        word-break: break-all;
-        font-size: 0.8rem;
-    }
-
-    /* Username */
-    .table-responsive .table tbody td:nth-of-type(4) code {
-        font-size: 0.8rem;
-        padding: 2px 6px;
-        text-align: left;
-    }
-
-    /* Subscription cell - stack badge + date */
-    .table-responsive .table tbody td:nth-of-type(6) {
-        flex-wrap: wrap;
-        /* Xóa các quy tắc cũ ở đây, vì đã được xử lý ở khối "GHI ĐÈ" bên trên */
-    }
-
-    /* Action buttons cell */
-    .table-responsive .table tbody td:nth-of-type(8) {
+    /* Cột Tên Quảng Cáo - căn trái, full width */
+    #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"] {
         flex-direction: column;
-        align-items: flex-end; /* SỬA LỖI: Căn phải các nhóm nút */
-        gap: 6px;               /* THÊM: Khoảng cách giữa các nhóm (nếu có) */
-        padding-top: 0.75rem !important;
-        padding-bottom: 0.75rem !important;
+        align-items: flex-start;
+        min-height: 80px;
     }
 
-    .table-responsive .table tbody td:nth-of-type(8)::before {
-        position: absolute;
-        top: 0.85rem;
-        left: 1rem;
+    #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"] > * {
+        justify-content: flex-start;
+        text-align: left;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
     }
 
-    /* Button group - full width, wrap buttons */
-    .table-responsive .table tbody td .btn-group {
-        /* width: 100%; */ /* XÓA LỖI: Bỏ để nút không bị dãn */
-        display: flex;
+    #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"] strong {
+        font-size: 0.95rem;
+        line-height: 1.3;
+        word-break: break-word;
+        color: #667eea;
+    }
+
+    #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"] small {
+        font-size: 0.8rem;
+        opacity: 0.7;
+    }
+
+    /* Cột Vị trí - căn giữa */
+    #ads-table-wrapper .table tbody td[data-label="Vị trí"] > * {
+        justify-content: center;
+    }
+
+    /* Cột Thứ tự - căn giữa */
+    #ads-table-wrapper .table tbody td[data-label="Thứ tự"] > * {
+        justify-content: center;
+    }
+
+    /* Cột Trạng thái - căn giữa */
+    #ads-table-wrapper .table tbody td[data-label="Trạng thái"] > * {
+        justify-content: center;
+    }
+
+    /* Cột Hành động - căn phải */
+    #ads-table-wrapper .table tbody td[data-label="Hành động"] {
+        display: flex !important;
+        flex-direction: row !important;
         flex-wrap: wrap;
         gap: 6px;
         justify-content: flex-end;
-        margin-top: 0;
     }
 
-    .table-responsive .table tbody td .btn-group .btn {
-        flex: 1 1 calc(33.333% - 4px);
-        min-width: 45px;
-        padding: 0.5rem 0.4rem;
-        font-size: 0.9rem;
+    #ads-table-wrapper .table tbody td[data-label="Hành động"]::before {
+        display: none;
+    }
+
+    #ads-table-wrapper .table tbody td[data-label="Hành động"] .btn {
+        flex: 0 1 auto;
+        min-width: 70px;
+        padding: 0.5rem 0.6rem;
+        font-size: 0.85rem;
+    }
+
+    #ads-table-wrapper .table tbody td[data-label="Hành động"] form {
+        display: inline-block;
+    }
+
+    /* ======== RIÊNG CHO USERS TABLE ======== */
+
+    /* Avatar cell - center align */
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(1) img {
+        width: 50px !important;
+        height: 50px !important;
+        flex-shrink: 0;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 2px solid #fff;
+    }
+
+    /* Full name - allow wrap */
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(2) {
+        white-space: normal !important;
+        word-break: break-word;
+    }
+
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(2) strong {
+        font-size: 0.95rem;
+        line-height: 1.3;
+    }
+
+    /* Email - break long emails */
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(3) {
+        white-space: normal !important;
+        word-break: break-all;
+    }
+
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(3) small {
+        font-size: 0.85rem;
+        line-height: 1.3;
+    }
+
+    /* Username */
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(4) code {
+        font-size: 0.8rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    /* Subscription cell - stack badge + date */
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(6) {
+        white-space: normal !important;
+    }
+
+    /* Action buttons cell */
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(8) {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+    }
+
+    #users-table-wrapper .table-responsive .table tbody td:nth-of-type(8)::before {
+        display: none;
+    }
+
+    /* Button group - full width, wrap buttons */
+    #users-table-wrapper .table-responsive .table tbody td .btn-group {
+        display: flex !important;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 6px;
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    #users-table-wrapper .table-responsive .table tbody td .btn-group .btn {
+        flex: 0 1 auto;
+        min-width: 70px;
+        padding: 0.5rem 0.6rem;
+        font-size: 0.85rem;
     }
 
     /* Badges - smaller on mobile */
-    .premium-badge,
-    .student-badge {
-        font-size: 0.7rem;
-        padding: 3px 7px;
-    }
-
-    .badge {
+    #users-table-wrapper .premium-badge,
+    #users-table-wrapper .student-badge {
         font-size: 0.7rem;
         padding: 4px 8px;
     }
 
-    /* Empty state */
-    .table-responsive .table tbody tr td[colspan] {
+    #users-table-wrapper .badge {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+
+    /* Empty state - CHUNG CHO CẢ USERS & ADS */
+    #users-table-wrapper .table-responsive .table tbody tr td[colspan],
+    #ads-table-wrapper .table tbody tr td[colspan] {
         display: flex !important;
         flex-direction: column;
         align-items: center;
@@ -366,20 +440,20 @@
         text-align: center;
     }
 
-    .table-responsive .table tbody tr td[colspan]::before {
+    #users-table-wrapper .table-responsive .table tbody tr td[colspan]::before,
+    #ads-table-wrapper .table tbody tr td[colspan]::before {
         display: none !important;
     }
 
-    .table-responsive .table tbody tr td[colspan] .bi-inbox {
+    #users-table-wrapper .table-responsive .table tbody tr td[colspan] .bi-inbox {
         font-size: 3rem !important;
-        margin-bottom: 1rem;
+        color: #ccc !important;
     }
 
     /* Modal Mobile */
     .modal.show .modal-dialog {
-        margin: 10px !important;
-        margin-top: 60px !important;
-        max-width: calc(100% - 20px);
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
     }
 
     .modal-content {
@@ -399,7 +473,7 @@
     }
 
     .modal-body .row.g-3 {
-        row-gap: 12px !important;
+        row-gap: 0.75rem !important;
     }
 
     .modal-body .col-md-6,
@@ -411,18 +485,18 @@
     }
 
     .modal-footer {
-        flex-direction: column;
-        gap: 8px;
         padding: 1rem;
+        gap: 0.5rem;
     }
 
     .modal-footer .btn {
-        width: 100%;
+        flex: 1;
+        min-width: 0;
     }
 
     /* Admin Card Mobile */
     .admin-card {
-        min-height: auto;
+        border-radius: 15px;
         margin-bottom: 1rem;
     }
 
@@ -430,11 +504,12 @@
     .form-control,
     .form-select {
         font-size: 0.9rem;
+        padding: 0.6rem 0.75rem;
     }
 
     .form-label {
         font-size: 0.85rem;
-        font-weight: 600;
+        margin-bottom: 0.5rem;
     }
 }
 
@@ -446,18 +521,30 @@
     }
 
     .stats-card {
-        min-height: 110px;
-        height: 110px;
+        min-height: 100px;
     }
 
     .table-responsive {
-        min-height: 450px;
-        max-height: 550px;
+        font-size: 0.9rem;
     }
 
     .info-badges .badge {
         font-size: 0.7rem;
-        padding: 3px 6px;
+        padding: 4px 8px;
+    }
+
+    /* Advertisements tablet */
+    #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"] strong {
+        font-size: 0.9rem;
+    }
+
+    #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"] small {
+        font-size: 0.75rem;
+    }
+
+    #ads-table-wrapper .table .badge {
+        font-size: 0.7rem;
+        padding: 4px 8px;
     }
 }
 
@@ -466,11 +553,10 @@
 @media (min-width: 992px) and (max-width: 1199px) {
     .admin-table table,
     .table {
-        min-width: 1100px;
+        font-size: 0.9rem;
     }
 
     .info-badges .badge {
-        font-size: 0.72rem;
-        padding: 3px 7px;
+        font-size: 0.75rem;
     }
 }

@@ -1,0 +1,51 @@
+@using Microsoft.AspNetCore.Identity
+@inject MovieWeb.Services.IAuthService _authService
+@model IEnumerable<MovieWeb.Models.Entities.Advertisement>
+@{
+    var currentUser = await _authService.GetCurrentUserAsync();
+    var placement = ViewBag.AdPlacement as string ?? "";
+    
+    var shouldShowAds = currentUser == null || 
+                        (!currentUser.IsAdmin && currentUser.IsFreeUser);
+    
+    var ads = shouldShowAds ? Model?
+        .Where(a => a.IsActive && a.Placement == placement)
+        .OrderBy(a => a.DisplayOrder)
+        .ToList() : null;
+    
+    var isLoggedIn = User.Identity?.IsAuthenticated == true;
+}
+
+@if (ads != null && ads.Any())
+{
+    <div class="advertisement-container mb-4" data-placement="@placement">
+        @foreach (var ad in ads)
+        {
+            <div class="ad-item" data-ad-id="@ad.AdId">
+                @if (!string.IsNullOrEmpty(ad.ClickUrl))
+                {
+                    @if (isLoggedIn)
+                    {
+                        <!-- ✅ Đã đăng nhập → link trực tiếp -->
+                        <a href="@ad.ClickUrl" class="ad-link">
+                            <img src="@ad.AdContentUrl" alt="@ad.AdName" class="img-fluid ad-image" loading="lazy" />
+                        </a>
+                    }
+                    else
+                    {
+                        <!-- ❌ Chưa đăng nhập → redirect với returnUrl -->
+                        <a href="/Auth/Login?returnUrl=@Uri.EscapeDataString(ad.ClickUrl)" class="ad-link">
+                            <img src="@ad.AdContentUrl" alt="@ad.AdName" class="img-fluid ad-image" loading="lazy" />
+                        </a>
+                    }
+                }
+                else
+                {
+                    <div class="ad-static">
+                        <img src="@ad.AdContentUrl" alt="@ad.AdName" class="img-fluid ad-image" loading="lazy" />
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}

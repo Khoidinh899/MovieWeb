@@ -38,4 +38,12 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Remove="wwwroot\lib\microsoft\signalr\dist\esm\HandshakeProtocol.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\lib\microsoft\signalr\dist\esm\HandshakeProtocol.js" />
+  </ItemGroup>
+
 </Project>

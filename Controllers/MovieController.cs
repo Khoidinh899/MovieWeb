@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MovieWeb.Data;
 using MovieWeb.Models.Entities;
 using MovieWeb.Repositories;
-using System.Linq;
+using MovieWeb.Services;
 using System.Text.RegularExpressions;
 
 namespace MovieWeb.Controllers
@@ -12,11 +12,13 @@ namespace MovieWeb.Controllers
     {
         private readonly MovieWebDbContext _context;
         private readonly IMovieRepository _movieRepository;
+        private readonly IAuthService _authService;
 
-        public MovieController(MovieWebDbContext context, IMovieRepository movieRepository)
+        public MovieController(MovieWebDbContext context, IMovieRepository movieRepository, IAuthService authService)
         {
             _context = context;
             _movieRepository = movieRepository;
+            _authService = authService;
         }
 
         // ============================================================
@@ -39,36 +41,35 @@ namespace MovieWeb.Controllers
             if (movie == null)
                 return NotFound();
 
-            // Gợi ý phim liên quan
+            // 🎯 Gợi ý phim liên quan
             var categoryIds = movie.Categories.Select(c => c.CategoryId).ToList();
 
             var relatedMovies = await _context.Movies
                 .Include(m => m.Categories)
-                .Where(m => (m.IsActive ?? false) &&
-                            m.MovieId != movie.MovieId &&
-                            m.Categories.Any(c => categoryIds.Contains(c.CategoryId)))
+                .Where(m => (m.IsActive ?? false)
+                            && m.MovieId != movie.MovieId
+                            && m.Categories.Any(c => categoryIds.Contains(c.CategoryId)))
                 .OrderByDescending(m => m.ViewCount ?? 0)
                 .Take(8)
                 .ToListAsync();
 
-            // ✅ Tăng lượt xem (an toàn null)
+            // 👁️ Tăng lượt xem
             movie.ViewCount = (movie.ViewCount ?? 0) + 1;
             await _context.SaveChangesAsync();
 
-            // ✅ Lấy toàn bộ tập phim theo MovieId
+            // 🎞️ Lấy danh sách tập phim
             var allEpisodes = await _context.Episodes
                 .Where(e => e.MovieId == movie.MovieId)
                 .OrderBy(e => e.EpisodeName)
                 .ToListAsync();
 
-            // ====== 🔧 Chuẩn hoá key server để so khớp tuyệt đối ======
+            // 🧩 Chuẩn hóa server key
             string NormalizeKey(string? s)
             {
                 s ??= "Khác";
                 s = s.Trim();
-                // gom nhiều khoảng trắng thành 1
                 s = Regex.Replace(s, @"\s+", " ");
-                return s.ToLowerInvariant(); // key chuẩn
+                return s.ToLowerInvariant();
             }
 
             string DisplayName(string? s)
@@ -79,9 +80,7 @@ namespace MovieWeb.Controllers
                 return s;
             }
 
-            // map: key chuẩn -> tên hiển thị
             var serverDisplayNames = new Dictionary<string, string>();
-            // group: key chuẩn -> list tập
             var groupedByNormalized = new Dictionary<string, List<Episode>>();
 
             foreach (var ep in allEpisodes)
@@ -98,7 +97,7 @@ namespace MovieWeb.Controllers
                 groupedByNormalized[key].Add(ep);
             }
 
-            // ✅ Chọn server mặc định ưu tiên Vietsub -> Thuyết Minh -> bất kỳ
+            // ⚙️ Server mặc định
             string defaultServerKey = "";
             if (serverDisplayNames.Keys.Any(k => serverDisplayNames[k].Contains("Vietsub", StringComparison.OrdinalIgnoreCase)))
             {
@@ -113,15 +112,58 @@ namespace MovieWeb.Controllers
                 defaultServerKey = serverDisplayNames.Keys.FirstOrDefault() ?? "";
             }
 
-            // ====== 🚚 Đẩy sang View ======
-            ViewBag.GroupedEpisodes = groupedByNormalized;                 // Dictionary<string(normalizedKey), List<Episode>>
-            ViewBag.ServerDisplayNames = serverDisplayNames;               // Dictionary<string(normalizedKey), string(display)]
-            ViewBag.Servers = serverDisplayNames.Keys.ToList();            // List<string>(normalizedKey)
-            ViewBag.DefaultServer = defaultServerKey;                      // string(normalizedKey)
+            ViewBag.GroupedEpisodes = groupedByNormalized;
+            ViewBag.ServerDisplayNames = serverDisplayNames;
+            ViewBag.Servers = serverDisplayNames.Keys.ToList();
+            ViewBag.DefaultServer = defaultServerKey;
             ViewBag.RelatedMovies = relatedMovies;
-
             ViewData["Title"] = movie.Name;
             ViewData["PageType"] = "Detail";
+
+            // 💎 Kiểm tra gói tài khoản (ẩn quảng cáo nếu Premium / Student)
+            var currentUser = await _authService.GetCurrentUserAsync();
+            bool shouldShowAds = true;
+
+            if (currentUser != null)
+            {
+                var subscriptionType = currentUser.SubscriptionType?.ToLower() ?? "free";
+                if (subscriptionType == "premium" || subscriptionType == "student")
+                    shouldShowAds = false;
+            }
+
+            // 🧠 Phân loại phim
+            bool isSeriesType = movie.Type?.ToLower() == "series" || movie.Type?.ToLower() == "hoathinh";
+
+            // 🎞️ Lấy tập 1
+            string? episode1Url = null;
+            if (isSeriesType)
+            {
+                if (!string.IsNullOrEmpty(movie.TrailerUrl))
+                {
+                    episode1Url = movie.TrailerUrl;
+                }
+                else
+                {
+                    var firstEpisode = allEpisodes
+                        .Where(e => e.EpisodeName == "1" || e.Slug == "1")
+                        .OrderBy(e => e.EpisodeName)
+                        .FirstOrDefault();
+
+                    if (firstEpisode != null)
+                        episode1Url = firstEpisode.LinkM3u8;
+                }
+            }
+
+            // 📢 Quảng cáo
+            var advertisements = await _context.Advertisements
+                .Where(a => a.IsActive)
+                .OrderBy(a => a.DisplayOrder)
+                .ToListAsync();
+
+            ViewBag.Advertisements = advertisements;
+            ViewBag.ShouldShowAds = shouldShowAds;
+            ViewBag.IsSeriesType = isSeriesType;
+            ViewBag.Episode1Url = episode1Url;
 
             return View(movie);
         }
@@ -146,17 +188,14 @@ namespace MovieWeb.Controllers
                 .Include(m => m.Directors)
                 .Include(m => m.Countries)
                 .Where(m => (m.IsActive ?? false) &&
-                    (
-                        m.Name.ToLower().Contains(keyword) ||
-                        (m.OriginalName != null && m.OriginalName.ToLower().Contains(keyword)) ||
-                        m.Slug.ToLower().Contains(keyword) ||
-                        (m.Description != null && m.Description.ToLower().Contains(keyword)) ||
-                        m.Categories.Any(c => c.Name.ToLower().Contains(keyword) || c.Slug.ToLower().Contains(keyword)) ||
-                        m.Countries.Any(c => c.Name.ToLower().Contains(keyword) || c.Slug.ToLower().Contains(keyword)) ||
-                        m.Actors.Any(a => a.Name.ToLower().Contains(keyword)) ||
-                        m.Directors.Any(d => d.Name.ToLower().Contains(keyword))
-                    )
-                )
+                    (m.Name.ToLower().Contains(keyword) ||
+                    (m.OriginalName != null && m.OriginalName.ToLower().Contains(keyword)) ||
+                    m.Slug.ToLower().Contains(keyword) ||
+                    (m.Description != null && m.Description.ToLower().Contains(keyword)) ||
+                    m.Categories.Any(c => c.Name.ToLower().Contains(keyword) || c.Slug.ToLower().Contains(keyword)) ||
+                    m.Countries.Any(c => c.Name.ToLower().Contains(keyword) || c.Slug.ToLower().Contains(keyword)) ||
+                    m.Actors.Any(a => a.Name.ToLower().Contains(keyword)) ||
+                    m.Directors.Any(d => d.Name.ToLower().Contains(keyword))))
                 .OrderByDescending(m => m.ViewCount ?? 0)
                 .Take(40)
                 .ToListAsync();
@@ -165,9 +204,14 @@ namespace MovieWeb.Controllers
             ViewData["Title"] = $"Tìm kiếm: {keyword}";
             ViewData["PageType"] = "Search";
 
+            var advertisements = await _context.Advertisements
+                .Where(a => a.IsActive)
+                .OrderBy(a => a.DisplayOrder)
+                .ToListAsync();
+
+            ViewBag.Advertisements = advertisements;
             return View("Search", movies);
         }
-
 
         // ============================================================
         // 💬 LẤY COMMENT + ĐÁNH GIÁ
@@ -208,7 +252,7 @@ namespace MovieWeb.Controllers
             if (rating < 1 || rating > 5)
                 return BadRequest("Điểm đánh giá không hợp lệ!");
 
-            int userId = 1; // user demo
+            int userId = 1;
 
             var comment = new Comment
             {
@@ -245,7 +289,6 @@ namespace MovieWeb.Controllers
             if (!string.IsNullOrEmpty(server))
             {
                 var serverKey = NormalizeKey(server);
-                // lọc theo key chuẩn
                 query = query.AsEnumerable()
                              .Where(e => NormalizeKey(e.ServerName) == serverKey)
                              .AsQueryable();
@@ -265,15 +308,17 @@ namespace MovieWeb.Controllers
 
             return Json(episodes);
         }
-        // ✅ OVERRIDE LINK /the-loai/phim-le
+
+        // ============================================================
+        // 🎥 DANH SÁCH PHIM LẺ
+        // ============================================================
         [Route("the-loai/phim-le")]
         public async Task<IActionResult> PhimLe(int page = 1)
         {
             int pageSize = 20;
 
             var query = _context.Movies
-                .Where(m => m.IsActive == true &&
-                            (m.Type == "single" || m.Type == "phimle"))
+                .Where(m => m.IsActive == true && (m.Type == "single" || m.Type == "phimle"))
                 .OrderByDescending(m => m.CreatedAt);
 
             int totalMovies = await query.CountAsync();
@@ -283,13 +328,13 @@ namespace MovieWeb.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
-            // Category giả cho view
             ViewBag.CategoryName = "Phim lẻ";
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = (int)Math.Ceiling((double)totalMovies / pageSize);
 
             return View("PhimLe", movies);
         }
+
         // ============================================================
         // 🧠 API GỢI Ý TÌM KIẾM NHANH
         // ============================================================
@@ -304,20 +349,19 @@ namespace MovieWeb.Controllers
             var suggestions = await _context.Movies
                 .Where(m => (m.IsActive ?? false) &&
                             (m.Name.ToLower().Contains(keyword) ||
-                            (m.OriginalName != null && m.OriginalName.ToLower().Contains(keyword))))
+                             (m.OriginalName != null && m.OriginalName.ToLower().Contains(keyword))))
                 .OrderByDescending(m => m.ViewCount ?? 0)
                 .Select(m => new
                 {
                     name = m.Name,
                     slug = m.Slug,
-                    image = 
+                    image =
                         !string.IsNullOrEmpty(m.PosterUrl) && m.PosterUrl.StartsWith("http") ? m.PosterUrl :
                         !string.IsNullOrEmpty(m.PosterUrl) ? "https://img.ophim.live/uploads/movies/" + m.PosterUrl.TrimStart('/') :
                         !string.IsNullOrEmpty(m.ThumbUrl) && m.ThumbUrl.StartsWith("http") ? m.ThumbUrl :
                         !string.IsNullOrEmpty(m.ThumbUrl) ? "https://img.ophim.live/uploads/movies/" + m.ThumbUrl.TrimStart('/') :
                         "https://via.placeholder.com/300x450/444444/ffffff?text=" + Uri.EscapeDataString(m.Name ?? "No Image")
                 })
-
                 .Take(10)
                 .ToListAsync();
 

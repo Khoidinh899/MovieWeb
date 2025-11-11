@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using MovieWeb.Models.Entities;
 using MovieWeb.Models.DTOs;
 using MovieWeb.Data;
-using MovieWeb.Services;    
+using MovieWeb.Services;
 using Microsoft.Extensions.Caching.Memory;
 using MovieWeb.Extensions;
 using MovieWeb.Helpers;
@@ -58,7 +58,7 @@ namespace MovieWeb.Controllers
         }
 
         // === CÁC HÀM HELPER DÙNG CHUNG ===
-        
+
         // Middleware để kiểm tra quyền admin
         private async Task<bool> IsAdminAsync()
         {
@@ -96,7 +96,7 @@ namespace MovieWeb.Controllers
                 _logger.LogError(ex, "Error logging admin action: {Action}", action);
             }
         }
-        
+
         // Helper method: Generate slug from Vietnamese text
         // (Hàm này chỉ dùng cho Movies, nhưng để đây cũng đc)
         private string GenerateSlug(string text)
@@ -133,7 +133,7 @@ namespace MovieWeb.Controllers
             return text.Trim('-');
         }
 
-        
+
         // === CÁC ACTION CỐT LÕI (CORE) ===
 
         // GET: /Admin/Dashboard
@@ -155,7 +155,7 @@ namespace MovieWeb.Controllers
                         .Where(u => u.CreatedAt >= DateTime.Now.AddDays(-7))
                         .CountAsync(),
                     UnconfirmedEmails = await _context.Users.CountAsync(u => !u.EmailConfirmed),
-                    
+
                     PendingRequests = await _context.RequestsMovies.CountAsync(r => r.Status == RequestStatus.Pending),
                     ProcessingRequests = await _context.RequestsMovies.CountAsync(r => r.Status == RequestStatus.Processing),
                     VerificationRequests = await _context.RequestsMovies.CountAsync(r => r.Status == RequestStatus.NeedsVerification)
@@ -171,7 +171,7 @@ namespace MovieWeb.Controllers
                 return RedirectToAction("TrangChu", "TrangChu");
             }
         }
-        
+
         // GET: /Admin/AdminLogs
         public async Task<IActionResult> AdminLogs(int page = 1, int pageSize = 50)
         {
@@ -201,6 +201,33 @@ namespace MovieWeb.Controllers
                 _logger.LogError(ex, "Error loading admin logs");
                 TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải nhật ký admin";
                 return RedirectToAction("Dashboard");
+            }
+        }
+        // GET: /Admin/RunBackfillJob (Thủ công)
+        [HttpGet("run-backfill-job-123xyz")]
+        [AllowAnonymous] // Cho phép gọi mà không cần đăng nhập (vì link đã bí mật)
+        public async Task<IActionResult> RunBackfillJob()
+        {
+            _logger.LogWarning("!!! === [JOB THỦ CÔNG] BẮT ĐẦU CHẠY BACKFILL === !!!");
+
+            try
+            {
+                _logger.LogInformation("...[Backfill] Đang chạy cho Phim Bộ (Series)...");
+                await _movieSyncService.BackfillAllEpisodesAsync();
+                _logger.LogInformation("...[Backfill] Đã xong Phim Bộ.");
+
+                _logger.LogInformation("...[Backfill] Đang chạy cho Phim Lẻ (Single)...");
+                await _movieSyncService.BackfillSingleMoviesAsync();
+                _logger.LogInformation("...[Backfill] Đã xong Phim Lẻ.");
+
+                _logger.LogWarning("!!! === [JOB THỦ CÔNG] BACKFILL HOÀN TẤT === !!!");
+
+                return Ok("Đã chạy xong 2 hàm Backfill. Kiểm tra log và database.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "!!! === [JOB THỦ CÔNG] LỖI NẶNG KHI CHẠY BACKFILL === !!!");
+                return StatusCode(500, "Lỗi server nghiêm trọng, xem log ngay.");
             }
         }
     }

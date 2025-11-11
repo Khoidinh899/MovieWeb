@@ -422,3 +422,6 @@
     opacity: 1;
     transform: rotate(90deg);
 }
+.modal.show .modal-dialog-centered {
+    transform: translateY(70px) !important; /* dịch modal xuống 40px */
+}
