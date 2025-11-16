@@ -57,10 +57,11 @@ namespace MovieWeb.Models.DTOs
         public bool IsActive { get; set; } = true;
 
         // Các trường liên kết (comma-separated IDs hoặc names)
-        public string? CategoryIds { get; set; } // "1,2,3"
-        public string? CountryIds { get; set; }
+        public string? CategoryNames { get; set; } // "1,2,3"
+        public string? CountryNames { get; set; }
         public string? ActorNames { get; set; } // "Actor 1,Actor 2"
         public string? DirectorNames { get; set; }
+        public string? ApiSlug { get; set; }
     }
 
     public class UpdateMovieDto
@@ -119,10 +120,11 @@ namespace MovieWeb.Models.DTOs
 
         public bool IsActive { get; set; }
 
-        public string? CategoryIds { get; set; }
-        public string? CountryIds { get; set; }
+        public string? CategoryNames { get; set; }
+        public string? CountryNames { get; set; }
         public string? ActorNames { get; set; }
         public string? DirectorNames { get; set; }
+        public string? ApiSlug { get; set; }
     }
 
     public class AdminMovieListDto

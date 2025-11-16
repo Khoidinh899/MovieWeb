@@ -3,12 +3,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MovieWeb.Models.Entities;
 using MovieWeb.Models.DTOs;
-using MovieWeb.Extensions; // Cần cho ToUserProfileDto()
+using MovieWeb.Extensions;
+using Microsoft.AspNetCore.SignalR;
+using MovieWeb.Hubs;
+using System.Net;
 
-// Phải cùng namespace
 namespace MovieWeb.Controllers
 {
-    // Phải là "partial class"
     public partial class AdminController : Controller
     {
         // GET: /Admin/Subscriptions
@@ -167,7 +168,7 @@ namespace MovieWeb.Controllers
 
                 ViewBag.Roles = await _context.Roles.ToListAsync();
 
-                return View("UserDetail", userDetail); 
+                return View("UserDetail", userDetail);
             }
             catch (Exception ex)
             {
@@ -176,7 +177,7 @@ namespace MovieWeb.Controllers
                 return RedirectToAction("Users");
             }
         }
-        
+
         // POST: /Admin/UpdateUserStatus
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -204,7 +205,9 @@ namespace MovieWeb.Controllers
                 user.IsActive = isActive;
                 user.UpdatedAt = DateTime.Now;
 
+                // Khi bạn gọi UpdateAsync, Security Stamp CŨNG tự động thay đổi
                 var result = await _userManager.UpdateAsync(user);
+
                 if (result.Succeeded)
                 {
                     // Log admin action
@@ -212,6 +215,25 @@ namespace MovieWeb.Controllers
 
                     _logger.LogInformation("Admin {AdminId} updated user {UserId} status to {Status}",
                         currentUser?.Id, userId, isActive ? "Active" : "Inactive");
+
+                    // ===== ✅ BẮT ĐẦU SỬA (LOGIC SIGNALR) =====
+                    if (!isActive) // Nếu hành động là "KHÓA"
+                    {
+                        try
+                        {
+                            _logger.LogInformation("Đang gửi lệnh ForceLogout qua SignalR cho User {UserId}", userId);
+
+                            // Gửi tín hiệu "ForceLogout" CHỈ cho user bị khóa
+                            await _notificationHubContext.Clients
+                                .User(userId.ToString())
+                                .SendAsync("ForceLogout", "Tài khoản của bạn đã bị Quản trị viên khóa.");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Lỗi khi gửi SignalR ForceLogout cho User {UserId}", userId);
+                        }
+                    }
+                    // ===== ✅ KẾT THÚC SỬA =====
 
                     return Json(new { success = true, message = $"Đã {(isActive ? "kích hoạt" : "khóa")} tài khoản thành công" });
                 }
@@ -335,7 +357,7 @@ namespace MovieWeb.Controllers
                 return Json(new { success = false, message = "Có lỗi xảy ra khi xóa người dùng" });
             }
         }
-        
+
         // GET: /Admin/GetUserData/{id} - Lấy dữ liệu user để edit
         [HttpGet]
         public async Task<IActionResult> GetUserData(int id)
@@ -493,6 +515,22 @@ namespace MovieWeb.Controllers
                     return Json(new { success = false, message = "Không tìm thấy người dùng" });
                 }
 
+                var currentUser = await _authService.GetCurrentUserAsync();
+
+                // ==== 💡 FIX 1: CHECK TỰ KHÓA ====
+                if (currentUser?.Id == user.Id && !model.IsActive)
+                {
+                    // Nếu admin đang tự sửa mình VÀ họ đang cố gắng bỏ tick "IsActive"
+                    return Json(new { success = false, message = "Không thể tự khóa tài khoản của chính mình." });
+                }
+
+                // ==== 💡 FIX 2: CHECK TỰ ĐỔI QUYỀN ====
+                if (currentUser?.Id == user.Id && user.RoleId != model.RoleId)
+                {
+                    // Nếu admin đang tự sửa mình VÀ họ đang cố đổi RoleId
+                    return Json(new { success = false, message = "Không thể tự thay đổi quyền của chính mình." });
+                }
+
                 // Kiểm tra email đã tồn tại (trừ user hiện tại)
                 var existingEmailUser = await _userManager.FindByEmailAsync(model.Email);
                 if (existingEmailUser != null && existingEmailUser.Id != user.Id)
@@ -504,8 +542,8 @@ namespace MovieWeb.Controllers
                 user.Email = model.Email;
                 user.FirstName = model.FirstName;
                 user.LastName = model.LastName;
-                user.RoleId = model.RoleId;
-                user.IsActive = model.IsActive;
+                user.RoleId = model.RoleId; // Dòng này giờ đã an toàn
+                user.IsActive = model.IsActive; // Dòng này giờ đã an toàn
                 user.PhoneNumber = model.PhoneNumber;
                 user.Gender = model.Gender;
                 user.DateOfBirth = model.DateOfBirth;
@@ -545,6 +583,113 @@ namespace MovieWeb.Controllers
             {
                 _logger.LogError(ex, "Error updating user");
                 return Json(new { success = false, message = "Có lỗi xảy ra khi cập nhật" });
+            }
+        }
+        // POST: /Admin/SendVerificationEmail
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendVerificationEmail(int userId)
+        {
+            if (!await IsAdminAsync())
+            {
+                return Json(new { success = false, message = "Không có quyền truy cập" });
+            }
+
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId.ToString());
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "Người dùng không tồn tại" });
+                }
+
+                if (user.EmailConfirmed)
+                {
+                    return Json(new { success = false, message = "Tài khoản này đã được xác thực rồi" });
+                }
+
+                // Tạo token
+                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var encodedToken = WebUtility.UrlEncode(token); // Mã hóa cho URL
+
+                // Tạo link (callbackUrl)
+                var callbackUrl = Url.Action(
+                    "ConfirmEmail",  // Tên Action trong AuthController
+                    "Auth",          // Tên Controller (ví dụ: AuthController)
+                    new { userId = user.Id, token = encodedToken },
+                    protocol: Request.Scheme
+                );
+
+                if (string.IsNullOrEmpty(callbackUrl))
+                {
+                    return Json(new { success = false, message = "Lỗi hệ thống: Không thể tạo link xác thực" });
+                }
+
+                // ==== 💡 THAY THẾ NỘI DUNG EMAIL ====
+                // (Sử dụng template đẹp của ông)
+
+                var userName = user.FirstName ?? user.UserName; // Ưu tiên FirstName
+
+                var htmlBody = $@"
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+            <div style='text-align: center; margin-bottom: 30px;'>
+                <h1 style='color: #333; margin-bottom: 10px;'>MoonPhim</h1>
+                <p style='color: #666; font-size: 16px;'>Bay bổng cùng điện ảnh</p>
+            </div>
+            
+            <div style='background: #f8f9fa; padding: 30px; border-radius: 10px; border-left: 4px solid #007bff;'>
+                <h2 style='color: #333; margin-bottom: 20px;'>Xác thực tài khoản của bạn</h2>
+                <p style='color: #555; font-size: 16px; line-height: 1.6; margin-bottom: 20px;'>
+                    Chào {userName},
+                </p>
+                <p style='color: #555; font-size: 16px; line-height: 1.6; margin-bottom: 20px;'>
+                    Quản trị viên MoonPhim đã gửi lại email xác thực cho tài khoản của bạn. 
+                    Vui lòng nhấn vào nút bên dưới để hoàn tất.
+                </p>
+                
+                <div style='text-align: center; margin: 30px 0;'>
+                    <a href='{callbackUrl}' 
+                       style='background: linear-gradient(45deg, #007bff, #0056b3); 
+                              color: white; 
+                              padding: 15px 30px; 
+                              text-decoration: none; 
+                              border-radius: 25px; 
+                              font-weight: bold; 
+                              font-size: 16px;
+                              display: inline-block;'>
+                        Xác thực tài khoản
+                    </a>
+                </div>
+                
+                <p style='color: #777; font-size: 14px; margin-top: 20px;'>
+                    Nếu bạn không thể nhấn vào nút trên, hãy copy và paste link sau vào trình duyệt:
+                </p>
+                <p style='background: #e9ecef; padding: 10px; border-radius: 5px; word-break: break-all; font-size: 12px;'>
+                    {callbackUrl}
+                </p>
+            </div>
+            
+            <div style='text-align: center; margin-top: 30px; color: #999; font-size: 12px;'>
+                <p>© {DateTime.Now.Year} MoonPhim. All rights reserved.</p>
+                <p>Nếu bạn không yêu cầu điều này, vui lòng bỏ qua email này.</p>
+            </div>
+        </div>";
+                // ==== KẾT THÚC THAY THẾ ====
+
+
+                // Gửi email (Dùng service của ông)
+                await _emailService.SendEmailAsync(user.Email, "Xác thực tài khoản MoonPhim của bạn", htmlBody);
+
+                // Log lại
+                await LogAdminActionAsync("SEND_VERIFICATION_EMAIL", $"Admin sent verification email to {user.Email}", user.Id.ToString());
+                _logger.LogInformation("Admin sent verification email to {Email}", user.Email);
+
+                return Json(new { success = true, message = "Đã gửi email xác thực thành công!" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending verification email for {UserId}", userId);
+                return Json(new { success = false, message = "Lỗi hệ thống khi gửi email" });
             }
         }
     }

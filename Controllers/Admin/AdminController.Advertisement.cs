@@ -196,7 +196,11 @@ namespace MovieWeb.Controllers
                 new SelectListItem { Value = "HomePage_Popup", Text = "Pop-up Giữa Trang Chủ" },
                 new SelectListItem { Value = "WatchPage_Banner", Text = "Banner Trang Xem Phim" },
                 new SelectListItem { Value = "PreRoll", Text = "Video Pre-roll (Đầu phim)" },
-                new SelectListItem { Value = "ClimaxAd", Text = "Video Climax (Cuối phim)" }
+                new SelectListItem { Value = "ClimaxAd", Text = "Video Climax (Cuối phim)" },
+                new SelectListItem { Value = "Popup_PhimLe", Text = "Pop-up Trang Phim Lẻ" },
+                new SelectListItem { Value = "Popup_PhimBo", Text = "Pop-up Trang Phim Bộ" },
+                new SelectListItem { Value = "Popup_TheLoai", Text = "Pop-up Trang Thể Loại" },
+                new SelectListItem { Value = "Popup_QuocGia", Text = "Pop-up Trang Quốc Gia" },
             };
         }
     }

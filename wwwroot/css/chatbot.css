@@ -98,6 +98,7 @@
   color: #fff !important;
   font-size: 16px;
   transition: transform 0.2s ease, opacity 0.2s ease;
+  position: relative;
 }
 .chatbot-popup-header .btn-close svg,
 .chatbot-popup-header .btn-close i,
@@ -105,8 +106,29 @@
   color: #fff !important;
   filter: none !important;
 }
+
+/* Ép tạo biểu tượng "X" trắng bằng pseudo-element */
+.chatbot-popup-header .btn-close::after {
+  content: '×';
+  color: #fff;
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1;
+  display: block;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
 .chatbot-popup-header .btn-close:hover {
   transform: scale(1.15);
+  opacity: 0.85;
+}
+
+/* Hiệu ứng hover cho đẹp */
+.chatbot-popup-header .btn-close:hover::after {
+  transform: translate(-50%, -50%) scale(1.2);
   opacity: 0.85;
 }
 
@@ -157,27 +179,18 @@
 }
 
 /* Message list & bubbles */
-.chat-messages { padding:0; margin:0; list-style:none; display:block; }
-.chat-message { display:flex; }
-.chat-message.user { justify-content:flex-end; }
-.chat-message.mooner { justify-content:flex-start; }
-.message-bubble {
-  padding: 10px 14px;
-  border-radius: 16px;
-  max-width: 78%;
-  font-size: .92rem;
-  line-height:1.45;
-  box-shadow: 0 6px 14px rgba(1,44,66,0.04);
-}
-/* === Khoảng cách giữa các tin nhắn === */
-.chat-messages {
+.chat-messages { 
   padding: 0 10px;
   margin: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px; /* khoảng cách giữa các message */
+  gap: 10px;
 }
+
+.chat-message { display:flex; }
+.chat-message.user { justify-content:flex-end; }
+.chat-message.mooner { justify-content:flex-start; }
 
 /* User & Mooner message spacing */
 .chat-message + .chat-message {
@@ -187,9 +200,12 @@
 /* Bong bóng tin nhắn */
 .message-bubble {
   padding: 10px 15px;
-  line-height: 1.5;
+  border-radius: 18px;
+  max-width: 78%;
+  font-size: .92rem;
+  line-height:1.5;
   word-wrap: break-word;
-  border-radius: 18px; /* bo cong mềm hơn */
+  box-shadow: 0 6px 14px rgba(1,44,66,0.04);
 }
 
 /* Khi hiển thị "Mooner đang nhập..." thì tạo khoảng cách */
@@ -254,49 +270,14 @@
 }
 #popupSendButton:hover { transform: scale(1.06); }
 
-/* Responsive */
-@media (max-width:768px) {
-  #chatbotPopup { right:12px; bottom:70px; width: calc(100vw - 24px); max-height: 60vh; border-radius:12px; }
-  #chatbotFloatingBtn { right:12px; bottom:70px; }
-}
-/* --- FIX Bootstrap .btn-close ẩn trên nền tối --- */
-.chatbot-popup-header .btn-close {
-  filter: none !important;
-  opacity: 1 !important;
-  background: none !important;
-  width: 28px;
-  height: 28px;
-  border: none;
-  position: relative;
-}
-
-/* Ép tạo biểu tượng “X” trắng bằng pseudo-element */
-.chatbot-popup-header .btn-close::after {
-  content: '×';
-  color: #fff;
-  font-weight: 600;
-  font-size: 22px;
-  line-height: 1;
-  display: block;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* Hiệu ứng hover cho đẹp */
-.chatbot-popup-header .btn-close:hover::after {
-  transform: translate(-50%, -50%) scale(1.2);
-  opacity: 0.85;
-}
 /* === FIX Bong bóng "Mooner đang nhập..." - màu vàng MoonPhim === */
 #popupTypingIndicator .message-bubble {
-  background: #FFCA28 !important; /* nền vàng nhạt dịu */
-  color: #012C42 !important;       /* chữ xanh đậm rõ ràng */
+  background: #FFCA28 !important;
+  color: #012C42 !important;
   font-style: italic;
   font-size: 0.9rem;
   border-radius: 18px;
-  border: 1px solid rgba(255, 216, 92, 0.4); /* viền vàng nhẹ */
+  border: 1px solid rgba(255, 216, 92, 0.4);
   box-shadow: 0 2px 8px rgba(255, 216, 92, 0.25);
   display: inline-flex;
   align-items: center;
@@ -307,7 +288,7 @@
 /* Ba chấm động (hiệu ứng gõ phím) */
 #popupTypingIndicator .typing-dots span {
   display: inline-block;
-  color: #000000; /* vàng đậm hơn nền một chút */
+  color: #000000;
   font-weight: bold;
   animation: typingDotsYellow 1.2s infinite ease-in-out;
 }
@@ -321,3 +302,142 @@
 #popupTypingIndicator .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
 #popupTypingIndicator .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
 
+/* ===========================
+   RESPONSIVE
+   =========================== */
+
+/* Tablet & Mobile */
+@media (max-width: 768px) {
+  #chatbotPopup { 
+    right: 12px; 
+    bottom: 70px; 
+    width: calc(100vw - 24px); 
+    max-height: 60vh; 
+    border-radius: 12px; 
+  }
+  #chatbotFloatingBtn { 
+    right: 12px; 
+    bottom: 70px; 
+  }
+}
+
+/* Mobile */
+@media (max-width: 576px) {
+  /* Popup chiếm gần full màn hình */
+  #chatbotPopup { 
+    right: 8px; 
+    bottom: 60px; 
+    width: calc(100vw - 16px); 
+    max-height: 65vh; 
+    border-radius: 10px; 
+  }
+  
+  /* FAB nhỏ hơn */
+  #chatbotFloatingBtn { 
+    right: 10px; 
+    bottom: 60px; 
+    width: 50px;
+    height: 50px;
+  }
+  #chatbotFloatingBtn img { 
+    width: 28px; 
+    height: 28px; 
+  }
+  
+  /* Header compact hơn */
+  .chatbot-popup-header {
+    padding: 10px 12px;
+  }
+  .chatbot-popup-header h5 {
+    font-size: 0.9rem;
+    gap: 6px;
+  }
+  .chatbot-popup-header h5 span:first-child { 
+    font-size: 1rem; 
+  }
+  .chatbot-popup-header .btn-close {
+    width: 24px;
+    height: 24px;
+  }
+  .chatbot-popup-header .btn-close::after {
+    font-size: 20px;
+  }
+  
+  /* Mode selector */
+  .chatbot-mode-selector {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+  .chatbot-mode-selector .btn-mode {
+    padding: 5px 10px;
+    font-size: 0.78rem;
+    border-radius: 16px;
+  }
+  
+  /* Body */
+  .chatbot-popup-body {
+    padding: 8px;
+    min-height: 220px;
+    gap: 6px;
+  }
+  
+  /* Messages */
+  .chat-messages {
+    padding: 0 8px;
+    gap: 8px;
+  }
+  .message-bubble {
+    padding: 8px 12px;
+    font-size: 0.88rem;
+    max-width: 85%;
+    border-radius: 14px;
+  }
+  
+  /* Footer */
+  .chatbot-popup-footer {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+  #popupMessageInput {
+    padding: 7px 12px;
+    font-size: 0.9rem;
+    border-radius: 20px;
+  }
+  #popupSendButton {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+  }
+  
+  /* Typing indicator */
+  #popupTypingIndicator .message-bubble {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+  
+  /* Tooltip - ẩn trên mobile */
+  #chatbotFloatingBtn .chatbot-tooltip {
+    display: none;
+  }
+}
+
+/* Small phones */
+@media (max-width: 400px) {
+  #chatbotPopup { 
+    right: 6px; 
+    bottom: 55px; 
+    width: calc(100vw - 12px); 
+  }
+  
+  #chatbotFloatingBtn { 
+    right: 8px; 
+    bottom: 55px; 
+    width: 46px;
+    height: 46px;
+  }
+  
+  .message-bubble {
+    font-size: 0.85rem;
+    max-width: 90%;
+  }
+}

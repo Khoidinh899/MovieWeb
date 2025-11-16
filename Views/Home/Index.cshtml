@@ -1,6 +1,16 @@
 @{
     Layout = "_LandingLayout";
     ViewData["Title"] = "MoonPhim - Bay bổng cùng điện ảnh";
+    
+    // 1. Chuẩn bị Mô tả (Lấy từ text bạn đã viết)
+    var seoDescription = "Với sự bùng nổ của các nền tảng phát trực tuyến phim, MoonPhim nổi bật lên như một trang web xem phim miễn phí uy tín, mang đến cho người dùng trải nghiệm xem phim tuyệt vời nhất.";
+    
+    // 2. Chuẩn bị Ảnh (Image) và URL
+    var request = Context.Request;
+    var baseUrl = $"{request.Scheme}://{request.Host}"; // Ví dụ: https://localhost:5000
+    var seoUrl = $"{baseUrl}{request.Path}"; // URL đầy đủ của trang
+    var seoImage = $"{baseUrl}/images/iconmoon.png"; // Ảnh logo (phải là URL tuyệt đối)
+
 }
 
 <!DOCTYPE html>
@@ -8,22 +18,35 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MoonPhim - Bay bổng cùng điện ảnh</title>
+    
+    @* Sửa lại để dùng ViewData["Title"] cho nhất quán *@
+    <title>@ViewData["Title"]</title> 
+    
     <link rel="icon" type="image/x-icon" href="~/favicon.ico">
+
+    @* --- BẮT ĐẦU KHỐI SEO --- *@
+    <meta name="description" content="@seoDescription" />
+    <meta name="keywords" content="xem phim, xem phim miễn phí, xem phim online, phim HD, phim chất lượng cao, moonphim, bay bổng cùng điện ảnh" />
+
+    <meta property="og:title" content="@ViewData["Title"]" />
+    <meta property="og:description" content="@seoDescription" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="@seoUrl" />
+    <meta property="og:image" content="@seoImage" />
+    <meta property="og:site_name" content="MoonPhim" />
+    @* --- KẾT THÚC KHỐI SEO --- *@
+
     <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
 </head>
 <body>
-    <!-- Background Animation -->
     <div class="bg-animation">
         <div class="circle"></div>
         <div class="circle"></div>
         <div class="circle"></div>
     </div>
 
-    <!-- Stars -->
     <div class="stars" id="stars"></div>
 
-    <!-- Main Content -->
     <div class="landing-container">
         <div class="logo-container">
             <div class="logo-wrapper">

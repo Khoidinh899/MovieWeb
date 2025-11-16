@@ -1,5 +1,5 @@
 @using Microsoft.AspNetCore.Identity
-@inject MovieWeb.Services.IAuthService _authService
+@inject MovieWeb.Services.Interfaces.IAuthService _authService
 @model IEnumerable<MovieWeb.Models.Entities.Advertisement>
 @{
     var currentUser = await _authService.GetCurrentUserAsync();

@@ -1,0 +1,28 @@
+@model List<MovieWeb.Models.Entities.Country>
+
+@{
+    int totalCountries = Model.Count;
+    int colCount = 4; // Số cột (giống Thể loại)
+    int itemsPerCol = (int)Math.Ceiling(totalCountries / (double)colCount);
+}
+
+<div class="mega-container">
+    <div class="row">
+        @for (int col = 0; col < colCount; col++)
+        {
+            <div class="col-md-3 col-6">
+                <ul class="list-unstyled">
+                    @{
+                        int start = col * itemsPerCol;
+                        int end = Math.Min(start + itemsPerCol, totalCountries);
+                        for (int i = start; i < end; i++)
+                        {
+                            var country = Model[i];
+                            <li><a href="/quoc-gia/@country.Slug">@country.Name</a></li>
+                        }
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+</div>

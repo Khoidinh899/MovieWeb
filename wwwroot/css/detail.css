@@ -1,545 +1,931 @@
-    /* ===============================
+/* ===============================
     GLOBAL
     =================================*/
-    body {
-        background: #0f0f0f;
-        color: #fff;
-        font-family: 'Inter', Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-    }
+body {
+    background: #0f0f0f;
+    color: #fff;
+    font-family: 'Inter', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
 
-    a {
-        color: inherit;
-        text-decoration: none;
-    }
+a {
+    color: inherit;
+    text-decoration: none;
+}
 
-    img {
-        max-width: 100%;
-        display: block;
-    }
+img {
+    max-width: 100%;
+    display: block;
+}
 
-    /* ===============================
-    HERO SECTION
+main {
+    margin-top: 0px;
+    padding-top: 0;
+}
+
+/* ===============================
+    HERO SECTION (Style giống trang chủ)
     =================================*/
-    .hero {
-        position: relative;
-        background-size: cover;
-        background-position: center;
-        padding: 100px 0;
-    }
+.detail-header {
+    position: relative;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-color: #1a2332;
+    padding: 160px 0 120px;
+    margin-top: 0;
+    min-height: 600px;
+    display: flex;
+    align-items: center;
+}
 
-    .hero .overlay {
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: linear-gradient(to bottom, rgba(15,15,15,0.5), rgba(15,15,15,0.95));
+/* Overlay giống trang chủ - gradient từ tối đến trong suốt + mờ phía trên */
+.detail-header .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        linear-gradient(to bottom,
+            rgba(15, 23, 42, 0.85) 0%,
+            rgba(15, 23, 42, 0.50) 15%,
+            rgba(15, 23, 42, 0.20) 30%,
+            transparent 50%),
+        linear-gradient(to right,
+            rgba(15, 23, 42, 0.95) 0%,    /* 👈 Tối bên trái */
+            rgba(15, 23, 42, 0.30) 40%,  /* 👈 Mờ đi (thay vì trong suốt) */
+            rgba(15, 23, 42, 0.30) 60%,  /* 👈 Giữ mờ ở giữa */
+            rgba(15, 23, 42, 0.95) 100%); /* 👈 Tối bên phải */
+    pointer-events: none !important;
+    z-index: 1;
+}
+
+.hero-content {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+    z-index: 2;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.poster-box img {
+    width: 280px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.6);
+}
+
+/* ===============================
+    MOVIE INFO
+    =================================*/
+.movie-info {
+    max-width: 700px;
+}
+
+.movie-info h1 {
+    font-size: 2.8rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.movie-info .original-title {
+    color: #aaa;
+    font-style: italic;
+    display: block;
+    margin-bottom: 15px;
+}
+
+.tags {
+    margin-bottom: 15px;
+}
+
+.tags span {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 12px;
+    border-radius: 8px;
+    margin-right: 6px;
+    font-size: 0.9rem;
+}
+
+.description {
+    margin-top: 15px;
+    color: #ccc;
+    line-height: 1.6;
+}
+
+/* ===============================
+    BUTTONS
+    =================================*/
+.buttons {
+    margin-top: 25px;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.btn-watch,
+.btn-trailer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.btn-watch {
+    background: linear-gradient(135deg, #ff3c00, #ff7300);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(255, 80, 0, 0.6);
+}
+
+.btn-watch:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 18px rgba(255, 80, 0, 0.8);
+}
+
+.btn-trailer {
+    background: linear-gradient(135deg, #0099ff, #00ccff);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(0, 140, 255, 0.6);
+}
+
+.btn-trailer:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 18px rgba(0, 160, 255, 0.8);
+}
+
+/* ===============================
+    PLAYER
+    =================================*/
+#playerContainer {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    margin: 40px auto;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.6);
+}
+
+#player {
+    width: 100%;
+    height: 500px;
+    border: none;
+    border-radius: 16px;
+}
+
+/* ===============================
+    META INFO
+    =================================*/
+.meta-section {
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.meta-title {
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+    color: #f5c518;
+}
+
+.meta-item {
+    margin-bottom: 12px;
+    line-height: 1.7;
+}
+
+.meta-item strong {
+    width: 120px;
+    display: inline-block;
+    color: #f5c518;
+}
+
+.meta-item a {
+    color: #ccc;
+    text-decoration: none;
+}
+
+.meta-item a:hover {
+    color: #f5c518;
+}
+
+.meta-item span {
+    color: #bbb;
+}
+
+/* ===============================
+    MOVIE DESCRIPTION
+    =================================*/
+.movie-description {
+    margin-top: 20px;
+    color: #ccc;
+    line-height: 1.7;
+}
+
+.movie-description strong {
+    display: block;
+    color: #f5c518;
+    margin-bottom: 6px;
+    font-size: 1.1rem;
+}
+
+/* ===============================
+    RELATED MOVIES
+    =================================*/
+.related {
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.related h3 {
+    border-left: 4px solid #f5c518;
+    padding-left: 10px;
+    margin-bottom: 25px;
+    font-size: 1.5rem;
+}
+
+.related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+}
+
+.related-card {
+    text-decoration: none;
+    color: #fff;
+    transition: transform 0.2s;
+}
+
+.related-card:hover {
+    transform: scale(1.05);
+}
+
+.related-card .poster {
+    position: relative;
+}
+
+.related-card img {
+    width: 100%;
+    border-radius: 8px;
+}
+
+.related-card .badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: #f5c518;
+    color: #000;
+    font-weight: bold;
+    font-size: 0.8rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.related-card .info {
+    text-align: center;
+    margin-top: 8px;
+}
+
+.related-card .title {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+/* ===============================
+    RESPONSIVE (Theo chuẩn Home Page)
+    =================================*/
+@media (max-width: 992px) {
+    .detail-header {
+        padding: 140px 0 80px;
+        min-height: 500px;
+        background-size: cover;
     }
 
     .hero-content {
-        position: relative;
-        display: flex;
-        align-items: flex-start;
-        gap: 40px;
-        z-index: 2;
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 20px;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
     }
 
     .poster-box img {
-        width: 280px;
-        border-radius: 12px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.6);
+        width: 240px;
     }
 
-    /* ===============================
-    MOVIE INFO
-    =================================*/
     .movie-info {
-        max-width: 700px;
+        max-width: 100%;
     }
 
     .movie-info h1 {
-        font-size: 2.8rem;
-        font-weight: 700;
-        margin-bottom: 10px;
+        font-size: 2.5rem;
     }
 
     .movie-info .original-title {
-        color: #aaa;
-        font-style: italic;
-        display: block;
-        margin-bottom: 15px;
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .detail-header {
+        height: 55vh;
+        min-height: auto;
+        padding: 80px 0 50px;
+        margin-bottom: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        text-align: center;
+    }
+
+    .hero-content {
+        height: auto !important;
+        padding-top: 0 !important;
+        padding-bottom: 30px;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .poster-box {
+        display: none;
+    }
+
+    .movie-info h1 {
+        font-size: 2rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        line-height: 1.2;
+    }
+
+    .movie-info .original-title {
+        font-size: 1rem;
+        margin-bottom: 10px;
     }
 
     .tags {
-        margin-bottom: 15px;
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: center;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 15px !important;
+        overflow: hidden;
     }
 
     .tags span {
-        background: rgba(255,255,255,0.1);
-        padding: 4px 12px;
-        border-radius: 8px;
-        margin-right: 6px;
-        font-size: 0.9rem;
+        margin-right: 0 !important;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+        white-space: nowrap;
     }
 
-    .description {
-        margin-top: 15px;
-        color: #ccc;
-        line-height: 1.6;
-    }
-
-    /* ===============================
-    BUTTONS
-    =================================*/
     .buttons {
-        margin-top: 25px;
-        display: flex;
-        gap: 15px;
-        flex-wrap: wrap;
-    }
-
-    .btn-watch,
-    .btn-trailer {
-        display: flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        gap: 8px;
-        font-weight: 600;
+        gap: 10px;
+    }
+
+    .buttons .btn {
+        padding: 12px 28px;
         font-size: 1rem;
-        padding: 12px 24px;
-        border: none;
-        border-radius: 30px;
-        cursor: pointer;
-        transition: all 0.25s ease;
-    }
-
-    .btn-watch {
-        background: linear-gradient(135deg, #ff3c00, #ff7300);
-        color: #fff;
-        box-shadow: 0 0 10px rgba(255, 80, 0, 0.6);
-    }
-
-    .btn-watch:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 18px rgba(255, 80, 0, 0.8);
-    }
-
-    .btn-trailer {
-        background: linear-gradient(135deg, #0099ff, #00ccff);
-        color: #fff;
-        box-shadow: 0 0 10px rgba(0, 140, 255, 0.6);
-    }
-
-    .btn-trailer:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 18px rgba(0, 160, 255, 0.8);
-    }
-
-    /* ===============================
-    PLAYER
-    =================================*/
-    #playerContainer {
-        position: relative;
         width: 100%;
-        max-width: 900px;
-        margin: 40px auto;
-        border-radius: 16px;
-        overflow: hidden;
-        background: #000;
-        box-shadow: 0 0 25px rgba(0, 0, 0, 0.6);
     }
 
     #player {
-        width: 100%;
-        height: 500px;
-        border: none;
-        border-radius: 16px;
+        height: 240px;
     }
 
-    /* ===============================
-    META INFO
-    =================================*/
     .meta-section {
-        padding: 40px 20px;
-        max-width: 1200px;
-        margin: 0 auto;
+        padding: 30px 15px;
     }
 
     .meta-title {
-        font-size: 1.4rem;
-        margin-bottom: 15px;
-        color: #f5c518;
-    }
-
-    .meta-item {
-        margin-bottom: 12px;
-        line-height: 1.7;
-    }
-
-    .meta-item strong {
-        width: 120px;
-        display: inline-block;
-        color: #f5c518;
-    }
-
-    .meta-item a {
-        color: #ccc;
-        text-decoration: none;
-    }
-
-    .meta-item a:hover {
-        color: #f5c518;
-    }
-
-    .meta-item span {
-        color: #bbb;
-    }
-
-    /* ===============================
-    MOVIE DESCRIPTION
-    =================================*/
-    .movie-description {
-        margin-top: 20px;
-        color: #ccc;
-        line-height: 1.7;
-    }
-
-    .movie-description strong {
-        display: block;
-        color: #f5c518;
-        margin-bottom: 6px;
-        font-size: 1.1rem;
-    }
-
-    /* ===============================
-    RELATED MOVIES
-    =================================*/
-    .related {
-        padding: 40px 20px;
-        max-width: 1200px;
-        margin: 0 auto;
+        font-size: 1.3rem;
     }
 
     .related h3 {
-        border-left: 4px solid #f5c518;
-        padding-left: 10px;
-        margin-bottom: 25px;
-        font-size: 1.5rem;
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .detail-header {
+        height: 50vh;
+        padding: 120px 0 40px;
     }
 
-    .related-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 20px;
+    .movie-info h1 {
+        font-size: 1.8rem;
+        margin-top: 10px;
+        -webkit-line-clamp: 2;
     }
 
-    .related-card {
-        text-decoration: none;
-        color: #fff;
-        transition: transform 0.2s;
+    .movie-info .original-title {
+        font-size: 0.9rem;
     }
 
-    .related-card:hover {
-        transform: scale(1.05);
+    .tags span {
+        padding: 5px 8px;
+        font-size: 0.75rem;
     }
 
-    .related-card .poster {
-        position: relative;
-    }
-
-    .related-card img {
-        width: 100%;
-        border-radius: 8px;
-    }
-
-    .related-card .badge {
-        position: absolute;
-        top: 8px; left: 8px;
-        background: #f5c518;
-        color: #000;
-        font-weight: bold;
-        font-size: 0.8rem;
-        padding: 3px 8px;
-        border-radius: 4px;
-    }
-
-    .related-card .info {
-        text-align: center;
-        margin-top: 8px;
-    }
-
-    .related-card .title {
-        font-weight: 600;
+    .buttons .btn {
+        padding: 10px 24px;
         font-size: 0.95rem;
     }
 
-    /* ===============================
-    RESPONSIVE
+    .meta-title {
+        font-size: 1.2rem;
+    }
+
+    .meta-item {
+        font-size: 0.9rem;
+    }
+
+    .related h3 {
+        font-size: 1.2rem;
+    }
+
+    .related-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
+    }
+
+    #player {
+        height: 200px;
+    }
+}
+
+/* ================================
+    COMMENT & RATING SECTION
     =================================*/
-    @media (max-width: 992px) {
-        .hero-content {
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-        }
+.comment-section {
+    background: #0f1012;
+    border-radius: 8px;
+    padding: 20px;
+    color: #ddd;
+    margin-top: 40px;
+}
 
-        .poster-box img {
-            width: 220px;
-        }
+.comment-section h3 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #facc15;
+}
 
-        .movie-info {
-            max-width: 100%;
-        }
-    }
+.comment-tabs {
+    display: flex;
+    border-bottom: 1px solid #222;
+    margin-bottom: 15px;
+}
 
-    @media (max-width: 768px) {
-        #player {
-            height: 240px;
-        }
+.comment-tabs .tab-btn {
+    background: transparent;
+    border: none;
+    color: #aaa;
+    font-weight: 500;
+    padding: 8px 15px;
+    cursor: pointer;
+    transition: 0.3s;
+}
 
-        .buttons {
-            flex-direction: column;
-            align-items: center;
-        }
-    }
+.comment-tabs .tab-btn.active {
+    color: #facc15;
+    border-bottom: 2px solid #facc15;
+}
 
-    @media (max-width: 480px) {
-        .movie-info h1 {
-            font-size: 2rem;
-        }
+.comment-tabs .tab-btn:hover {
+    color: #fff;
+}
 
-        .btn-watch,
-        .btn-trailer {
-            width: 100%;
-        }
-    }
-    /* ================================
-    COMMENT & RATING SECTION (Ophim style)
-    =================================*/
-    .comment-section {
-        background: #0f1012;
-        border-radius: 8px;
-        padding: 20px;
-        color: #ddd;
-        margin-top: 40px;
-    }
+.tab-content {
+    display: none;
+}
 
-    .comment-section h3 {
-        font-size: 18px;
-        margin-bottom: 15px;
-        color: #facc15;
-    }
+.tab-content.active {
+    display: block;
+}
 
-    /* Tabs */
-    .comment-tabs {
-        display: flex;
-        border-bottom: 1px solid #222;
-        margin-bottom: 15px;
-    }
-    .comment-tabs .tab-btn {
-        background: transparent;
-        border: none;
-        color: #aaa;
-        font-weight: 500;
-        padding: 8px 15px;
-        cursor: pointer;
-        transition: 0.3s;
-    }
-    .comment-tabs .tab-btn.active {
-        color: #facc15;
-        border-bottom: 2px solid #facc15;
-    }
-    .comment-tabs .tab-btn:hover {
-        color: #fff;
-    }
+.login-alert {
+    margin-bottom: 10px;
+    color: #bbb;
+}
 
-    /* Content box */
-    .tab-content {
-        display: none;
-    }
-    .tab-content.active {
-        display: block;
-    }
-    .login-alert {
-        margin-bottom: 10px;
-        color: #bbb;
-    }
-    .login-alert a {
-        color: #facc15;
-        text-decoration: none;
-    }
+.login-alert a {
+    color: #facc15;
+    text-decoration: none;
+}
 
-    /* Comment box */
-    .comment-box {
-        background: #18191b;
-        border-radius: 8px;
-        padding: 10px;
-        display: flex;
-        flex-direction: column;
-    }
-    .comment-box textarea {
-        background: #111;
-        border: none;
-        border-radius: 6px;
-        padding: 10px;
-        color: #fff;
-        font-size: 14px;
-        min-height: 120px;
-        resize: none;
-    }
-    .comment-box textarea:focus {
-        outline: 1px solid #facc15;
-    }
-    .comment-bottom {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 8px;
-    }
-    .comment-bottom .spoiler {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        color: #999;
-        font-size: 14px;
-    }
-    .btn-send {
-        background: transparent;
-        border: none;
-        color: #facc15;
-        font-weight: 600;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        transition: 0.3s;
-    }
-    .btn-send:hover {
-        color: #ffe15e;
-    }
+.comment-box {
+    background: #18191b;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+}
 
-    /* Rating stars */
-    #tab-rating {
-        text-align: center;
+.comment-box textarea {
+    background: #111;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    color: #fff;
+    font-size: 14px;
+    min-height: 120px;
+    resize: none;
+}
+
+.comment-box textarea:focus {
+    outline: 1px solid #facc15;
+}
+
+.comment-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.comment-bottom .spoiler {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #999;
+    font-size: 14px;
+}
+
+.btn-send {
+    background: transparent;
+    border: none;
+    color: #facc15;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: 0.3s;
+}
+
+.btn-send:hover {
+    color: #ffe15e;
+}
+
+#tab-rating {
+    text-align: center;
+}
+
+.rating-stars {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    font-size: 26px;
+    margin-top: 10px;
+    color: #555;
+    cursor: pointer;
+}
+
+.rating-stars span:hover,
+.rating-stars span.active,
+.rating-stars span:hover~span {
+    color: #facc15;
+}
+
+.login-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.login-popup.show {
+    display: flex !important;
+}
+
+.login-popup .popup-content {
+    background: #1f1f1f;
+    color: #fff;
+    border-radius: 10px;
+    padding: 25px 20px;
+    width: 320px;
+    text-align: center;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.25s ease;
+}
+
+.login-popup h4 {
+    margin-bottom: 10px;
+    color: #facc15;
+}
+
+.login-popup p {
+    margin-bottom: 15px;
+    color: #ccc;
+}
+
+.login-popup a {
+    color: #facc15;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.login-popup a:hover {
+    text-decoration: underline;
+}
+
+.login-popup button {
+    background: #facc15;
+    border: none;
+    padding: 8px 18px;
+    color: #000;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.login-popup button:hover {
+    background: #ffe15e;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
     }
-    .rating-stars {
-        display: flex;
-        justify-content: center;
-        gap: 5px;
-        font-size: 26px;
-        margin-top: 10px;
-        color: #555;
-        cursor: pointer;
+    to {
+        opacity: 1;
+        transform: scale(1);
     }
-    .rating-stars span:hover,
-    .rating-stars span.active,
-    .rating-stars span:hover ~ span {
-        color: #facc15;
-    }
+}
 
+.episode-btn.active {
+    background: #ffe15e !important;
+    color: #000;
+    box-shadow: 0 0 10px rgba(250, 193, 21, 0.6);
+}
 
-
-    /* Popup đăng nhập */
-    .login-popup {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        display: none;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-    }
-
-    .login-popup.show {
-        display: flex !important;
-    }
-
-    .login-popup .popup-content {
-        background: #1f1f1f;
-        color: #fff;
-        border-radius: 10px;
-        padding: 25px 20px;
-        width: 320px;
-        text-align: center;
-        box-shadow: 0 0 15px rgba(0,0,0,0.5);
-        animation: fadeIn 0.25s ease;
-    }
-
-    .login-popup h4 {
-        margin-bottom: 10px;
-        color: #facc15;
-    }
-
-    .login-popup p {
-        margin-bottom: 15px;
-        color: #ccc;
-    }
-
-    .login-popup a {
-        color: #facc15;
-        font-weight: bold;
-        text-decoration: none;
-    }
-
-    .login-popup a:hover {
-        text-decoration: underline;
-    }
-
-    .login-popup button {
-        background: #facc15;
-        border: none;
-        padding: 8px 18px;
-        color: #000;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 600;
-    }
-
-    .login-popup button:hover {
-        background: #ffe15e;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: scale(0.9); }
-        to { opacity: 1; transform: scale(1); }
-    }
-
-    /* episode */
-    .episode-btn.active {
-        background: #ffe15e !important;
-        color: #000;
-        box-shadow: 0 0 10px rgba(250,193,21,0.6);
-    }
-
-/* ===============================
-   FIX POPUP CLICKABLE
-=============================== */
-
-/* đảm bảo popup luôn ở trên cùng */
 .login-popup {
     z-index: 99999 !important;
     pointer-events: auto !important;
 }
 
-/* overlay hero không chặn popup */
 .hero .overlay {
     pointer-events: none !important;
 }
 
-/* episode group và server tabs không chặn popup */
 .episode-group,
 .server-tabs {
     position: relative;
-    z-index: 2; /* thấp hơn popup */
+    z-index: 2;
 }
 
-/* popup nội dung */
 .login-popup .popup-content {
     position: relative;
-    z-index: 99999; /* đảm bảo click vào a, button được */
+    z-index: 99999;
 }
 
+.comment-item {
+    background-color: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1rem;
+    transition: all 0.2s ease;
+}
 
+.comment-item img.rounded-circle {
+    border: 1px solid #444;
+}
+
+.comment-item strong {
+    color: #e5e5e5;
+    font-size: 0.95rem;
+}
+
+.comment-item small.text-muted {
+    color: #888 !important;
+    font-size: 0.8rem;
+}
+
+.comment-item .text-warning {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.comment-item .text-white {
+    color: #ccc !important;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-top: 0.25rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.comment-actions {
+    margin-top: 0.75rem;
+}
+
+.comment-actions .btn {
+    background-color: transparent;
+    border: 1px solid #555;
+    color: #aaa;
+    font-size: 0.8rem;
+    padding: 2px 10px;
+    border-radius: 20px;
+    transition: all 0.2s ease;
+}
+
+.comment-actions .btn:hover {
+    background-color: #333;
+    color: #fff;
+    border-color: #444;
+}
+
+.comment-actions .btn-outline-danger {
+    border-color: #803030;
+    color: #c06060;
+}
+
+.comment-actions .btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+}
+
+.replies {
+    margin-top: 1rem;
+    padding-left: 1rem;
+    border-left: 2px solid #444;
+    margin-left: 50px;
+}
+
+.subscription-tag {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: 0.5rem;
+    position: relative;
+    top: -1px;
+}
+
+.subscription-tag.admin-tag {
+    background: linear-gradient(135deg, #ff416c, #f83d1c);
+    color: #fff;
+    box-shadow: 0 0 8px rgba(255, 65, 108, 0.6);
+}
+
+.subscription-tag.moonpro {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #000;
+}
+
+.subscription-tag.moonstu {
+    background: linear-gradient(135deg, #00C9FF, #92FE9D);
+    color: #000;
+}
+
+.subscription-tag.free {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.subscription-tag i {
+    font-size: 12px;
+}
+
+.comment-item.admin {
+    border-color: #FFD700;
+    background-color: #1c1a12;
+}
+
+#inline-reply-form {
+    border-color: #333;
+}
+
+#inline-reply-form textarea:focus {
+    box-shadow: none !important;
+}
+
+.server-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.server-tab {
+    padding: 10px 20px;
+    background: #2c2c2c !important;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.server-tab:hover {
+    background: #3a3a3a !important;
+    transform: translateY(-2px);
+}
+
+.server-tab.active {
+    background: #22c55e !important;
+    color: #000000;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+}
+
+.episode-list-item {
+    padding: 10px 18px;
+    background: #fbbf24 !important;
+    color: #000;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.episode-list-item:hover {
+    background: #f59e0b !important;
+    transform: translateY(-2px);
+}
+
+.episode-list-item.active {
+    background: #22c55e !important;
+    color: #000;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+    flex: 0 0 auto;
+    min-width: 150px;
+}
+
+@media (max-width: 768px) {
+    .action-buttons {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .action-buttons .btn,
+    .action-buttons .favorite-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+/* Sửa nút Yêu thích cho giống 2 nút kia */
+button.favorite-btn {
+    /* 1. Bo tròn 2 cạnh cho nó (giống 2 nút kia) */
+    border-radius: 50px;
+
+    /* 2. Thêm hiệu ứng "bóng bóng" (box-shadow) */
+    /* Tui dùng màu tím của nút để tạo bóng mờ "glow" */
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
+
+    /* 3. Thêm transition cho nó mượt khi hover (giống 2 nút kia) */
+    transition: all 0.3s ease;
+    
+    /* (Mấy cái padding, background gradient ông có rồi thì thôi) */
+}
+
+/* Thêm hiệu ứng "nổi" lên khi rê chuột vào */
+button.favorite-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(118, 75, 162, 0.6);
+}
+/* Thêm cái này vào file CSS của ông */
+.hero-play-buttons {
+    display: inline-flex; /* Dàn hàng ngang 2 nút bên trong */
+    gap: 15px; /* Giả sử khoảng cách cũ của ông là 15px, ông tự chỉnh lại cho khớp */
+}

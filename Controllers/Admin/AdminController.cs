@@ -30,6 +30,7 @@ namespace MovieWeb.Controllers
         private readonly IHubContext<NotificationHub> _notificationHubContext;
         private readonly IOPhimService _oPhimService;
         private readonly IMovieSyncService _movieSyncService;
+        private readonly IEmailService _emailService;
 
         // === CONSTRUCTOR CHÍNH (DÙNG CHUNG CHO TẤT CẢ FILE) ===
         public AdminController(
@@ -42,7 +43,8 @@ namespace MovieWeb.Controllers
             IBackgroundJobClient backgroundJobClient,
             IHubContext<NotificationHub> notificationHubContext,
             IOPhimService oPhimService,
-            IMovieSyncService movieSyncService
+            IMovieSyncService movieSyncService,
+            IEmailService emailService
         )
         {
             _userManager = userManager;
@@ -55,6 +57,7 @@ namespace MovieWeb.Controllers
             _notificationHubContext = notificationHubContext;
             _oPhimService = oPhimService;
             _movieSyncService = movieSyncService;
+            _emailService = emailService;
         }
 
         // === CÁC HÀM HELPER DÙNG CHUNG ===

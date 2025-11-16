@@ -1,0 +1,218 @@
+@model List<MovieWeb.Models.Entities.Movie>
+@using MovieWeb.Models.ViewModels
+@using MovieWeb.Models.Entities
+
+@{
+    Layout = "_Layout";
+    var country = ViewBag.Country as Country;
+    var countryName = country?.Name ?? "Quốc gia";
+    var filters = ViewBag.Filters as MovieFilterViewModel ?? new MovieFilterViewModel();
+}
+
+@if (!string.IsNullOrEmpty(ViewBag.SeoDescription as string))
+{
+    <meta name="description" content="@ViewBag.SeoDescription" />
+}
+
+@functions {
+    private string GetPosterUrl(MovieWeb.Models.Entities.Movie m)
+    {
+        var candidate = !string.IsNullOrEmpty(m.ThumbUrl) ? m.ThumbUrl : m.PosterUrl;
+
+        if (string.IsNullOrEmpty(candidate))
+            return Url.Content("~/images/no-image.jpg");
+
+        candidate = candidate.Trim();
+
+        if (candidate.StartsWith("http") || candidate.StartsWith("//"))
+            return candidate;
+
+        if (candidate.StartsWith("/"))
+            return candidate;
+
+        if (candidate.IndexOf("uploads", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            return candidate.StartsWith("/") ? candidate : "/" + candidate;
+
+        var fallbackBase = "https://img.ophim.live/uploads/movies/";
+        return fallbackBase + candidate;
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/filter-sidebar.css" asp-append-version="true" />
+}
+
+<section class="container py-4">
+
+    <h2 class="text-white mb-4">
+        Quốc gia: <span class="text-warning">@countryName</span>
+    </h2>
+
+    @* ===== RENDER BỘ LỌC ===== *@
+    @await Html.PartialAsync("_FilterSidebar", filters)
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-secondary text-center mt-4">
+            Không tìm thấy phim nào phù hợp.
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var movie in Model)
+            {
+                var imgUrl = GetPosterUrl(movie);
+
+                <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                    <div class="movie-card position-relative overflow-hidden rounded shadow-sm">
+                        <a href="/phim/@movie.Slug" class="text-decoration-none text-white">
+                            <img src="@imgUrl"
+                                 alt="@movie.Name"
+                                 class="img-fluid w-100"
+                                 style="aspect-ratio: 2/3; object-fit: cover;"
+                                 onerror="this.src='@Url.Content("~/images/no-image.jpg")'" />
+
+                            <div class="p-2">
+                                <h6 class="text-truncate mb-0">@movie.Name</h6>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* ===== PHÂN TRANG ===== *@
+        @if (ViewBag.TotalPages > 1)
+        {
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+
+                    @{
+                        var currentFilters = new Dictionary<string, string>();
+
+                        if (!string.IsNullOrEmpty(filters.Type)) currentFilters["Type"] = filters.Type;
+                        if (!string.IsNullOrEmpty(filters.Countries)) currentFilters["Countries"] = filters.Countries;
+                        if (!string.IsNullOrEmpty(filters.Categories)) currentFilters["Categories"] = filters.Categories;
+                        if (!string.IsNullOrEmpty(filters.Language)) currentFilters["Language"] = filters.Language;
+                        if (!string.IsNullOrEmpty(filters.Years)) currentFilters["Years"] = filters.Years;
+                        if (!string.IsNullOrEmpty(filters.SortBy)) currentFilters["SortBy"] = filters.SortBy;
+                    }
+
+                    @for (int i = 1; i <= (int)ViewBag.TotalPages; i++)
+                    {
+                        var queryParams = string.Join("&",
+                            currentFilters.Select(kvp =>
+                                $"{kvp.Key}={System.Net.WebUtility.UrlEncode(kvp.Value)}"
+                            ));
+
+                        var pageUrl = $"?Page={i}" + (string.IsNullOrEmpty(queryParams) ? "" : "&" + queryParams);
+
+                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                            <a class="page-link" href="@pageUrl">@i</a>
+                        </li>
+                    }
+                </ul>
+S           </nav>
+        }
+    }
+</section>
+
+<style>
+    .movie-card img {
+        transition: opacity .25s ease;
+    }
+    .movie-card:hover img {
+        opacity: .85;
+    }
+</style>
+
+@* ✅ BẮT ĐẦU CODE THÊM POPUP *@
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            // ✅ Gọi đúng popup cho Quốc Gia
+            fetchPopupAd("Popup_QuocGia");
+
+            // --- Bắt đầu hàm trợ giúp (Mẫu dùng chung) ---
+
+            // Hàm gọi API
+            async function fetchPopupAd(placementName) {
+                try {
+                    const response = await fetch(`/api/ads/get-placements?placements=${placementName}`);
+
+                    if (!response.ok) {
+                        console.error(`Lỗi API (${placementName}):`, response.statusText);
+                        return;
+                    }
+
+                    const banners = await response.json();
+
+                    if (banners && banners.length > 0) {
+                        const banner = banners[0];
+                        const modalId = `adModal_${placementName}`;
+                        const modalHtml = createAdModalHtml(banner, modalId);
+
+                        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                        var adModalElement = document.getElementById(modalId);
+
+                        if (adModalElement) {
+                            var adModal = new bootstrap.Modal(adModalElement);
+                            adModal.show();
+
+                            adModalElement.addEventListener('hidden.bs.modal', function () {
+                                adModalElement.remove();
+                            });
+                        }
+                    }
+                }
+                catch (error) {
+                    console.error(`Lỗi khi tải popup ad (${placementName}):`, error);
+                }
+            }
+
+            // Hàm tạo HTML
+            function createAdModalHtml(banner, modalId) {
+
+                let closeButtonCss = `
+                    position: absolute;
+                    top: -15px;
+                    right: -10px;
+                    background-color: white;
+                    border-radius: 50%;
+                    opacity: 1;
+                    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+                    width: 30px;
+                    height: 30px;
+                    padding: 0;
+                `;
+
+                return `
+                <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                        <div class="modal-content" style="background-color: transparent; border: none;">
+                            <div class="modal-body" style="padding: 0; position: relative;">
+                                <button type="button" class="btn-close"
+                                        data-bs-dismiss="modal"
+                                        aria-label="Close"
+                                        style="${closeButtonCss}">
+                                </button>
+
+                                <a href="${banner.clickUrl}"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    <img src="${banner.adContentUrl}"
+                                         class="img-fluid rounded"
+                                         alt="${banner.adName}">
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }
+        });
+    </script>
+}
+@* ✅ KẾT THÚC CODE THÊM POPUP *@

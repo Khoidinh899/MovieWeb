@@ -3,309 +3,374 @@
 @{
     ViewData["Title"] = "Lịch sử thanh toán";
     Layout = "~/Views/Shared/_UserLayout.cshtml";
+
     var currentPage = ViewBag.CurrentPage ?? 1;
     var totalPages = ViewBag.TotalPages ?? 1;
     var totalTransactions = ViewBag.TotalTransactions ?? 0;
     var pageSize = ViewBag.PageSize ?? 10;
+
     var startItem = (currentPage - 1) * pageSize + 1;
     var endItem = Math.Min(currentPage * pageSize, totalTransactions);
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/user.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 }
 
-<div class="payment-container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Lịch sử thanh toán</h2>
-        <a href="/user/profile" class="back-btn">
-            <i class="fas fa-arrow-left"></i>
-            Quay lại
-        </a>
-    </div>
+<div class="container py-5">
+    <div class="row">
 
-    @if (!Model.Any() && currentPage == 1)
-    {
-        <p class="text-center text-gray-400 mt-4">Bạn chưa có giao dịch nào.</p>
-    }
-    else
-    {
-        <table>
-            <thead>
-                <tr>
-                    <th>Mã GD</th>
-                    <th>Gói</th>
-                    <th>Số tiền</th>
-                    <th>Trạng thái</th>
-                    <th>Ngày thanh toán</th>
-                    <th>Ngày hết hạn</th>
-                    <th>Ghi chú</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model)
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            @await Html.PartialAsync("~/Views/User/Shared/_ProfileSidebar.cshtml",
+                (MovieWeb.Models.DTOs.UserProfileDto)ViewBag.UserProfile)
+        </div>
+
+        <!-- Content -->
+        <div class="col-lg-9">
+            <div class="payment-container" style="margin:0; padding:0; max-width:100%;">
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="mb-0">@ViewData["Title"]</h2>
+                    <a href="/user/profile" class="back-btn">
+                        <i class="fas fa-arrow-left"></i> Quay lại
+                    </a>
+                </div>
+
+                @if (!Model.Any() && currentPage == 1)
                 {
-                    <tr id="row-@item.SubscriptionId">
-                        <td>@item.TransactionCode</td>
-                        <td>@item.PlanName</td>
-                        <td>@item.AmountVND.ToString("N0") ₫</td>
-
-                        <td id="status-cell-@item.SubscriptionId">
-                            @if (!string.IsNullOrEmpty(item.SubscriptionStatus))
-                            {
-                                switch (item.SubscriptionStatus)
-                                {
-                                    case "stacked":
-                                        <span class="status-badge status-stacked">
-                                            <i class="fas fa-plus-circle me-1"></i>
-                                            Đã cộng dồn
-                                        </span>
-                                        break;
-                                    case "expired":
-                                        <span class="status-badge status-expired">
-                                            <i class="fas fa-history me-1"></i>
-                                            Đã hết hạn
-                                        </span>
-                                        break;
-                                    case "cancelled":
-                                        <span class="status-badge status-cancelled">
-                                            <i class="fas fa-times-circle me-1"></i>
-                                            Đã hủy
-                                        </span>
-                                        break;
-                                    default:
-                                        // --- SỬA Ở ĐÂY ---
-                                        <span class="status-badge status-@item.Status.ToLower()">
-                                            @if (item.Status.ToLower() == "completed")
-                                            {
-                                                <i class="fas fa-check-circle me-1"></i>
-                                            }
-                                            @item.StatusDisplay
-                                        </span>
-                                        break;
-                                }
-                            }
-                            else
-                            {
-                                <span class="status-badge status-@item.Status.ToLower()">
-                                    @if (item.Status.ToLower() == "completed")
-                                    {
-                                        <i class="fas fa-check-circle me-1"></i>
-                                    }
-                                    @item.StatusDisplay
-                                </span>
-                            }
-                        </td>
-
-                        <td>@item.CreatedAt.ToString("dd/MM/yyyy")</td>
-
-                        <td>
-                            @if (item.SubscriptionEndDate.HasValue)
-                            {
-                                @item.SubscriptionEndDate.Value.ToString("dd/MM/yyyy")
-                            }
-                            else
-                            {
-                                <span class="text-muted">N/A</span>
-                            }
-                        </td>
-
-                        <td id="notes-cell-@item.SubscriptionId">
-                            @if (item.Status == "completed"
-                                                && item.SubscriptionId.HasValue
-                                                && item.SubscriptionId.Value > 0
-                                                && item.SubscriptionStatus != "cancelled"
-                                                && item.SubscriptionStatus != "expired"
-                                                && item.SubscriptionStatus != "stacked" // Thêm điều kiện này
-                                                && item.SubscriptionStatus != "converted") // và cả cái này nữa
-                            {
-                                <button class="cancel-btn" onclick="confirmCancel('@item.SubscriptionId.Value')">
-                                    Huỷ gói
-                                </button>
-                            }
-                            else if (item.SubscriptionStatus == "cancelled")
-                            {
-                                <span class="text-primary" style="font-size: 15px;">
-                                    <i class="fas fa-info-circle"></i> Đã hủy, còn hạn đến hết kỳ
-                                </span>
-                            }
-                            @* Có thể thêm ghi chú cho các trạng thái khác nếu muốn *@
-                            else if (item.SubscriptionStatus == "stacked" || item.SubscriptionStatus == "converted")
-                            {
-                                <span class="text-success" style="font-size: 15px;">
-                                    <i class="fas fa-info-circle"></i> Đã được gộp vào gói mới
-                                </span>
-                            }
-                        </td>
-                    </tr>
+                    <p class="text-center text-muted mt-4">Bạn chưa có giao dịch nào.</p>
                 }
-            </tbody>
-        </table>
-
-        @if (totalPages > 1)
-        {
-            <div class="pagination-container">
-                <a href="/user/payment-history?page=1" class="pagination-btn @(currentPage == 1 ? "disabled" : "")">
-                    <i class="fas fa-angle-double-left"></i>
-                </a>
-
-                <a href="/user/payment-history?page=@(currentPage - 1)"
-                    class="pagination-btn @(currentPage == 1 ? "disabled" : "")">
-                    <i class="fas fa-angle-left"></i> Trước
-                </a>
-
-                <div class="page-numbers">
-                    @{
-                        var startPage = Math.Max(1, currentPage - 2);
-                        var endPage = Math.Min(totalPages, currentPage + 2);
-
-                        if (startPage > 1)
-                        {
-                            <a href="/user/payment-history?page=1" class="pagination-btn page-number">1</a>
-                            if (startPage > 2)
+                else
+                {
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mã GD</th>
+                                <th>Gói</th>
+                                <th>Số tiền</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày thanh toán</th>
+                                <th>Ngày hết hạn</th>
+                                <th>Ghi chú</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
                             {
-                                <span class="page-info">...</span>
-                            }
-                        }
+                                <tr id="row-@item.SubscriptionId">
+                                    <td data-label="Mã GD">@item.TransactionCode</td>
+                                    <td data-label="Gói">@item.PlanName</td>
+                                    <td data-label="Số tiền">@item.AmountVND.ToString("N0") ₫</td>
 
-                        for (int i = startPage; i <= endPage; i++)
-                        {
-                            <a href="/user/payment-history?page=@i"
-                                class="pagination-btn page-number @(i == currentPage ? "active" : "")">
-                                @i
+                                    <td data-label="Trạng thái" id="status-cell-@item.SubscriptionId">
+                                        @if (!string.IsNullOrEmpty(item.SubscriptionStatus))
+                                        {
+                                            switch (item.SubscriptionStatus)
+                                            {
+                                                case "stacked":
+                                                    <span class="status-badge status-stacked">
+                                                        <i class="fas fa-plus-circle me-1"></i> Đã cộng dồn
+                                                    </span>
+                                                    break;
+
+                                                case "expired":
+                                                    <span class="status-badge status-expired">
+                                                        <i class="fas fa-history me-1"></i> Đã hết hạn
+                                                    </span>
+                                                    break;
+
+                                                case "cancelled":
+                                                    <span class="status-badge status-cancelled">
+                                                        <i class="fas fa-times-circle me-1"></i> Đã hủy
+                                                    </span>
+                                                    break;
+
+                                                default:
+                                                    <span class="status-badge status-@item.Status.ToLower()">
+                                                        @if (item.Status.ToLower() == "completed")
+                                                        {
+                                                            <i class="fas fa-check-circle me-1"></i>
+                                                        }
+                                                        @item.StatusDisplay
+                                                    </span>
+                                                    break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="status-badge status-@item.Status.ToLower()">
+                                                @if (item.Status.ToLower() == "completed")
+                                                {
+                                                    <i class="fas fa-check-circle me-1"></i>
+                                                }
+                                                @item.StatusDisplay
+                                            </span>
+                                        }
+                                    </td>
+
+                                    <td data-label="Ngày thanh toán">@item.CreatedAt.ToString("dd/MM/yyyy")</td>
+
+                                    <td data-label="Ngày hết hạn">
+                                        @if (item.SubscriptionEndDate.HasValue)
+                                        {
+                                            @item.SubscriptionEndDate.Value.ToString("dd/MM/yyyy")
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
+                                    </td>
+
+                                    <td data-label="Ghi chú" id="notes-cell-@item.SubscriptionId">
+                                        @if (item.Status == "completed"
+                                            && item.SubscriptionId is not null
+                                            && item.SubscriptionStatus != "cancelled"
+                                            && item.SubscriptionStatus != "expired"
+                                            && item.SubscriptionStatus != "stacked"
+                                            && item.SubscriptionStatus != "converted")
+                                        {
+                                            <button class="cancel-btn" 
+        data-subscription-id="@item.SubscriptionId"
+        onclick="confirmCancel(this.dataset.subscriptionId)">
+    Huỷ gói
+</button>
+                                        }
+                                        else if (item.SubscriptionStatus == "cancelled")
+                                        {
+                                            <span class="text-primary">
+                                                <i class="fas fa-info-circle"></i> Đã hủy, còn hạn đến hết kỳ
+                                            </span>
+                                        }
+                                        else if (item.SubscriptionStatus == "stacked" || item.SubscriptionStatus == "converted")
+                                        {
+                                            <span class="text-success">
+                                                <i class="fas fa-info-circle"></i> Đã được gộp vào gói mới
+                                            </span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    @if (totalPages > 1)
+                    {
+                        <div class="pagination-container">
+
+                            <a href="/user/payment-history?page=1"
+                               class="pagination-btn @(currentPage == 1 ? "disabled" : "")">
+                                <i class="fas fa-angle-double-left"></i>
                             </a>
-                        }
 
-                        if (endPage < totalPages)
-                        {
-                            if (endPage < totalPages - 1)
-                            {
-                                <span class="page-info">...</span>
-                            }
-                            <a href="/user/payment-history?page=@totalPages" class="pagination-btn page-number">@totalPages</a>
-                        }
+                            <a href="/user/payment-history?page=@(currentPage - 1)"
+                               class="pagination-btn @(currentPage == 1 ? "disabled" : "")">
+                                <i class="fas fa-angle-left"></i> Trước
+                            </a>
+
+                            <div class="page-numbers">
+                                @{
+                                    var startPage = Math.Max(1, currentPage - 2);
+                                    var endPage = Math.Min(totalPages, currentPage + 2);
+
+                                    if (startPage > 1)
+                                    {
+                                        <a href="/user/payment-history?page=1" class="pagination-btn">1</a>
+                                        if (startPage > 2) { <span class="page-info">...</span>; }
+                                    }
+
+                                    for (int i = startPage; i <= endPage; i++)
+                                    {
+                                        <a href="/user/payment-history?page=@i"
+                                           class="pagination-btn @(i == currentPage ? "active" : "")">
+                                            @i
+                                        </a>
+                                    }
+
+                                    if (endPage < totalPages)
+                                    {
+                                        if (endPage < totalPages - 1) { <span class="page-info">...</span>; }
+                                        <a href="/user/payment-history?page=@totalPages"
+                                           class="pagination-btn">@totalPages</a>
+                                    }
+                                }
+                            </div>
+
+                            <a href="/user/payment-history?page=@(currentPage + 1)"
+                               class="pagination-btn @(currentPage == totalPages ? "disabled" : "")">
+                                Tiếp <i class="fas fa-angle-right"></i>
+                            </a>
+
+                            <a href="/user/payment-history?page=@totalPages"
+                               class="pagination-btn @(currentPage == totalPages ? "disabled" : "")">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+
+                            <div class="page-info">
+                                Trang @currentPage/@totalPages (@startItem-@endItem / @totalTransactions)
+                            </div>
+                        </div>
                     }
-                </div>
-
-                <a href="/user/payment-history?page=@(currentPage + 1)"
-                    class="pagination-btn @(currentPage == totalPages ? "disabled" : "")">
-                    Tiếp <i class="fas fa-angle-right"></i>
-                </a>
-
-                <a href="/user/payment-history?page=@totalPages"
-                    class="pagination-btn @(currentPage == totalPages ? "disabled" : "")">
-                    <i class="fas fa-angle-double-right"></i>
-                </a>
-
-                <div class="page-info">
-                    Trang @currentPage/@totalPages (@startItem-@endItem / @totalTransactions)
-                </div>
+                }
             </div>
-        }
-    }
+        </div>
+    </div>
 </div>
 
+<!-- Confirm Modal -->
 <div id="confirmOverlay" class="confirm-overlay">
     <div class="confirm-box">
         <h3>⚠️ Xác nhận huỷ gói</h3>
-        <p style="line-height: 1.6;">
-            <strong>Lưu ý quan trọng:</strong><br />
-            • Bạn vẫn dùng được đến hết thời hạn đã trả<br />
+        <p>
+            <strong>Lưu ý:</strong><br />
+            • Vẫn dùng đến hết hạn<br />
             • Không mất tiền<br />
-            • Mua gói mới sẽ cộng dồn thời gian còn lại<br />
+            • Gói mới sẽ cộng dồn thời gian<br />
             <br />
-            Bạn có chắc muốn hủy gói này không?
+            Bạn có chắc muốn huỷ không?
         </p>
         <button class="confirm-btn confirm-yes" onclick="cancelConfirmed()">Xác nhận hủy</button>
         <button class="confirm-btn confirm-no" onclick="closeConfirm()">Đóng</button>
     </div>
 </div>
+
 @section Scripts {
-    <script>
-        let cancelSubscriptionId = null;
+<script>
+    let cancelSubscriptionId = null;
 
-        function confirmCancel(subscriptionId) {
-            cancelSubscriptionId = subscriptionId;
-            document.getElementById("confirmOverlay").style.display = "flex";
+    function confirmCancel(subscriptionId) {
+        console.log('🎯 confirmCancel called with:', subscriptionId, 'Type:', typeof subscriptionId);
+        
+        if (!subscriptionId || subscriptionId === 'null' || subscriptionId === 'undefined') {
+            console.error('❌ Invalid subscription ID received:', subscriptionId);
+            alert('Lỗi: Không xác định được ID gói đăng ký!');
+            return;
+        }
+        
+        // ✅ LƯU ID DẠNG STRING (quan trọng!)
+        cancelSubscriptionId = String(subscriptionId);
+        console.log('✅ Saved cancelSubscriptionId:', cancelSubscriptionId);
+        
+        document.getElementById("confirmOverlay").style.display = "flex";
+    }
+
+    function closeConfirm() {
+        document.getElementById("confirmOverlay").style.display = "none";
+        // ⚠️ KHÔNG RESET cancelSubscriptionId Ở ĐÂY
+        // cancelSubscriptionId = null; // ← XÓA DÒNG NÀY
+    }
+
+    async function cancelConfirmed() {
+        console.log('🚀 cancelConfirmed called, current ID:', cancelSubscriptionId);
+        
+        if (!cancelSubscriptionId) {
+            alert("Không tìm thấy ID gói cần hủy!");
+            return;
         }
 
-        function closeConfirm() {
-            document.getElementById("confirmOverlay").style.display = "none";
-            const yesBtn = document.querySelector('.confirm-yes');
-            const noBtn = document.querySelector('.confirm-no');
-            yesBtn.disabled = false;
-            noBtn.disabled = false;
-            yesBtn.textContent = 'Xác nhận hủy';
-            cancelSubscriptionId = null;
-        }
+        // ✅ LƯU LẠI ID TRƯỚC KHI ĐÓNG POPUP
+        const subscriptionIdToCancel = cancelSubscriptionId;
+        console.log('💾 Saved ID before API call:', subscriptionIdToCancel);
 
-        function cancelConfirmed() {
-            if (!cancelSubscriptionId) return;
-
-            const yesBtn = document.querySelector('.confirm-yes');
-            const noBtn = document.querySelector('.confirm-no');
-            yesBtn.disabled = true;
-            noBtn.disabled = true;
-            yesBtn.textContent = 'Đang xử lý...';
-
-            // ✅ LƯU ID VÀO BIẾN TẠM NGAY LẬP TỨC
-            const subIdToUpdate = cancelSubscriptionId;
-
-            fetch('/api/subscription/cancel', {
+        try {
+            const response = await fetch('/api/subscription/cancel', {
                 method: "POST",
-                headers: {
-                    'Content-Type': 'application/json'
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
                 credentials: 'include',
                 body: JSON.stringify({
-                    subscriptionId: parseInt(subIdToUpdate), // Dùng biến tạm
-                    reason: "Người dùng yêu cầu hủy",
+                    subscriptionId: parseInt(subscriptionIdToCancel),
+                    reason: "User requested cancel",
                     cancelImmediately: false
                 })
-            })
-                .then(async res => {
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.message || 'Lỗi từ server');
-                    return data;
-                })
-                .then(data => {
-                    if (data.success) {
-                        // Bây giờ mới gọi closeConfirm(), không ảnh hưởng đến biến tạm
-                        closeConfirm();
+            });
 
-                        // Tìm các ô cần cập nhật bằng biến tạm
-                        const statusCell = document.getElementById(`status-cell-${subIdToUpdate}`);
-                        const notesCell = document.getElementById(`notes-cell-${subIdToUpdate}`);
+            const data = await response.json();
+            console.log('📦 Response:', data);
 
-                        if (statusCell && notesCell) {
-                            // Cập nhật ô Trạng thái
-                            statusCell.innerHTML = `
-                                <span class="status-badge status-cancelled">
-                                    <i class="fas fa-times-circle me-1"></i>
-                                    Đã hủy
-                                </span>`;
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Lỗi không xác định');
+            }
 
-                            // Cập nhật ô Ghi chú
-                            notesCell.innerHTML = `
-                                <span class="text-warning" style="font-size: 12px;">
-                                    <i class="fas fa-info-circle"></i> Đã hủy, còn hạn đến hết kỳ
-                                </span>`;
-                        } else {
-                            // Lỗi này xảy ra nếu không tìm thấy ID trong HTML
-                            console.error("Lỗi: Không tìm thấy element với ID:", `status-cell-${subIdToUpdate}`, "hoặc", `notes-cell-${subIdToUpdate}`);
-                            alert("Lỗi giao diện: Không thể cập nhật dòng. Vui lòng tải lại trang.");
-                        }
-                    } else {
-                        alert('Lỗi: ' + (data.message || "Không thể huỷ gói!"));
-                        closeConfirm();
-                    }
-                })
-                .catch(error => {
-                    console.error('Lỗi khi gọi API:', error);
-                    alert("Có lỗi xảy ra: " + error.message);
-                    closeConfirm();
-                });
+            // ✅ ĐÓNG POPUP SAU KHI API THÀNH CÔNG
+            document.getElementById("confirmOverlay").style.display = "none";
+            
+            console.log('✅ API success, updating UI for ID:', subscriptionIdToCancel);
+
+            // ✅ Cập nhật status cell (DÙNG subscriptionIdToCancel, KHÔNG PHẢI cancelSubscriptionId)
+            const statusCellId = `status-cell-${subscriptionIdToCancel}`;
+            const statusCell = document.getElementById(statusCellId);
+            console.log('🔍 Looking for status cell:', statusCellId, 'Found:', !!statusCell);
+            
+            if (statusCell) {
+                statusCell.innerHTML = `
+                    <span class="status-badge status-cancelled">
+                        <i class="fas fa-times-circle me-1"></i> Đã hủy
+                    </span>
+                `;
+                console.log('✅ Updated status cell');
+            } else {
+                console.error('❌ Status cell not found:', statusCellId);
+            }
+
+            // ✅ Cập nhật notes cell
+            const notesCellId = `notes-cell-${subscriptionIdToCancel}`;
+            const notesCell = document.getElementById(notesCellId);
+            console.log('🔍 Looking for notes cell:', notesCellId, 'Found:', !!notesCell);
+            
+            if (notesCell) {
+                notesCell.innerHTML = `
+                    <span class="text-primary">
+                        <i class="fas fa-info-circle"></i> Đã hủy, còn hạn đến hết kỳ
+                    </span>
+                `;
+                console.log('✅ Updated notes cell');
+            } else {
+                console.error('❌ Notes cell not found:', notesCellId);
+            }
+
+            // ✅ RESET cancelSubscriptionId SAU KHI CẬP NHẬT XONG UI
+            cancelSubscriptionId = null;
+            console.log('🧹 Reset cancelSubscriptionId');
+
+            // ✅ Bỏ alert, chỉ log ra console
+            console.log('✅ Success:', data.message || 'Hủy gói thành công!');
+
+        } catch (err) {
+            console.error('❌ Error:', err);
+            document.getElementById("confirmOverlay").style.display = "none";
+            cancelSubscriptionId = null;
+            alert("❌ Lỗi: " + err.message);
         }
-    </script>
+    }
+
+    // ✅ DEBUG: Log all cells when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('📄 Page loaded, checking table structure...');
+        
+        const allRows = document.querySelectorAll('tbody tr[id^="row-"]');
+        console.log('📊 Found', allRows.length, 'rows');
+        
+        allRows.forEach((row, index) => {
+            const rowId = row.id;
+            const subscriptionId = rowId.replace('row-', '');
+            const statusCell = document.getElementById(`status-cell-${subscriptionId}`);
+            const notesCell = document.getElementById(`notes-cell-${subscriptionId}`);
+            
+            console.log(`Row ${index + 1}:`, {
+                rowId: rowId,
+                subscriptionId: subscriptionId,
+                hasStatusCell: !!statusCell,
+                hasNotesCell: !!notesCell
+            });
+        });
+        
+        const cancelBtns = document.querySelectorAll('button.cancel-btn');
+        console.log('🔘 Found', cancelBtns.length, 'cancel buttons');
+    });
+</script>
 }

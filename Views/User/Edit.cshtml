@@ -11,52 +11,81 @@
 }
 
 <div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
+    <div class="row">
+        
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            @await Html.PartialAsync(
+                "~/Views/User/Shared/_ProfileSidebar.cshtml", 
+                (MovieWeb.Models.DTOs.UserProfileDto)ViewBag.UserProfile
+            )
+        </div>
+
+        <!-- Content -->
+        <div class="col-lg-9">
             <div class="card">
+                
                 <div class="card-header bg-white">
-                    <h4 class="mb-0">
-                        <i class="bi bi-pencil me-2"></i>Chỉnh sửa thông tin cá nhân
-                    </h4>
+                    <h5 class="mb-0">
+                        <i class="bi bi-pencil me-2"></i> Chỉnh sửa thông tin cá nhân
+                    </h5>
                 </div>
+
                 <div class="card-body">
+
                     <form asp-action="Edit" method="post">
+                        @Html.AntiForgeryToken()
+
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
+                        <!-- First / Last Name -->
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label asp-for="FirstName" class="form-label">Họ <span class="text-danger">*</span></label>
+                                <label asp-for="FirstName" class="form-label">
+                                    Họ <span class="text-danger">*</span>
+                                </label>
                                 <input asp-for="FirstName" class="form-control" />
                                 <span asp-validation-for="FirstName" class="text-danger"></span>
                             </div>
+
                             <div class="col-md-6">
-                                <label asp-for="LastName" class="form-label">Tên <span class="text-danger">*</span></label>
+                                <label asp-for="LastName" class="form-label">
+                                    Tên <span class="text-danger">*</span>
+                                </label>
                                 <input asp-for="LastName" class="form-control" />
                                 <span asp-validation-for="LastName" class="text-danger"></span>
                             </div>
                         </div>
 
+                        <!-- Email -->
                         <div class="mb-3">
-                            <label asp-for="Email" class="form-label">Email <span class="text-danger">*</span></label>
+                            <label asp-for="Email" class="form-label">
+                                Email <span class="text-danger">*</span>
+                            </label>
                             <input asp-for="Email" class="form-control" type="email" />
                             <span asp-validation-for="Email" class="text-danger"></span>
+
                             <small class="form-text text-muted">
-                                <i class="bi bi-info-circle"></i> Nếu thay đổi email, bạn sẽ cần xác thực lại email mới
+                                <i class="bi bi-info-circle"></i> 
+                                Nếu thay đổi email, bạn sẽ cần xác thực email mới.
                             </small>
                         </div>
 
+                        <!-- Phone -->
                         <div class="mb-3">
                             <label asp-for="PhoneNumber" class="form-label">Số điện thoại</label>
                             <input asp-for="PhoneNumber" class="form-control" type="tel" placeholder="Chưa cập nhật" />
                             <span asp-validation-for="PhoneNumber" class="text-danger"></span>
                         </div>
 
+                        <!-- Date + Gender -->
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label asp-for="DateOfBirth" class="form-label">Ngày sinh</label>
                                 <input asp-for="DateOfBirth" class="form-control" type="date" />
                                 <span asp-validation-for="DateOfBirth" class="text-danger"></span>
                             </div>
+
                             <div class="col-md-6">
                                 <label asp-for="Gender" class="form-label">Giới tính</label>
                                 <select asp-for="Gender" class="form-select">
@@ -69,20 +98,24 @@
                             </div>
                         </div>
 
+                        <!-- Address -->
                         <div class="mb-3">
                             <label asp-for="Address" class="form-label">Địa chỉ</label>
                             <input asp-for="Address" class="form-control" placeholder="Chưa cập nhật" />
                             <span asp-validation-for="Address" class="text-danger"></span>
                         </div>
 
+                        <!-- Bio -->
                         <div class="mb-3">
                             <label asp-for="Bio" class="form-label">Tiểu sử</label>
                             <textarea asp-for="Bio" class="form-control" rows="3" placeholder="Giới thiệu ngắn về bản thân..."></textarea>
                             <span asp-validation-for="Bio" class="text-danger"></span>
                         </div>
-                        
+
+                        <!-- Hidden -->
                         <input type="hidden" asp-for="CurrentEmail" />
 
+                        <!-- Buttons -->
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle me-1"></i> Lưu thay đổi
@@ -91,7 +124,9 @@
                                 <i class="bi bi-x-circle me-1"></i> Hủy
                             </a>
                         </div>
+
                     </form>
+
                 </div>
             </div>
         </div>
@@ -99,5 +134,5 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @await Html.PartialAsync("_ValidationScriptsPartial")
 }

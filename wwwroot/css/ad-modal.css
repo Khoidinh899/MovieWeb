@@ -191,11 +191,11 @@
    ============================================ */
 
 /* CSS cho server tab đang chọn (Vietsub, Thuyết minh...) */
-.server-tabs .server-tab.active {
-    background: #facc15 !important;
-    color: #000 !important;
+.server-tab.active {
+    background: #22c55e !important; /* ✅ XANH LÁ */
+    color: #ffffff !important;
     font-weight: bold;
-    box-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5) !important;
     transform: scale(1.05);
 }
 
@@ -221,5 +221,7 @@
 }
 
 .server-tab {
+    background: #8f8e8e !important; /* Xám tối */
+    color: #000000 !important;
     transition: all 0.3s ease;
 }

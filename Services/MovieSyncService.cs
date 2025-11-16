@@ -21,6 +21,7 @@ namespace MovieWeb.Services
         Task SyncMoviesFromApiToDbAsync(List<ApiMovie> apiMovies, int minYear);
         Task BackfillAllEpisodesAsync();
         Task BackfillSingleMoviesAsync();
+        Task SyncMovieFromApiBySlug(string apiSlug, int movieId);
     }
 
     public class MovieSyncService : IMovieSyncService
@@ -50,7 +51,120 @@ namespace MovieWeb.Services
             _actorSyncService = actorSyncService;
             _directorSyncService = directorSyncService;
         }
+        public async Task SyncMovieFromApiBySlug(string apiSlug, int movieId)
+        {
+            _logger.LogInformation("[Hangfire Job] Bắt đầu sync tập phim cho MovieID: {MovieId}, ApiSlug: {ApiSlug}", movieId, apiSlug);
 
+            try
+            {
+                // 1. Lấy chi tiết phim từ API
+                var apiResponse = await _oPhimService.GetMovieDetailAsync(apiSlug);
+                var apiItem = apiResponse?.Item;
+
+                // Kiểm tra API có trả về dữ liệu và có tập phim không
+                if (apiItem == null || apiItem.Episodes == null || !apiItem.Episodes.Any())
+                {
+                    _logger.LogWarning("[Hangfire Job] ❌ Không tìm thấy phim hoặc không có tập phim trên API. Slug: {ApiSlug}, MovieID: {MovieId}", apiSlug, movieId);
+                    return;
+                }
+
+                // 2. Lấy phim từ DB để xóa tập cũ và cập nhật
+                var movieInDb = await _context.Movies
+                                    .Include(m => m.Episodes) // Phải Include Episodes để xóa
+                                    .FirstOrDefaultAsync(m => m.MovieId == movieId);
+
+                if (movieInDb == null)
+                {
+                    _logger.LogError("[Hangfire Job] ❌ Không tìm thấy Movie trong DB với ID: {MovieId}. Không thể sync tập.", movieId);
+                    return;
+                }
+
+                // 3. Xóa tất cả tập phim cũ (để đảm bảo sync lại sạch sẽ)
+                if (movieInDb.Episodes.Any())
+                {
+                    _logger.LogInformation("[Hangfire Job] 🧹 Xóa {EpisodeCount} tập phim cũ của MovieID: {MovieId}", movieInDb.Episodes.Count, movieId);
+                    _context.Episodes.RemoveRange(movieInDb.Episodes);
+                    // Không cần movieInDb.Episodes.Clear() vì RemoveRange đã theo dõi thay đổi
+                }
+
+                // Dùng HashSet để chống trùng lặp (giống hệt hàm Backfill của ông)
+                var addedEpisodeKeys = new HashSet<string>();
+                int addedCount = 0;
+                string firstValidLink = null; // Dùng để cập nhật TrailerUrl cho phim
+
+                // 4. Lặp qua server và tập phim từ API
+                foreach (var server in apiItem.Episodes)
+                {
+                    string serverName = server.ServerName?.Trim() ?? "Vietsub";
+                    foreach (var episodeData in server.ServerData)
+                    {
+                        string linkM3u8 = episodeData.LinkM3u8;
+                        
+                        // Bỏ qua nếu không có link M3U8 (theo logic của ông)
+                        if (string.IsNullOrEmpty(linkM3u8))
+                        {
+                            continue; 
+                        }
+
+                        // Lấy link đầu tiên làm TrailerUrl (giống logic Backfill)
+                        if (firstValidLink == null)
+                        {
+                            firstValidLink = linkM3u8;
+                        }
+                        
+                        // Tạo key duy nhất (slug + server) để chống trùng
+                        string uniqueKey = $"{episodeData.Slug}|{serverName}";
+                        if (addedEpisodeKeys.Add(uniqueKey))
+                        {
+                            // 5. Tạo và Thêm tập mới vào DB
+                            var newDbEpisode = new DbEpisode
+                            {
+                                MovieId = movieId, // 👈 QUAN TRỌNG: Link với phim đã tạo
+                                ServerName = serverName,
+                                EpisodeName = episodeData.Name,
+                                Slug = episodeData.Slug,
+                                LinkM3u8 = linkM3u8
+                                // Ông có thể thêm CreatedAt/UpdatedAt nếu bảng Episodes có
+                            };
+                            _context.Episodes.Add(newDbEpisode); // Thêm vào context
+                            addedCount++;
+                        }
+                    }
+                }
+
+                if (addedCount == 0)
+                {
+                    _logger.LogWarning("[Hangfire Job] ⚠️ Không tìm thấy tập phim nào có LinkM3u8 hợp lệ cho MovieID: {MovieId}", movieId);
+                }
+
+                // 6. Cập nhật lại thông tin cho Phim (Bảng Movies)
+                movieInDb.EpisodeCurrent = apiItem.EpisodeCurrent;
+                movieInDb.EpisodeTotal = apiItem.EpisodeTotal;
+                movieInDb.Status = apiItem.Status;
+                movieInDb.UpdatedAt = DateTime.Now;
+
+                // Cập nhật TrailerUrl (link tập 1) nếu nó chưa có
+                if (string.IsNullOrEmpty(movieInDb.TrailerUrl) && firstValidLink != null)
+                {
+                    movieInDb.TrailerUrl = firstValidLink;
+                }
+
+                _context.Movies.Update(movieInDb); // Đánh dấu phim là đã cập nhật
+
+                // 7. Lưu tất cả thay đổi (xóa tập cũ, thêm tập mới, cập nhật phim)
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("[Hangfire Job] ✅ THÀNH CÔNG: Sync cho MovieID: {MovieId}. Đã thêm {AddedCount} tập. Cập nhật: {MovieName}", 
+                    movieId, addedCount, movieInDb.Name);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Hangfire Job] ❌ THẤT BẠI: Sync tập phim cho MovieID: {MovieId}", movieId);
+                // Ném lỗi lại để Hangfire biết và retry (nếu ông có cài đặt retry)
+                throw; 
+            }
+        }
         // =================================================================
         // HÀM CHÍNH ĐỂ ĐỒNG BỘ PHIM MỚI (CHẠY TỰ ĐỘNG)
         // =================================================================

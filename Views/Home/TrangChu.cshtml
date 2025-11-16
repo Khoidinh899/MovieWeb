@@ -2,11 +2,23 @@
 @using MovieWeb.Models.Entities;
 @model MovieWeb.Models.Entities.HomeViewModel
 @{
-    ViewData["Title"] = "Trang Chủ - Xem Phim Online";
+    ViewData["Title"] = "MoonPhim - Xem Phim Online, Phim Mới, Phim Hay Miễn Phí";
     ViewData["IsHomePage"] = true; //gắn cờ đánh dấu đây là trang chủ
 
-}
+    // 1. Chuẩn bị Mô tả (Description)
+    var seoDescription = "MoonPhim - Xem phim online miễn phí. Cập nhật phim mới, phim hay, phim vietsub, thuyết minh nhanh nhất. Thư viện phim khổng lồ.";
 
+    // 2. Chuẩn bị Ảnh (Image) - Lấy ảnh phim hot đầu tiên
+    var seoImage = "/images/mooner_logo_large.png"; // Dùng ảnh logo làm dự phòng
+    if (Model.HotMovies.Any())
+    {
+        seoImage = GetMoviePosterUrl(Model.HotMovies.First());
+    }
+
+    // 3. Chuẩn bị URL (Tự động lấy URL hiện tại)
+    var request = Context.Request;
+    var seoUrl = $"{request.Scheme}://{request.Host}{request.Path}";
+}
 @functions {
     public string GetMoviePosterUrl(MovieWeb.Models.Entities.Movie movie)
     {
@@ -26,9 +38,9 @@
         {
             return "https://img.ophim.live/uploads/movies/" + movie.ThumbUrl.TrimStart('/');
         }
-        
+
         // ===== SỬA 1: Dùng ảnh fallback local =====
-        return "/images/404_images.gif"; 
+        return "/images/404_images.gif";
     }
 }
 
@@ -39,8 +51,8 @@
                 @for (int i = 0; i < Model.HotMovies.Take(5).Count(); i++)
                 {
                     <button type="button" data-bs-target="#movieCarousel" data-bs-slide-to="@i"
-                            class="@(i == 0 ? "active" : "")" aria-current="@(i == 0 ? "true" : "false")"
-                            aria-label="Slide @(i + 1)"></button>
+                        class="@(i == 0 ? "active" : "")" aria-current="@(i == 0 ? "true" : "false")"
+                        aria-label="Slide @(i + 1)"></button>
                 }
             </div>
 
@@ -49,7 +61,7 @@
                 {
                     <div class="carousel-item @(index == 0 ? "active" : "")">
                         <div class="hero-slide"
-                             style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7)), url('@GetMoviePosterUrl(movie)') center/cover;">
+                            style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7)), url('@GetMoviePosterUrl(movie)') center/cover;">
                             <div class="container h-100">
                                 <div class="row h-100 align-items-center">
                                     <div class="col-lg-6">
@@ -64,7 +76,8 @@
                                                 <span class="badge badge-success me-3">@movie.Quality</span>
                                                 <span class="badge badge-info me-3">@movie.Language</span>
                                                 <span class="text-light">
-                                                    <i class="fas fa-eye me-1"></i> @((movie.ViewCount ?? 0).ToString("N0")) lượt xem
+                                                    <i class="fas fa-eye me-1"></i> @((movie.ViewCount ?? 0).ToString("N0"))
+                                                    lượt xem
                                                 </span>
                                             </div>
 
@@ -88,7 +101,7 @@
                                                 var heroPosterUrl = GetMoviePosterUrl(movie);
                                             }
                                             <img src="@heroPosterUrl" alt="@movie.Name" class="img-fluid rounded shadow-lg"
-                                                 onerror="this.onerror=null; this.src='/images/404_images.gif';">
+                                                onerror="this.onerror=null; this.src='/images/404_images.gif';">
                                         </div>
                                     </div>
                                 </div>
@@ -108,6 +121,27 @@
             </button>
         </div>
     </div>
+@{
+    var homePageBanners = (ViewBag.Advertisements as List<Advertisement> ?? new List<Advertisement>())
+    .Where(a => a.Placement == "HomePage" && a.IsActive)
+    .OrderBy(a => a.DisplayOrder)
+    .ToList();
+    bool shouldShowAds = ViewBag.ShouldShowAds ?? true;
+}
+
+@if (shouldShowAds && homePageBanners.Any())
+{
+        <section class="mb-5 text-center">
+            @foreach (var ad in homePageBanners)
+            {
+                <div class="ad-item mb-3" data-ad-id="@ad.AdId">
+                    <a href="@ad.ClickUrl" target="_blank" rel="noopener noreferrer" class="ad-link">
+                        <img src="@ad.AdContentUrl" alt="@ad.AdName" class="img-fluid rounded" loading="lazy" />
+                    </a>
+                </div>
+            }
+        </section>
+}
 
     <div class="container">
         <section class="mb-5">
@@ -129,8 +163,8 @@
                                         var posterUrl = GetMoviePosterUrl(movie);
                                     }
                                     <img src="@posterUrl" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
-                                         onerror="this.onerror=null; this.src='/images/404_images.gif';">
-                                         
+                                        onerror="this.onerror=null; this.src='/images/404_images.gif';">
+
                                     <div class="movie-overlay">
                                         <div class="play-button">
                                             <i class="fas fa-play"></i>
@@ -185,8 +219,8 @@
                                         var posterUrl2 = GetMoviePosterUrl(movie);
                                     }
                                     <img src="@posterUrl2" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
-                                         onerror="this.onerror=null; this.src='/images/404_images.gif';">
-                                         
+                                        onerror="this.onerror=null; this.src='/images/404_images.gif';">
+
                                     <div class="movie-overlay">
                                         <div class="play-button">
                                             <i class="fas fa-play"></i>
@@ -238,8 +272,8 @@
                                         var posterUrl3 = GetMoviePosterUrl(movie);
                                     }
                                     <img src="@posterUrl3" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
-                                         onerror="this.onerror=null; this.src='/images/404_images.gif';">
-                                         
+                                        onerror="this.onerror=null; this.src='/images/404_images.gif';">
+
                                     <div class="movie-overlay">
                                         <div class="play-button">
                                             <i class="fas fa-play"></i>
@@ -267,7 +301,7 @@
                 }
             </div>
         </section>
-        
+
         <section class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="section-title">
@@ -287,8 +321,8 @@
                                         var posterUrl4 = GetMoviePosterUrl(movie);
                                     }
                                     <img src="@posterUrl4" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
-                                         onerror="this.onerror=null; this.src='/images/404_images.gif';">
-                                         
+                                        onerror="this.onerror=null; this.src='/images/404_images.gif';">
+
                                     <div class="movie-overlay">
                                         <div class="play-button">
                                             <i class="fas fa-play"></i>
@@ -321,92 +355,113 @@
             </div>
         </section>
     </div>
-    @section Styles {
-    <link rel="stylesheet" href="~/css/home.css" /> 
+@section Styles {
+        <link rel="stylesheet" href="~/css/home.css" />
+
+    @* --- BẮT ĐẦU KHỐI SEO (Hiển thị trong <head>) --- *@
+
+        <meta name="description" content="@seoDescription" />
+
+        <meta name="keywords"
+            content="xem phim, xem phim online, phim hay, phim mới, moonphim, phim vietsub, phim thuyết minh, phim bộ, phim lẻ" />
+
+        <meta property="og:title" content="@ViewData["Title"]" />
+        <meta property="og:description" content="@seoDescription" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="@seoUrl" />
+        <meta property="og:image" content="@seoImage" />
+        <meta property="og:site_name" content="MoonPhim" />
+
+    @* --- KẾT THÚC KHỐI SEO --- *@
 }
 
 @section Scripts {
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const shouldShowAds = @Json.Serialize(ViewBag.ShouldShowAds ?? true);
 
-        // Hàm gọi API để lấy quảng cáo Pop-up
-        async function fetchPopupAd() {
-            try {
-                const response = await fetch('/api/ads/get-placements?placements=HomePage_Popup');
-                
-                if (!response.ok) {
-                    console.error('Lỗi API (Popup Ad):', response.statusText);
-                    return;
+                // Hàm gọi API để lấy quảng cáo Pop-up
+                async function fetchPopupAd() {
+                    if (!shouldShowAds) {
+                    console.log('User is Premium/Admin, skipping popup ad.');
+                    return; 
                 }
+                    try {
+                        const response = await fetch('/api/ads/get-placements?placements=HomePage_Popup');
 
-                const banners = await response.json();
+                        if (!response.ok) {
+                            console.error('Lỗi API (Popup Ad):', response.statusText);
+                            return;
+                        }
 
-                if (banners && banners.length > 0) {
-                    const banner = banners[0]; 
-                    
-                    // 3. Tạo HTML cho Modal
-                    const modalHtml = createAdModalHtml(banner);
-                    
-                    document.body.insertAdjacentHTML('beforeend', modalHtml);
-                    
-                    var adModalElement = document.getElementById('homeAdModal');
-                    if (adModalElement) {
-                        var adModal = new bootstrap.Modal(adModalElement);
-                        adModal.show(); 
+                        const banners = await response.json();
 
-                        adModalElement.addEventListener('hidden.bs.modal', function () {
-                            adModalElement.remove();
-                        });
+                        if (banners && banners.length > 0) {
+                            const banner = banners[0];
+
+                            // 3. Tạo HTML cho Modal
+                            const modalHtml = createAdModalHtml(banner);
+
+                            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                            var adModalElement = document.getElementById('homeAdModal');
+                            if (adModalElement) {
+                                var adModal = new bootstrap.Modal(adModalElement);
+                                adModal.show();
+
+                                adModalElement.addEventListener('hidden.bs.modal', function () {
+                                    adModalElement.remove();
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Lỗi khi tải popup ad:', error);
                     }
                 }
-            } catch (error) {
-                console.error('Lỗi khi tải popup ad:', error);
-            }
-        }
 
-        // Hàm trợ giúp: Tạo chuỗi HTML cho Bootstrap 5 Modal
-        function createAdModalHtml(banner) {
-            
-            let closeButtonCss = `
-                position: absolute; 
-                top: -15px; 
-                right: -10px; 
-                background-color: white; 
-                border-radius: 50%; 
-                opacity: 1; 
-                box-shadow: 0 0 10px rgba(0,0,0,0.5);
-                width: 30px;
-                height: 30px;
-                padding: 0;
-            `;
+                // Hàm trợ giúp: Tạo chuỗi HTML cho Bootstrap 5 Modal
+                function createAdModalHtml(banner) {
 
-            // =============================================
-            // 📢 SỬA LỖI Ở ĐÂY
-            // Đã đổi "banner.imageUrl" thành "banner.adContentUrl"
-            // Và "banner.clickUrl" (đã đúng từ trước)
-            // =============================================
-            return `
-            <div class="modal fade" id="homeAdModal" tabindex="-1" aria-hidden="true">
-              <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content" style="background-color: transparent; border: none;">
+                    let closeButtonCss = `
+                    position: absolute; 
+                    top: -15px; 
+                    right: -10px; 
+                    background-color: white; 
+                    border-radius: 50%; 
+                    opacity: 1; 
+                    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+                    width: 30px;
+                    height: 30px;
+                    padding: 0;
+                `;
+
+                    // =============================================
+                    // 📢 SỬA LỖI Ở ĐÂY
+                    // Đã đổi "banner.imageUrl" thành "banner.adContentUrl"
+                    // Và "banner.clickUrl" (đã đúng từ trước)
+                    // =============================================
+                    return `
+                <div class="modal fade" id="homeAdModal" tabindex="-1" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content" style="background-color: transparent; border: none;">
                   
-                  <div class="modal-body" style="padding: 0; position: relative;">
+                      <div class="modal-body" style="padding: 0; position: relative;">
                     
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" 
-                            aria-label="Close" style="${closeButtonCss}"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" 
+                                aria-label="Close" style="${closeButtonCss}"></button>
 
-                    <a href="${banner.clickUrl}" target="_blank" rel="noopener noreferrer">
-                        <img src="${banner.adContentUrl}" class="img-fluid rounded" alt="${banner.adName}">
-                    </a>
+                        <a href="${banner.clickUrl}" target="_blank" rel="noopener noreferrer">
+                            <img src="${banner.adContentUrl}" class="img-fluid rounded" alt="${banner.adName}">
+                        </a>
+                      </div>
+
+                    </div>
                   </div>
+                </div>`;
+                }
 
-                </div>
-              </div>
-            </div>`;
-        }
-
-        // Chạy hàm chính!
-        fetchPopupAd();
-    });
-</script>
+                // Chạy hàm chính!
+                fetchPopupAd();
+            });
+        </script>
 }

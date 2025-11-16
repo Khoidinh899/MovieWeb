@@ -1,42 +1,66 @@
 ﻿@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
+@{
+    // ==========================================================
+    // ===== ✅ BẮT ĐẦU KHỐI CHUẨN BỊ BIẾN SEO MẶC ĐỊNH =====
+    // ==========================================================
+    var request = Context.Request;
+    var baseUrl = $"{request.Scheme}://{request.Host}";
+    var defaultSeoImage = $"{baseUrl}/images/iconmoon.png";
+    // ==========================================================
+}
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - MoonPhim</title>
-
-    <!-- ===== CSS Libraries ===== -->
+    <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png" asp-append-version="true">
+    <link rel="icon" type="image/png" sizes="32x32" href="~/favicon-32x32.png" asp-append-version="true">
+    <link rel="icon" type="image/png" sizes="16x16" href="~/favicon-16x16.png" asp-append-version="true">
+    <link rel="manifest" href="~/site.webmanifest" asp-append-version="true">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/header.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/nangcap.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/notification.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/chatbot.css" asp-append-version="true" />
-
-    <!-- ===== Icons ===== -->
+    <link rel="stylesheet" href="~/css/filter-sidebar.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    @* ✅ CHỈ LOAD notification.css và chatbot.css KHI USER ĐĂNG NHẬP *@
+    @if (User.Identity.IsAuthenticated)
+    {
+        <link rel="stylesheet" href="~/css/notification.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/chatbot.css" asp-append-version="true" />
+    }
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="icon" type="image/x-icon" href="~/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    @* --- BẮT ĐẦU KHỐI SEO MẶC ĐỊNH --- *@
+    <meta name="theme-color" content="#1c2a39" />
+    <meta name="author" content="MoonPhim" />
+
+    <meta property="og:site_name" content="MoonPhim" />
+    <meta property="og:image" content="@defaultSeoImage" />
+    <meta property="og:locale" content="vi_VN" />
+    @* --- KẾT THÚC KHỐI SEO MẶC ĐỊNH --- *@
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
 
 <body class="@(ViewData["IsHomePage"] as bool? == true ? "home-page" : "")"
-      data-is-premium="@(ViewBag.IsPremium ?? false).ToString().ToLower()"
-      data-is-series-type="@(ViewBag.IsSeriesType ?? false).ToString().ToLower()">
+    data-is-premium="@(ViewBag.IsPremium ?? false).ToString().ToLower()"
+    data-is-series-type="@(ViewBag.IsSeriesType ?? false).ToString().ToLower()"
+    data-user-logged-in="@User.Identity.IsAuthenticated.ToString().ToLower()">
 
     @{
         var token = antiforgery.GetAndStoreTokens(Context).RequestToken;
     }
     <input type="hidden" id="RequestVerificationToken" value="@token" />
 
-    @* ===== Shared Partials ===== *@
     @await Html.PartialAsync("Partial/_Header")
-    @await Html.PartialAsync("Partial/_MobileSearch")
     @await Html.PartialAsync("Partial/_AuthModal")
 
     <main role="main">
@@ -44,26 +68,30 @@
     </main>
 
     @await Html.PartialAsync("Partial/_Footer")
-    @await Html.PartialAsync("Partial/_Scripts")
-
-    <!-- ===== JS - THỨ TỰ QUAN TRỌNG ===== -->
-    <!-- ✅ 1. Bootstrap PHẢI LOAD TRƯỚC -->
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- ✅ 2. Auth.js load SAU Bootstrap -->
-    <script src="~/js/auth.js" asp-append-version="true"></script>
-    
-    <!-- ✅ 3. Scripts khác -->
+    @await Html.PartialAsync("Partial/_Scripts")
     @await RenderSectionAsync("Scripts", required: false)
-
+    
+    @if (User.Identity.IsAuthenticated)
+{
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
     <script src="~/js/notification.js" asp-append-version="true"></script>
 
-    @if (User.Identity.IsAuthenticated && (User.HasClaim("IsPremium", "true") || User.IsInRole("Admin")))
+    var roleId = User.FindFirst("RoleId")?.Value;
+    var subscriptionType = User.FindFirst("SubscriptionType")?.Value?.ToLower();
+    
+    bool canUseChatbot = roleId == "1" || 
+                        subscriptionType == "premium" || 
+                        subscriptionType == "student";
+
+    if (canUseChatbot)
     {
+        @await Html.PartialAsync("Partial/_Chatbot")
         <script src="~/js/chatbot.js" asp-append-version="true"></script>
     }
+}
 
-    <script src="~/js/search.js" asp-append-version="true"></script>
+<script src="~/js/search.js" asp-append-version="true"></script>
 </body>
+
 </html>

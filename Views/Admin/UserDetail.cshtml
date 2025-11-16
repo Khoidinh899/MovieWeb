@@ -212,11 +212,6 @@
                         @(Model.IsActive ? "Khóa tài khoản" : "Kích hoạt tài khoản")
                     </button>
 
-                    <button type="button" class="btn btn-info action-button" onclick="resetPassword(@Model.UserId)">
-                        <i class="bi bi-key-fill me-2"></i>
-                        Reset mật khẩu
-                    </button>
-
                     <button type="button" class="btn btn-secondary action-button"
                             onclick="sendVerificationEmail(@Model.UserId)" @(Model.EmailConfirmed ? "disabled" : "")>
                         <i class="bi bi-envelope-check-fill me-2"></i>
@@ -308,6 +303,9 @@
         </div>
     </div> *@
 </div>
+<form id="actionForm" method="post" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
 
 <form id="statusForm" method="post" style="display: none;">
     @Html.AntiForgeryToken()
@@ -374,7 +372,36 @@
                 showNotification('Có lỗi xảy ra: ' + error, 'danger');
             }
         }
+        async function sendVerificationEmail(userId) {
+            if (!confirm('Bạn có chắc muốn gửi lại email xác thực cho người dùng này?')) {
+                return;
+            }
 
+            try {
+                // Lấy token từ form ẩn
+                const form = document.getElementById('actionForm');
+                const formData = new FormData(form);
+                formData.append('userId', userId);
+
+                const response = await fetch('/Admin/SendVerificationEmail', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(result.message); // Hoặc dùng showAlert() nếu ông có
+                    // Tải lại trang để nút "Gửi email" bị vô hiệu hóa
+                    window.location.reload(); 
+                } else {
+                    alert('Lỗi: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Lỗi khi gửi email:', error);
+                alert('Đã xảy ra lỗi. Vui lòng thử lại.');
+            }
+        }
         // Delete user
         async function deleteUser(userId, userName) {
             if (!confirm(`⚠️ CẢNH BÁO: Bạn có chắc muốn XÓA người dùng "${userName}"?\n\nHành động này không thể hoàn tác!`)) return;
@@ -402,16 +429,6 @@
             } catch (error) {
                 showNotification('Có lỗi xảy ra: ' + error, 'danger');
             }
-        }
-
-        // Reset password (placeholder)
-        function resetPassword(userId) {
-            showNotification('Chức năng đang phát triển', 'info');
-        }
-
-        // Send verification email (placeholder)
-        function sendVerificationEmail(userId) {
-            showNotification('Chức năng đang phát triển', 'info');
         }
 
         // Show notification

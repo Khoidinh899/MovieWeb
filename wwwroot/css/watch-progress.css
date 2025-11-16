@@ -1,0 +1,228 @@
+/* ================================
+   RESUME POPUP STYLES
+   ================================ */
+
+.resume-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    z-index: 10000;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.resume-popup.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: auto;
+}
+
+.resume-content {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    width: 420px;
+    max-width: 90vw;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.resume-header {
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.resume-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.resume-title i {
+    color: #4fc3f7;
+    font-size: 1.4rem;
+}
+
+.resume-close {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.25rem;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.resume-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(90deg);
+}
+
+.resume-body {
+    padding: 24px;
+}
+
+.resume-text {
+    color: white;
+    font-size: 1rem;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.resume-text strong {
+    color: #4fc3f7;
+    font-size: 1.2rem;
+}
+
+.resume-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+}
+
+.resume-time {
+    color: #4fc3f7;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+}
+
+.resume-progress-bar {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.resume-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4fc3f7 0%, #29b6f6 100%);
+    border-radius: 10px;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px rgba(79, 195, 247, 0.6);
+}
+
+.resume-actions {
+    display: flex;
+    gap: 12px;
+    padding: 20px 24px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.resume-btn {
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.resume-btn i {
+    font-size: 1rem;
+}
+
+.resume-btn-primary {
+    background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(79, 195, 247, 0.4);
+}
+
+.resume-btn-primary:hover {
+    background: linear-gradient(135deg, #29b6f6 0%, #03a9f4 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(79, 195, 247, 0.6);
+}
+
+.resume-btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.resume-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Overlay backdrop */
+.resume-popup::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: -1;
+    backdrop-filter: blur(5px);
+}
+
+/* Mobile Responsive */
+@media (max-width: 576px) {
+    .resume-content {
+        width: 95vw;
+        max-width: 380px;
+    }
+    
+    .resume-header {
+        padding: 16px 20px;
+    }
+    
+    .resume-title {
+        font-size: 1.1rem;
+    }
+    
+    .resume-body {
+        padding: 20px;
+    }
+    
+    .resume-actions {
+        flex-direction: column;
+        gap: 10px;
+        padding: 16px 20px;
+    }
+    
+    .resume-btn {
+        width: 100%;
+    }
+}
+
+/* Animation */
+@keyframes slideIn {
+    from {
+        transform: translate(-50%, -60%) scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+.resume-popup.show {
+    animation: slideIn 0.3s ease;
+}

@@ -1,0 +1,104 @@
+@model List<MovieWeb.Models.Entities.Comment>
+@using MovieWeb.Models.Entities 
+
+@if (Model == null || !Model.Any())
+{
+    <p class="text-muted">Chưa có bình luận nào, hãy là người đầu tiên!</p>
+}
+else
+{
+    foreach (var c in Model)
+    {
+        <div class="comment-item d-flex mb-3">
+            <img src="@(GetUserAvatar(c.User))"
+                 alt="@c.User?.UserName"
+                 class="rounded-circle me-2"
+                 style="width:45px;height:45px;object-fit:cover;">
+
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-1">
+                    <strong>@(c.User?.UserName ?? "Ẩn danh")</strong>
+
+                    @* ✅ HIỂN THỊ HUY HIỆU ADMIN NẾU LÀ ADMIN (Dùng thuộc tính IsAdmin trong User.cs) *@
+                    @if (c.User != null && c.User.IsAdmin)
+                    {
+                        <span class="badge bg-danger ms-2">ADMIN</span>
+                    }
+                    @* -------------------------------------------------------------------------------- *@
+
+                    <small class="text-muted ms-2">
+                        @(c.CreatedAt?.ToString("HH:mm dd/MM") ?? "")
+                    </small>
+                </div>
+
+                <div class="text-white mb-1">@c.Content</div>
+
+                <div class="comment-actions text-muted small mb-2">
+                    <a href="#" class="me-2 reply-btn" data-id="@c.CommentId">
+                        <i class="fa-solid fa-reply"></i> Trả lời
+                    </a>
+                </div>
+
+                @* --- Hiển thị các reply con (nếu có) --- *@
+                @if (c.InverseParentComment != null && c.InverseParentComment.Any())
+                {
+                    <div class="reply-list mt-2 ps-4 border-start border-secondary">
+                        @foreach (var r in c.InverseParentComment.OrderBy(x => x.CreatedAt))
+                        {
+                            <div class="reply-item d-flex mb-2">
+                                <img src="@(GetUserAvatar(r.User))"
+                                     alt="@r.User?.UserName"
+                                     class="rounded-circle me-2"
+                                     style="width:36px;height:36px;object-fit:cover;">
+                                <div>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <strong>@(r.User?.UserName ?? "Ẩn danh")</strong>
+                                        
+                                        @* ✅ HIỂN THỊ HUY HIỆU ADMIN CHO REPLY *@
+                                        @if (r.User != null && r.User.IsAdmin)
+                                        {
+                                            <span class="badge bg-danger ms-2">ADMIN</span>
+                                        }
+                                        @* ---------------------------------------- *@
+
+                                        <small class="text-muted ms-2">
+                                            @(r.CreatedAt?.ToString("HH:mm dd/MM") ?? "")
+                                        </small>
+                                    </div>
+                                    <div class="text-white small">@r.Content</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+
+@functions {
+    private string GetUserAvatar(MovieWeb.Models.Entities.User? user)
+    {
+        // ... (Giữ nguyên logic GetUserAvatar) ...
+        // Logic tìm thuộc tính AvatarUrl
+        try
+        {
+            var prop = user?.GetType().GetProperty("AvatarUrl");
+            if (prop != null)
+            {
+                var val = prop.GetValue(user)?.ToString();
+                if (!string.IsNullOrEmpty(val))
+                    return val!;
+            }
+        }
+        catch { }
+
+        // Fallback về thuộc tính Avatar
+        if (!string.IsNullOrEmpty(user?.Avatar) && !user.Avatar.Contains("/images/nouser.png"))
+        {
+            return user.Avatar;
+        }
+
+        return "/images/nouser.png"; // Đổi default-avatar.png thành nouser.png cho đồng bộ với AuthService
+    }
+}

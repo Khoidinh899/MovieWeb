@@ -1,0 +1,353 @@
+/* ================================
+   USER FAVORITE PAGE STYLES - FIXED
+   ================================ */
+
+/* Card Styling */
+.card {
+    background: #fff;
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background: #fff;
+    border-bottom: 1px solid #e9ecef;
+    padding: 20px;
+}
+
+.card-header h5 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.card-header .text-muted {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.card-body {
+    padding: 30px;
+}
+
+/* ================================
+   EMPTY STATE
+   ================================ */
+.text-center.py-5 {
+    padding: 60px 20px !important;
+}
+
+.text-center.py-5 i {
+    font-size: 5rem;
+    opacity: 0.3;
+    margin-bottom: 20px;
+}
+
+.text-center.py-5 h4 {
+    font-size: 1.8rem;
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.text-center.py-5 p {
+    color: #6c757d;
+    font-size: 1rem;
+    margin-bottom: 25px;
+}
+
+/* ================================
+   MOVIE GRID
+   ================================ */
+.row.g-3 {
+    margin: -0.5rem;
+}
+
+.row.g-3 > * {
+    padding: 0.5rem;
+}
+
+/* ================================
+   MOVIE CARD
+   ================================ */
+.movie-card {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    height: 100%;
+}
+
+.movie-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.movie-card a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+/* Movie Poster */
+.movie-poster {
+    position: relative;
+    width: 100%;
+    padding-top: 150%; /* 2:3 aspect ratio */
+    overflow: hidden;
+    background: #e9ecef;
+}
+
+.movie-poster img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.movie-card:hover .movie-poster img {
+    transform: scale(1.08);
+}
+
+/* Remove Button */
+.movie-card .btn.remove-favorite {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(220, 53, 69, 0.95);
+    border: 2px solid white;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+    opacity: 0;
+    padding: 0;
+    line-height: 1;
+}
+
+.movie-card:hover .btn.remove-favorite {
+    opacity: 1;
+}
+
+.movie-card .btn.remove-favorite:hover {
+    background: #dc3545;
+    transform: scale(1.15);
+    box-shadow: 0 3px 10px rgba(220, 53, 69, 0.4);
+}
+
+/* Movie Info */
+.movie-info {
+    padding: 12px;
+    background: white;
+}
+
+.movie-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+    min-height: 2.8em;
+}
+
+.movie-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #6c757d;
+    flex-wrap: wrap;
+}
+
+.movie-meta span {
+    white-space: nowrap;
+}
+
+/* ================================
+   PAGINATION
+   ================================ */
+.pagination {
+    gap: 5px;
+    margin: 0;
+}
+
+.page-item .page-link {
+    background: white;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.page-item.active .page-link {
+    background: #007bff;
+    border-color: #007bff;
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.page-item .page-link:hover {
+    background: #007bff;
+    border-color: #007bff;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.page-item.disabled .page-link {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* ================================
+   BADGES & LABELS
+   ================================ */
+.badge {
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+.badge.bg-info {
+    background-color: #17a2b8 !important;
+}
+
+/* ================================
+   ANIMATIONS
+   ================================ */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.movie-card {
+    animation: fadeIn 0.4s ease;
+}
+
+/* ================================
+   RESPONSIVE
+   ================================ */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 20px 15px;
+    }
+    
+    .movie-card .btn.remove-favorite {
+        opacity: 1;
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+    }
+    
+    .movie-title {
+        font-size: 0.9rem;
+    }
+    
+    .movie-meta {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .card-header h5 {
+        font-size: 1.2rem;
+    }
+    
+    .text-center.py-5 i {
+        font-size: 3.5rem;
+    }
+    
+    .text-center.py-5 h4 {
+        font-size: 1.4rem;
+    }
+}
+
+/* ================================
+   LOADING STATES
+   ================================ */
+.movie-card.loading {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.movie-card.removing {
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: scale(0.8);
+}
+
+/* ================================
+   TOAST CONTAINER
+   ================================ */
+.toast-container {
+    z-index: 9999;
+}
+
+.toast {
+    min-width: 300px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toast-body {
+    padding: 15px;
+    font-size: 0.95rem;
+}
+
+.toast-body i {
+    margin-right: 8px;
+}
+
+/* ================================
+   UTILITIES
+   ================================ */
+.btn-primary {
+    background: #007bff;
+    border-color: #007bff;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.btn-danger {
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}

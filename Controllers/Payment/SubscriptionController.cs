@@ -16,7 +16,7 @@ namespace MovieWeb.Controllers.API
     {
         private readonly ISubscriptionService _subscriptionService;
         private readonly IStripeService _stripeService;
-        private readonly MovieWebDbContext _context; 
+        private readonly MovieWebDbContext _context;
         private readonly INotificationService _notificationService;
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly ILogger<SubscriptionController> _logger;
@@ -31,7 +31,7 @@ namespace MovieWeb.Controllers.API
         {
             _notificationService = notificationService;    // ← THÊM
             _hubContext = hubContext;                      // ← THÊM
-            _logger = logger;    
+            _logger = logger;
             _context = context;
             _subscriptionService = subscriptionService;
             _stripeService = stripeService;
@@ -147,180 +147,180 @@ namespace MovieWeb.Controllers.API
         }
 
         // POST: api/subscription/cancel
-[HttpPost("cancel")]
-[Authorize]
-[IgnoreAntiforgeryToken]
-public async Task<IActionResult> CancelSubscription([FromBody] CancelSubscriptionRequest request)
-{
-    try
-    {
-        // Check authentication
-        if (!User.Identity?.IsAuthenticated ?? true)
+        [HttpPost("cancel")]
+        [Authorize]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> CancelSubscription([FromBody] CancelSubscriptionRequest request)
         {
-            return Unauthorized(new ApiResponse<object>
+            try
             {
-                Success = false,
-                Message = "Bạn cần đăng nhập để thực hiện hành động này"
-            });
-        }
+                // Check authentication
+                if (!User.Identity?.IsAuthenticated ?? true)
+                {
+                    return Unauthorized(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Bạn cần đăng nhập để thực hiện hành động này"
+                    });
+                }
 
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userIdClaim))
-        {
-            return Unauthorized(new ApiResponse<object>
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userIdClaim))
+                {
+                    return Unauthorized(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Không tìm thấy thông tin người dùng"
+                    });
+                }
+
+                var userId = int.Parse(userIdClaim);
+
+                // Verify ownership
+                var subscription = await _subscriptionService.GetSubscriptionByIdAsync(request.SubscriptionId);
+
+                if (subscription == null)
+                {
+                    return NotFound(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Không tìm thấy gói đăng ký"
+                    });
+                }
+
+                if (subscription.UserId != userId)
+                {
+                    return StatusCode(403, new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Bạn không có quyền hủy gói đăng ký này"
+                    });
+                }
+
+                var success = await _subscriptionService.CancelSubscriptionAsync(
+                    request.SubscriptionId,
+                    request.Reason,
+                    request.CancelImmediately
+                );
+
+                if (!success)
+                {
+                    return BadRequest(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Không thể hủy gói đăng ký. Vui lòng thử lại sau."
+                    });
+                }
+
+                // Cancel on Stripe if exists
+                if (!string.IsNullOrEmpty(subscription.StripeSubscriptionId))
+                {
+                    await _stripeService.CancelSubscriptionAsync(
+                        subscription.StripeSubscriptionId,
+                        request.CancelImmediately
+                    );
+                }
+
+                // ========================================
+                // THÊM CODE GỬI THÔNG BÁO VÀO ĐÂY
+                // ========================================
+                try
+                {
+                    // Lấy thông tin plan để hiển thị tên đẹp
+                    var plan = await _context.SubscriptionPlans.FindAsync(subscription.PlanId);
+                    var planName = plan?.DisplayName ?? "gói đăng ký";
+
+                    // 1. Lưu vào DB
+                    await _notificationService.CreateSubscriptionCancelledNotificationAsync(
+                        userId,
+                        planName,
+                        subscription.EndDate,
+                        request.Reason
+                    );
+
+                    // 2. Gửi SignalR real-time
+                    var notificationDto = new
+                    {
+                        NotificationId = 0,
+                        Title = "⚠️ Đã hủy gói đăng ký",
+                        Content = $"Bạn đã hủy gói {planName}. Gói vẫn có hiệu lực đến {subscription.EndDate:dd/MM/yyyy}. Bạn có thể mua lại bất cứ lúc nào!",
+                        Type = "SubscriptionCancelled",
+                        Url = "/nang-cap",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    await _hubContext.Clients
+                        .User(userId.ToString())
+                        .SendAsync("ReceiveNotification", notificationDto);
+
+                    _logger.LogInformation("✅ Sent cancellation notification to User {UserId}", userId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "❌ Error sending cancellation notification");
+                    // Không throw để không làm fail API cancel
+                }
+                // ========================================
+
+                return Ok(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = "Đã hủy gói thành công! Bạn vẫn dùng được đến hết thời hạn. Mua gói mới sẽ được cộng dồn thêm thời gian."
+                });
+            }
+            catch (Exception ex)
             {
-                Success = false,
-                Message = "Không tìm thấy thông tin người dùng"
-            });
-        }
-
-        var userId = int.Parse(userIdClaim);
-
-        // Verify ownership
-        var subscription = await _subscriptionService.GetSubscriptionByIdAsync(request.SubscriptionId);
-
-        if (subscription == null)
-        {
-            return NotFound(new ApiResponse<object>
-            {
-                Success = false,
-                Message = "Không tìm thấy gói đăng ký"
-            });
-        }
-
-        if (subscription.UserId != userId)
-        {
-            return StatusCode(403, new ApiResponse<object>
-            {
-                Success = false,
-                Message = "Bạn không có quyền hủy gói đăng ký này"
-            });
-        }
-
-        var success = await _subscriptionService.CancelSubscriptionAsync(
-            request.SubscriptionId,
-            request.Reason,
-            request.CancelImmediately
-        );
-
-        if (!success)
-        {
-            return BadRequest(new ApiResponse<object>
-            {
-                Success = false,
-                Message = "Không thể hủy gói đăng ký. Vui lòng thử lại sau."
-            });
-        }
-
-        // Cancel on Stripe if exists
-        if (!string.IsNullOrEmpty(subscription.StripeSubscriptionId))
-        {
-            await _stripeService.CancelSubscriptionAsync(
-                subscription.StripeSubscriptionId,
-                request.CancelImmediately
-            );
-        }
-
-        // ========================================
-        // THÊM CODE GỬI THÔNG BÁO VÀO ĐÂY
-        // ========================================
-        try
-        {
-            // Lấy thông tin plan để hiển thị tên đẹp
-            var plan = await _context.SubscriptionPlans.FindAsync(subscription.PlanId);
-            var planName = plan?.DisplayName ?? "gói đăng ký";
-
-            // 1. Lưu vào DB
-            await _notificationService.CreateSubscriptionCancelledNotificationAsync(
-                userId,
-                planName,
-                subscription.EndDate,
-                request.Reason
-            );
-
-            // 2. Gửi SignalR real-time
-            var notificationDto = new
-            {
-                NotificationId = 0,
-                Title = "⚠️ Đã hủy gói đăng ký",
-                Content = $"Bạn đã hủy gói {planName}. Gói vẫn có hiệu lực đến {subscription.EndDate:dd/MM/yyyy}. Bạn có thể mua lại bất cứ lúc nào!",
-                Type = "SubscriptionCancelled",
-                Url = "/nang-cap",
-                IsRead = false,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await _hubContext.Clients
-                .User(userId.ToString())
-                .SendAsync("ReceiveNotification", notificationDto);
-
-            _logger.LogInformation("✅ Sent cancellation notification to User {UserId}", userId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "❌ Error sending cancellation notification");
-            // Không throw để không làm fail API cancel
-        }
-        // ========================================
-
-        return Ok(new ApiResponse<object>
-        {
-            Success = true,
-            Message = "Đã hủy gói thành công! Bạn vẫn dùng được đến hết thời hạn. Mua gói mới sẽ được cộng dồn thêm thời gian."
-        });
-    }
-    catch (Exception ex)
-    {
-        return StatusCode(500, new ApiResponse<object>
-        {
-            Success = false,
-            Message = "Có lỗi xảy ra: " + ex.Message
-        });
-    }
-}
-        // GET: api/subscription/check-active
-        [HttpGet("check-active")]
-[Authorize] // Đảm bảo chỉ user đã đăng nhập mới gọi được
-public async Task<IActionResult> CheckActiveSubscription()
-{
-    var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    if (!int.TryParse(userIdString, out var userId))
-    {
-        return Unauthorized(new { success = false, message = "User not found" });
-    }
-
-    // ✅ SỬA LẠI CÂU TRUY VẤN - CHỈ TÌM GÓI CÓ STATUS LÀ "active"
-    var activeSubscription = await _context.UserSubscriptions
-        .Include(s => s.SubscriptionPlan) // Thêm Include để lấy được tên gói
-        .FirstOrDefaultAsync(s => s.UserId == userId 
-                               && s.EndDate > DateTime.Now 
-                               && s.Status == "active");
-
-    if (activeSubscription == null)
-    {
-        // Nếu không tìm thấy gói nào ACTIVE, trả về false để cho phép mua
-        return Ok(new ApiResponse<object> 
-        {
-            Success = true,
-            Data = new { hasActiveSubscription = false }
-        });
-    }
-
-    // Nếu tìm thấy một gói ACTIVE, trả về true và thông tin để JS hiện popup
-    return Ok(new ApiResponse<object>
-    {
-        Success = true,
-        Data = new 
-        {
-            hasActiveSubscription = true,
-            subscription = new 
-            {
-                planName = activeSubscription.SubscriptionPlan?.DisplayName ?? "hiện tại",
-                daysRemaining = (activeSubscription.EndDate - DateTime.Now).Days
+                return StatusCode(500, new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Có lỗi xảy ra: " + ex.Message
+                });
             }
         }
-    });
-}
+        // GET: api/subscription/check-active
+        [HttpGet("check-active")]
+        [Authorize] // Đảm bảo chỉ user đã đăng nhập mới gọi được
+        public async Task<IActionResult> CheckActiveSubscription()
+        {
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdString, out var userId))
+            {
+                return Unauthorized(new { success = false, message = "User not found" });
+            }
+
+            // ✅ SỬA LẠI CÂU TRUY VẤN - CHỈ TÌM GÓI CÓ STATUS LÀ "active"
+            var activeSubscription = await _context.UserSubscriptions
+                .Include(s => s.SubscriptionPlan) // Thêm Include để lấy được tên gói
+                .FirstOrDefaultAsync(s => s.UserId == userId
+                                       && s.EndDate > DateTime.Now
+                                       && s.Status == "active");
+
+            if (activeSubscription == null)
+            {
+                // Nếu không tìm thấy gói nào ACTIVE, trả về false để cho phép mua
+                return Ok(new ApiResponse<object>
+                {
+                    Success = true,
+                    Data = new { hasActiveSubscription = false }
+                });
+            }
+
+            // Nếu tìm thấy một gói ACTIVE, trả về true và thông tin để JS hiện popup
+            return Ok(new ApiResponse<object>
+            {
+                Success = true,
+                Data = new
+                {
+                    hasActiveSubscription = true,
+                    subscription = new
+                    {
+                        planName = activeSubscription.SubscriptionPlan?.DisplayName ?? "hiện tại",
+                        daysRemaining = (activeSubscription.EndDate - DateTime.Now).Days
+                    }
+                }
+            });
+        }
         // GET: api/subscription/transactions
         [HttpGet("transactions")]
         [Authorize]

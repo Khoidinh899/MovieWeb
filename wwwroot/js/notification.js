@@ -1,4 +1,4 @@
-// wwwroot/js/notification.js - FINAL FIXED VERSION (HANDLES ALL TIMEZONES)
+// wwwroot/js/notification.js - FIXED WITH AUTH CHECK
 (function () {
     'use strict';
 
@@ -13,76 +13,102 @@
     };
 
     document.addEventListener('DOMContentLoaded', function () {
+        // ✅ KIỂM TRA XEM CÓ NOTIFICATION BELL KHÔNG (CHỈ USER ĐĂNG NHẬP MỚI CÓ)
+        const notificationBell = document.querySelector('.notification-trigger');
+        
+        if (!notificationBell) {
+            console.log('ℹ️ [Notification] User not logged in - skipping initialization');
+            return; // ❌ DỪNG NGAY NẾU KHÔNG CÓ CHUÔNG (KHÁCH VÃNG LAI)
+        }
+
+        // ✅ NẾU CÓ CHUÔNG (USER ĐĂNG NHẬP) -> KHỞI TẠO
+        console.log('✅ [Notification] User logged in - initializing...');
         initNotifications();
         initSignalR();
     });
 
     // ========== SIGNALR INITIALIZATION ==========
-    // (HÀM ĐÃ SỬA)
-function initSignalR() {
-    if (typeof signalR === 'undefined') {
-        console.error('❌ SignalR library not loaded!');
-        return;
-    }
-
-    signalRConnection = new signalR.HubConnectionBuilder()
-        .withUrl("/notificationHub")
-        .withAutomaticReconnect()
-        .build();
-
-    // ========== RECEIVE NOTIFICATION FROM SIGNALR (ĐÃ SỬA) ==========
-    signalRConnection.on("ReceiveNotification", function (notificationObject) {
-        console.log("✅ [SignalR] Received notification:", notificationObject);
-
-        const notifType = (notificationObject.type || '').toLowerCase();
-        const isPaymentNotif = notifType.includes('payment') || notifType.includes('subscription');
-        const isMovieNotif = notifType.includes('movie');
-
-        // ========== INVALIDATE CACHE ==========
-        if (isPaymentNotif) notificationCache.payment = null;
-        if (isMovieNotif) notificationCache.movie = null;
-
-        // ========== CỘNG BADGE NGAY LẬP TỨC (ĐÃ SỬA) ==========
-        // (MỚI) Chọn TẤT CẢ chuông chính
-        const mainBadges = document.querySelectorAll('.notification-badge'); 
-        const paymentBadge = document.getElementById('paymentBadge');
-        const movieBadge = document.getElementById('movieBadge');
-
-        // (MỚI) Lặp qua TẤT CẢ chuông chính để cộng
-        if (mainBadges.length > 0) mainBadges.forEach(incrementBadgeCount);
-        
-        if (isPaymentNotif && paymentBadge) incrementBadgeCount(paymentBadge);
-        if (isMovieNotif && movieBadge) incrementBadgeCount(movieBadge);
-
-        console.log("✅ [Badge] Updated immediately after SignalR");
-
-        // ========== THÊM VÀO DANH SÁCH NẾU DROPDOWN ĐANG MỞ ==========
-        if (isDropdownOpen) {
-            // Chỉ thêm nếu đúng tab
-            if ((currentTab === 'payment' && isPaymentNotif) ||
-                (currentTab === 'movie' && isMovieNotif)) {
-                prependNotificationToList(notificationObject);
-            }
+    function initSignalR() {
+        if (typeof signalR === 'undefined') {
+            console.error('❌ SignalR library not loaded!');
+            return;
         }
 
-        // ========== HIỂN THỊ TOAST ==========
-        showToast('info', notificationObject.title || 'Bạn có thông báo mới!');
+        signalRConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/notificationHub")
+            .withAutomaticReconnect()
+            .build();
 
-        // ========== SYNC LẠI SỐ BADGE SAU 3 GIÂY ==========
-        setTimeout(() => {
-            console.log("🔄 [Badge] Syncing with server...");
-            updateBadges();
-        }, 3000);
-    });
+        // ========== RECEIVE NOTIFICATION FROM SIGNALR ==========
+        signalRConnection.on("ReceiveNotification", function (notificationObject) {
+            console.log("✅ [SignalR] Received notification:", notificationObject);
 
-    signalRConnection.start()
-        .then(() => console.log("✅ [SignalR] Connected successfully"))
-        .catch(err => console.error("❌ [SignalR] Connection error:", err));
+            const notifType = (notificationObject.type || '').toLowerCase();
+            const isPaymentNotif = notifType.includes('payment') || notifType.includes('subscription');
+            const isMovieNotif = notifType.includes('movie');
 
-    signalRConnection.onclose(error => {
-        console.warn("⚠️ [SignalR] Connection closed", error);
-    });
-}
+            // ========== INVALIDATE CACHE ==========
+            if (isPaymentNotif) notificationCache.payment = null;
+            if (isMovieNotif) notificationCache.movie = null;
+
+            // ========== CỘNG BADGE NGAY LẬP TỨC ==========
+            const mainBadges = document.querySelectorAll('.notification-badge'); 
+            const paymentBadge = document.getElementById('paymentBadge');
+            const movieBadge = document.getElementById('movieBadge');
+
+            if (mainBadges.length > 0) mainBadges.forEach(incrementBadgeCount);
+            
+            if (isPaymentNotif && paymentBadge) incrementBadgeCount(paymentBadge);
+            if (isMovieNotif && movieBadge) incrementBadgeCount(movieBadge);
+
+            console.log("✅ [Badge] Updated immediately after SignalR");
+
+            // ========== THÊM VÀO DANH SÁCH NẾU DROPDOWN ĐANG MỞ ==========
+            if (isDropdownOpen) {
+                if ((currentTab === 'payment' && isPaymentNotif) ||
+                    (currentTab === 'movie' && isMovieNotif)) {
+                    prependNotificationToList(notificationObject);
+                }
+            }
+
+            // ========== HIỂN THỊ TOAST ==========
+            showToast('info', notificationObject.title || 'Bạn có thông báo mới!');
+
+            // ========== SYNC LẠI SỐ BADGE SAU 3 GIÂY ==========
+            setTimeout(() => {
+                console.log("🔄 [Badge] Syncing with server...");
+                updateBadges();
+            }, 3000);
+        });
+
+        signalRConnection.on("ForceLogout", function (message) {
+            console.warn("Bạn đã bị buộc đăng xuất:", message);
+            alert(message || "Tài khoản của bạn đã bị khóa hoặc thay đổi quyền. Vui lòng đăng nhập lại.");
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Auth/Logout';
+
+            const token = document.getElementById('RequestVerificationToken').value;
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '__RequestVerificationToken';
+            tokenInput.value = token;
+            form.appendChild(tokenInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        });
+
+        signalRConnection.start()
+            .then(() => console.log("✅ [SignalR] Connected successfully"))
+            .catch(err => console.error("❌ [SignalR] Connection error:", err));
+
+        signalRConnection.onclose(error => {
+            console.warn("⚠️ [SignalR] Connection closed", error);
+        });
+    }
+
     // ========== INCREMENT BADGE COUNT ==========
     function incrementBadgeCount(badgeElement) {
         if (!badgeElement) return;
@@ -111,17 +137,14 @@ function initSignalR() {
             return;
         }
 
-        // Xóa empty state nếu có
         const emptyState = listContainer.querySelector('.empty-state-message');
         if (emptyState) {
             listContainer.innerHTML = '';
         }
 
-        // Tạo HTML và thêm vào đầu
         const newItemHtml = createNotificationItemHtml(notif);
         listContainer.insertAdjacentHTML('afterbegin', newItemHtml);
 
-        // Gắn event click
         const newItem = listContainer.firstElementChild;
         if (newItem) {
             attachReadEvent(newItem);
@@ -143,7 +166,7 @@ function initSignalR() {
         const iconClass = isPaymentType ? 'payment' : 'movie';
 
         const unreadClass = isRead ? '' : 'unread';
-        const timeAgo = formatDateTime(createdAt); // <- This will now be correct
+        const timeAgo = formatDateTime(createdAt);
 
         return `
             <a href="${escapeHtml(url)}"
@@ -180,7 +203,6 @@ function initSignalR() {
 
     // ========== NOTIFICATION UI ==========
     function initNotifications() {
-        // (MỚI) Dùng querySelectorAll để tìm TẤT CẢ các nút chuông
         const bellTriggers = document.querySelectorAll('.notification-trigger');
         const dropdown = document.querySelector('.notification-dropdown');
 
@@ -189,24 +211,17 @@ function initSignalR() {
             return;
         }
 
-        // *** (MỚI) LOGIC VISUAL QUAN TRỌNG ***
-        // Di chuyển dropdown ra <body> và set 'fixed'
-        // (Đây là logic từ file script cũ của mình, giờ ta merge vào đây)
         document.body.appendChild(dropdown);
         dropdown.style.position = 'fixed';
-        dropdown.style.zIndex = '1050'; // Đảm bảo nó nổi lên trên navbar
-        // *** HẾT LOGIC VISUAL ***
+        dropdown.style.zIndex = '1050';
 
-        // (MỚI) Dùng vòng lặp (forEach) để gán sự kiện cho TỪNG NÚT
         bellTriggers.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                // (MỚI) Truyền 'e.currentTarget' (nút vừa bấm) vào
                 toggleDropdown(e.currentTarget);
             });
         });
 
-        // (MỚI) Sửa logic click-outside để check nhiều trigger
         document.addEventListener('click', (e) => {
             let clickedOnTrigger = false;
             bellTriggers.forEach(btn => {
@@ -220,35 +235,30 @@ function initSignalR() {
             }
         });
 
-        // --- GIỮ NGUYÊN LOGIC CŨ CỦA BẠN ---
-        // Tab buttons
         const tabButtons = document.querySelectorAll('.nav-link[data-tab]');
         tabButtons.forEach(btn => {
             btn.addEventListener('click', function () {
                 currentTab = this.dataset.tab;
                 setActiveTab(currentTab);
-                loadNotifications(); // Load lại khi switch tab
+                loadNotifications();
             });
         });
 
-        // Mark all read
         const markAllBtn = document.querySelector('.mark-all-read');
         if (markAllBtn) {
             markAllBtn.addEventListener('click', markAllAsRead);
         }
 
         updateBadges();
-        setInterval(updateBadges, 300000); // Poll mỗi 5 phút
+        setInterval(updateBadges, 300000);
     }
 
-    function toggleDropdown(anchorBtn) { // (MỚI) Nhận 'anchorBtn'
+    function toggleDropdown(anchorBtn) {
         const dropdown = document.querySelector('.notification-dropdown');
 
         if (isDropdownOpen) {
             closeDropdown();
         } else {
-            // *** (MỚI) LOGIC CĂN CHỈNH VỊ TRÍ ***
-            // (Đây là logic từ file script cũ của mình, giờ ta merge vào đây)
             const rect = anchorBtn.getBoundingClientRect();
             dropdown.style.top = `${rect.bottom + 5}px`;
             dropdown.style.right = `${window.innerWidth - rect.right}px`;
@@ -257,12 +267,10 @@ function initSignalR() {
                 dropdown.style.right = '10px';
                 dropdown.style.left = '10px';
             }
-            // *** HẾT LOGIC CĂN CHỈNH VỊ TRÍ ***
 
             dropdown.style.display = 'block';
             isDropdownOpen = true;
 
-            // --- GIỮ NGUYÊN LOGIC LOAD DATA CŨ CỦA BẠN ---
             setActiveTab(currentTab);
             console.log("🔄 [Dropdown] Opening - Prefetching both notification types...");
             prefetchNotifications('payment');
@@ -286,7 +294,6 @@ function initSignalR() {
 
     // ========== PREFETCH NOTIFICATIONS (SILENT) ==========
     function prefetchNotifications(type) {
-        // Nếu đã có cache thì skip
         if (notificationCache[type] !== null) {
             console.log(`✅ [Cache] ${type} notifications already cached`);
             return;
@@ -312,7 +319,6 @@ function initSignalR() {
     function loadNotifications() {
         const listContainer = document.getElementById('notificationList');
 
-        // Nếu có cache, dùng luôn
         if (notificationCache[currentTab] !== null) {
             console.log(`✅ [Cache] Loading ${currentTab} from cache`);
 
@@ -324,7 +330,6 @@ function initSignalR() {
             return;
         }
 
-        // Không có cache, show loading và fetch
         listContainer.innerHTML = `
             <div class="text-center py-4">
                 <div class="spinner-border spinner-border-sm text-primary"></div>
@@ -336,7 +341,6 @@ function initSignalR() {
             .then(response => response.ok ? response.json() : Promise.reject('Network error'))
             .then(data => {
                 if (data.success && data.data && data.data.length > 0) {
-                    // ✅ DEBUG: Log thứ tự nhận được
                     console.log('📥 [API] Received notifications:', data.data.map(n => ({
                         id: n.notificationId || n.NotificationId,
                         title: n.title || n.Title,
@@ -365,12 +369,10 @@ function initSignalR() {
     function renderNotifications(notifications) {
         const listContainer = document.getElementById('notificationList');
 
-        // ✅ Sort lại ở frontend để đảm bảo mới nhất trước
         const sortedNotifications = [...notifications].sort((a, b) => {
-            // Sử dụng hàm formatDateTime để lấy Date object đã được xử lý timezone
             const dateA = parseUtcDate(a.createdAt || a.CreatedAt);
             const dateB = parseUtcDate(b.createdAt || b.CreatedAt);
-            return dateB - dateA; // Mới nhất trước
+            return dateB - dateA;
         });
 
         listContainer.innerHTML = sortedNotifications.map(createNotificationItemHtml).join('');
@@ -400,24 +402,20 @@ function initSignalR() {
             .catch(error => console.error('❌ Error updating badges:', error));
     }
 
-    // (HÀM ĐÃ SỬA)
-function updateBadgeElement(selector, count) {
-    // (MỚI) Dùng querySelectorAll để chọn TẤT CẢ các element
-    const badges = document.querySelectorAll(selector);
-    
-    if (badges.length > 0) {
-        // (MỚI) Dùng vòng lặp forEach để cập nhật TẤT CẢ
-        badges.forEach(badge => {
-            if (count > 0) {
-                badge.textContent = count > 99 ? '99+' : count;
-                // (MỚI) Sửa lại logic check class
-                badge.style.display = badge.classList.contains('notification-badge') ? 'block' : 'inline-block';
-            } else {
-                badge.style.display = 'none';
-            }
-        });
+    function updateBadgeElement(selector, count) {
+        const badges = document.querySelectorAll(selector);
+        
+        if (badges.length > 0) {
+            badges.forEach(badge => {
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.style.display = badge.classList.contains('notification-badge') ? 'block' : 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
+        }
     }
-}
 
     // ========== MARK AS READ ==========
     function markAsRead(notifId, redirectUrl) {
@@ -425,7 +423,6 @@ function updateBadgeElement(selector, count) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Invalidate cache
                     notificationCache.payment = null;
                     notificationCache.movie = null;
 
@@ -448,7 +445,6 @@ function updateBadgeElement(selector, count) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Invalidate cache
                     notificationCache[currentTab] = null;
 
                     updateBadges();
@@ -463,39 +459,23 @@ function updateBadgeElement(selector, count) {
     }
 
     // ========== HELPER FUNCTIONS ==========
-
-    /**
-     * ✅ [FIXED v2]
-     * Helper này xử lý string thời gian từ C#
-     * 1. Chuẩn hóa string (thay ' ' -> 'T', ',' -> '.')
-     * 2. Cắt bớt mili-giây (nếu .NET gửi 7 số, JS chỉ nhận 3)
-     * 3. Thêm 'Z' (UTC) nếu string không có thông tin timezone
-     */
     function parseUtcDate(dateStr) {
-        if (!dateStr) return new Date(); // Trả về now nếu rỗng
+        if (!dateStr) return new Date();
 
         try {
-            // 1. Chuẩn hóa string: thay ' ' (space) = 'T', thay ',' (comma) = '.'
-            //    (Phòng trường hợp C# serialize khác)
             let processedDateStr = dateStr.replace(' ', 'T').replace(',', '.');
 
-            // 2. [FIXED v2] Xử lý mili-giây (logic mới, đơn giản hơn)
             const dotIndex = processedDateStr.lastIndexOf('.');
             if (dotIndex > -1) {
-                const mainPart = processedDateStr.substring(0, dotIndex); // vd: ...T06:03:00
-                const restPart = processedDateStr.substring(dotIndex + 1); // vd: 1234567Z hoặc 1234567
+                const mainPart = processedDateStr.substring(0, dotIndex);
+                const restPart = processedDateStr.substring(dotIndex + 1);
 
-                // Lấy 3 số mili-giây đầu tiên
-                const fraction = restPart.replace(/[^0-9]/g, '').substring(0, 3); // "123"
-                // Lấy phần timezone (nếu có)
-                const tz = restPart.replace(/[0-9]/g, ''); // "Z" hoặc "" hoặc "+07:00"
+                const fraction = restPart.replace(/[^0-9]/g, '').substring(0, 3);
+                const tz = restPart.replace(/[0-9]/g, '');
 
-                // Ghép lại
-                processedDateStr = `${mainPart}.${fraction}${tz}`; // vd: ...T06:03:00.123Z
+                processedDateStr = `${mainPart}.${fraction}${tz}`;
             }
 
-            // 3. Thêm 'Z' (UTC) nếu string không có thông tin timezone
-            // (Áp dụng cho các string `DateTime.Now` mới từ server UTC)
             const hasTimezoneRegex = /Z|([+-]\d{2}(:\d{2})?)$/;
             if (!hasTimezoneRegex.test(processedDateStr)) {
                 processedDateStr += 'Z';
@@ -503,41 +483,32 @@ function updateBadgeElement(selector, count) {
 
             const date = new Date(processedDateStr);
             if (isNaN(date.getTime())) {
-                // Nếu parse lỗi (rất hiếm), trả về 'Vừa xong'
                 console.error(`❌ [Time] Invalid Date: ${dateStr} -> ${processedDateStr}`);
                 return new Date();
             }
 
-            // Log để debug
-            // console.log(`✅ [Time] Parsed: ${dateStr} -> ${processedDateStr} -> ${date.toISOString()}`);
             return date;
 
         } catch (e) {
             console.error("Error parsing date:", dateStr, e);
-            return new Date(); // Lỗi -> fallback về 'Vừa xong'
+            return new Date();
         }
     }
 
-
-    /**
-     * Hàm này chỉ format, việc tính toán date đã dời qua parseUtcDate
-     */
     function formatDateTime(dateStr) {
         if (!dateStr) return 'N/A';
         try {
-            // Sử dụng helper mới để parse
             const date = parseUtcDate(dateStr);
 
             const now = new Date();
-            const diff = now - date; // Đây là diff mili-giây chính xác
+            const diff = now - date;
             const seconds = Math.floor(diff / 1000);
             const minutes = Math.floor(seconds / 60);
             const hours = Math.floor(minutes / 60);
             const days = Math.floor(hours / 24);
 
-            // Xử lý trường hợp thời gian tương lai (do server/client lệch nhau < 5s)
             if (seconds < 5) return 'Vừa xong';
-            if (minutes === 0) return 'Vừa xong'; // Fix cho 0 phút trước
+            if (minutes === 0) return 'Vừa xong';
             if (minutes < 60) return `${minutes} phút trước`;
             if (hours < 24) return `${hours} giờ trước`;
             if (days < 7) return `${days} ngày trước`;
@@ -547,7 +518,6 @@ function updateBadgeElement(selector, count) {
             return 'N/A';
         }
     }
-
 
     function escapeHtml(text) {
         if (typeof text !== 'string') return '';
@@ -573,5 +543,4 @@ function updateBadgeElement(selector, count) {
             setTimeout(() => toast.remove(), 300);
         }, 4000);
     }
-
 })();

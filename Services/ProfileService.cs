@@ -4,13 +4,14 @@ using MovieWeb.Models.Entities;
 using MovieWeb.Models.DTOs; // Giả sử DTOs của bạn ở đây
 using MovieWeb.Models; // Giả sử PaymentHistoryViewModel ở đây
 using MovieWeb.Data;
-using Microsoft.AspNetCore.Hosting; 
-using Microsoft.Extensions.Logging; 
-using System.IO; 
-using System.Linq; 
-using System.Threading.Tasks; 
-using System.Collections.Generic; 
-using System; 
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Logging;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System;
+using MovieWeb.Services.Interfaces;
 
 namespace MovieWeb.Services
 {
@@ -21,7 +22,7 @@ namespace MovieWeb.Services
         Task<ProfileResult> ChangePasswordAsync(int userId, ChangePasswordDto model);
         Task<ProfileResult> UpdateAvatarAsync(int userId, IFormFile avatarFile);
         Task<ProfileResult> DeleteAvatarAsync(int userId);
-        
+
         // ===== THÊM HÀM MỚI NÀY =====
         Task<PaymentHistoryDto> GetPaymentHistoryAsync(int userId, int page, int pageSize = 10);
         // =============================
@@ -40,7 +41,11 @@ namespace MovieWeb.Services
         private readonly MovieWebDbContext _context;
         private readonly ILogger<ProfileService> _logger;
         private readonly IWebHostEnvironment _environment;
-        
+        private readonly IAuthService _authService;
+        private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
         private const string _userUploadPath = "/images/uploads/avatars/";
         private const string _defaultAvatarPath = "/images/nouser.png";
 
@@ -49,17 +54,22 @@ namespace MovieWeb.Services
             UserManager<User> userManager,
             MovieWebDbContext context,
             ILogger<ProfileService> logger,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            IAuthService authService,
+            IEmailService emailService,
+            IConfiguration configuration,
+            IHttpContextAccessor httpContextAccessor)
         {
             _userManager = userManager;
             _context = context;
             _logger = logger;
             _environment = environment;
+            _authService = authService;
+            _emailService = emailService;
+            _configuration = configuration;
+            _httpContextAccessor = httpContextAccessor;
         }
 
-        // (Các hàm GetUserProfileAsync, UpdateProfileAsync, ChangePasswordAsync, UpdateAvatarAsync, DeleteAvatarAsync giữ nguyên như file trước)
-        
-        #region User Profile Methods
         // Lấy thông tin profile đầy đủ
         public async Task<UserProfileDto?> GetUserProfileAsync(int userId)
         {
@@ -67,7 +77,7 @@ namespace MovieWeb.Services
             {
                 var userProfile = await _context.Users
                     .Where(u => u.Id == userId)
-                    .Select(user => new UserProfileDto 
+                    .Select(user => new UserProfileDto
                     {
                         UserId = user.Id,
                         Username = user.UserName ?? "",
@@ -80,7 +90,12 @@ namespace MovieWeb.Services
                         CreatedAt = user.CreatedAt ?? DateTime.Now,
                         LastLogin = user.LastLogin,
                         RoleId = user.RoleId,
-                        
+                        PhoneNumber = user.PhoneNumber,
+                        DateOfBirth = user.DateOfBirth,
+                        Gender = user.Gender,
+                        Address = user.Address,
+                        Bio = user.Bio,
+
                         TotalFavorites = (user.Favorites == null) ? 0 : user.Favorites.Count,
                         TotalComments = (user.Comments == null) ? 0 : user.Comments.Count,
                         TotalRatings = (user.Ratings == null) ? 0 : user.Ratings.Count,
@@ -89,7 +104,7 @@ namespace MovieWeb.Services
                         SubscriptionType = user.SubscriptionType ?? "free",
                         SubscriptionStartDate = user.SubscriptionStartDate,
                         SubscriptionEndDate = user.SubscriptionEndDate,
-                        
+
                         IsStudentVerified = user.IsStudentVerified,
                         StudentEmail = user.StudentEmail,
                         StudentEmailVerifiedAt = user.StudentEmailVerifiedAt,
@@ -109,7 +124,7 @@ namespace MovieWeb.Services
                 if (activeSubscription != null)
                 {
                     userProfile.RemainingDaysFromPreviousPackage = activeSubscription.BonusDaysFromPreviousPackage;
-                    userProfile.IsCancelled = activeSubscription.Status == "cancelled" 
+                    userProfile.IsCancelled = activeSubscription.Status == "cancelled"
                                               && activeSubscription.EndDate > DateTime.Now;
                 }
 
@@ -141,8 +156,46 @@ namespace MovieWeb.Services
                         return ProfileResult.Failed("Email đã được sử dụng bởi tài khoản khác");
 
                     user.Email = model.Email;
-                    user.EmailConfirmed = false; 
+                    user.EmailConfirmed = false;
+                    try
+                    {
+                        // Tạo token mới
+                        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+                        // Lấy đúng Base URL thực tế từ request (trùng logic AuthController)
+                        var request = _httpContextAccessor.HttpContext?.Request;
+                        var actualBaseUrl = $"{request?.Scheme}://{request?.Host}".TrimEnd('/');
+
+                        var confirmationLink = $"{actualBaseUrl}/auth/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+
+                        // Gửi email xác thực mới
+                        await _emailService.SendEmailConfirmationAsync(
+                            user.Email!,
+                            user.FullName ?? user.Email!,
+                            confirmationLink
+                        );
+
+                        _logger.LogInformation(
+                            "Sent NEW confirmation email to {Email} after profile update.",
+                            user.Email
+                        );
+                    }
+                    catch (Exception exEmail)
+                    {
+                        _logger.LogError(
+                            exEmail,
+                            "Failed to send NEW confirmation email to {Email}",
+                            user.Email
+                        );
+                        // Không chặn flow, chỉ log lỗi
+                    }
+
                 }
+                user.PhoneNumber = model.PhoneNumber;
+                user.DateOfBirth = model.DateOfBirth;
+                user.Gender = model.Gender;
+                user.Address = model.Address;
+                user.Bio = model.Bio;
 
                 user.UpdatedAt = DateTime.Now;
 
@@ -272,8 +325,8 @@ namespace MovieWeb.Services
                 user.Avatar = _defaultAvatarPath;
                 user.UpdatedAt = DateTime.Now;
                 await _userManager.UpdateAsync(user);
-                
-                var profileDto = await GetUserProfileAsync(userId); 
+
+                var profileDto = await GetUserProfileAsync(userId);
                 return ProfileResult.Success("Xóa avatar thành công", profileDto);
             }
             catch (Exception ex)
@@ -282,7 +335,7 @@ namespace MovieWeb.Services
                 return ProfileResult.Failed("Có lỗi xảy ra khi xóa avatar");
             }
         }
-        
+
         // ===== THÊM HÀM MỚI NÀY VÀO =====
         public async Task<PaymentHistoryDto> GetPaymentHistoryAsync(int userId, int page, int pageSize = 10)
         {
@@ -334,11 +387,6 @@ namespace MovieWeb.Services
                 return new PaymentHistoryDto { CurrentPage = page, PageSize = pageSize };
             }
         }
-        // ===================================
-        #endregion
-
-        #region Admin Methods
-        // (Tất cả Admin Methods giữ nguyên như file trước)
 
         // Lấy danh sách tất cả users
         public async Task<List<UserProfileDto>> GetAllUsersAsync()
@@ -405,7 +453,10 @@ namespace MovieWeb.Services
 
                     user.Email = model.Email;
                 }
-
+                user.PhoneNumber = model.PhoneNumber;
+                user.DateOfBirth = model.DateOfBirth;
+                user.Gender = model.Gender;
+                user.Address = model.Address;
                 user.UpdatedAt = DateTime.Now;
 
                 var result = await _userManager.UpdateAsync(user);
@@ -433,21 +484,21 @@ namespace MovieWeb.Services
 
                 var token = await _userManager.GeneratePasswordResetTokenAsync(user);
                 var resetResult = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
-                
+
                 if (resetResult.Succeeded)
                 {
-                     return ProfileResult.Success("Đổi mật khẩu thành công");
+                    return ProfileResult.Success("Đổi mật khẩu thành công");
                 }
-                
+
                 var removeResult = await _userManager.RemovePasswordAsync(user);
                 var addResult = await _userManager.AddPasswordAsync(user, model.NewPassword);
-                
+
                 if (addResult.Succeeded)
                 {
                     return ProfileResult.Success("Đổi mật khẩu thành công");
                 }
-                
-                return ProfileResult.Failed(resetResult.Errors.Any() ? 
+
+                return ProfileResult.Failed(resetResult.Errors.Any() ?
                     resetResult.Errors.Select(e => e.Description).ToList() :
                     addResult.Errors.Select(e => e.Description).ToList());
             }
@@ -466,7 +517,7 @@ namespace MovieWeb.Services
                 var user = await _userManager.FindByIdAsync(userId.ToString());
                 if (user == null)
                     return ProfileResult.Failed("Người dùng không tồn tại");
-                
+
                 user.IsActive = !(user.IsActive ?? false);
                 user.UpdatedAt = DateTime.Now;
 
@@ -514,7 +565,6 @@ namespace MovieWeb.Services
                 return ProfileResult.Failed("Có lỗi xảy ra khi xóa người dùng");
             }
         }
-        #endregion
     }
 
     // Class helper để trả về kết quả

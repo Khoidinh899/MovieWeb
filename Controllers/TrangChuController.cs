@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using MovieWeb.Models.Entities;
 using MovieWeb.Data;
+using MovieWeb.Services.Interfaces;
 
 namespace MovieWeb.Controllers
 {
@@ -12,15 +13,18 @@ namespace MovieWeb.Controllers
         private readonly ILogger<TrangChuController> _logger;
         private readonly IMemoryCache _cache;
         private readonly MovieWebDbContext _context;
+        private readonly IAuthService _authService; 
 
         public TrangChuController(
             ILogger<TrangChuController> logger,
             IMemoryCache cache,
-            MovieWebDbContext context)
+            MovieWebDbContext context,
+            IAuthService authService)
         {
             _logger = logger;
             _cache = cache;
             _context = context;
+            _authService = authService;
         }
 
         public async Task<IActionResult> TrangChu()
@@ -113,12 +117,37 @@ namespace MovieWeb.Controllers
                 }
                 viewModel.HoatHinhMovies = hoatHinhMovies;
 
-                // ===== QUẢNG CÁO =====
-                var advertisements = await _context.Advertisements
-                    .Where(a => a.IsActive)
-                    .OrderBy(a => a.DisplayOrder)
-                    .ToListAsync();
-                ViewBag.Advertisements = advertisements;
+                bool shouldShowAds = true;
+                var currentUser = await _authService.GetCurrentUserAsync(); // Lấy user hiện tại
+
+                if (currentUser != null)
+                {
+                    var subscriptionType = currentUser.SubscriptionType?.ToLower() ?? "free";
+                    // Nếu là Admin, Premium HOẶC Student thì TẮT QUẢNG CÁO
+                    if (currentUser.IsAdmin || subscriptionType == "premium" || subscriptionType == "student")
+                    {
+                        shouldShowAds = false;
+                    }
+                }
+                ViewBag.ShouldShowAds = shouldShowAds;
+
+                // ===== QUẢNG CÁO (Chỉ load nếu cần) =====
+                if (shouldShowAds)
+                {
+                    _logger.LogInformation("User is Free/Guest. Loading homepage ads.");
+                    var advertisements = await _context.Advertisements
+                        .Where(a => a.IsActive)
+                        .OrderBy(a => a.DisplayOrder)
+                        .ToListAsync();
+                    ViewBag.Advertisements = advertisements;
+                }
+                else
+                {
+                    _logger.LogInformation("User is Admin/Premium/Student. Hiding homepage ads.");
+                    // Nếu là Premium/Admin, trả về danh sách rỗng
+                    ViewBag.Advertisements = new List<Advertisement>();
+                }
+                // ==== KẾT THÚC FIX ====
 
                 return View("~/Views/Home/TrangChu.cshtml", viewModel);
             }
@@ -131,6 +160,7 @@ namespace MovieWeb.Controllers
                     CdnImageDomain = "https://img.ophim.live/uploads/movies/"
                 };
                 ViewBag.Advertisements = new List<Advertisement>();
+                ViewBag.ShouldShowAds = true; // Lỗi thì cứ hiện QC cho chắc
                 return View("~/Views/Home/TrangChu.cshtml", viewModel);
             }
         }

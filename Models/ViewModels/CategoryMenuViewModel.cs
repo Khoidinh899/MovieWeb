@@ -1,7 +1,7 @@
 using MovieWeb.Models.Entities;
 using System.Collections.Generic;
 
-namespace MovieWeb.ViewModels
+namespace MovieWeb.Models.ViewModels
 {
     public class CategoryMenuViewModel
     {
