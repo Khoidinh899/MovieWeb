@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using MovieWeb.Models.DTOs;
 using MovieWeb.Models.Entities;
 using MovieWeb.Helpers; // Cần cho MovieHelper
+using MovieWeb.Services;
+using Hangfire; // Cần cho BackgroundJob
 
 // Phải cùng namespace
 namespace MovieWeb.Controllers
@@ -168,10 +170,11 @@ namespace MovieWeb.Controllers
                         year = movie.Year,
                         isRecommended = movie.IsRecommended,
                         isActive = movie.IsActive,
-                        categoryIds = string.Join(",", movie.Categories.Select(c => c.CategoryId)),
-                        countryIds = string.Join(",", movie.Countries.Select(c => c.CountryId)),
+                        categoryNames = string.Join(", ", movie.Categories.Select(c => c.Name)),
+                        countryNames = string.Join(", ", movie.Countries.Select(c => c.Name)),
                         actorNames = string.Join(",", movie.Actors.Select(a => a.Name)),
-                        directorNames = string.Join(",", movie.Directors.Select(d => d.Name))
+                        directorNames = string.Join(",", movie.Directors.Select(d => d.Name)),
+                        apiSlug = movie.ApiId
                     }
                 });
             }
@@ -202,7 +205,6 @@ namespace MovieWeb.Controllers
                     return Json(new { success = false, message = errors });
                 }
 
-                // Kiểm tra slug đã tồn tại
                 if (await _context.Movies.AnyAsync(m => m.Slug == model.Slug))
                 {
                     return Json(new { success = false, message = "Slug đã được sử dụng" });
@@ -210,7 +212,7 @@ namespace MovieWeb.Controllers
 
                 var movie = new MovieWeb.Models.Entities.Movie
                 {
-                    ApiId = null, // Phim thủ công không có ApiId
+                    // ApiId = null, // Sẽ được set bên dưới
                     Slug = model.Slug,
                     Name = model.Name,
                     OriginalName = model.OriginalName,
@@ -219,12 +221,12 @@ namespace MovieWeb.Controllers
                     Type = model.Type,
                     Status = model.Status,
                     PosterUrl = string.IsNullOrWhiteSpace(model.PosterUrl)
-                                ? null
-                                : Path.GetFileName(model.PosterUrl),
+                        ? null
+                        : Path.GetFileName(model.PosterUrl),
                     ThumbUrl = string.IsNullOrWhiteSpace(model.ThumbUrl)
-                                ? null
-                                : Path.GetFileName(model.ThumbUrl),
-                    TrailerUrl = model.TrailerUrl,
+                        ? null
+                        : Path.GetFileName(model.ThumbUrl),
+                    // TrailerUrl = model.TrailerUrl, // Sẽ được set bên dưới
                     Time = model.Time,
                     EpisodeCurrent = model.EpisodeCurrent,
                     EpisodeTotal = model.EpisodeTotal,
@@ -241,41 +243,90 @@ namespace MovieWeb.Controllers
                     UpdatedAt = DateTime.Now
                 };
 
-                _context.Movies.Add(movie);
-                await _context.SaveChangesAsync();
+                // ==== LOGIC XỬ LÝ APISLUG ====
+                string successMessage = "Tạo phim thành công!";
+                bool shouldSyncEpisodes = false;
 
-                // Thêm categories
-                if (!string.IsNullOrWhiteSpace(model.CategoryIds))
+                if (model.Type == "series" && !string.IsNullOrWhiteSpace(model.ApiSlug))
                 {
-                    var categoryIds = model.CategoryIds.Split(',')
-                        .Select(id => int.TryParse(id.Trim(), out var result) ? result : 0)
-                        .Where(id => id > 0)
+                    // Đây là phim bộ, muốn sync tự động
+                    movie.ApiId = model.ApiSlug; // Lưu ApiSlug vào ApiId
+                    movie.TrailerUrl = null; // Phim bộ không có trailerUrl chung
+                    successMessage = "Tạo phim thành công! Đã lên lịch đồng bộ các tập phim.";
+                    shouldSyncEpisodes = true;
+                }
+                else
+                {
+                    // Phim lẻ hoặc phim thủ công
+                    movie.ApiId = null;
+                    movie.TrailerUrl = model.TrailerUrl;
+                }
+                // ==== KẾT THÚC LOGIC ====
+
+                _context.Movies.Add(movie);
+                await _context.SaveChangesAsync(); // 👈 Lưu để lấy movie.MovieId
+
+                // ==== GỌI HANGFIRE JOB ====
+                // Job này sẽ chạy ngầm và lưu vào bảng "Episodes"
+                if (shouldSyncEpisodes)
+                {
+                    _backgroundJobClient.Enqueue<IMovieSyncService>(
+                        service => service.SyncMovieFromApiBySlug(movie.ApiId, movie.MovieId));
+                    
+                    _logger.LogInformation("Enqueued episode sync job for movie: {MovieName} (ID: {MovieId}) with ApiSlug: {ApiSlug}", 
+                        movie.Name, movie.MovieId, movie.ApiId);
+                }
+                // ==== KẾT THÚC ====
+
+                if (!string.IsNullOrWhiteSpace(model.CategoryNames))
+                {
+                    var categoryNames = model.CategoryNames.Split(',')
+                        .Select(n => n.Trim())
+                        .Where(n => !string.IsNullOrWhiteSpace(n))
                         .ToList();
 
-                    var categories = await _context.Categories
-                        .Where(c => categoryIds.Contains(c.CategoryId))
-                        .ToListAsync();
-
-                    foreach (var category in categories)
+                    foreach (var categoryName in categoryNames)
                     {
+                        var category = await _context.Categories.FirstOrDefaultAsync(c => c.Name == categoryName);
+
+                        if (category == null)
+                        {
+                            category = new MovieWeb.Models.Entities.Category
+                            {
+                                Name = categoryName,
+                                Slug = GenerateSlug(categoryName), // Dùng hàm helper GenerateSlug
+                                IsActive = true,
+                                CreatedAt = DateTime.Now
+                            };
+                            _context.Categories.Add(category);
+                        }
                         movie.Categories.Add(category);
                     }
                 }
 
                 // Thêm countries
-                if (!string.IsNullOrWhiteSpace(model.CountryIds))
+                if (!string.IsNullOrWhiteSpace(model.CountryNames))
                 {
-                    var countryIds = model.CountryIds.Split(',')
-                        .Select(id => int.TryParse(id.Trim(), out var result) ? result : 0)
-                        .Where(id => id > 0)
+                    var countryNames = model.CountryNames.Split(',')
+                        .Select(n => n.Trim())
+                        .Where(n => !string.IsNullOrWhiteSpace(n))
                         .ToList();
 
-                    var countries = await _context.Countries
-                        .Where(c => countryIds.Contains(c.CountryId))
-                        .ToListAsync();
-
-                    foreach (var country in countries)
+                    foreach (var countryName in countryNames)
                     {
+                        var country = await _context.Countries.FirstOrDefaultAsync(c => c.Name == countryName);
+
+                        if (country == null)
+                        {
+                            country = new MovieWeb.Models.Entities.Country
+                            {
+                                Name = countryName,
+                                Slug = GenerateSlug(countryName), // Dùng hàm helper GenerateSlug
+                                IsActive = true,
+                                CreatedAt = DateTime.Now
+                            };
+                            _context.Countries.Add(country);
+                        }
                         movie.Countries.Add(country);
                     }
                 }
@@ -332,12 +383,13 @@ namespace MovieWeb.Controllers
                     }
                 }
 
-                await _context.SaveChangesAsync();
+
+                await _context.SaveChangesAsync(); // Lưu các quan hệ
 
                 await LogAdminActionAsync("CREATE_MOVIE", $"Created manual movie: {movie.Name}", movie.MovieId.ToString());
                 _logger.LogInformation("Admin created new movie: {MovieName}", movie.Name);
 
-                return Json(new { success = true, message = "Tạo phim thành công!" });
+                return Json(new { success = true, message = successMessage }); // 👈 Dùng successMessage
             }
             catch (Exception ex)
             {
@@ -378,11 +430,16 @@ namespace MovieWeb.Controllers
                     return Json(new { success = false, message = "Không tìm thấy phim" });
                 }
 
-                // Kiểm tra slug trùng (ngoại trừ phim hiện tại)
                 if (await _context.Movies.AnyAsync(m => m.Slug == model.Slug && m.MovieId != model.MovieId))
                 {
                     return Json(new { success = false, message = "Slug đã được sử dụng bởi phim khác" });
                 }
+
+                // ==== LƯU LẠI APIID CŨ ====
+                var oldApiId = movie.ApiId;
+                string successMessage = "Cập nhật phim thành công!";
+                bool shouldSyncEpisodes = false;
+                // ==== KẾT THÚC ====
 
                 // Cập nhật thông tin cơ bản
                 movie.Slug = model.Slug;
@@ -394,7 +451,7 @@ namespace MovieWeb.Controllers
                 movie.Status = model.Status;
                 movie.PosterUrl = model.PosterUrl;
                 movie.ThumbUrl = model.ThumbUrl;
-                movie.TrailerUrl = model.TrailerUrl;
+                // movie.TrailerUrl = model.TrailerUrl; // Sẽ set bên dưới
                 movie.Time = model.Time;
                 movie.EpisodeCurrent = model.EpisodeCurrent;
                 movie.EpisodeTotal = model.EpisodeTotal;
@@ -405,36 +462,80 @@ namespace MovieWeb.Controllers
                 movie.IsActive = model.IsActive;
                 movie.UpdatedAt = DateTime.Now;
 
+                // ==== LOGIC XỬ LÝ APISLUG KHI UPDATE ====
+                if (model.Type == "series" && !string.IsNullOrWhiteSpace(model.ApiSlug))
+                {
+                    // Đây là phim bộ, có ApiSlug
+                    movie.ApiId = model.ApiSlug;
+                    movie.TrailerUrl = null; // Phim bộ không có trailerUrl chung
+
+                    // Chỉ sync khi ApiSlug thay đổi (hoặc mới được thêm vào)
+                    if (movie.ApiId != oldApiId)
+                    {
+                        shouldSyncEpisodes = true;
+                        successMessage = "Cập nhật phim thành công! Đã lên lịch đồng bộ lại các tập phim.";
+                        _logger.LogInformation("ApiSlug changed for movie ID {MovieId}. Old: '{OldSlug}', New: '{NewSlug}'. Enqueuing sync.",
+                            movie.MovieId, oldApiId, movie.ApiId);
+                    }
+                }
+                else
+                {
+                    // Phim lẻ hoặc phim thủ công (hoặc admin xóa ApiSlug)
+                    movie.ApiId = null;
+                    movie.TrailerUrl = model.TrailerUrl;
+                }
+                // ==== KẾT THÚC LOGIC ====
+
                 // Cập nhật categories
                 movie.Categories.Clear();
-                if (!string.IsNullOrWhiteSpace(model.CategoryIds))
+                if (!string.IsNullOrWhiteSpace(model.CategoryNames))
                 {
-                    var categoryIds = model.CategoryIds.Split(',')
-                        .Select(id => int.TryParse(id.Trim(), out var result) ? result : 0)
-                        .Where(id => id > 0)
+                    var categoryNames = model.CategoryNames.Split(',')
+                        .Select(n => n.Trim())
+                        .Where(n => !string.IsNullOrWhiteSpace(n))
                         .ToList();
-                    var categories = await _context.Categories
-                        .Where(c => categoryIds.Contains(c.CategoryId))
-                        .ToListAsync();
-                    foreach (var category in categories)
+                    
+                    foreach (var categoryName in categoryNames)
                     {
+                        var category = await _context.Categories.FirstOrDefaultAsync(c => c.Name == categoryName);
+                        if (category == null)
+                        {
+                            category = new MovieWeb.Models.Entities.Category
+                            {
+                                Name = categoryName,
+                                Slug = GenerateSlug(categoryName),
+                                IsActive = true,
+                                CreatedAt = DateTime.Now
+                            };
+                            _context.Categories.Add(category);
+                        }
                         movie.Categories.Add(category);
                     }
                 }
 
                 // Cập nhật countries
                 movie.Countries.Clear();
-                if (!string.IsNullOrWhiteSpace(model.CountryIds))
+                if (!string.IsNullOrWhiteSpace(model.CountryNames))
                 {
-                    var countryIds = model.CountryIds.Split(',')
-                        .Select(id => int.TryParse(id.Trim(), out var result) ? result : 0)
-                        .Where(id => id > 0)
+                    var countryNames = model.CountryNames.Split(',')
+                        .Select(n => n.Trim())
+                        .Where(n => !string.IsNullOrWhiteSpace(n))
                         .ToList();
-                    var countries = await _context.Countries
-                        .Where(c => countryIds.Contains(c.CountryId))
-                        .ToListAsync();
-                    foreach (var country in countries)
+
+                    foreach (var countryName in countryNames)
                     {
+                        var country = await _context.Countries.FirstOrDefaultAsync(c => c.Name == countryName);
+                        if (country == null)
+                        {
+                            country = new MovieWeb.Models.Entities.Country
+                            {
+                                Name = countryName,
+                                Slug = GenerateSlug(countryName),
+                                IsActive = true,
+                                CreatedAt = DateTime.Now
+                            };
+                            _context.Countries.Add(country);
+                        }
                         movie.Countries.Add(country);
                     }
                 }
@@ -481,11 +582,32 @@ namespace MovieWeb.Controllers
                     }
                 }
 
-                await _context.SaveChangesAsync();
+
+                await _context.SaveChangesAsync(); // 👈 Lưu thay đổi phim VÀ quan hệ
+
+                // ==== GỌI HANGFIRE JOB (NẾU CẦN) ====
+                // Job này sẽ chạy ngầm và lưu vào bảng "Episodes"
+                if (shouldSyncEpisodes)
+                {
+                    // 🚨 TÙY CHỌN: Ông có thể muốn xóa sạch tập cũ trước khi sync lại
+                    // var oldEpisodes = _context.Episodes.Where(e => e.MovieId == movie.MovieId);
+                    // if (oldEpisodes.Any())
+                    // {
+                    //    _context.Episodes.RemoveRange(oldEpisodes);
+                    //    await _context.SaveChangesAsync(); 
+                    //    _logger.LogInformation("Removed old episodes for movie ID {MovieId} before re-syncing.", movie.MovieId);
+                    // }
+                    // 👆 Bỏ comment phần trên nếu ông muốn xóa sạch tập cũ khi sync lại
+
+                    _backgroundJobClient.Enqueue<IMovieSyncService>(
+                        service => service.SyncMovieFromApiBySlug(movie.ApiId, movie.MovieId));
+                }
+                // ==== KẾT THÚC ====
+
                 await LogAdminActionAsync("UPDATE_MOVIE", $"Updated movie: {movie.Name}", movie.MovieId.ToString());
                 _logger.LogInformation("Admin updated movie: {MovieName}", movie.Name);
 
-                return Json(new { success = true, message = "Cập nhật phim thành công!" });
+                return Json(new { success = true, message = successMessage }); // 👈 Dùng successMessage
             }
             catch (Exception ex)
             {

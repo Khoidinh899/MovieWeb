@@ -103,7 +103,7 @@ namespace MovieWeb.Services
             // Nếu có gói cũ còn thời gian, tính số ngày bonus
             if (oldSubscription != null)
             {
-                bonusDays = (oldSubscription.EndDate - DateTime.Now).Days;
+                bonusDays = (int)Math.Ceiling((oldSubscription.EndDate - DateTime.Now).TotalDays);
 
                 // Đánh dấu gói cũ là expired
                 oldSubscription.Status = "expired";
@@ -112,21 +112,29 @@ namespace MovieWeb.Services
             }
 
             // Tính tổng số ngày = ngày gói mới + ngày bonus từ gói cũ
-            var totalDays = (newPlan.ActualMonths * 30) + bonusDays;
+            // ✅ SỬA LỖI LOGIC: Dùng AddMonths() để tính toán lịch chính xác
+            DateTime startDate = DateTime.Now;
+            DateTime newEndDate = startDate.AddMonths(newPlan.ActualMonths); // Cộng tháng LỊCH
 
-            // Tạo subscription mới với bonus days
+            // Cộng thêm ngày bonus (nếu có)
+            if (bonusDays > 0)
+            {
+                newEndDate = newEndDate.AddDays(bonusDays);
+            }
+
+            // Tạo subscription mới với ngày tháng đã tính đúng
             var newSubscription = new UserSubscription
             {
                 UserId = userId,
                 PlanId = newPlanId,
                 StripeSubscriptionId = stripeSubscriptionId,
                 Status = "active",
-                StartDate = DateTime.Now,
-                EndDate = DateTime.Now.AddDays(totalDays),
-                NextBillingDate = DateTime.Now.AddMonths(newPlan.DurationMonths),
+                StartDate = startDate, // Dùng biến startDate
+                EndDate = newEndDate,  // Dùng newEndDate đã tính đúng
+                NextBillingDate = startDate.AddMonths(newPlan.DurationMonths), // Dùng startDate
                 AutoRenew = true,
-                BonusDaysFromPreviousPackage = bonusDays, // 🆕 LƯU BONUS DAYS
-                CreatedAt = DateTime.Now
+                BonusDaysFromPreviousPackage = bonusDays,
+                CreatedAt = startDate
             };
 
             _context.UserSubscriptions.Add(newSubscription);
@@ -214,7 +222,7 @@ namespace MovieWeb.Services
             var oldSubscription = await _context.UserSubscriptions
                 .Where(s => s.UserId == userId
                     && s.EndDate > DateTime.Now
-                    && (s.Status == "active" || s.Status == "cancelled")) // ✅ CHECK CẢ 2 TRẠNG THÁI
+                    && (s.Status == "cancelled")) // ✅ CHECK TRẠNG THÁI
                 .OrderByDescending(s => s.EndDate)
                 .FirstOrDefaultAsync();
 
@@ -223,7 +231,7 @@ namespace MovieWeb.Services
             if (oldSubscription != null)
             {
                 // Tính số ngày còn lại từ gói cũ
-                bonusDays = (int)(oldSubscription.EndDate - DateTime.Now).TotalDays;
+                bonusDays = (int)Math.Ceiling((oldSubscription.EndDate - DateTime.Now).TotalDays);
 
                 // Đánh dấu gói cũ là expired
                 oldSubscription.Status = "expired";
@@ -236,16 +244,22 @@ namespace MovieWeb.Services
                     $"- EndDate: {oldSubscription.EndDate:dd/MM/yyyy}");
             }
 
-            // ✅ TÍNH ĐÚNG: (ActualMonths × 30) + bonusDays
-            int totalDays = (plan.ActualMonths * 30) + bonusDays;
-            DateTime newEndDate = DateTime.Now.AddDays(totalDays);
+            // ✅ SỬA LỖI LOGIC: Dùng AddMonths() để tính toán lịch chính xác
+            DateTime startDate = DateTime.Now;
+            DateTime newEndDate = startDate.AddMonths(plan.ActualMonths); // Cộng 12 (hoặc 13) tháng LỊCH
 
-            Console.WriteLine($"📊 Tính toán subscription mới:\n" +
+            // Sau đó cộng thêm ngày bonus (nếu có)
+            if (bonusDays > 0)
+            {
+                newEndDate = newEndDate.AddDays(bonusDays);
+            }
+
+            Console.WriteLine($"📊 Tính toán subscription mới (ĐÃ SỬA LỖI):\n" +
                 $"- Gói: {plan.DisplayName} ({plan.ActualMonths} tháng)\n" +
-                $"- Ngày gói mới: {plan.ActualMonths * 30} ngày\n" +
+                $"- Ngày bắt đầu: {startDate:dd/MM/yyyy}\n" +
+                $"- Ngày hết hạn (sau khi +tháng): {startDate.AddMonths(plan.ActualMonths):dd/MM/yyyy}\n" +
                 $"- Bonus từ gói cũ: {bonusDays} ngày\n" +
-                $"- Tổng: {totalDays} ngày\n" +
-                $"- EndDate: {newEndDate:dd/MM/yyyy}");
+                $"- EndDate (Cuối cùng): {newEndDate:dd/MM/yyyy}");
 
             // Tạo subscription mới
             var subscription = new UserSubscription
@@ -254,12 +268,12 @@ namespace MovieWeb.Services
                 PlanId = planId,
                 StripeSubscriptionId = stripeSubscriptionId,
                 Status = "active",
-                StartDate = DateTime.Now,
+                StartDate = startDate,
                 EndDate = newEndDate,
                 NextBillingDate = null,
                 AutoRenew = false,
                 BonusDaysFromPreviousPackage = bonusDays, // ✅ LƯU BONUS DAYS
-                CreatedAt = DateTime.Now
+                CreatedAt = startDate
             };
 
             _context.UserSubscriptions.Add(subscription);

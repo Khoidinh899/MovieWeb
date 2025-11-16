@@ -1,0 +1,44 @@
+<div id="chatbotFloatingBtn" class="chatbot-fab">
+    <img src="/images/mooner.png" alt="Mooner" style="width: 35px; height: 35px; border-radius: 50%;">
+    <span class="chatbot-tooltip">Trò chuyện cùng Mooner AI 🌙</span>
+</div>
+
+<div id="chatbotPopup" class="chatbot-popup" style="display: none;">
+    <div class="chatbot-popup-header">
+        <h5>
+            <span>🌙</span>
+            Trò chuyện cùng Mooner AI
+        </h5>
+        <button type="button" id="closeChatbotPopup" class="btn-close" aria-label="Close"></button>
+    </div>
+
+    <div class="chatbot-mode-selector">
+        <button class="btn btn-mode active" data-mode="by_name">Yêu cầu theo tên</button>
+        <button class="btn btn-mode" data-mode="by_description">Theo mô tả</button>
+        <button class="btn btn-mode" data-mode="recommendation">Gợi ý</button>
+    </div>
+    <div class="chatbot-popup-body">
+        <ul id="popupMessagesList" class="chat-messages list-unstyled">
+        </ul>
+
+        <div id="popupTypingIndicator" style="display: none; padding: 10px 15px;">
+            <div class="message-bubble"
+                style="background-color: #f0f0f0; padding: 8px 12px; border-radius: 18px; display: inline-block;">
+                <span>Mooner đang nhập</span>
+                <span class="typing-dots">
+                    <span>.</span><span>.</span><span>.</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="chatbot-popup-footer">
+        <form id="popupMessageForm" class="d-flex gap-2 align-items-center">
+            <input type="text" id="popupMessageInput" class="form-control" placeholder="Nhập yêu cầu phim..."
+                autocomplete="off" required />
+            <button type="submit" id="popupSendButton" class="btn btn-primary">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </form>
+    </div>
+</div>

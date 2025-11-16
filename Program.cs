@@ -11,13 +11,14 @@ using System.Text;
 using MovieWeb.Models;
 using DotNetEnv;
 using MovieWeb.Hubs;
-using Microsoft.AspNetCore.SignalR; // <-- THÊM DÒNG NÀY
+using Microsoft.AspNetCore.SignalR;
 using StripeLib = Stripe;
 using Hangfire;
 using Hangfire.SqlServer;
 using MovieWeb.Filters;
 using MovieWeb.Jobs;
 using SendGrid.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,12 +28,12 @@ if (builder.Environment.IsDevelopment())
     if (File.Exists(".env.local"))
     {
         Env.Load(".env.local");
-        Console.WriteLine("✅ Loaded .env.local");  // ← THÊM DÒNG NÀY
+        Console.WriteLine("✅ Loaded .env.local");
     }
     else if (File.Exists(".env"))
     {
         Env.Load();
-        Console.WriteLine("⚠️ Loaded .env (fallback)");  // ← THÊM DÒNG NÀY
+        Console.WriteLine("⚠️ Loaded .env (fallback)");
     }
 }
 else
@@ -40,7 +41,7 @@ else
     if (File.Exists(".env"))
     {
         Env.Load();
-        Console.WriteLine("🌐 Loaded .env (production)");  // ← THÊM DÒNG NÀY
+        Console.WriteLine("🌐 Loaded .env (production)");
     }
 }
 
@@ -52,6 +53,11 @@ Console.WriteLine("━━━━━━━━━━━━━━━━━━━━�
 Console.WriteLine($"🔍 Environment: {builder.Environment.EnvironmentName}");
 Console.WriteLine($"🗄️ Connection String: {connectionString?[..Math.Min(60, connectionString?.Length ?? 0)]}...");
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+// ===== SERVICE CONFIGURATION =====
+builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor(); // ✅ Blazor Server
 
 // Kết nối DbContext với SQL Server
 builder.Services.AddDbContext<MovieWebDbContext>(options =>
@@ -66,16 +72,20 @@ builder.Services.AddIdentity<User, Role>(options =>
     options.Password.RequireUppercase = false;
     options.Password.RequireLowercase = false;
     options.User.RequireUniqueEmail = true;
-    
-    // ✅ Chỉ yêu cầu xác thực email 1 lần duy nhất
     options.SignIn.RequireConfirmedEmail = true;
     options.SignIn.RequireConfirmedAccount = false;
-    
-    // ✅ Cấu hình token xác thực email
     options.Tokens.EmailConfirmationTokenProvider = TokenOptions.DefaultEmailProvider;
 })
 .AddEntityFrameworkStores<MovieWebDbContext>()
-.AddDefaultTokenProviders();
+.AddUserStore<UserStore<User, Role, MovieWebDbContext, int>>()
+.AddRoleStore<RoleStore<Role, MovieWebDbContext, int>>()
+.AddDefaultTokenProviders()
+.AddClaimsPrincipalFactory<CustomUserClaimsPrincipalFactory>(); // ⭐ THÊM DÒNG NÀY
+
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+{
+    options.ValidationInterval = TimeSpan.FromMinutes(30);
+});
 
 // ✅ Cấu hình Cookie sau khi AddIdentity
 builder.Services.ConfigureApplicationCookie(options =>
@@ -89,12 +99,13 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    options.Cookie.Name = "MoonPhim.Auth";
+    options.Cookie.Name = "MoonPhim.Auth.New"; 
     
-    // ⬇️ API trả JSON thay vì redirect
     options.Events.OnRedirectToLogin = context =>
     {
-        if (context.Request.Path.StartsWithSegments("/api"))
+        if (context.Request.Path.StartsWithSegments("/api") || 
+            context.Request.Path.StartsWithSegments("/notificationHub") ||
+            context.Request.Path.StartsWithSegments("/_blazor")) // ✅ THÊM DÒNG NÀY
         {
             context.Response.StatusCode = 401;
             return Task.CompletedTask;
@@ -105,7 +116,9 @@ builder.Services.ConfigureApplicationCookie(options =>
     
     options.Events.OnRedirectToAccessDenied = context =>
     {
-        if (context.Request.Path.StartsWithSegments("/api"))
+        if (context.Request.Path.StartsWithSegments("/api") || 
+            context.Request.Path.StartsWithSegments("/notificationHub") ||
+            context.Request.Path.StartsWithSegments("/_blazor")) // ✅ THÊM DÒNG NÀY
         {
             context.Response.StatusCode = 403;
             return Task.CompletedTask;
@@ -168,37 +181,19 @@ builder.Services.AddHangfireServer(options =>
 
 // Register Hangfire Jobs
 builder.Services.AddScoped<PaymentReminderJob>();
-//  SignalR Job
 builder.Services.AddScoped<SendRealtimeNotificationJob>();
 
-// // ===== EMAIL SETTINGS =====
-// builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-// builder.Services.AddScoped<IEmailService, EmailService>();
-// builder.Services.AddScoped<IStudentEmailService, StudentEmailService>();
-
 // ===== SENDGRID EMAIL SENDER =====
-// ===== CẤU HÌNH SENDGRID MỚI (ĐÃ SỬA LỖI) =====
-
-// 1. Đăng ký lớp SendGridOptions để đọc cấu hình từ .env
 builder.Services.Configure<SendGridOptions>(builder.Configuration.GetSection("SendGrid"));
 
-// 2. Đăng ký SendGrid client
 builder.Services.AddSendGrid(options =>
 {
-    // Tự động đọc API Key từ file .env (SendGrid__ApiKey)
     options.ApiKey = builder.Configuration.GetSection("SendGrid")["ApiKey"];
 });
 
-// Dòng này cho Identity UI (như 'Quên mật khẩu')
 builder.Services.AddTransient<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender, SendGridEmailSender>();
-
-// Dòng này cho Identity Core (dùng lớp "User" của bạn)
 builder.Services.AddTransient<IEmailSender<User>, SendGridEmailSender>();
-
-// DÒNG NÀY SỬA LỖI CRASH:
-// Dòng này cung cấp IEmailService cho AuthService của bạn
 builder.Services.AddTransient<IEmailService, SendGridEmailSender>();
-// Dòng này cung cấp IStudentEmailService cho StudentEmailService của bạn
 builder.Services.AddScoped<IStudentEmailService, StudentEmailService>();
 
 // ===== STRIPE CONFIGURATION =====
@@ -208,17 +203,12 @@ StripeLib.StripeConfiguration.ApiKey = builder.Configuration["StripeSettings:Sec
 // ===== CORE SERVICES =====
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
-
-// ===== NOTIFICATION SERVICE ===== 
 builder.Services.AddScoped<INotificationService, NotificationService>();
-
-// ===== SUBSCRIPTION SERVICES =====
 builder.Services.AddScoped<IStripeService, StripeService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 
 // ===== MOVIE SERVICES =====
 builder.Services.AddScoped<IOPhimService, OPhimService>();
-//builder.Services.AddScoped<IMovieSyncService, MovieSyncService>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 builder.Services.AddHostedService<BackgroundSyncService>();
 builder.Services.AddScoped<ICategorySyncService, CategorySyncService>();
@@ -238,16 +228,12 @@ builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
-// Đăng ký RecommendationService
-builder.Services.AddScoped<IRecommendationService,RecommendationService>();
-// Đăng ký GeminiService
+builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 builder.Services.AddHttpClient<IGeminiService, GeminiService>();
-// Đăng ký MovieRequestService
 builder.Services.AddScoped<IMovieRequestService, MovieRequestService>();
-// Thêm dịch vụ AntiForgery và cấu hình nó
+
 builder.Services.AddAntiforgery(options =>
 {
-    // Bảo nó tìm token trong header tên là "RequestVerificationToken"
     options.HeaderName = "RequestVerificationToken";
 });
 
@@ -264,6 +250,10 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddLogging();
 
+// Thêm vào trước builder.Build()
+builder.Services.AddScoped<MovieWeb.Services.Interfaces.IFavoriteService, MovieWeb.Services.FavoriteService>();
+builder.Services.AddScoped<MovieWeb.Services.Interfaces.IWatchHistoryService, MovieWeb.Services.WatchHistoryService>();
+
 var app = builder.Build();
 
 // ===== AUTO MIGRATE DATABASE =====
@@ -275,19 +265,14 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<MovieWebDbContext>();
-
         logger.LogInformation("🔄 Checking for pending database migrations...");
 
-        // Kiểm tra xem có migrations chưa apply không
         var pendingMigrations = context.Database.GetPendingMigrations();
 
         if (pendingMigrations.Any())
         {
             logger.LogWarning($"⚠️ Found {pendingMigrations.Count()} pending migrations. Applying...");
-
-            // Apply migrations
             context.Database.Migrate();
-
             logger.LogInformation("✅ Database migrations applied successfully!");
         }
         else
@@ -298,9 +283,6 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         logger.LogError(ex, "❌ An error occurred while migrating the database.");
-
-        // KHÔNG throw exception để app vẫn có thể start
-        // Nhưng ghi log để debug
         logger.LogError("⚠️ App will continue but database may not be in sync!");
     }
 }
@@ -312,8 +294,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-//app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseStaticFiles(); // ✅ Static files phải trước routing
 
 // ===== STRIPE WEBHOOK RAW BODY MIDDLEWARE =====
 app.Use(async (context, next) =>
@@ -329,7 +310,10 @@ app.UseRouting();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ===== MAP HUBS & ENDPOINTS =====
 app.MapHub<NotificationHub>("/notificationHub");
+app.MapBlazorHub(); // ✅ Map Blazor Hub (phải có)
 
 // ===== HANGFIRE DASHBOARD =====
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
@@ -350,11 +334,11 @@ RecurringJob.AddOrUpdate<PaymentReminderJob>(
         TimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")
     }
 );
-// Gửi Realtime Notifications (Chạy mỗi 5 phút)
+
 RecurringJob.AddOrUpdate<SendRealtimeNotificationJob>(
     recurringJobId: "send-realtime-notifications",
     methodCall: job => job.ExecuteForAllUsers(),
-    cronExpression: "*/5 * * * *", // Mỗi 5 phút
+    cronExpression: "*/5 * * * *",
     options: new RecurringJobOptions
     {
         TimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")
@@ -362,26 +346,21 @@ RecurringJob.AddOrUpdate<SendRealtimeNotificationJob>(
 );
 
 // ===== ROUTE CONFIGURATION =====
-
-// 🎯 Landing Page
 app.MapControllerRoute(
     name: "landing",
     pattern: "",
     defaults: new { controller = "Home", action = "Index" });
 
-// 🎯 Trang chủ chính
 app.MapControllerRoute(
     name: "trangchu",
     pattern: "trang-chu",
     defaults: new { controller = "TrangChu", action = "TrangChu" });
 
-// Admin routes
 app.MapControllerRoute(
     name: "admin",
     pattern: "Admin/{action=Dashboard}/{id?}",
     defaults: new { controller = "Admin" });
 
-// Auth routes
 app.MapControllerRoute(
     name: "confirmEmail",
     pattern: "auth/confirm-email",
@@ -392,13 +371,11 @@ app.MapControllerRoute(
     pattern: "auth/reset-password",
     defaults: new { controller = "Auth", action = "ResetPassword" });
 
-// Profile routes
 app.MapControllerRoute(
     name: "profile",
     pattern: "user/{action}",
     defaults: new { controller = "Profile", action = "Profile" });
 
-// Movie routes
 app.MapControllerRoute(
     name: "movieDetail",
     pattern: "phim/{slug}",
@@ -411,8 +388,8 @@ app.MapControllerRoute(
 
 app.MapControllerRoute(
     name: "category",
-    pattern: "the-loai/{type}",
-    defaults: new { controller = "Movie", action = "Category" });
+    pattern: "the-loai/{slug}", // ✅ SỬA: type -> slug
+    defaults: new { controller = "Category", action = "Index" }); // ✅ SỬA: Movie -> Category
 
 app.MapControllerRoute(
     name: "hoathinh",
@@ -429,13 +406,11 @@ app.MapControllerRoute(
     pattern: "phim/single/{page?}",
     defaults: new { controller = "Movie", action = "ByType", type = "single" });
 
-// Nâng cấp tài khoản
 app.MapControllerRoute(
     name: "nangCapTaiKhoan",
     pattern: "nang-cap",
     defaults: new { controller = "NangCap", action = "Index" });
 
-// Default route
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=TrangChu}/{action=TrangChu}/{id?}");

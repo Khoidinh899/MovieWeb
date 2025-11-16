@@ -1,24 +1,22 @@
 @model List<MovieWeb.Models.Entities.Movie>
+@using MovieWeb.Models.ViewModels
 @{
     Layout = "_Layout";
     string keyword = ViewBag.Keyword as string ?? "";
+    var filters = ViewBag.Filters as MovieFilterViewModel ?? new MovieFilterViewModel(); // 💡 (THÊM MỚI)
 }
 
 @functions {
-    // Hàm tiện lợi để lấy URL ảnh an toàn
-    // - Nếu là URL đầy đủ (http(s):// hoặc //) => giữ nguyên
-    // - Nếu bắt đầu bằng '/' => giữ (relative root)
-    // - Nếu null/empty => trả về ảnh mặc định ~/images/no-image.jpg
-    // - Nếu là tên file hoặc path ngắn => prepend fallbackBase
+    // 💡 (Hàm GetPosterUrl của bạn giữ nguyên, tôi không lặp lại ở đây)
+    // ...
     private string GetPosterUrl(MovieWeb.Models.Entities.Movie m)
     {
         var candidate = !string.IsNullOrEmpty(m.ThumbUrl) ? m.ThumbUrl : m.PosterUrl;
         if (string.IsNullOrEmpty(candidate))
-            return Url.Content("~/images/no-image.jpg");
+            return Url.Content("~/images/404_image.gif");
 
         candidate = candidate.Trim();
 
-        // URL đầy đủ (http:// hoặc https://) hoặc protocol-relative (//)
         if (candidate.StartsWith("http://", System.StringComparison.OrdinalIgnoreCase) ||
             candidate.StartsWith("https://", System.StringComparison.OrdinalIgnoreCase) ||
             candidate.StartsWith("//"))
@@ -26,35 +24,47 @@
             return candidate;
         }
 
-        // Đã là đường dẫn từ root
         if (candidate.StartsWith("/"))
         {
             return candidate;
         }
-
-        // Nếu candidate có dạng "uploads/..." hoặc chứa 'uploads' -> trả nguyên (nhiều hệ thống lưu path như vậy)
+        
         if (candidate.IndexOf("uploads", System.StringComparison.OrdinalIgnoreCase) >= 0)
         {
-            // đảm bảo bắt đầu bằng '/'
             return candidate.StartsWith("/") ? candidate : "/" + candidate;
         }
-
-        // Nếu tới đây, candidate có thể chỉ là filename (ví dụ "abc.jpg") -> thêm fallback (tùy bạn đổi base này)
-        // Mặc định mình dùng domain public của ophim để minh họa; bạn đổi thành base của bạn nếu lưu ảnh local.
-        var fallbackBase = "https://img.ophim.live/uploads/movies/"; // <-- nếu bạn lưu trên server khác, đổi ở đây
+        
+        var fallbackBase = "https://img.ophim.live/uploads/movies/"; 
         return fallbackBase + candidate;
     }
 }
 
-<section class="container py-5">
+@* 💡 (THÊM MỚI): Link CSS cho bộ lọc *@
+@section Styles {
+    <link rel="stylesheet" href="~/css/filter-sidebar.css" asp-append-version="true" />
+}
+
+<section class="container py-4"> @* 💡 (SỬA): Giảm padding py-5 thành py-4 *@
     <h2 class="text-white mb-4">
-        Kết quả tìm kiếm cho: <span class="text-warning">"@keyword"</span>
+        @if (string.IsNullOrWhiteSpace(keyword))
+        {
+            <text>Tìm kiếm & Lọc phim</text>
+        }
+        else
+        {
+            <text>Kết quả tìm kiếm cho: <span class="text-warning">"@keyword"</span></text>
+        }
     </h2>
+
+    @* 💡 ===== (THÊM MỚI): RENDER BỘ LỌC ===== 💡 *@
+    @await Html.PartialAsync("_FilterSidebar", filters)
+    @* 💡 ======================================== 💡 *@
+
 
     @if (!Model.Any())
     {
-        <div class="alert alert-secondary text-center">
-            Không tìm thấy phim nào phù hợp với từ khóa "<strong>@keyword</strong>".
+        <div class="alert alert-secondary text-center mt-4">
+            Không tìm thấy phim nào phù hợp.
         </div>
     }
     else
@@ -69,8 +79,8 @@
                             <img src="@imgUrl"
                                  alt="@movie.Name"
                                  class="img-fluid w-100"
-                                 style="aspect-ratio: 2/3; object-fit: cover;" 
-                                 onerror="this.src='@Url.Content("~/images/no-image.jpg")'" />
+                                 style="aspect-ratio: 2/3; object-fit: cover;"
+                                 onerror="this.src='@Url.Content("~/images/404_image.gif")'" />
                             <div class="p-2">
                                 <h6 class="text-truncate mb-0">@movie.Name</h6>
                                 <small class="text-muted">@movie.Categories.FirstOrDefault()?.Name ?? "Không rõ thể loại"</small>
@@ -80,11 +90,45 @@
                 </div>
             }
         </div>
+
+        @* 💡 ===== (THÊM MỚI): PHÂN TRANG ===== 💡 *@
+        @if (ViewBag.TotalPages > 1)
+        {
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                   @{
+                        var currentFilters = new Dictionary<string, string>();
+                        
+                        // Giữ lại keyword
+                        if (!string.IsNullOrWhiteSpace(keyword)) currentFilters["keyword"] = keyword; 
+                        
+                        // 💡 SỬA ĐỔI: Dùng tên thuộc tính mới
+                        if (!string.IsNullOrEmpty(filters.Type)) currentFilters["Type"] = filters.Type;
+                        if (!string.IsNullOrEmpty(filters.Countries)) currentFilters["Countries"] = filters.Countries;
+                        if (!string.IsNullOrEmpty(filters.Categories)) currentFilters["Categories"] = filters.Categories;
+                        if (!string.IsNullOrEmpty(filters.Language)) currentFilters["Language"] = filters.Language;
+                        if (!string.IsNullOrEmpty(filters.Years)) currentFilters["Years"] = filters.Years;
+                        if (!string.IsNullOrEmpty(filters.SortBy)) currentFilters["SortBy"] = filters.SortBy;
+                    }
+
+                    @for (int i = 1; i <= (int)ViewBag.TotalPages; i++)
+                    {
+                        var queryParams = string.Join("&", currentFilters.Select(kvp => $"{kvp.Key}={System.Net.WebUtility.UrlEncode(kvp.Value)}"));
+                        var pageUrl = $"?Page={i}" + (string.IsNullOrEmpty(queryParams) ? "" : "&" + queryParams);
+
+                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                            <a class="page-link" href="@pageUrl">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+        @* 💡 ===== KẾT THÚC PHÂN TRANG ===== 💡 *@
     }
 </section>
 
 <style>
-/* Một số style nhỏ để poster hiển thị đẹp */
-.movie-card img { transition: opacity .25s ease; }
-.movie-card:hover img { opacity: .85; }
+    /* (Style của bạn giữ nguyên) */
+    .movie-card img { transition: opacity .25s ease; }
+    .movie-card:hover img { opacity: .85; }
 </style>

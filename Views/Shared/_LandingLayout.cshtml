@@ -1,10 +1,48 @@
+@{
+    // ==========================================================
+    // ===== ✅ BẮT ĐẦU KHỐI CHUẨN BỊ BIẾN SEO MẶC ĐỊNH =====
+    // ==========================================================
+    
+    // 1. Chuẩn bị Mô tả (Lấy từ text trong trang)
+    var seoDescription = "Với sự bùng nổ của các nền tảng phát trực tuyến phim, MoonPhim nổi bật lên như một trang web xem phim miễn phí uy tín, mang đến cho người dùng trải nghiệm xem phim tuyệt vời nhất.";
+    
+    // 2. Chuẩn bị Ảnh (Image) và URL
+    var request = Context.Request;
+    var baseUrl = $"{request.Scheme}://{request.Host}"; // Ví dụ: https://localhost:5000
+    var seoUrl = $"{baseUrl}{request.Path}"; // URL đầy đủ của trang
+    var seoImage = $"{baseUrl}/images/iconmoon.png"; // Ảnh logo (phải là URL tuyệt đối)
+
+    // ==========================================================
+    // ===== KẾT THÚC KHỐI CHUẨN BỊ BIẾN SEO =====
+    // ==========================================================
+}
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - MoonPhim</title>
-    <link rel="icon" type="image/x-icon" href="~/favicon.ico">
+    
+    @* Title này sẽ được lấy từ file LandingPage.cshtml *@
+    <title>@ViewData["Title"]</title> 
+    
+    <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png" asp-append-version="true">
+    <link rel="icon" type="image/png" sizes="32x32" href="~/favicon-32x32.png" asp-append-version="true">
+    <link rel="icon" type="image/png" sizes="16x16" href="~/favicon-16x16.png" asp-append-version="true">
+    <link rel="manifest" href="~/site.webmanifest" asp-append-version="true">
+
+    @* --- BẮT ĐẦU KHỐI SEO --- *@
+    <meta name="description" content="@seoDescription" />
+    <meta name="keywords" content="xem phim, xem phim miễn phí, xem phim online, phim HD, phim chất lượng cao, moonphim, bay bổng cùng điện ảnh" />
+
+    <meta property="og:title" content="@ViewData["Title"]" />
+    <meta property="og:description" content="@seoDescription" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="@seoUrl" />
+    <meta property="og:image" content="@seoImage" />
+    <meta property="og:site_name" content="MoonPhim" />
+    @* --- KẾT THÚC KHỐI SEO --- *@
+
     <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
 </head>
 <body class="landing-page">

@@ -5,6 +5,7 @@ using MovieWeb.Services;
 using MovieWeb.Models.DTOs;
 using MovieWeb.Models.Entities;
 using Microsoft.Extensions.Configuration;
+using MovieWeb.Services.Interfaces;
 
 namespace MovieWeb.Controllers
 {
@@ -46,91 +47,93 @@ namespace MovieWeb.Controllers
         }
 
         // POST: /Auth/Register
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(RegisterDto model)
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Register(RegisterDto model)
+{
+    if (!ModelState.IsValid)
+    {
+        _logger.LogWarning("Invalid model state for register: {Errors}",
+            string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
+
+        // Trả về lỗi 400
+        var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+        return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ", errors });
+    }
+
+    try
+    {
+        var result = await _authService.RegisterAsync(model);
+
+        if (result.IsSuccess)
         {
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Invalid model state for register: {Errors}",
-                    string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
-                return PartialView("~/Views/Shared/Partial/_AuthModal.cshtml", model);
-            }
+            // Kiểm tra URL cấu hình với URL thực tế — gửi email xác thực đúng domain
+            var configuredBaseUrl = (_configuration["AppSettings:BaseUrl"] ?? string.Empty).TrimEnd('/');
+            var actualBaseUrl = $"{Request.Scheme}://{Request.Host}".TrimEnd('/');
 
-            try
+            if (!string.Equals(configuredBaseUrl, actualBaseUrl, StringComparison.OrdinalIgnoreCase))
             {
-                var result = await _authService.RegisterAsync(model);
+                var user = await _userManager.FindByEmailAsync(model.Email);
 
-                if (result.IsSuccess)
+                if (user != null)
                 {
-                    // Nếu AppSettings:BaseUrl cấu hình sai (vd: port khác), chúng ta gửi lại email với base url thực tế
-                    var configuredBaseUrl = (_configuration["AppSettings:BaseUrl"] ?? string.Empty).TrimEnd('/');
-                    var actualBaseUrl = $"{Request.Scheme}://{Request.Host}".TrimEnd('/');
+                    var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                    var confirmationLink = $"{actualBaseUrl}/auth/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
 
-                    if (!string.Equals(configuredBaseUrl, actualBaseUrl, StringComparison.OrdinalIgnoreCase))
+                    try
                     {
-                        // Lấy user vừa tạo (theo email)
-                        var user = await _userManager.FindByEmailAsync(model.Email);
-                        if (user != null)
-                        {
-                            // Tạo token mới và build link đúng
-                            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                            var confirmationLink = $"{actualBaseUrl}/auth/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
-
-                            try
-                            {
-                                await _emailService.SendEmailConfirmationAsync(user.Email!, model.FullName, confirmationLink);
-                                _logger.LogInformation("Sent confirmation email using actual base URL to {Email}", user.Email);
-                            }
-                            catch (Exception exEmail)
-                            {
-                                _logger.LogError(exEmail, "Failed to send fallback confirmation email to {Email}", user.Email);
-                            }
-                        }
+                        await _emailService.SendEmailConfirmationAsync(user.Email!, model.FullName, confirmationLink);
+                        _logger.LogInformation("Sent confirmation email using actual base URL to {Email}", user.Email);
                     }
-
-                    TempData["SuccessMessage"] = result.Message;
-                    return RedirectToAction(nameof(Login));
+                    catch (Exception exEmail)
+                    {
+                        _logger.LogError(exEmail, "Failed to send fallback confirmation email to {Email}", user.Email);
+                    }
                 }
-
-                // Thêm lỗi vào ModelState
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error);
-                }
-
-                return PartialView("~/Views/Shared/Partial/_AuthModal.cshtml", model);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in Register for {Email}", model.Email);
-                ModelState.AddModelError(string.Empty, "Có lỗi xảy ra trong quá trình đăng ký. Vui lòng thử lại.");
-                return PartialView("~/Views/Shared/Partial/_AuthModal.cshtml", model);
-            }
+
+            // Đăng ký thành công → Redirect tới Login
+            return RedirectToAction(nameof(Login));
         }
+
+        // Trả về lỗi nếu đăng ký thất bại
+        return BadRequest(new { success = false, message = result.Message ?? "Đăng ký thất bại", errors = result.Errors });
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error in Register for {Email}", model.Email);
+
+        return StatusCode(500, new
+        {
+            success = false,
+            message = "Có lỗi xảy ra trong quá trình đăng ký. Vui lòng thử lại."
+        });
+    }
+}
+
 
         // GET: /Auth/Login
         // Tìm method Login [HttpGet] và sửa thành:
 
-[HttpGet]
-public IActionResult Login(string? returnUrl = null)
-{
-    // Nếu đã đăng nhập rồi thì về trang chủ
-    if (User.Identity?.IsAuthenticated == true)
-    {
-        return RedirectToAction("TrangChu", "TrangChu");
-    }
+        [HttpGet]
+        public IActionResult Login(string? returnUrl = null)
+        {
+            // Nếu đã đăng nhập rồi thì về trang chủ
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                return RedirectToAction("TrangChu", "TrangChu");
+            }
 
-    // ✅ Lưu returnUrl vào TempData và redirect về trang chủ
-    if (!string.IsNullOrEmpty(returnUrl))
-    {
-        TempData["LoginReturnUrl"] = returnUrl;
-        _logger.LogInformation("Saving LoginReturnUrl: {ReturnUrl}", returnUrl);
-    }
+            // ✅ Lưu returnUrl vào TempData và redirect về trang chủ
+            if (!string.IsNullOrEmpty(returnUrl))
+            {
+                TempData["LoginReturnUrl"] = returnUrl;
+                _logger.LogInformation("Saving LoginReturnUrl: {ReturnUrl}", returnUrl);
+            }
 
-    // ✅ Redirect về trang chủ (không render PartialView nữa)
-    return RedirectToAction("TrangChu", "TrangChu");
-}
+            // ✅ Redirect về trang chủ (không render PartialView nữa)
+            return RedirectToAction("TrangChu", "TrangChu");
+        }
 
         // POST: /Auth/Login
         [HttpPost]
@@ -236,15 +239,19 @@ public IActionResult Login(string? returnUrl = null)
                     TempData["ErrorMessage"] = "Có lỗi xảy ra khi đăng xuất";
                 }
 
+                // Trả Redirect (hoạt động cho cả AJAX hoặc form submit)
                 return RedirectToAction("TrangChu", "TrangChu");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in Logout");
                 TempData["ErrorMessage"] = "Có lỗi xảy ra khi đăng xuất";
+
                 return RedirectToAction("TrangChu", "TrangChu");
             }
         }
+
+
 
         // GET: /Auth/ForgotPassword
         [HttpGet]
@@ -265,38 +272,59 @@ public IActionResult Login(string? returnUrl = null)
         {
             if (!ModelState.IsValid)
             {
-                return PartialView("~/Views/Shared/Partial/_AuthModal.cshtml", model);
+                // ❌ Model không hợp lệ → trả về 400 để JS xử lý
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Dữ liệu không hợp lệ",
+                    errors
+                });
             }
 
             try
             {
-                var result = await _authService.ForgotPasswordAsync(model.Email);
+                // Không để lộ tài khoản có tồn tại hay không
+                await _authService.ForgotPasswordAsync(model.Email);
 
-                // Luôn hiển thị thông báo thành công để tránh lộ thông tin user
-                TempData["SuccessMessage"] = "Nếu email tồn tại trong hệ thống, chúng tôi đã gửi link đặt lại mật khẩu.";
-                return RedirectToAction(nameof(Login));
+                // ⛔ Luôn trả về 200 (OK) để bảo mật
+                return Ok(new
+                {
+                    success = true,
+                    message = "Nếu email tồn tại, hệ thống đã gửi hướng dẫn đặt lại mật khẩu."
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in ForgotPassword for {Email}", model.Email);
-                ModelState.AddModelError(string.Empty, "Có lỗi xảy ra khi gửi yêu cầu đặt lại mật khẩu. Vui lòng thử lại.");
-                return PartialView("~/Views/Shared/Partial/_AuthModal.cshtml", model);
+
+                // ⚠️ Server lỗi → trả về 500
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Có lỗi xảy ra khi xử lý yêu cầu. Vui lòng thử lại sau."
+                });
             }
         }
 
-        // GET: /Auth/ResetPassword
-[HttpGet]
-public IActionResult ResetPassword(string userId, string token)
-{
-    if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
-    {
-        TempData["ErrorMessage"] = "Link đặt lại mật khẩu không hợp lệ.";
-        return RedirectToAction("TrangChu", "TrangChu");
-    }
 
-    // ✅ Redirect với query params
-    return RedirectToAction("TrangChu", "TrangChu", new { userId, token });
-}
+        // GET: /Auth/ResetPassword
+        [HttpGet]
+        public IActionResult ResetPassword(string userId, string token)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
+            {
+                TempData["ErrorMessage"] = "Link đặt lại mật khẩu không hợp lệ.";
+                return RedirectToAction("TrangChu", "TrangChu");
+            }
+
+            // ✅ Redirect với query params
+            return RedirectToAction("TrangChu", "TrangChu", new { userId, token });
+        }
 
         // POST: /Auth/ResetPassword
         [HttpPost]
@@ -305,7 +333,18 @@ public IActionResult ResetPassword(string userId, string token)
         {
             if (!ModelState.IsValid)
             {
-                return PartialView("~/Views/Shared/Partial/_AuthModal.cshtml", model);
+                // ❌ Model không hợp lệ → trả về 400 (BadRequest)
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Dữ liệu không hợp lệ",
+                    errors
+                });
             }
 
             try
@@ -314,24 +353,35 @@ public IActionResult ResetPassword(string userId, string token)
 
                 if (result.IsSuccess)
                 {
-                    TempData["SuccessMessage"] = result.Message;
-                    return RedirectToAction(nameof(Login));
+                    // ✅ Thành công → trả về 200 (OK)
+                    return Ok(new
+                    {
+                        success = true,
+                        message = "Đặt lại mật khẩu thành công."
+                    });
                 }
 
-                foreach (var error in result.Errors)
+                // ❌ Thất bại → trả về 400 (BadRequest)
+                return BadRequest(new
                 {
-                    ModelState.AddModelError(string.Empty, error);
-                }
-
-                return PartialView("~/Views/Shared/Partial/_AuthModal.cshtml", model);
+                    success = false,
+                    message = "Đặt lại mật khẩu thất bại.",
+                    errors = result.Errors
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in ResetPassword for {UserId}", model.UserId);
-                ModelState.AddModelError(string.Empty, "Có lỗi xảy ra khi đặt lại mật khẩu. Vui lòng thử lại.");
-                return PartialView("~/Views/Shared/Partial/_AuthModal.cshtml", model);
+
+                // ⚠️ Lỗi server → trả về 500
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Có lỗi xảy ra khi đặt lại mật khẩu."
+                });
             }
         }
+
 
         // ✅ GET: /Auth/ConfirmEmail - Xác thực email và tự động đăng nhập
         [HttpGet("auth/confirm-email")]

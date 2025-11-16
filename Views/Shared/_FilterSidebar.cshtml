@@ -1,0 +1,307 @@
+@* File: Views/Shared/_FilterSidebar.cshtml (Logic CHỌN NHIỀU) *@
+@model MovieWeb.Models.ViewModels.MovieFilterViewModel
+@using MovieWeb.Models.Entities
+
+@{
+    var countries = ViewBag.Countries as IEnumerable<Country> ?? new List<Country>();
+    var categories = ViewBag.Categories as IEnumerable<Category> ?? new List<Category>();
+    var currentYear = DateTime.Now.Year;
+
+    // 💡 ===== HELPER LISTS (Hỗ trợ kiểm tra "active") ===== 💡
+    var countriesList = (Model.Countries ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+    var categoriesList = (Model.Categories ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+    var yearsList = (Model.Years ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+}
+
+<div class="filter-container">
+    @* ===== TOGGLE BUTTON (Giữ nguyên) ===== *@
+    <button type="button" class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleFilter()">
+        <i class="bi bi-funnel-fill"></i>
+        <span>Bộ Lọc Phim</span>
+        <i class="bi bi-chevron-down" id="filterChevron"></i>
+    </button>
+
+    @* ===== FILTER SIDEBAR (HTML MỚI) ===== *@
+    <div class="filter-sidebar" id="filterSidebar">
+
+        <form method="get" id="filterForm">
+
+            @* ===== QUỐC GIA (CHỌN NHIỀU) ===== *@
+            <div class="fe-row">
+                <div class="fe-name">Quốc gia:</div>
+                <div class="fe-results">
+                    <div class="item @(!countriesList.Any() ? "active" : "")"
+                        onclick="clearFilterMulti(event, 'Countries')">Tất cả</div>
+                    @foreach (var country in countries)
+                    {
+                        <div class="item @(countriesList.Contains(country.Slug) ? "active" : "")"
+                            onclick="selectFilterMulti(event, 'Countries', '@country.Slug')">@country.Name</div>
+                    }
+                </div>
+            </div>
+
+            @* ===== LOẠI PHIM (CHỌN MỘT) - Giữ nguyên logic cũ ===== *@
+            <div class="fe-row">
+                <div class="fe-name">Loại phim:</div>
+                <div class="fe-results">
+                    <div class="item @(string.IsNullOrEmpty(Model?.Type) ? "active" : "")"
+                        onclick="selectFilterSingle(event, 'Type', '')">Tất cả</div>
+                    <div class="item @(Model?.Type == "single" ? "active" : "")"
+                        onclick="selectFilterSingle(event, 'Type', 'single')">Phim lẻ</div>
+                    <div class="item @(Model?.Type == "series" ? "active" : "")"
+                        onclick="selectFilterSingle(event, 'Type', 'series')">Phim bộ</div>
+                    <div class="item @(Model?.Type == "hoathinh" ? "active" : "")"
+                        onclick="selectFilterSingle(event, 'Type', 'hoathinh')">Hoạt hình</div>
+                    <div class="item @(Model?.Type == "tvshows" ? "active" : "")"
+                        onclick="selectFilterSingle(event, 'Type', 'tvshows')">TV Shows</div>
+                </div>
+            </div>
+
+            @* ===== THỂ LOẠI (CHỌN NHIỀU) ===== *@
+            <div class="fe-row">
+                <div class="fe-name">Thể loại:</div>
+                <div class="fe-results">
+                    <div class="item @(!categoriesList.Any() ? "active" : "")"
+                        onclick="clearFilterMulti(event, 'Categories')">Tất cả</div>
+                    @foreach (var category in categories)
+                    {
+                        <div class="item @(categoriesList.Contains(category.Slug) ? "active" : "")"
+                            onclick="selectFilterMulti(event, 'Categories', '@category.Slug')">@category.Name</div>
+                    }
+                </div>
+            </div>
+
+            @* ===== PHIÊN BẢN (CHỌN MỘT) - Giữ nguyên logic cũ ===== *@
+            <div class="fe-row">
+                <div class="fe-name">Phiên bản:</div>
+                <div class="fe-results">
+                    <div class="item @(string.IsNullOrEmpty(Model?.Language) ? "active" : "")"
+                        onclick="selectFilterSingle(event, 'Language', '')">Tất cả</div>
+                    <div class="item @(Model?.Language == "Vietsub" ? "active" : "")"
+                        onclick="selectFilterSingle(event, 'Language', 'Vietsub')">Vietsub</div>
+                    <div class="item @(Model?.Language == "Thuyết Minh" ? "active" : "")"
+                        onclick="selectFilterSingle(event, 'Language', 'Thuyết Minh')">Thuyết Minh</div>
+                </div>
+            </div>
+
+            @* ===== NĂM SẢN XUẤT (CHỌN NHIỀU) ===== *@
+            <div class="fe-row">
+                <div class="fe-name">Năm sản xuất:</div>
+                <div class="fe-results">
+                    <div class="item @(!yearsList.Any() ? "active" : "")" onclick="clearFilterMulti(event, 'Years')">Tất
+                        cả</div>
+                    @for (int i = 0; i < 10; i++)
+                    {
+                        int year = currentYear - i;
+                        <div class="item @(yearsList.Contains(year.ToString()) ? "active" : "")"
+                            onclick="selectFilterMulti(event, 'Years', '@year')">@year</div>
+                    }
+
+                    @* Ô Nhập năm: Giờ sẽ CẬP NHẬT vào input 'Years' *@
+                    <div class="year-input-container">
+                        <input class="form-control" type="text" maxlength="100" placeholder="2024,2023..."
+                            value="@Model.Years"
+                            oninput="this.value = this.value.replace(/[^0-9,]/g, ''); clearFilterButtons(this.parentElement);" />
+                        <button type="submit" class="btn btn-sm btn-submit-year">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @* ===== SẮP XẾP (CHỌN MỘT) - Giữ nguyên logic cũ ===== *@
+            <div class="fe-row">
+                <div class="fe-name">Sắp xếp:</div>
+                <div class="fe-results">
+                    <div class="item @(Model?.SortBy == "updated" || string.IsNullOrEmpty(Model?.SortBy) ? "active" : "")"
+                        onclick="selectFilterSingle(event, 'SortBy', 'updated')">Mới cập nhật</div>
+                    <div class="item @(Model?.SortBy == "newest" ? "active" : "")"
+                        onclick="selectFilterSingle(event, 'SortBy', 'newest')">Mới nhất</div>
+                    <div class="item @(Model?.SortBy == "rating" ? "active" : "")"
+                        onclick="selectFilterSingle(event, 'SortBy', 'rating')">Điểm IMDb</div>
+                    <div class="item @(Model?.SortBy == "views" ? "active" : "")"
+                        onclick="selectFilterSingle(event, 'SortBy', 'views')">Lượt xem</div>
+                </div>
+            </div>
+
+            @* ===== 💡 INPUT ẨN (Lưu giá trị) 💡 ===== *@
+
+            @* Các trường CHỌN MỘT *@
+            <input type="hidden" name="Type" value="@Model.Type" />
+            <input type="hidden" name="Language" value="@Model.Language" />
+            <input type="hidden" name="SortBy" value="@Model.SortBy" />
+
+            @* Các trường CHỌN NHIỀU *@
+            <input type="hidden" name="Countries" value="@Model.Countries" />
+            <input type="hidden" name="Categories" value="@Model.Categories" />
+            <input type="hidden" name="Years" value="@Model.Years" />
+
+            @* Giữ lại keyword nếu có *@
+            @if (!string.IsNullOrEmpty(Context.Request.Query["keyword"]))
+            {
+                <input type="hidden" name="keyword" value="@Context.Request.Query["keyword"]" />
+            }
+
+            @* ===== BUTTONS (Giữ nguyên) ===== *@
+            <div class="fe-row fe-row-end">
+                <div class="fe-name">&nbsp;</div>
+                <div class="fe-buttons">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Lọc kết quả
+                    </button>
+                    <a href="@Url.Action()" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Đặt lại
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* ===== 💡 JAVASCRIPT VIẾT LẠI HOÀN TOÀN 💡 ===== *@
+<script>
+    function toggleFilter() {
+        const sidebar = document.getElementById('filterSidebar');
+        const toggleBtn = document.getElementById('filterToggleBtn');
+        const chevron = document.getElementById('filterChevron');
+
+        sidebar.classList.toggle('show');
+        toggleBtn.classList.toggle('active');
+
+        if (chevron) {
+            chevron.style.transform = sidebar.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+    }
+
+    // ===== HÀM MỚI: Xử lý CHỌN NHIỀU (Countries, Categories, Years) =====
+    function selectFilterMulti(event, name, value) {
+        const form = document.getElementById('filterForm');
+        const input = form.querySelector(`input[name="${name}"]`);
+        const clickedItem = event.target;
+
+        let valueList = (input.value || "").split(',').filter(Boolean);
+
+        const allButton = clickedItem.parentElement.querySelector('.item');
+        allButton.classList.remove('active');
+
+        const index = valueList.indexOf(value);
+        if (index > -1) {
+            valueList.splice(index, 1);
+            clickedItem.classList.remove('active');
+        } else {
+            valueList.push(value);
+            clickedItem.classList.add('active');
+        }
+
+        if (valueList.length === 0) {
+            allButton.classList.add('active');
+        }
+
+        input.value = valueList.join(',');
+
+        // 5. Cập nhật ô text nhập năm (KHÔNG CÓN name, dùng querySelector)
+        if (name === 'Years') {
+            const yearTextInput = document.querySelector('.year-input-container input[type="text"]');
+            if (yearTextInput) yearTextInput.value = input.value;
+        }
+    }
+
+    // ===== HÀM MỚI: Xử lý nút "TẤT CẢ" (cho CHỌN NHIỀU) =====
+    function clearFilterMulti(event, name) {
+        const form = document.getElementById('filterForm');
+        const input = form.querySelector(`input[name="${name}"]`);
+        const clickedItem = event.target;
+
+        // 1. Xóa hết giá trị input
+        input.value = "";
+
+        // 2. Tắt active tất cả các nút
+        const siblings = clickedItem.parentElement.querySelectorAll('.item');
+        siblings.forEach(item => {
+            item.classList.remove('active');
+        });
+
+        // 3. Bật active cho nút "Tất cả"
+        clickedItem.classList.add('active');
+
+        // 4. Cập nhật ô text nhập năm (nếu là filter Năm)
+        if (name === 'Years') {
+            const yearTextInput = document.querySelector('input[name="YearsInput"]');
+            if (yearTextInput) yearTextInput.value = "";
+        }
+    }
+
+    // ===== HÀM CŨ: Xử lý CHỌN MỘT (Type, Language, SortBy) =====
+    function selectFilterSingle(event, name, value) {
+        const form = document.getElementById('filterForm');
+        const input = form.querySelector(`input[name="${name}"]`);
+
+        if (input) {
+            input.value = value;
+        }
+
+        const activeItem = event.target;
+        const siblings = activeItem.parentElement.querySelectorAll('.item');
+        siblings.forEach(item => {
+            item.classList.remove('active');
+        });
+        activeItem.classList.add('active');
+
+        // ⭐ Cập nhật form action khi chọn Type
+        if (name === 'Type') {
+            updateFormAction();
+        }
+
+
+    }
+
+    // ===== HÀM CŨ: Xử lý khi GÕ VÀO Ô NĂM =====
+    function clearFilterButtons(containerElement) {
+        // 1. Lấy giá trị từ ô text (KHÔNG CÓN name nữa, dùng querySelector thường)
+        const yearTextInput = containerElement.querySelector('input[type="text"]');
+        const form = document.getElementById('filterForm');
+        const yearsHiddenInput = form.querySelector('input[name="Years"]');
+
+        // 2. Cập nhật input ẩn 'Years'
+        yearsHiddenInput.value = yearTextInput.value;
+
+        // 3. Xóa active của tất cả nút 'Năm'
+        const siblings = containerElement.closest('.fe-results').querySelectorAll('.item');
+        siblings.forEach(item => {
+            item.classList.remove('active');
+        });
+
+        // 4. Nếu ô text rỗng, bật lại "Tất cả"
+        if (yearTextInput.value.length === 0) {
+            siblings[0].classList.add('active');
+        }
+    }
+    // ===== HÀM MỚI: Cập nhật form action dựa vào Type =====
+    function updateFormAction() {
+        const form = document.getElementById('filterForm');
+        const typeInput = form.querySelector('input[name="Type"]');
+        const typeValue = typeInput ? typeInput.value : '';
+
+        // ⭐ SỬA LẠI: Đúng với route trong Controller
+        let action = '/tim-kiem'; // Mặc định submit về tìm kiếm
+
+        if (typeValue === 'single') {
+            action = '/the-loai/phim-le';  // ✅ Đúng route
+        } else if (typeValue === 'series') {
+            action = '/the-loai/phim-bo';  // ✅ Đúng route
+        }
+
+        form.action = action;
+        console.log('✅ Form sẽ submit về:', action);
+    }
+
+    // Gọi hàm khi trang load
+    document.addEventListener('DOMContentLoaded', function () {
+        updateFormAction();
+    });
+
+    // Cập nhật action trước khi submit
+    document.getElementById('filterForm').addEventListener('submit', function (e) {
+        updateFormAction();
+    });
+</script>

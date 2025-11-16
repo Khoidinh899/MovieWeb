@@ -224,60 +224,65 @@ function initializeAuth() {
     }
 
     async function handleRegister() {
-        const formData = new FormData(document.getElementById('registerFormSubmit'));
-        const password = document.getElementById('registerPassword').value;
-        const confirmPassword = document.getElementById('registerConfirmPassword').value;
+    const formData = new FormData(document.getElementById('registerFormSubmit'));
+    const password = document.getElementById('registerPassword').value;
+    const confirmPassword = document.getElementById('registerConfirmPassword').value;
 
-        if (password !== confirmPassword) {
-            showAlert('Mật khẩu xác nhận không khớp!', 'danger');
-            return;
-        }
+    // Validate password
+    if (password !== confirmPassword) {
+        showAlert('Mật khẩu xác nhận không khớp!', 'danger');
+        return;
+    }
 
-        if (password.length < 6) {
-            showAlert('Mật khẩu phải có ít nhất 6 ký tự!', 'danger');
-            return;
-        }
+    if (password.length < 6) {
+        showAlert('Mật khẩu phải có ít nhất 6 ký tự!', 'danger');
+        return;
+    }
 
-        setLoadingState('register', true);
+    setLoadingState('register', true);
 
-        try {
-            const response = await fetch('/Auth/Register', {
-                method: 'POST',
-                body: formData
+    try {
+        const response = await fetch('/Auth/Register', {
+            method: 'POST',
+            body: formData
+        });
+
+        // Hỗ trợ cả response.ok (200) và response.redirected (302)
+        if (response.ok || response.redirected) {
+
+            fadeOut(registerForm, () => {
+                hideAllForms();
+                verificationSuccess.classList.remove('d-none');
+
+                document.querySelector('.modal-title').textContent = 'Đăng ký thành công';
+
+                fadeIn(verificationSuccess);
             });
 
-            if (response.redirected || response.ok) {
-                fadeOut(registerForm, () => {
-                    hideAllForms();
-                    verificationSuccess.classList.remove('d-none');
-                    document.querySelector('.modal-title').textContent = 'Đăng ký thành công';
-                    fadeIn(verificationSuccess);
-                });
-                showAlert('Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.', 'success');
-            } else {
-                const html = await response.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const errorSummary = doc.querySelector('#registerErrorSummary');
-                let errorMessage = errorSummary ? errorSummary.textContent.trim() : null;
+            showAlert(
+                'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
+                'success'
+            );
+        } else {
+            // Xử lý lỗi JSON trả về từ server
+            const result = await response.json();
+            let errorMessage = result.message;
 
-                if (!errorMessage) {
-                    const validationErrors = doc.querySelectorAll('.text-danger');
-                    const errors = Array.from(validationErrors)
-                        .map(el => el.textContent.trim())
-                        .filter(text => text);
-                    errorMessage = errors.length > 0 ? errors.join(', ') : 'Đăng ký thất bại, vui lòng kiểm tra lại!';
-                }
-
-                showAlert(errorMessage, 'danger');
+            if (result.errors && result.errors.length > 0) {
+                errorMessage = result.errors.join(', ');
             }
-        } catch (error) {
-            console.error('Register error:', error);
-            showAlert('Có lỗi xảy ra khi đăng ký: ' + error.message, 'danger');
-        } finally {
-            setLoadingState('register', false);
+
+            showAlert(errorMessage || 'Đăng ký thất bại, vui lòng kiểm tra lại!', 'danger');
         }
+
+    } catch (error) {
+        console.error('Register error:', error);
+        showAlert('Có lỗi xảy ra khi đăng ký: ' + error.message, 'danger');
+    } finally {
+        setLoadingState('register', false);
     }
+}
+
 
     async function handleForgotPassword() {
         const email = document.getElementById('forgotEmail').value.trim();

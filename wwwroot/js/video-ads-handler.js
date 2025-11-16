@@ -312,6 +312,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // === 12. LOAD VIDEO VỚI HLS ===
     function loadVideo(src) {
+        
+        // ==== 💡 THAY ĐỔI 2: ĐỌC THỜI GIAN RESUME TỪ BIẾN TOÀN CỤC ====
+        let startTime = 0; // Mặc định là 0
+        if (window.thoiGianXemTiep && window.thoiGianXemTiep > 0) {
+            startTime = window.thoiGianXemTiep;
+            console.log(`RESUME_LOG: 🚩 Nhận được thời gian xem tiếp = ${startTime}s`);
+            window.thoiGianXemTiep = 0; // Xóa cờ đi sau khi đã nhận
+        }
+        // ==== KẾT THÚC THAY ĐỔI 2 ====
+
         if (Hls.isSupported()) {
             const hls = new Hls({
                 maxBufferLength: 30,
@@ -322,6 +332,14 @@ document.addEventListener('DOMContentLoaded', function () {
             hls.attachMedia(videoPlayer);
 
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                
+                // ==== 💡 THAY ĐỔI 3: TUA PHIM ĐẾN ĐÚNG CHỖ NÀY ====
+                if (startTime > 0) {
+                    console.log(`RESUME_LOG: ⏩ Đang tua phim đến ${startTime}s...`);
+                    videoPlayer.currentTime = startTime;
+                }
+                // ==== KẾT THÚC THAY ĐỔI 3 ====
+                
                 videoPlayer.play().catch(e => {
                     console.warn('⚠️ Autoplay bị chặn:', e);
                 });
@@ -337,6 +355,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
             videoPlayer.src = src;
+            
+            // ==== 💡 THAY ĐỔI 4: TUA PHIM CHO SAFARI/IOS ====
+            if (startTime > 0) {
+                 videoPlayer.currentTime = startTime;
+            }
+            // ==== KẾT THÚC THAY ĐỔI 4 ====
+
             videoPlayer.play();
         } else {
             alert('Trình duyệt không hỗ trợ phát video .m3u8!');
@@ -346,8 +371,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // === 13. HIỂN THỊ MODAL QUẢNG CÁO ===
     function showAdModal(ad) {
         return new Promise((resolve) => {
+            
+            // ==== 💡 THAY ĐỔI 1: BẬT CỜ ====
+            // Báo cho các script khác (như history.js) biết là đang xem quảng cáo
+            window.dangXemQuangCao = true;
+            console.log('AD_LOG: 🚩 Đặt cờ dangXemQuangCao = true');
+            // ==== KẾT THÚC THAY ĐỔI 1 ====
+
             if (!adModal || !adModalContent) {
                 console.error('❌ Modal elements not found');
+                // ==== 💡 THAY ĐỔI 2: TẮT CỜ NẾU LỖI ====
+                // Đảm bảo cờ được tắt nếu modal lỗi
+                window.dangXemQuangCao = false;
+                console.log('AD_LOG: 🚩 Lỗi modal, trả cờ dangXemQuangCao = false');
+                // ==== KẾT THÚC THAY ĐỔI 2 ====
                 resolve();
                 return;
             }
@@ -397,6 +434,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (countdown <= 0) {
                     adModal.style.display = 'none';
                     clearInterval(timer);
+
+                    // ==== 💡 THAY ĐỔI 3: TẮT CỜ ====
+                    // Báo cho các script khác biết là đã hết quảng cáo
+                    window.dangXemQuangCao = false;
+                    console.log('AD_LOG: 🚩 Hết quảng cáo, trả cờ dangXemQuangCao = false');
+                    // ==== KẾT THÚC THAY ĐỔI 3 ====
+                    
                     resolve();
                 }
             };

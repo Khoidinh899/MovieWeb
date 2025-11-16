@@ -125,8 +125,7 @@
         font-size: 0.9rem;
         padding: 0.6rem 1rem;
     }
-
-    /* Card Body */
+/* Card Body */
     .card-body.p-0 {
         padding: 0 !important;
     }
@@ -270,7 +269,7 @@
         gap: 2px;
     }
 
-    /* ======== RIÊNG CHO ADVERTISEMENTS TABLE ======== */
+    /* ======== RIÊNG CHO ADVERTISEMENTS TABLE (Code mới từ HEAD) ======== */
 
     /* Ẩn label của cột Tên Quảng Cáo */
     #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"]::before {
@@ -343,9 +342,9 @@
         display: inline-block;
     }
 
-    /* ======== RIÊNG CHO USERS TABLE ======== */
+    /* ======== RIÊNG CHO USERS TABLE (Gộp code HEAD và MAIN) ======== */
 
-    /* Avatar cell - center align */
+    /* Avatar cell - Lấy cải tiến 'box-shadow' từ MAIN */
     #users-table-wrapper .table-responsive .table tbody td:nth-of-type(1) img {
         width: 50px !important;
         height: 50px !important;
@@ -353,9 +352,10 @@
         object-fit: cover;
         border-radius: 50%;
         border: 2px solid #fff;
+        box-shadow: 0 0 0 2px rgba(0,0,0,0.1); /* <-- Lấy từ MAIN */
     }
 
-    /* Full name - allow wrap */
+    /* Full name - Lấy từ HEAD */
     #users-table-wrapper .table-responsive .table tbody td:nth-of-type(2) {
         white-space: normal !important;
         word-break: break-word;
@@ -366,7 +366,7 @@
         line-height: 1.3;
     }
 
-    /* Email - break long emails */
+    /* Email - Lấy từ HEAD */
     #users-table-wrapper .table-responsive .table tbody td:nth-of-type(3) {
         white-space: normal !important;
         word-break: break-all;
@@ -377,58 +377,62 @@
         line-height: 1.3;
     }
 
-    /* Username */
+    /* Username - Lấy từ HEAD */
     #users-table-wrapper .table-responsive .table tbody td:nth-of-type(4) code {
         font-size: 0.8rem;
         padding: 0.2rem 0.4rem;
     }
 
-    /* Subscription cell - stack badge + date */
+    /* Subscription cell - Lấy từ HEAD */
     #users-table-wrapper .table-responsive .table tbody td:nth-of-type(6) {
         white-space: normal !important;
     }
 
-    /* Action buttons cell */
+    /* Action buttons cell - Lấy logic từ MAIN (tốt hơn) */
     #users-table-wrapper .table-responsive .table tbody td:nth-of-type(8) {
         flex-direction: column;
-        align-items: flex-end;
+        align-items: flex-end; /* Căn phải các nhóm nút */
         gap: 6px;
+        padding-top: 0.75rem !important; /* Lấy từ MAIN */
+        padding-bottom: 0.75rem !important; /* Lấy từ MAIN */
     }
 
     #users-table-wrapper .table-responsive .table tbody td:nth-of-type(8)::before {
-        display: none;
+        position: absolute; /* Lấy từ MAIN */
+        top: 0.85rem; /* Lấy từ MAIN */
+        left: 1rem; /* Lấy từ MAIN */
     }
 
-    /* Button group - full width, wrap buttons */
+    /* Button group - Lấy logic từ MAIN (sửa lỗi width 100%) */
     #users-table-wrapper .table-responsive .table tbody td .btn-group {
         display: flex !important;
-        flex-direction: row;
         flex-wrap: wrap;
         gap: 6px;
-        width: 100%;
         justify-content: flex-end;
     }
 
+    /* Button - Lấy logic từ MAIN (responsive tốt hơn) */
     #users-table-wrapper .table-responsive .table tbody td .btn-group .btn {
-        flex: 0 1 auto;
-        min-width: 70px;
-        padding: 0.5rem 0.6rem;
-        font-size: 0.85rem;
+        flex: 1 1 calc(33.333% - 4px); /* Lấy từ MAIN */
+        min-width: 45px; /* Lấy từ MAIN */
+        padding: 0.5rem 0.4rem; /* Lấy từ MAIN */
+        font-size: 0.9rem; /* Lấy từ MAIN */
     }
 
-    /* Badges - smaller on mobile */
+    /* Badges - Lấy style từ MAIN */
     #users-table-wrapper .premium-badge,
     #users-table-wrapper .student-badge {
         font-size: 0.7rem;
-        padding: 4px 8px;
+        padding: 3px 7px;
     }
 
-    #users-table-wrapper .badge {
+    #users-table-wrapper .badge,
+    #ads-table-wrapper .badge { /* Áp dụng cho cả 2 bảng */
         font-size: 0.7rem;
         padding: 4px 8px;
     }
 
-    /* Empty state - CHUNG CHO CẢ USERS & ADS */
+    /* Empty state - CHUNG (Lấy cải tiến icon từ MAIN) */
     #users-table-wrapper .table-responsive .table tbody tr td[colspan],
     #ads-table-wrapper .table tbody tr td[colspan] {
         display: flex !important;
@@ -445,15 +449,18 @@
         display: none !important;
     }
 
-    #users-table-wrapper .table-responsive .table tbody tr td[colspan] .bi-inbox {
+    #users-table-wrapper .table-responsive .table tbody tr td[colspan] .bi-inbox,
+    #ads-table-wrapper .table-responsive .table tbody tr td[colspan] .bi-inbox {
         font-size: 3rem !important;
         color: #ccc !important;
+        margin-bottom: 1rem; /* Lấy từ MAIN */
     }
 
-    /* Modal Mobile */
+    /* Modal Mobile - Lấy style từ MAIN (tốt hơn) */
     .modal.show .modal-dialog {
-        margin: 0.5rem;
-        max-width: calc(100% - 1rem);
+        margin: 10px !important; /* Lấy từ MAIN */
+        margin-top: 60px !important; /* Lấy từ MAIN */
+        max-width: calc(100% - 20px); /* Lấy từ MAIN */
     }
 
     .modal-content {
@@ -473,7 +480,7 @@
     }
 
     .modal-body .row.g-3 {
-        row-gap: 0.75rem !important;
+        row-gap: 12px !important; /* Lấy từ MAIN (12px = 0.75rem) */
     }
 
     .modal-body .col-md-6,
@@ -484,32 +491,35 @@
         max-width: 100%;
     }
 
+    /* Modal Footer - Lấy style từ MAIN (stacked buttons) */
     .modal-footer {
+        flex-direction: column; /* Lấy từ MAIN */
+        gap: 8px; /* Lấy từ MAIN */
         padding: 1rem;
-        gap: 0.5rem;
     }
 
     .modal-footer .btn {
-        flex: 1;
-        min-width: 0;
+        width: 100%; /* Lấy từ MAIN */
     }
 
-    /* Admin Card Mobile */
+    /* Admin Card Mobile - Gộp cả 2 */
     .admin-card {
-        border-radius: 15px;
+        border-radius: 15px; /* Lấy từ HEAD */
+        min-height: auto; /* Lấy từ MAIN */
         margin-bottom: 1rem;
     }
 
-    /* Form inputs */
+    /* Form inputs - Gộp cả 2 */
     .form-control,
     .form-select {
         font-size: 0.9rem;
-        padding: 0.6rem 0.75rem;
+        padding: 0.6rem 0.75rem; /* Lấy từ HEAD */
     }
 
     .form-label {
         font-size: 0.85rem;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.5rem; /* Lấy từ HEAD */
+        font-weight: 600; /* Lấy từ MAIN */
     }
 }
 
@@ -521,19 +531,22 @@
     }
 
     .stats-card {
-        min-height: 100px;
+        min-height: 110px; /* Lấy từ MAIN */
+        height: 110px; /* Lấy từ MAIN */
     }
 
     .table-responsive {
-        font-size: 0.9rem;
+        font-size: 0.9rem; /* Lấy từ HEAD */
+        min-height: 450px; /* Lấy từ MAIN */
+        max-height: 550px; /* Lấy từ MAIN */
     }
 
     .info-badges .badge {
-        font-size: 0.7rem;
-        padding: 4px 8px;
+        font-size: 0.7rem; /* Lấy từ MAIN */
+        padding: 3px 6px; /* Lấy từ MAIN */
     }
 
-    /* Advertisements tablet */
+    /* Advertisements tablet - Lấy từ HEAD */
     #ads-table-wrapper .table tbody td[data-label="Tên Quảng Cáo"] strong {
         font-size: 0.9rem;
     }
@@ -553,10 +566,12 @@
 @media (min-width: 992px) and (max-width: 1199px) {
     .admin-table table,
     .table {
-        font-size: 0.9rem;
+        font-size: 0.9rem; /* Lấy từ HEAD */
+        min-width: 1100px; /* Lấy từ MAIN */
     }
 
     .info-badges .badge {
-        font-size: 0.75rem;
+        font-size: 0.72rem; /* Lấy từ MAIN */
+        padding: 3px 7px; /* Lấy từ MAIN */
     }
 }

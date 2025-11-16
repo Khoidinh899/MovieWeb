@@ -6,6 +6,7 @@ using MovieWeb.Services; // Bạn phải 'using' IAuthService của bạn
 using System.Collections.Generic; // Cần cho List
 using System.Linq; // Cần cho Contains
 using System.Threading.Tasks; // Cần cho async
+using MovieWeb.Services.Interfaces;
 
 namespace MovieWeb.Controllers.API
 {

@@ -224,10 +224,12 @@
         transform: scale(0);
         opacity: 0;
     }
+
     50% {
         transform: scale(1.2);
         opacity: 0.8;
     }
+
     100% {
         transform: scale(1);
         opacity: 1;
@@ -307,26 +309,27 @@
     .auth-modal {
         margin: 10px;
     }
-    
+
     .auth-modal .modal-body {
         padding: 1rem;
     }
-    
+
     .auth-input {
         padding: 14px 15px;
-        font-size: 16px; /* Prevent zoom on iOS */
+        font-size: 16px;
+        /* Prevent zoom on iOS */
     }
-    
+
     .auth-btn {
         padding: 14px 20px;
         font-size: 16px;
     }
-    
+
     .avatar-circle {
         width: 35px;
         height: 35px;
     }
-    
+
     .form-label {
         font-size: 15px;
     }
@@ -422,6 +425,23 @@
     opacity: 1;
     transform: rotate(90deg);
 }
+
 .modal.show .modal-dialog-centered {
-    transform: translateY(70px) !important; /* dịch modal xuống 40px */
+    transform: translateY(70px) !important;
+
+    /* dịch modal xuống 40px */
+    .avatar-circle {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+
+        /* 2 dòng FIX LỖI avatar lệch & méo */
+        object-fit: cover;
+        object-position: center;
+
+        background-color: #222;
+        /* fix ảnh PNG trong suốt */
+        transition: all 0.3s ease;
+    }
 }

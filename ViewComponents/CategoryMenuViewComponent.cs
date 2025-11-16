@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MovieWeb.Data;
 using MovieWeb.Models.Entities;
-using MovieWeb.ViewModels;
+using MovieWeb.Models.ViewModels;
 
 namespace MovieWeb.ViewComponents
 {

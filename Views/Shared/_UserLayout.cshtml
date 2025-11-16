@@ -6,34 +6,36 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - MoonPhim</title>
-    
+    <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png" asp-append-version="true">
+    <link rel="icon" type="image/png" sizes="32x32" href="~/favicon-32x32.png" asp-append-version="true">
+    <link rel="icon" type="image/png" sizes="16x16" href="~/favicon-16x16.png" asp-append-version="true">
+    <link rel="manifest" href="~/site.webmanifest" asp-append-version="true">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-    <link rel="icon" type="image/x-icon" href="~/favicon.ico">
 
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/user.css" asp-append-version="true" />
-
     <link rel="stylesheet" href="~/css/header.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/notification.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/chatbot.css" asp-append-version="true" />
+
+    @if (User.Identity.IsAuthenticated)
+    {
+        <link rel="stylesheet" href="~/css/notification.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/chatbot.css" asp-append-version="true" />
+    }
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
 
-<body class="user-page d-flex flex-column">
-    
+<body class="user-page d-flex flex-column" data-user-logged-in="@User.Identity.IsAuthenticated.ToString().ToLower()">
+
     @{
         var token = antiforgery.GetAndStoreTokens(Context).RequestToken;
     }
     <input type="hidden" id="RequestVerificationToken" value="@token" />
 
     @await Html.PartialAsync("Partial/_Header")
-
-    @await Html.PartialAsync("Partial/_MobileSearch")
-
     @await Html.PartialAsync("Partial/_AuthModal")
 
     <main role="main" class="flex-fill">
@@ -42,12 +44,30 @@
 
     @await Html.PartialAsync("Partial/_Footer")
 
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     @await Html.PartialAsync("Partial/_Scripts")
-
     @await RenderSectionAsync("Scripts", required: false)
+
+    @if (User.Identity.IsAuthenticated)
+{
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
     <script src="~/js/notification.js" asp-append-version="true"></script>
-    <script src="~/js/chatbot.js" asp-append-version="true"></script>
+
+    var roleId = User.FindFirst("RoleId")?.Value;
+    var subscriptionType = User.FindFirst("SubscriptionType")?.Value?.ToLower();
+    
+    bool canUseChatbot = roleId == "1" || 
+                        subscriptionType == "premium" || 
+                        subscriptionType == "student";
+
+    if (canUseChatbot)
+    {
+        @await Html.PartialAsync("Partial/_Chatbot")
+        <script src="~/js/chatbot.js" asp-append-version="true"></script>
+    }
+}
+
+<script src="~/js/search.js" asp-append-version="true"></script>
 </body>
 
 </html>

@@ -1,0 +1,66 @@
+@model MovieWeb.Models.DTOs.UserProfileDto
+
+<div class="card profile-sidebar">
+    <div class="card-body text-center">
+        <div class="avatar-container mb-3">
+            <img src="@(Model.Avatar ?? "/images/nouser.png")" alt="Avatar" class="profile-avatar" id="profileAvatar">
+            <div class="avatar-overlay">
+                <label class="avatar-edit-btn">
+                    <i class="bi bi-camera"></i>
+                </label>
+            </div>
+        </div>
+        <h5 class="mb-1">@Model.FullName</h5>
+        <p class="text-muted mb-2">@@@Model.Username</p>
+
+        <div class="d-flex justify-content-center align-items-center flex-wrap gap-2">
+            <span class="badge bg-@(Model.IsAdmin ? "danger" : "primary")">
+                @Model.RoleName
+            </span>
+
+            @if (Model.SubscriptionType == "premium")
+            {
+                <span class="subscription-tag moonpro">
+                    <i class="fas fa-crown"></i> MoonPro
+                </span>
+            }
+            else if (Model.SubscriptionType == "student")
+            {
+                <span class="subscription-tag moonstu">
+                    <i class="fas fa-graduation-cap"></i> MoonStu
+                </span>
+            }
+            else
+            {
+                <span class="subscription-tag free">
+                    <i class="fas fa-user"></i> Free
+                </span>
+            }
+        </div>
+    </div>
+
+    <div class="list-group list-group-flush">
+        @{
+            var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+        }
+        
+        <a href="/user/profile" class="list-group-item list-group-item-action @(currentAction == "Profile" ? "active" : "")">
+            <i class="bi bi-person me-2"></i> Thông tin cá nhân
+        </a>
+        <a href="/user/edit" class="list-group-item list-group-item-action @(currentAction == "Edit" ? "active" : "")">
+            <i class="bi bi-pencil me-2"></i> Chỉnh sửa thông tin
+        </a>
+        <a href="/user/change-password" class="list-group-item list-group-item-action @(currentAction == "ChangePassword" ? "active" : "")">
+            <i class="bi bi-key me-2"></i> Đổi mật khẩu
+        </a>
+        <a href="/user/favorite" class="list-group-item list-group-item-action @(currentAction == "Favorite" ? "active" : "")">
+            <i class="bi bi-heart-fill me-2 text-danger"></i> Yêu thích
+        </a>
+        <a href="/user/history" class="list-group-item list-group-item-action @(currentAction == "History" ? "active" : "")">
+            <i class="bi bi-clock-history me-2 text-info"></i> Lịch sử xem
+        </a>
+        <a href="/user/payment-history" class="list-group-item list-group-item-action @(currentAction == "PaymentHistory" ? "active" : "")">
+            <i class="bi bi-credit-card-2-front me-2"></i> Lịch sử thanh toán
+        </a>
+    </div>
+</div>

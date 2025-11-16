@@ -1,6 +1,7 @@
 // Filters/HangfireAuthorizationFilter.cs
 using Hangfire.Dashboard;
 using MovieWeb.Services;
+using MovieWeb.Services.Interfaces;
 
 namespace MovieWeb.Filters
 {

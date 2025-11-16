@@ -1,0 +1,143 @@
+@model List<MovieWeb.Models.DTOs.FavoriteMovieDto>
+@{
+    ViewData["Title"] = "Phim Yêu Thích";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
+}
+
+@functions {
+    public string GetMoviePosterUrl(string? posterUrl)
+    {
+        if (string.IsNullOrEmpty(posterUrl))
+        {
+            return "/images/no-poster.jpg";
+        }
+        
+        if (posterUrl.StartsWith("http"))
+        {
+            return posterUrl;
+        }
+        
+        return "https://img.ophim.live/uploads/movies/" + posterUrl.TrimStart('/');
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/user-favorite.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/user.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
+}
+
+<div class="container py-5">
+    @Html.AntiForgeryToken()
+    
+    <div class="row">
+        <div class="col-lg-3 mb-4">
+            @await Html.PartialAsync("~/Views/User/Shared/_ProfileSidebar.cshtml", (MovieWeb.Models.DTOs.UserProfileDto)ViewBag.UserProfile)
+        </div>
+
+        <div class="col-lg-9">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-heart-fill text-danger me-2"></i>Phim Yêu Thích
+                    </h5>
+                    <p class="text-muted mb-0 small">Danh sách các bộ phim bạn đã yêu thích</p>
+                </div>
+                
+                <div class="card-body">
+                    @if (Model == null || !Model.Any())
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-heart-fill text-muted" style="font-size: 4rem;"></i>
+                            <h4 class="mt-3">Chưa có phim yêu thích</h4>
+                            <p class="text-muted">Hãy thêm phim vào danh sách yêu thích để xem lại sau nhé!</p>
+                            <a href="/trang-chu" class="btn btn-primary mt-3">
+                                <i class="bi bi-film me-2"></i>Khám phá phim
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row g-3" id="favoriteGrid">
+                            @foreach (var movie in Model)
+                            {
+                                <div class="col-md-4 col-sm-6">
+                                    <div class="movie-card">
+                                        <a href="/phim/@movie.Slug">
+                                            <div class="movie-poster">
+                                                <img src="@GetMoviePosterUrl(movie.PosterUrl)" 
+                                                     alt="@movie.Name" 
+                                                     loading="lazy"
+                                                     onerror="this.onerror=null; this.src='/images/no-poster.jpg';">
+                                            </div>
+                                            <div class="movie-info">
+                                                <h6 class="movie-title">@movie.Name</h6>
+                                                <p class="movie-meta">
+                                                    @if (movie.Year.HasValue)
+                                                    {
+                                                        <span>@movie.Year.Value</span>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(movie.Quality))
+                                                    {
+                                                        @if (movie.Year.HasValue)
+                                                        {
+                                                            <span> • </span>
+                                                        }
+                                                        <span>@movie.Quality</span>
+                                                    }
+                                                </p>
+                                            </div>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-danger remove-favorite" 
+                                                data-movie-id="@movie.MovieId"
+                                                title="Xóa khỏi yêu thích">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        @* Pagination *@
+                        @if (ViewBag.TotalPages > 1)
+                        {
+                            <nav class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    @if (ViewBag.HasPrevious)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" href="/user/favorite?page=@(ViewBag.CurrentPage - 1)">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                    }
+                                    
+                                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                                    {
+                                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                            <a class="page-link" href="/user/favorite?page=@i">@i</a>
+                                        </li>
+                                    }
+                                    
+                                    @if (ViewBag.HasNext)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" href="/user/favorite?page=@(ViewBag.CurrentPage + 1)">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            </nav>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/user-favorite.js" asp-append-version="true"></script>
+}

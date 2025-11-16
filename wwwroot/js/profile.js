@@ -3,9 +3,6 @@ let verificationModal;
 let countdownInterval;
 
 document.addEventListener('DOMContentLoaded', function () {
-    avatarModal = new bootstrap.Modal(document.getElementById('avatarSelectionModal'));
-    verificationModal = new bootstrap.Modal(document.getElementById('studentVerificationModal'));
-    checkStudentEmailStatus();
 
     const otpInput = document.getElementById('modalOtpCode');
     if (otpInput) {
@@ -70,13 +67,15 @@ document.addEventListener('DOMContentLoaded', function () {
 function openAvatarModal() {
     document.getElementById('avatarMessageBox').style.display = 'none';
 
-    // START: CẢI TIẾN NHỎ (Thêm 1 dòng)
-    // Ẩn luôn message box của tab upload (nếu có)
     const uploadMsgBox = document.getElementById('uploadMessageBox');
     if (uploadMsgBox) {
         uploadMsgBox.style.display = 'none';
     }
-    // END: CẢI TIẾN NHỎ
+
+    // ✅ THÊM 2 DÒNG NÀY ĐỂ SỬA LỖI
+    if (!avatarModal) {
+        avatarModal = new bootstrap.Modal(document.getElementById('avatarSelectionModal'));
+    }
 
     avatarModal.show();
 }
@@ -270,7 +269,7 @@ function checkStudentEmailStatus(isVerified, verifiedDateStr) {
     }
 }
 
-// Open verification modal (Giữ nguyên)
+// Open verification modal
 function openVerificationModal() {
     document.getElementById('modalStep1').style.display = 'block';
     document.getElementById('modalStep2').style.display = 'none';
@@ -279,6 +278,12 @@ function openVerificationModal() {
     if (countdownInterval) {
         clearInterval(countdownInterval);
     }
+
+    // ✅ THÊM 2 DÒNG NÀY ĐỂ SỬA LỖI
+    if (!verificationModal) {
+        verificationModal = new bootstrap.Modal(document.getElementById('studentVerificationModal'));
+    }
+    
     verificationModal.show();
 }
 

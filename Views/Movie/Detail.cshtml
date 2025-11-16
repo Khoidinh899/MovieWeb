@@ -3,10 +3,13 @@
     ViewData["Title"] = $"{Model.Name} - Xem phim online";
     var relatedMovies = ViewBag.RelatedMovies as List<MovieWeb.Models.Entities.Movie>;
 
-    var bgImage = !string.IsNullOrEmpty(Model.ThumbUrl)
-        ? (Model.ThumbUrl.StartsWith("http") ? Model.ThumbUrl : "https://img.ophim.live/uploads/movies/" + Model.ThumbUrl)
-        : (Model.PosterUrl?.StartsWith("http") == true ? Model.PosterUrl : "https://img.ophim.live/uploads/movies/" + Model.PosterUrl);
-
+    // ⭐ ĐỔI: Ưu tiên PosterUrl (dọc) thay vì ThumbUrl (ngang)
+    var bgImage = !string.IsNullOrEmpty(Model.PosterUrl)
+        ? (Model.PosterUrl.StartsWith("http") ? Model.PosterUrl : "https://img.ophim.live/uploads/movies/" + Model.PosterUrl.TrimStart('/'))
+        : (!string.IsNullOrEmpty(Model.ThumbUrl) 
+            ? (Model.ThumbUrl.StartsWith("http") ? Model.ThumbUrl : "https://img.ophim.live/uploads/movies/" + Model.ThumbUrl.TrimStart('/'))
+            : "/images/no-poster.jpg");
+            
     var grouped = ViewBag.GroupedEpisodes as Dictionary<string, List<MovieWeb.Models.Entities.Episode>>;
     var serverDisplay = ViewBag.ServerDisplayNames as Dictionary<string, string>;
     var servers = ViewBag.Servers as List<string>;
@@ -18,29 +21,75 @@
 
     // ✅ Chỉ hiển thị danh sách tập cho phim bộ hoặc hoạt hình
     bool shouldShowEpisodeList = (Model.Type?.ToLower() == "series" || Model.Type?.ToLower() == "hoathinh")
-                                 && grouped != null
-                                 && grouped.Any();
+                                  && grouped != null
+                                  && grouped.Any();
 
     // ⭐ Quảng cáo
     var advertisements = ViewBag.Advertisements as IEnumerable<MovieWeb.Models.Entities.Advertisement> ?? new List<MovieWeb.Models.Entities.Advertisement>();
+
+    // ==========================================================
+    // ===== ✅ BẮT ĐẦU KHỐI CHUẨN BỊ BIẾN SEO =====
+    // ==========================================================
+
+    // 1. Chuẩn bị Mô tả (Description) - DÙNG CÁCH AN TOÀN
+    // (Không dùng Model.Description trực tiếp vì nó có thể chứa HTML)
+    var seoDescription = $"Xem phim {Model.Name} ({Model.OriginalName}) vietsub, thuyết minh. Cập nhật phim {Model.Name} mới nhất tại MoonPhim.";
+    
+    // (Nếu Model.Description của bạn AN TOÀN - không có HTML, bạn có thể dùng code này thay thế)
+    // var seoDescription = !string.IsNullOrEmpty(Model.Description) 
+    //     ? (Model.Description.Length > 160 ? Model.Description.Substring(0, 157) + "..." : Model.Description)
+    //     : $"Xem phim {Model.Name} ({Model.OriginalName}) vietsub, thuyết minh.";
+
+    // 2. Chuẩn bị Ảnh (Image) - Copy logic của bạn
+    var seoImage = (Model.PosterUrl?.StartsWith("http") == true
+                   ? Model.PosterUrl
+                   : "https://img.ophim.live/uploads/movies/" + Model.PosterUrl);
+
+    // 3. Chuẩn bị URL (Tự động lấy URL hiện tại)
+    var request = Context.Request;
+    var seoUrl = $"{request.Scheme}://{request.Host}{request.Path}";
+    bool hasValidVideoUrl = !string.IsNullOrEmpty(Model.TrailerUrl);
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/detail.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/ad-modal.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/favorite-button.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/watch-progress.css" asp-append-version="true" />
+
+    @* --- BẮT ĐẦU KHỐI SEO (Hiển thị trong <head>) --- *@
+
+    <meta name="description" content="@seoDescription" />
+
+    <meta name="keywords" content="xem phim @Model.Name, @Model.Name vietsub, @Model.Name thuyết minh, @Model.OriginalName, phim @Model.Year@(Model.Categories != null ? ", " + string.Join(", ", Model.Categories.Select(c => c.Name)) : "")" />
+
+    <meta property="og:title" content="@ViewData["Title"]" />
+    <meta property="og:description" content="@seoDescription" />
+    <meta property="og:type" content="video.movie" />
+    <meta property="og:url" content="@seoUrl" />
+    <meta property="og:image" content="@seoImage" />
+    <meta property="og:site_name" content="MoonPhim" />
+
+    @* --- KẾT THÚC KHỐI SEO --- *@
 }
 
+<!-- ✅ THÊM: AntiForgery Token -->
+@Html.AntiForgeryToken()
+
+<!-- ✅ THÊM: Data attributes -->
+<div data-movie-id="@Model.MovieId" style="display: none;"></div>
+<!-- ✅ THÊM: Data attributes cho JavaScript -->
+<div data-movie-id="@Model.MovieId" data-episode-number="@ViewBag.CurrentEpisode" style="display: none;"></div>
+
 <div class="detail-wrapper">
-    <!-- HERO SECTION -->
-    <section class="hero" style="background-image: url('@bgImage')">
+    <div class="detail-header" style="background-image: url('@bgImage');">
         <div class="overlay"></div>
         <div class="container hero-content">
             <div class="poster-box">
-                <img src="@(Model.PosterUrl?.StartsWith("http") == true
-                    ? Model.PosterUrl
-                    : "https://img.ophim.live/uploads/movies/" + Model.PosterUrl)"
-                    alt="@Model.Name" />
-            </div>
+            <img src="@(string.IsNullOrEmpty(Model.PosterUrl) ? "/images/no-poster.jpg" : $"https://img.ophim.live/uploads/movies/{Model.PosterUrl.TrimStart('/')}")"
+                 alt="@Model.Name"
+                 onerror="this.src='/images/no-poster.jpg';" />
+        </div>
 
             <div class="movie-info">
                 <h1>@Model.Name</h1>
@@ -55,22 +104,31 @@
                     <span>@Model.Language</span>
                 </div>
 
-                <div class="buttons" id="heroButtons">
-                    <button class="btn-watch" id="watchBtn">
-                        <i class="fa-solid fa-play"></i> Xem phim
-                    </button>
+                <div class="buttons">
+    
+                    <div id="heroButtons" class="hero-play-buttons"> @if (hasValidVideoUrl)
+                        {
+                            <button class="btn-watch" id="watchBtn">
+                                <i class="fa-solid fa-play"></i> Xem phim
+                            </button>
+                        }
 
-                    <button class="btn-trailer @(string.IsNullOrEmpty(Model.Trailer) ? "disabled" : "")"
-                            id="trailerBtn"
-                            @(string.IsNullOrEmpty(Model.Trailer) ? "disabled" : "")>
-                        <i class="fa-solid fa-film"></i> @(string.IsNullOrEmpty(Model.Trailer) ? "Trailer (đang cập nhật)" : "Trailer")
+                        <button class="btn-trailer @(string.IsNullOrEmpty(Model.Trailer) ? "disabled" : "")"
+                                id="trailerBtn"
+                                @(string.IsNullOrEmpty(Model.Trailer) ? "disabled" : "")>
+                            <i class="fa-solid fa-film"></i> @(string.IsNullOrEmpty(Model.Trailer) ? "Trailer (đang cập nhật)" : "Trailer")
+                        </button>
+                    </div>
+
+                    <button class="favorite-btn" id="favoriteBtn">
+                        <i class="far fa-heart"></i>
+                        <span>Yêu thích</span>
                     </button>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 
-    <!-- VIDEO SECTION -->
     <div id="videoContainer" style="display:none;" class="container mt-4">
         <div class="video-wrapper">
             <video id="moviePlayer"
@@ -80,7 +138,6 @@
                    data-current-episode-index="-1">
             </video>
 
-            <!-- QUẢNG CÁO VIDEO -->
             <div id="ad-modal" class="ad-modal-overlay" style="display: none;">
                 <div class="ad-modal-container">
                     <div id="ad-modal-video-content"></div>
@@ -103,7 +160,6 @@
         </div>
     </div>
 
-    <!-- QUẢNG CÁO TRANG XEM -->
     <div id="watchpage-banner-slot" class="container" style="margin-top: 20px;">
         @{
             ViewBag.AdPlacement = "WatchPage_Banner";
@@ -111,7 +167,6 @@
         @await Html.PartialAsync("Partial/_Advertisement", advertisements)
     </div>
 
-    <!-- DANH SÁCH TẬP -->
     @if (shouldShowEpisodeList)
     {
         <section class="episode-section container" style="margin-top:25px;">
@@ -166,7 +221,6 @@
         </section>
     }
 
-    <!-- THÔNG TIN PHIM -->
     <section class="meta-section container">
         <h2 class="meta-title"><i class="fa-solid fa-circle-info"></i> Thông tin phim</h2>
 
@@ -206,7 +260,6 @@
         }
     </section>
 
-    <!-- PHIM LIÊN QUAN -->
     @if (relatedMovies?.Any() == true)
     {
         <section class="related container">
@@ -217,9 +270,9 @@
                     <a href="/phim/@movie.Slug" class="related-card">
                         <div class="poster">
                             <img src="@(movie.PosterUrl?.StartsWith("http") == true
-                                ? movie.PosterUrl
-                                : "https://img.ophim.live/uploads/movies/" + movie.PosterUrl)"
-                                alt="@movie.Name" />
+                                   ? movie.PosterUrl
+                                   : "https://img.ophim.live/uploads/movies/" + movie.PosterUrl)"
+                                 alt="@movie.Name" />
                             <span class="badge">@movie.Quality</span>
                         </div>
                         <div class="info">
@@ -232,7 +285,6 @@
         </section>
     }
 
-    <!-- BÌNH LUẬN -->
     <section class="comment-section container">
         <h3><i class="fa-solid fa-comments"></i> Bình luận</h3>
 
@@ -264,7 +316,6 @@
         </div>
     </section>
 
-    <!-- POPUP ĐĂNG NHẬP -->
     <div class="login-popup" id="loginPopup">
         <div class="popup-content">
             <h4>Bạn cần đăng nhập để bình luận</h4>
@@ -277,14 +328,63 @@
     </div>
 </div>
 
+<div id="reply-form-template" class="comment-box mt-2" style="display: none; background-color: #111; padding: 10px; border: 1px solid #333; border-radius: 8px;">
+    <textarea class="form-control reply-textarea" placeholder="Viết phản hồi..." rows="2" style="background: #111; border: none; color: white; resize: none; box-shadow: none;"></textarea>
+    <div class="comment-bottom" style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+        <label class="spoiler" style="color: #999; font-size: 14px; display: flex; align-items: center; gap: 5px;">
+            <input type="checkbox" class="form-check-input" style="background-color: #333; border-color: #555;"> Tiết lộ?
+        </label>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-secondary btn-cancel-reply" onclick="cancelReply()" style="font-size: 0.8rem; padding: 2px 10px; border-radius: 20px; background-color: #333; border-color: #555;">Hủy</button>
+            
+            <button class="btn-send btn-submit-reply" style="background: none; border: none; color: #facc15; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                Gửi <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="~/js/video-ads-handler.js" asp-append-version="true"></script>
+    <script src="~/js/watch-progress-tracker.js" asp-append-version="true"></script>
+    
+    <!-- ✅ THÊM: Khai báo biến TRƯỚC KHI load favorite-handler.js -->
+    <script>
+        window.movieId = @Model.MovieId;
+        window.isLoggedIn = @Html.Raw(User.Identity.IsAuthenticated.ToString().ToLower());
+        
+        console.log('🎬 Movie ID:', window.movieId);
+        console.log('🔐 Is Logged In:', window.isLoggedIn);
+        console.log('👤 Username:', '@User.Identity?.Name');
+    </script>
+    
+    <!-- ✅ SAU ĐÓ MỚI LOAD favorite-handler.js -->
+    <script src="~/js/favorite-handler.js" asp-append-version="true"></script>
 
     <script>
         const movieId = @Model.MovieId;
-        const isLoggedIn = @(User.Identity.IsAuthenticated ? "true" : "false");
+        const isLoggedIn = @Html.Raw(User.Identity.IsAuthenticated.ToString().ToLower());
+        console.log('Movie ID:', movieId);
+        console.log('Is Logged In:', isLoggedIn);
+        console.log('User Claims:', '@User.Identity?.Name');
         let selectedRating = 0;
+        
+        function renderUserBadge(comment) {
+            if (comment.isAdmin) {
+                return '<span class="subscription-tag admin-tag"><i class="bi bi-shield-check"></i> Quản Trị Viên</span>';
+            }
+            
+            if (comment.subscriptionType === "premium") {
+                return '<span class="subscription-tag moonpro"><i class="bi bi-gem"></i> MoonPro</span>';
+            }
+            
+            if (comment.subscriptionType === "student") {
+                return '<span class="subscription-tag moonstu"><i class="bi bi-mortarboard"></i> MoonStu</span>';
+            }
+            
+            return '<span class="subscription-tag free"><i class="bi bi-person"></i> Free</span>';
+        }
 
         window.shouldShowAds = @Json.Serialize(shouldShowAds);
         window.isSeriesType = @Json.Serialize(isSeriesMovie);
@@ -292,7 +392,54 @@
         window.movieMainUrl = "@Html.Raw(Model.TrailerUrl ?? "")";
         window.episode1Url = "@Html.Raw(episode1Url)";
 
+        // ==== 💡 THAY ĐỔI 1: THÊM HÀM SHOWNOTIFICATION VÀO ĐÂY ====
+        function showNotification(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            // Style này giống bên Admin
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
+            alertDiv.innerHTML = `
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+
+            setTimeout(() => {
+                alertDiv.classList.remove('show');
+                setTimeout(() => alertDiv.remove(), 150);
+            }, 5000);
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
+            
+            // ✅ THÊM: Ẩn/hiện nút khi video đang phát
+            const watchBtn = document.getElementById("watchBtn");
+            const trailerBtn = document.getElementById("trailerBtn");
+            const videoContainer = document.getElementById("videoContainer");
+            
+            if (videoContainer) {
+                const observer = new MutationObserver(function(mutations) {
+                    const video = document.getElementById("moviePlayer");
+                    const hasVideo = video && video.src;
+                    
+                    if (hasVideo && videoContainer.style.display !== 'none') {
+                        if (watchBtn) watchBtn.style.display = 'none';
+                        if (trailerBtn) trailerBtn.style.display = 'none';
+                    } else {
+                        if (watchBtn) watchBtn.style.display = 'inline-flex';
+                        if (trailerBtn) trailerBtn.style.display = 'inline-flex';
+                    }
+                });
+                
+                observer.observe(videoContainer, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['style']
+                });
+            }
+            
             const loginPopup = document.getElementById("loginPopup");
             const closePopup = document.getElementById("closePopup");
             const openLoginPopup = document.getElementById("openLoginPopup");
@@ -307,9 +454,9 @@
                     e.preventDefault();
                     loginPopup.classList.remove("show");
                     const modal = new bootstrap.Modal(document.getElementById("authModal"));
-                    document.getElementById("authModalTitle").textContent = "Đăng nhập";
                     document.getElementById("loginForm").classList.remove("d-none");
                     document.getElementById("registerForm").classList.add("d-none");
+                    document.getElementById("authModalTitle").textContent = "Đăng nhập";
                     modal.show();
                 });
             }
@@ -319,14 +466,13 @@
                     e.preventDefault();
                     loginPopup.classList.remove("show");
                     const modal = new bootstrap.Modal(document.getElementById("authModal"));
-                    document.getElementById("authModalTitle").textContent = "Đăng ký";
                     document.getElementById("loginForm").classList.add("d-none");
                     document.getElementById("registerForm").classList.remove("d-none");
+                    document.getElementById("authModalTitle").textContent = "Đăng ký";
                     modal.show();
                 });
             }
 
-            // Tab chuyển giữa Bình luận / Đánh giá
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -336,7 +482,6 @@
                 });
             });
 
-            // Chọn sao đánh giá
             document.querySelectorAll('.rating-stars span').forEach(star => {
                 star.addEventListener('click', () => {
                     selectedRating = parseInt(star.dataset.star);
@@ -346,53 +491,302 @@
                 });
             });
 
-            // Gửi bình luận
             document.querySelector('.btn-send')?.addEventListener('click', async () => {
                 if (!isLoggedIn) {
                     loginPopup.classList.add("show");
                     return;
                 }
-
+                
                 const contentBox = document.querySelector(".comment-box textarea");
                 const content = contentBox.value.trim();
 
                 if (!content) {
-                    alert("Vui lòng nhập nội dung bình luận!");
+                    // alert("Vui lòng nhập nội dung bình luận!"); // <-- Bỏ
+                    showNotification("Vui lòng nhập nội dung bình luận!", "warning"); // <-- Dùng
                     return;
                 }
-
+                
                 const formData = new FormData();
                 formData.append("movieId", movieId);
                 formData.append("content", content);
                 formData.append("rating", selectedRating);
 
-                const res = await fetch("/api/comment/add", { method: "POST", body: formData });
-                const result = await res.json();
-
-                if (result.success) {
-                    contentBox.value = "";
-                    alert("Gửi bình luận thành công!");
-                } else {
-                    alert(result.message || "Lỗi khi gửi bình luận!");
+                try {
+                    const res = await fetch("/api/comment/add", {
+                        method: "POST",
+                        body: formData,
+                        credentials: "include",
+                        headers: { "Accept": "application/json" }
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                        contentBox.value = "";
+                        selectedRating = 0;
+                        // alert("Gửi bình luận thành công!"); // <-- Bỏ
+                        showNotification("Gửi bình luận thành công!", "success"); // <-- Dùng
+                        await loadComments();
+                    } else {
+                        // alert(result.message || "Lỗi khi gửi bình luận!"); // <-- Bỏ
+                        showNotification(result.message || "Lỗi khi gửi bình luận!", "danger"); // <-- Dùng
+                    }
+                } catch (err) {
+                    console.error(err);
+                    // alert("Không thể gửi bình luận!"); // <-- Bỏ
+                    showNotification("Không thể gửi bình luận!", "danger"); // <-- Dùng
                 }
             });
 
-            // Chuyển tab server
+        async function loadComments() {
+            try {
+                const res = await fetch(`/api/comment/list-json?movieId=${movieId}`, { credentials: "include" });
+                const data = await res.json();
+
+                const container = document.getElementById("comment-list");
+                if (!container) return;
+
+                const comments = data.comments || [];
+                if (!comments.length) {
+                    container.innerHTML = `<p class="text-gray-400">Chưa có bình luận nào, hãy là người đầu tiên!</p>`;
+                    return;
+                }
+
+                container.innerHTML = comments.map(c => {
+                    const itemClass = c.isAdmin ? "comment-item admin" : "comment-item";
+
+                    return `
+                    <div class="${itemClass} d-flex mb-3" id="comment-${c.commentId}">
+                        <img src="${c.avatar || '/images/nouser.png'}" alt="${c.userName}"
+                            class="rounded-circle me-2" style="width:45px;height:45px;object-fit:cover;">
+
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                                <strong>${c.userName || 'Ẩn danh'}</strong>
+                                
+                                ${renderUserBadge(c)} 
+                                
+                                <small class="text-muted ms-2">${formatDate(c.createdAt)}</small>
+                            </div>
+                            ${c.rating ? `<div class="text-warning mb-1">★ ${c.rating}/5</div>` : ''}
+                            <div class="text-white mb-1">${escapeHtml(c.content)}</div>
+
+                            <div class="comment-actions mt-1">
+                                <button class="btn btn-sm btn-outline-secondary me-1" onclick="replyComment(${c.commentId})">💬 Trả lời</button>
+                                ${c.canDelete ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteComment(${c.commentId})">🗑 Xóa</button>` : ''}
+                            </div>
+
+                            ${c.replies && c.replies.length > 0 ? `
+                                <div class="replies mt-2 ms-4">
+                                    ${c.replies.map(r => {
+                                        const replyClass = r.isAdmin ? "reply-item admin" : "reply-item";
+
+                                        return `
+                                        <div class="${replyClass} mb-2 d-flex" id="comment-${r.commentId}">
+                                            <img src="${r.avatar || '/images/nouser.png'}" class="rounded-circle me-2"
+                                                style="width:35px;height:35px;object-fit:cover;">
+                                            <div>
+                                                <div class="d-flex align-items-center">
+                                                    <strong>${r.userName}</strong>
+                                                    
+                                                    ${renderUserBadge(r)} 
+                                                    
+                                                    <small class="text-muted ms-2">${formatDate(r.createdAt)}</small>
+                                                </div>
+                                                <div class="text-white">${escapeHtml(r.content)}</div>
+                                                <div class="reply-actions mt-1">
+                                                    ${r.canDelete ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteComment(${r.commentId})">🗑 Xóa</button>` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `}).join('')}
+                                </div>` : ''}
+                        </div>
+                    </div>
+                `}).join('');
+            } catch (err) {
+                console.error("Lỗi khi tải bình luận:", err);
+                const container = document.getElementById("comment-list");
+                if (container) {
+                    container.innerHTML = `<p class="text-gray-400">Không thể tải bình luận.</p>`;
+                }
+            }
+        }
+
+            function formatDate(dateStr) {
+                const d = new Date(dateStr);
+                if (isNaN(d)) return "";
+                return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
+                       " " + d.toLocaleDateString('vi-VN');
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement("div");
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+        window.replyComment = function (parentId) {
+            if (!isLoggedIn) {
+                loginPopup.classList.add("show");
+                return;
+            }
+
+            cancelReply();
+
+            const parentCommentElement = document.getElementById(`comment-${parentId}`);
+            if (!parentCommentElement) return;
+            const commentActions = parentCommentElement.querySelector('.comment-actions');
+            if (!commentActions) return;
+
+            const template = document.getElementById('reply-form-template');
+            if (!template) {
+                console.error("Không tìm thấy #reply-form-template!");
+                return;
+            }
+            const newForm = template.cloneNode(true);
+
+            newForm.id = 'inline-reply-form';
+            newForm.style.display = 'block';
+
+            const textarea = newForm.querySelector('.reply-textarea');
+            const submitButton = newForm.querySelector('.btn-submit-reply');
+            
+            textarea.id = `reply-textarea-${parentId}`;
+            submitButton.setAttribute('onclick', `submitReply(${parentId})`);
+            
+            commentActions.insertAdjacentHTML('afterend', newForm.outerHTML);
+            
+            document.getElementById(`reply-textarea-${parentId}`).focus();
+        }
+
+        window.submitReply = async function (parentId) {
+                const textarea = document.getElementById(`reply-textarea-${parentId}`);
+                const content = textarea.value.trim();
+                
+                if (!content) {
+                    // alert("Vui lòng nhập nội dung phản hồi!"); // <-- Bỏ
+                    showNotification("Vui lòng nhập nội dung phản hồi!", "warning"); // <-- Dùng
+                    return;
+                }
+
+            const formData = new FormData();
+            formData.append("parentId", parentId);
+            formData.append("movieId", movieId);
+            formData.append("content", content);
+
+            try {
+                const res = await fetch("/api/comment/reply", {
+                    method: "POST",
+                    body: formData,
+                    credentials: "include",
+                    headers: { "Accept": "application/json" }
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    cancelReply();
+                    await loadComments();
+                } else {
+                        // alert(result.message || "Không thể phản hồi!"); // <-- Bỏ
+                        showNotification(result.message || "Không thể phản hồi!", "danger"); // <-- Dùng
+                    }
+                } catch (err) {
+                    console.error(err);
+                    // alert("Lỗi khi gửi phản hồi."); // <-- Bỏ
+                    showNotification("Lỗi khi gửi phản hồi.", "danger"); // <-- Dùng
+                }
+        }
+
+        window.cancelReply = function () {
+            const existingForm = document.getElementById('inline-reply-form');
+            if (existingForm) {
+                existingForm.remove();
+            }
+        }
+
+            window.deleteComment = async function (id) {
+                if (!confirm("Bạn có chắc muốn xóa bình luận này?")) return;
+
+                const res = await fetch(`/api/comment/delete?commentId=${id}`, {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "Accept": "application/json" }
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    showNotification("Đã xóa bình luận!", "success");
+                    await loadComments();
+                } else {
+                    showNotification(result.message || "Không thể xóa bình luận!", "danger");
+                }
+            };
+
+            loadComments();
+
+            const video = document.getElementById("moviePlayer");
+            const trailerUrl = "@(Model.TrailerUrl ?? "")";
+            let currentHls = null;
+
+            function playVideo(url) {
+                if (!url || !url.trim()) {
+                    showNotification("Tập này chưa có link video!", "warning");
+                    return;
+                }
+                
+
+                videoContainer.style.display = "block";
+                video.scrollIntoView({ behavior: "smooth", block: "center" });
+
+                if (currentHls) {
+                    currentHls.destroy();
+                    currentHls = null;
+                }
+
+                if (Hls.isSupported()) {
+                    const hls = new Hls();
+                    hls.loadSource(url);
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+                    currentHls = hls;
+                } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                    video.src = url;
+                    video.play();
+                } else {
+                    showNotification("Trình duyệt không hỗ trợ phát định dạng .m3u8!", "danger");
+                }
+            }
+
+            if (watchBtn) {
+                watchBtn.addEventListener("click", () => {
+                    playVideo(trailerUrl);
+                });
+            }
+
             const serverTabs = document.querySelectorAll(".server-tab");
             const episodeGroups = document.querySelectorAll(".episode-group");
 
-            if (serverTabs.length > 0) {
-                serverTabs.forEach(tab => {
-                    tab.addEventListener("click", () => {
-                        const selectedKey = tab.getAttribute("data-server");
-                        serverTabs.forEach(t => t.classList.remove("active"));
-                        tab.classList.add("active");
-                        episodeGroups.forEach(g => {
-                            g.style.display = g.getAttribute("data-server") === selectedKey ? "block" : "none";
-                        });
+            serverTabs.forEach(tab => {
+                tab.addEventListener("click", () => {
+                    const key = tab.dataset.server;
+                    serverTabs.forEach(t => t.classList.remove("active"));
+                    tab.classList.add("active");
+                    episodeGroups.forEach(g => {
+                        g.style.display = g.dataset.server === key ? "block" : "none";
                     });
                 });
-            }
+            });
+
+            document.querySelectorAll(".episode-list-item").forEach(item => {
+                item.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const url = item.dataset.url;
+                    
+                    document.querySelectorAll(".episode-list-item").forEach(i => i.classList.remove("active"));
+                    item.classList.add("active");
+                    
+                    playVideo(url);
+                });
+            });
         });
     </script>
 }

@@ -35,16 +35,13 @@
             // --- KẾT THÚC THAY ĐỔI ---
             
             <div class="col-lg-4 col-md-6 mb-4">
-                <div class="@cardClass">  @* <-- Sử dụng class động ở đây *@
-                    
-                    @if (plan.DisplayName.Contains("6 Tháng") || plan.DisplayName.Contains("12 Tháng"))
+                <div class="pricing-card @(plan.IsPopular ? "recommended" : "")">
+                @if (plan.DisplayName.Contains("6 Tháng") || plan.DisplayName.Contains("12 Tháng"))
                     {
-                        // --- THAY ĐỔI: Sử dụng class "discount-badge" đã có trong CSS của bạn ---
-                        <div class="discount-badge">
-                            Tặng 1 Tháng
+                        <div class="bonus-tag">
+                            <i class="bi bi-gift-fill"></i> Tặng 1 Tháng
                         </div>
                     }
-                    
                     <h3>@plan.DisplayName</h3>
                     <p class="price">@plan.PriceVND.ToString("N0") <span class="currency-icon"></span></p>
                     <ul class="list-unstyled features-list">
