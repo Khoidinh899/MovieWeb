@@ -1,0 +1,226 @@
+@model List<MovieWeb.Services.Interfaces.NotificationDto>
+
+@{
+    ViewData["Title"] = "Thông báo của tôi";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
+    var userProfile = ViewBag.UserProfile as MovieWeb.Models.DTOs.UserProfileDto;
+    var currentType = ViewBag.CurrentType as string ?? "all";
+    var currentStatus = ViewBag.CurrentStatus as string ?? "all";
+    var currentPage = (int)ViewBag.CurrentPage;
+    var totalPages = (int)ViewBag.TotalPages;
+    var unreadCount = ViewBag.UnreadCount as MovieWeb.Services.Interfaces.UnreadCountDto;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/notification.css" asp-append-version="true" />
+}
+
+<div class="container py-5 notification-page-container">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            @await Html.PartialAsync("~/Views/User/Shared/_ProfileSidebar.cshtml", userProfile)
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <div class="card notification-page-card">
+                <!-- Header -->
+                <div class="card-header notification-page-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-bell-fill me-2"></i>
+                        Thông báo của tôi
+                    </h4>
+                </div>
+
+                <!-- Filters -->
+                <div class="notification-page-filters">
+                    <!-- Type Filter -->
+                    <div class="filter-group">
+                        <label class="filter-label">Loại:</label>
+                        <div class="btn-group" role="group">
+                            <a href="/user/notifications?type=all&status=@currentStatus" 
+                               class="btn btn-filter @(currentType == "all" ? "active" : "")">
+                                <i class="bi bi-grid-3x3-gap-fill me-1"></i>
+                                Tất cả
+                                @if (unreadCount != null)
+                                {
+                                    <span class="badge bg-danger ms-1">@unreadCount.Total</span>
+                                }
+                            </a>
+                            <a href="/user/notifications?type=payment&status=@currentStatus" 
+                               class="btn btn-filter @(currentType == "payment" ? "active" : "")">
+                                <i class="bi bi-credit-card-fill me-1"></i>
+                                Thanh toán
+                                @if (unreadCount != null && unreadCount.Payment > 0)
+                                {
+                                    <span class="badge bg-danger ms-1">@unreadCount.Payment</span>
+                                }
+                            </a>
+                            <a href="/user/notifications?type=movie&status=@currentStatus" 
+                               class="btn btn-filter @(currentType == "movie" ? "active" : "")">
+                                <i class="bi bi-film me-1"></i>
+                                Phim
+                                @if (unreadCount != null && unreadCount.Movie > 0)
+                                {
+                                    <span class="badge bg-danger ms-1">@unreadCount.Movie</span>
+                                }
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="filter-group">
+                        <label class="filter-label">Trạng thái:</label>
+                        <div class="btn-group" role="group">
+                            <a href="/user/notifications?type=@currentType&status=all" 
+                               class="btn btn-filter @(currentStatus == "all" ? "active" : "")">
+                                Tất cả
+                            </a>
+                            <a href="/user/notifications?type=@currentType&status=unread" 
+                               class="btn btn-filter @(currentStatus == "unread" ? "active" : "")">
+                                Chưa đọc
+                            </a>
+                            <a href="/user/notifications?type=@currentType&status=read" 
+                               class="btn btn-filter @(currentStatus == "read" ? "active" : "")">
+                                Đã đọc
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Mark All Read -->
+                    @if (unreadCount != null && unreadCount.Total > 0)
+                    {
+                        <button class="btn btn-mark-all" onclick="markAllAsReadPage('@currentType')">
+                            <i class="bi bi-check2-all me-1"></i>
+                            Đánh dấu tất cả đã đọc
+                        </button>
+                    }
+                </div>
+
+                <!-- Notifications List -->
+                <div class="card-body notification-page-body">
+                    @if (Model == null || !Model.Any())
+                    {
+                        <div class="empty-state">
+                            <i class="bi bi-inbox display-1 text-muted mb-3"></i>
+                            <h5 class="text-muted">Không có thông báo nào</h5>
+                            <p class="text-muted">
+                                @if (currentStatus == "unread")
+                                {
+                                    <text>Bạn đã đọc hết thông báo rồi!</text>
+                                }
+                                else if (currentType == "payment")
+                                {
+                                    <text>Chưa có thông báo thanh toán nào.</text>
+                                }
+                                else if (currentType == "movie")
+                                {
+                                    <text>Chưa có thông báo về phim nào.</text>
+                                }
+                                else
+                                {
+                                    <text>Bạn chưa có thông báo nào.</text>
+                                }
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="notification-list">
+                            @foreach (var notif in Model)
+                            {
+                                <div class="notification-page-item @(notif.IsRead == false ? "unread" : "")" 
+                                     onclick="markAsReadAndRedirect(@notif.NotificationId, '@(notif.Url ?? "#")')">
+                                    
+                                    <div class="notification-icon @notif.Type">
+                                        @if (notif.Type == "payment" || notif.Type == "PaymentSuccess" || notif.Type == "PaymentReminder" || notif.Type == "SubscriptionCancelled")
+                                        {
+                                            <i class="bi bi-credit-card-fill"></i>
+                                        }
+                                        else if (notif.Type == "CommentReply")
+                                        {
+                                            <i class="bi bi-chat-quote-fill"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-film"></i>
+                                        }
+                                    </div>
+                                    
+                                    <div class="notification-content">
+                                        <h6 class="notification-title">
+                                            @notif.Title
+                                            @if (notif.IsRead == false)
+                                            {
+                                                <span class="badge bg-primary ms-2">Mới</span>
+                                            }
+                                        </h6>
+                                        <p class="notification-text">@notif.Content</p>
+                                        <small class="notification-time">
+                                            <i class="bi bi-clock me-1"></i>
+                                            @if (notif.CreatedAt.HasValue)
+                                            {
+                                                var now = DateTime.Now;
+                                                var created = notif.CreatedAt.Value;
+                                                var diff = now - created;
+
+                                                if (diff.TotalMinutes < 1)
+                                                {
+                                                    <text>Vừa xong</text>
+                                                }
+                                                else if (diff.TotalMinutes < 60)
+                                                {
+                                                    <text>@((int)diff.TotalMinutes) phút trước</text>
+                                                }
+                                                else if (diff.TotalHours < 24)
+                                                {
+                                                    <text>@((int)diff.TotalHours) giờ trước</text>
+                                                }
+                                                else if (diff.TotalDays < 7)
+                                                {
+                                                    <text>@((int)diff.TotalDays) ngày trước</text>
+                                                }
+                                                else
+                                                {
+                                                    @created.ToString("dd/MM/yyyy HH:mm")
+                                                }
+                                            }
+                                        </small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Pagination -->
+                        @if (totalPages > 1)
+                        {
+                            <div class="notification-pagination">
+                                @if (ViewBag.HasPrevious)
+                                {
+                                    <a href="/user/notifications?type=@currentType&status=@currentStatus&page=@(currentPage - 1)" 
+                                       class="btn btn-page">
+                                        <i class="bi bi-chevron-left"></i> Trước
+                                    </a>
+                                }
+
+                                <span class="page-info">
+                                    Trang <strong>@currentPage</strong> / @totalPages
+                                </span>
+
+                                @if (ViewBag.HasNext)
+                                {
+                                    <a href="/user/notifications?type=@currentType&status=@currentStatus&page=@(currentPage + 1)" 
+                                       class="btn btn-page">
+                                        Sau <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

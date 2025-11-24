@@ -41,7 +41,7 @@ namespace MovieWeb.Controllers
                 if (!_cache.TryGetValue(cacheKeyBanner, out List<Movie> bannerMovies))
                 {
                     bannerMovies = await _context.Movies
-                        .Where(m => (m.IsActive ?? false) && (m.IsBanner ?? false))
+                        .Where(m => m.IsActive == true && (m.IsBanner ?? false))
                         .OrderByDescending(m => m.UpdatedAt)
                         .Take(5)
                         .ToListAsync();
@@ -49,7 +49,7 @@ namespace MovieWeb.Controllers
                     if (!bannerMovies.Any())
                     {
                         bannerMovies = await _context.Movies
-                            .Where(m => (m.IsActive ?? false))
+                            .Where(m => m.IsActive == true)
                             .OrderByDescending(m => m.ViewCount)
                             .Take(5)
                             .ToListAsync();
@@ -66,7 +66,7 @@ namespace MovieWeb.Controllers
                 if (!_cache.TryGetValue(cacheKeyLatest, out List<Movie> latestMovies))
                 {
                     latestMovies = await _context.Movies
-                        .Where(m => (m.IsActive ?? false))
+                        .Where(m => m.IsActive == true)
                         .OrderByDescending(m => m.UpdatedAt)
                         .Take(12)
                         .ToListAsync();
@@ -80,7 +80,7 @@ namespace MovieWeb.Controllers
                 if (!_cache.TryGetValue(cacheKeySingle, out List<Movie> singleMovies))
                 {
                     singleMovies = await _context.Movies
-                        .Where(m => (m.IsActive ?? false) && m.Type == "single")
+                        .Where(m => m.IsActive == true && m.Type == "single")
                         .OrderByDescending(m => m.UpdatedAt)
                         .Take(12)
                         .ToListAsync();
@@ -94,7 +94,7 @@ namespace MovieWeb.Controllers
                 if (!_cache.TryGetValue(cacheKeySeries, out List<Movie> seriesMovies))
                 {
                     seriesMovies = await _context.Movies
-                        .Where(m => (m.IsActive ?? false) && m.Type == "series")
+                        .Where(m => m.IsActive == true && m.Type == "series")
                         .OrderByDescending(m => m.UpdatedAt)
                         .Take(12)
                         .ToListAsync();
@@ -108,7 +108,7 @@ namespace MovieWeb.Controllers
                 if (!_cache.TryGetValue(cacheKeyHoatHinh, out List<Movie> hoatHinhMovies))
                 {
                     hoatHinhMovies = await _context.Movies
-                        .Where(m => (m.IsActive ?? false) && m.Type == "hoathinh")
+                        .Where(m => m.IsActive == true && m.Type == "hoathinh")
                         .OrderByDescending(m => m.UpdatedAt)
                         .Take(12)
                         .ToListAsync();

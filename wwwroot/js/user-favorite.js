@@ -3,7 +3,7 @@
 // ================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('✅ User Favorite page loaded');
+    // console.log('✅ User Favorite page loaded');
     
     // Attach remove favorite handlers
     attachRemoveFavoriteHandlers();
@@ -31,7 +31,7 @@ function attachRemoveFavoriteHandlers() {
             }
             
             try {
-                console.log('🗑️ Removing favorite:', movieId);
+                // console.log('🗑️ Removing favorite:', movieId);
                 
                 const response = await fetch(`/api/favorites/${movieId}`, {
                     method: 'DELETE',
@@ -43,7 +43,7 @@ function attachRemoveFavoriteHandlers() {
                 });
                 
                 if (response.ok) {
-                    console.log('✅ Removed successfully');
+                    // console.log('✅ Removed successfully');
                     showToast('Đã xóa khỏi danh sách yêu thích', 'success');
                     
                     // Remove card with animation

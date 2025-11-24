@@ -34,14 +34,14 @@ document.addEventListener('DOMContentLoaded', function () {
     let allEpisodes = [];
     let lastTimeUpdate = 0;
 
-    console.log('🎬 Video Ads Handler khởi động:', {
-        shouldShowAds,
-        isSeriesType,
-        trailerUrl,
-        movieMainUrl,
-        episode1Url,
-        episodeCount: episodeButtons.length
-    });
+    // console.log('🎬 Video Ads Handler khởi động:', {
+    //     shouldShowAds,
+    //     isSeriesType,
+    //     trailerUrl,
+    //     movieMainUrl,
+    //     episode1Url,
+    //     episodeCount: episodeButtons.length
+    // });
 
     // === 3. KHỞI TẠO ===
     function init() {
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
         attachVideoPlayerListeners();
         loadBannerAds();
 
-        console.log('📋 Đã load', allEpisodes.length, 'tập phim');
+        // console.log('📋 Đã load', allEpisodes.length, 'tập phim');
     }
 
     // === 4. BUILD DANH SÁCH TẬP PHIM (ĐÃ SẮP XẾP ĐÚNG) ===
@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         allEpisodes = tempEpisodes;
 
-        console.log('✅ Danh sách tập đã sort:', allEpisodes.map(e => e.name));
+        // console.log('✅ Danh sách tập đã sort:', allEpisodes.map(e => e.name));
     }
 
     // === 5. GẮN SỰ KIỆN CHO NÚT "XEM PHIM" ===
@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!watchBtn) return;
 
         watchBtn.addEventListener('click', async () => {
-            console.log('🎯 Bấm nút "Xem phim"');
+            // console.log('🎯 Bấm nút "Xem phim"');
 
             // ✅ ẨN CẢ 2 NÚT SAU KHI BẤM
             if (heroButtons) {
@@ -116,14 +116,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                console.log('📺 Phim bộ → Phát tập 1:', ep1Source);
+                // console.log('📺 Phim bộ → Phát tập 1:', ep1Source);
                 await attemptToPlayEpisode(0, ep1Source);
                 return;
             }
 
             // ✅ NẾU LÀ PHIM LẺ: Phát từ TrailerUrl (M3U8 phim chính)
             if (!isSeriesType && movieMainUrl) {
-                console.log('🎬 Phim lẻ → Phát từ TrailerUrl:', movieMainUrl);
+                // console.log('🎬 Phim lẻ → Phát từ TrailerUrl:', movieMainUrl);
                 await playMovieDirectly(movieMainUrl);
                 return;
             }
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!trailerBtn || trailerBtn.disabled) return;
 
         trailerBtn.addEventListener('click', () => {
-            console.log('🎬 Bấm nút "Trailer"');
+            // console.log('🎬 Bấm nút "Trailer"');
 
             if (!trailerUrl || trailerUrl.trim() === "") {
                 alert('Phim này chưa có trailer!');
@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // === 7. PHÁT YOUTUBE TRAILER (EMBED) ===
     function playYouTubeTrailer(url) {
-        console.log('▶️ Phát YouTube Trailer:', url);
+        // console.log('▶️ Phát YouTube Trailer:', url);
 
         videoContainer.style.display = 'block';
         videoPlayer.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (episode.index === currentEpisodeIndex) return;
 
-                console.log('🎯 Click vào', episode.name);
+                // console.log('🎯 Click vào', episode.name);
 
                 // ✅ ẨN NÚT XEM PHIM/TRAILER
                 if (heroButtons) {
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // === 9. HÀM PHÁT PHIM LẺ (CHỈ CẦN QUẢNG CÁO PREROLL) ===
     async function playMovieDirectly(src) {
-        console.log('▶️ Phát phim lẻ:', src);
+        // console.log('▶️ Phát phim lẻ:', src);
 
         // ✅ CHECK QUẢNG CÁO CHO PHIM LẺ (nếu user free)
         if (shouldShowAds) {
@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (response.ok) {
                     const ads = await response.json();
                     if (ads && ads.length > 0) {
-                        console.log('📺 Hiển thị PreRoll Ad cho phim lẻ');
+                        // console.log('📺 Hiển thị PreRoll Ad cho phim lẻ');
                         await showAdModal(ads[0]);
                     }
                 }
@@ -248,14 +248,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // === 10. HÀM MASTER: KIỂM TRA & PHÁT VIDEO (CHO PHIM BỘ) ===
     async function attemptToPlayEpisode(index, src) {
-        console.log(`🔍 Phát tập ${index + 1}...`);
+        // console.log(`🔍 Phát tập ${index + 1}...`);
 
         videoPlayer.pause();
         if (nextEpisodeButton) nextEpisodeButton.style.display = 'none';
 
         // ✅ Nếu KHÔNG cần quảng cáo (Premium/Student) → Phát luôn
         if (!shouldShowAds) {
-            console.log('✅ User Premium/Student, bỏ qua quảng cáo');
+            // console.log('✅ User Premium/Student, bỏ qua quảng cáo');
             loadAndPlayVideo(index, src);
             return;
         }
@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const ads = await response.json();
 
             if (ads && ads.length > 0) {
-                console.log('📺 Hiển thị PreRoll Ad:', ads[0].adName);
+                // console.log('📺 Hiển thị PreRoll Ad:', ads[0].adName);
                 // SỬA Ở ĐÂY: Thêm 3 dòng này để ép thoát fullscreen
                 if (document.fullscreenElement) {
                     await document.exitFullscreen();
@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // === 11. TẢI & PHÁT VIDEO ===
     function loadAndPlayVideo(index, src) {
-        console.log(`▶️ Phát tập ${index + 1}:`, src);
+        // console.log(`▶️ Phát tập ${index + 1}:`, src);
 
         currentEpisodeIndex = index;
         videoPlayer.dataset.currentEpisodeIndex = index;
@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let startTime = 0; // Mặc định là 0
         if (window.thoiGianXemTiep && window.thoiGianXemTiep > 0) {
             startTime = window.thoiGianXemTiep;
-            console.log(`RESUME_LOG: 🚩 Nhận được thời gian xem tiếp = ${startTime}s`);
+            // console.log(`RESUME_LOG: 🚩 Nhận được thời gian xem tiếp = ${startTime}s`);
             window.thoiGianXemTiep = 0; // Xóa cờ đi sau khi đã nhận
         }
         // ==== KẾT THÚC THAY ĐỔI 2 ====
@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 // ==== 💡 THAY ĐỔI 3: TUA PHIM ĐẾN ĐÚNG CHỖ NÀY ====
                 if (startTime > 0) {
-                    console.log(`RESUME_LOG: ⏩ Đang tua phim đến ${startTime}s...`);
+                    // console.log(`RESUME_LOG: ⏩ Đang tua phim đến ${startTime}s...`);
                     videoPlayer.currentTime = startTime;
                 }
                 // ==== KẾT THÚC THAY ĐỔI 3 ====
@@ -375,7 +375,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // ==== 💡 THAY ĐỔI 1: BẬT CỜ ====
             // Báo cho các script khác (như history.js) biết là đang xem quảng cáo
             window.dangXemQuangCao = true;
-            console.log('AD_LOG: 🚩 Đặt cờ dangXemQuangCao = true');
+            // console.log('AD_LOG: 🚩 Đặt cờ dangXemQuangCao = true');
             // ==== KẾT THÚC THAY ĐỔI 1 ====
 
             if (!adModal || !adModalContent) {
@@ -383,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // ==== 💡 THAY ĐỔI 2: TẮT CỜ NẾU LỖI ====
                 // Đảm bảo cờ được tắt nếu modal lỗi
                 window.dangXemQuangCao = false;
-                console.log('AD_LOG: 🚩 Lỗi modal, trả cờ dangXemQuangCao = false');
+                // console.log('AD_LOG: 🚩 Lỗi modal, trả cờ dangXemQuangCao = false');
                 // ==== KẾT THÚC THAY ĐỔI 2 ====
                 resolve();
                 return;
@@ -438,7 +438,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     // ==== 💡 THAY ĐỔI 3: TẮT CỜ ====
                     // Báo cho các script khác biết là đã hết quảng cáo
                     window.dangXemQuangCao = false;
-                    console.log('AD_LOG: 🚩 Hết quảng cáo, trả cờ dangXemQuangCao = false');
+                    // console.log('AD_LOG: 🚩 Hết quảng cáo, trả cờ dangXemQuangCao = false');
                     // ==== KẾT THÚC THAY ĐỔI 3 ====
                     
                     resolve();
@@ -450,27 +450,27 @@ document.addEventListener('DOMContentLoaded', function () {
     // === 14. GẮN LOGIC PLAYER (CHUYỂN TẬP & QUẢNG CÁO) ===
     // SỬA: Đổi tên hàm
     function attachVideoPlayerListeners() {
-        console.log('🔁 Kích hoạt logic player (Chuyển tập & QC Climax)');
+        // console.log('🔁 Kích hoạt logic player (Chuyển tập & QC Climax)');
 
         // ==========================================================
         // A. LOGIC CHỈ DÀNH CHO PHIM BỘ (Chuyển tập)
         // ==========================================================
         if (isSeriesType && allEpisodes.length > 1) {
-            console.log('...Đang gắn logic chuyển tập (Phim bộ)');
+            // console.log('...Đang gắn logic chuyển tập (Phim bộ)');
 
             // ✅ TỰ ĐỘNG CHUYỂN TẬP KHI VIDEO KẾT THÚC
             videoPlayer.addEventListener('ended', async () => {
-                console.log('🏁 Video kết thúc');
+                // console.log('🏁 Video kết thúc');
                 nextEpisodeButton.disabled = true;
                 const nextEpisode = allEpisodes[currentEpisodeIndex + 1];
 
                 if (nextEpisode) {
-                    console.log('⏭️ Tự động chuyển tập:', nextEpisode.name);
+                    // console.log('⏭️ Tự động chuyển tập:', nextEpisode.name);
                     updateActiveBadge(nextEpisode.index);
                     if (nextEpisodeButton) nextEpisodeButton.style.display = 'none';
                     await attemptToPlayEpisode(nextEpisode.index, nextEpisode.src);
                 } else {
-                    console.log('🎬 Đã hết phim');
+                    // console.log('🎬 Đã hết phim');
                     alert('Đã hết tập phim!');
                 }
             });
@@ -481,15 +481,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     nextEpisodeButton.disabled = true; // SỬA: Thêm dòng chống spam
                     const nextEpisode = allEpisodes[currentEpisodeIndex + 1];
 
-                    console.log('🎯 NÚT TẬP TIẾP THEO - Debug info:', {
-                        currentIndex: currentEpisodeIndex,
-                        nextIndex: currentEpisodeIndex + 1,
-                        nextEpisode: nextEpisode,
-                        totalEpisodes: allEpisodes.length
-                    });
+                    // console.log('🎯 NÚT TẬP TIẾP THEO - Debug info:', {
+                    //     currentIndex: currentEpisodeIndex,
+                    //     nextIndex: currentEpisodeIndex + 1,
+                    //     nextEpisode: nextEpisode,
+                    //     totalEpisodes: allEpisodes.length
+                    // });
 
                     if (nextEpisode) {
-                        console.log('🎯 Bấm nút "Tập tiếp theo":', nextEpisode.name);
+                        // console.log('🎯 Bấm nút "Tập tiếp theo":', nextEpisode.name);
                         updateActiveBadge(nextEpisode.index);
                         nextEpisodeButton.style.display = 'none';
                         await attemptToPlayEpisode(nextEpisode.index, nextEpisode.src);
@@ -523,7 +523,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (lastTimeUpdate < climaxTime && currentTime >= climaxTime) {
                     hasPlayedClimaxAd = true;
-                    console.log(`🔥 Climax Ad (${isSeriesType ? 'Phim bộ @ 10p' : 'Phim lẻ @ 20p'})`);
+                    // console.log(`🔥 Climax Ad (${isSeriesType ? 'Phim bộ @ 10p' : 'Phim lẻ @ 20p'})`);
 
                     videoPlayer.pause();
                     if (document.fullscreenElement) await document.exitFullscreen();
@@ -550,7 +550,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // === ✅ HÀM CẬP NHẬT BADGE ACTIVE ===
     // (Hàm này giữ nguyên)
     function updateActiveBadge(index) {
-        console.log('🔄 Đang cập nhật badge active cho index:', index);
+        // console.log('🔄 Đang cập nhật badge active cho index:', index);
 
         // Xóa tất cả active
         allEpisodes.forEach((ep) => {
@@ -560,7 +560,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Thêm active cho tập mới
         if (allEpisodes[index]) {
             allEpisodes[index].button.classList.add('active');
-            console.log('✅ ĐÃ THÊM ACTIVE CHO:', allEpisodes[index].name);
+            // console.log('✅ ĐÃ THÊM ACTIVE CHO:', allEpisodes[index].name);
             allEpisodes[index].button.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         } else {
             console.error('❌ Không tìm thấy episode với index:', index);
@@ -604,17 +604,17 @@ document.addEventListener('DOMContentLoaded', function () {
             switch (e.key) {
                 case 'ArrowLeft':
                     e.preventDefault(); // Ngăn trình duyệt cuộn trang
-                    console.log('⏪ Tua lùi 10s');
+                    // console.log('⏪ Tua lùi 10s');
                     videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);
                     break;
                 case 'ArrowRight':
                     e.preventDefault(); // Ngăn trình duyệt cuộn trang
-                    console.log('⏩ Tua tới 10s');
+                    // console.log('⏩ Tua tới 10s');
                     videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);
                     break;
             }
         });
-        console.log('⌨️ Đã gắn phím tắt tua video (10s)');
+        // console.log('⌨️ Đã gắn phím tắt tua video (10s)');
     }
 
     // === 17. KHỞI ĐỘNG ===

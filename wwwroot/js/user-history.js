@@ -3,7 +3,16 @@
 // ================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('✅ User History page loaded');
+    const token = document.querySelector('input[name="__RequestVerificationToken"]');
+    // Hoặc kiểm tra xem có nút "Xóa tất cả" không (chỉ trang lịch sử của user mới có)
+    const clearAllBtn = document.getElementById('clearAllHistoryBtn');
+
+    // ❌ NẾU KHÔNG CÓ TOKEN HOẶC KHÔNG PHẢI TRANG LỊCH SỬ -> DỪNG NGAY, KHÔNG CHẠY GÌ CẢ
+    if (!token && !clearAllBtn) {
+        // console.log('ℹ️ Guest user or not history page - Script stopped.');
+        return; 
+    }
+    // console.log('✅ User History page loaded');
     
     // Attach remove history handlers
     attachRemoveHistoryHandlers();
@@ -34,7 +43,7 @@ function attachRemoveHistoryHandlers() {
             }
             
             try {
-                console.log('🗑️ Removing history:', historyId);
+                // console.log('🗑️ Removing history:', historyId);
                 
                 const response = await fetch(`/api/watch-history/${historyId}`, {
                     method: 'DELETE',
@@ -46,7 +55,7 @@ function attachRemoveHistoryHandlers() {
                 });
                 
                 if (response.ok) {
-                    console.log('✅ Removed successfully');
+                    // console.log('✅ Removed successfully');
                     showToast('Đã xóa khỏi lịch sử xem', 'success');
                     
                     // Remove card with animation
@@ -92,7 +101,7 @@ function attachClearAllHandler() {
             }
             
             try {
-                console.log('🗑️ Clearing all history');
+                // console.log('🗑️ Clearing all history');
                 
                 const response = await fetch('/api/watch-history/clear-all', {
                     method: 'DELETE',
@@ -104,7 +113,7 @@ function attachClearAllHandler() {
                 });
                 
                 if (response.ok) {
-                    console.log('✅ Cleared all history');
+                    // console.log('✅ Cleared all history');
                     showToast('Đã xóa toàn bộ lịch sử xem', 'success');
                     setTimeout(() => {
                         location.reload();

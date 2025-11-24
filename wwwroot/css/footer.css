@@ -1,0 +1,179 @@
+/* =========================================
+   1. GLOBAL STYLES (Cấu hình chung)
+   ========================================= */
+footer {
+    background-color: #1a1a1a !important; /* Màu nền tối đậm hơn default */
+    border-top: 3px solid #0d6efd; /* Viền xanh điểm nhấn trên cùng */
+    font-size: 15px;
+}
+
+/* Link trong footer */
+footer a {
+    color: #adb5bd !important; /* Màu xám sáng */
+    transition: all 0.3s ease;
+}
+
+footer a:hover {
+    color: #ffffff !important; /* Hover sáng trắng */
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    padding-left: 5px; /* Hiệu ứng đẩy nhẹ sang phải */
+}
+
+/* Social Icons */
+footer .bi {
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+footer .bi:hover {
+    transform: scale(1.2); /* Phóng to icon khi hover */
+    color: #0d6efd; /* Đổi màu xanh khi hover */
+}
+
+/* Nút Scroll Top */
+#scrollTopBtn {
+    display: none; /* Ẩn mặc định, dùng JS để hiện */
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 99;
+    font-size: 18px;
+    border: none;
+    outline: none;
+    background-color: #0d6efd;
+    color: white;
+    cursor: pointer;
+    padding: 10px 15px;
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+#scrollTopBtn:hover {
+    background-color: #0b5ed7;
+    transform: translateY(-3px);
+}
+
+/* =========================================
+   2. DESKTOP VERSION (Màn hình > 992px)
+   ========================================= */
+@media (min-width: 992px) {
+    footer .col-lg-4 img {
+        height: 90px !important; /* Logo to hơn chút trên màn hình lớn */
+    }
+    
+    footer h5 {
+        position: relative;
+        padding-bottom: 10px;
+    }
+    
+    /* Gạch chân dưới tiêu đề cho đẹp */
+    footer h5::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 50px;
+        height: 2px;
+        background-color: #0d6efd;
+    }
+}
+
+/* =========================================
+   3. TABLET VERSION (768px -> 991px)
+   ========================================= */
+@media (min-width: 768px) and (max-width: 991px) {
+    footer {
+        font-size: 14px; /* Chữ nhỏ lại chút cho vừa khung tablet */
+    }
+
+    footer .container {
+        max-width: 95%; /* Mở rộng khung ra 2 bên */
+    }
+
+    footer .col-md-4, 
+    footer .col-md-2, 
+    footer .col-md-3 {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    /* Logo chỉnh lại chút cho gọn */
+    footer .navbar-brand span[style*="font-size:40px"] {
+        font-size: 30px !important;
+    }
+    
+    footer .navbar-brand img {
+        height: 60px !important;
+    }
+}
+
+/* =========================================
+   4. MOBILE LANDSCAPE (Màn hình ngang: 576px -> 767px)
+   ========================================= */
+@media (min-width: 576px) and (max-width: 767px) {
+    footer .row.text-md-left {
+        text-align: center !important; /* Căn giữa toàn bộ */
+    }
+
+    footer .navbar-brand {
+        justify-content: center; /* Căn giữa logo */
+        margin-bottom: 20px;
+    }
+
+    footer .col-md-4, 
+    footer .col-md-2, 
+    footer .col-md-3 {
+        /* Chia layout thành 2 cột mỗi hàng (50%) thay vì dồn 1 cục */
+        flex: 0 0 50%;
+        max-width: 50%;
+        margin-bottom: 30px;
+    }
+}
+
+/* =========================================
+   5. MOBILE PORTRAIT (Màn hình dọc: < 576px)
+   ========================================= */
+@media (max-width: 575px) {
+    footer .row.text-md-left {
+        text-align: center !important; /* Căn giữa hết */
+    }
+
+    footer .navbar-brand {
+        flex-direction: column; /* Logo và chữ xếp chồng lên nhau */
+        align-items: center;
+        text-align: center;
+    }
+
+    footer .navbar-brand img {
+        margin-right: 0 !important;
+        margin-bottom: 10px;
+        height: 70px !important;
+    }
+
+    footer .navbar-brand div {
+        align-items: center;
+    }
+
+    /* Khoảng cách giữa các mục lớn hơn để dễ bấm cảm ứng */
+    footer h5 {
+        margin-top: 20px;
+        color: #0d6efd; /* Đổi màu tiêu đề để dễ phân biệt các mục */
+        font-size: 18px;
+    }
+
+    footer p {
+        margin-bottom: 10px; /* Dãn dòng các link */
+    }
+
+    /* Social icons to hơn để dễ bấm */
+    footer .fs-4 {
+        font-size: 1.5rem !important;
+        margin: 0 10px !important; /* Dãn cách icon ra */
+    }
+    
+    #scrollTopBtn {
+        bottom: 15px;
+        right: 15px;
+        padding: 8px 12px; /* Nút nhỏ lại xíu cho đỡ che nội dung */
+    }
+}

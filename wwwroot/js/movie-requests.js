@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
             btnElement.disabled = true;
             btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
 
-            console.log('Auto sync request:', { requestId, movieTitle, movieYear });
+            // console.log('Auto sync request:', { requestId, movieTitle, movieYear });
 
             fetch('/Admin/AutoSyncMovieRequest', {
                 method: 'POST',
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
                 .then(response => response.json())
                 .then(data => {
-                    console.log('Auto sync response:', data);
+                    // console.log('Auto sync response:', data);
 
                     if (data.success) {
                         // Trường hợp 1: Cần admin chọn phim (nhiều kết quả)
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            console.log('Confirm request:', requestId);
+            // console.log('Confirm request:', requestId);
 
             fetch('/Admin/ConfirmMovieRequest', {
                 method: 'POST',
@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
                 .then(response => response.json())
                 .then(data => {
-                    console.log('Confirm response:', data);
+                    // console.log('Confirm response:', data);
                     if (data.success) {
                         alert('✅ ' + data.message);
                         window.location.reload();
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
             btnElement.disabled = true;
             btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang gửi...';
 
-            console.log('Send notification:', requestId);
+            // console.log('Send notification:', requestId);
 
             fetch('/Admin/SendMovieNotification', {
                 method: 'POST',
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
                 .then(response => response.json())
                 .then(data => {
-                    console.log('Send notification response:', data);
+                    // console.log('Send notification response:', data);
                     if (data.success) {
                         alert('✅ ' + data.message);
                         btnElement.disabled = false;
@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // HÀM GỌI API XÁC NHẬN SYNC VỚI SLUG ĐÃ CHỌN
     // =========================================================
     function confirmAutoSyncWithSlug(requestId, slug) {
-        console.log('Confirming auto sync with slug:', { requestId, slug });
+        // console.log('Confirming auto sync with slug:', { requestId, slug });
 
         // Hiện loading toàn trang
         const loadingDiv = document.createElement('div');
@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(response => response.json())
             .then(data => {
                 loadingDiv.remove();
-                console.log('Confirm auto sync response:', data);
+                // console.log('Confirm auto sync response:', data);
 
                 if (data.success) {
                     alert(`✅ ${data.message}\n\nPhim: ${data.movieName || 'N/A'}\nID: ${data.movieId || 'N/A'}\n\nTrang sẽ tải lại...`);
@@ -343,7 +343,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 : '/images/default-poster.jpg';
             document.getElementById('syncedMoviePoster').src = posterUrl;
 
-            console.log('Viewing synced movie:', { movieId, movieName, movieSlug });
+            // console.log('Viewing synced movie:', { movieId, movieName, movieSlug });
         });
     }
 
@@ -355,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        console.log('Calling SetRequestStatus:', { requestId, status, note }); // Debug log
+        // console.log('Calling SetRequestStatus:', { requestId, status, note }); // Debug log
 
         fetch('/Admin/SetRequestStatus', {
             method: 'POST',
@@ -370,11 +370,11 @@ document.addEventListener('DOMContentLoaded', function () {
             })
         })
             .then(response => {
-                console.log('Response status:', response.status); // Debug log
+                // console.log('Response status:', response.status); // Debug log
                 return response.json();
             })
             .then(data => {
-                console.log('Response data:', data); // Debug log
+                // console.log('Response data:', data); // Debug log
                 if (data.success) {
                     alert(data.message);
                     window.location.reload();
@@ -405,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const requestId = button.getAttribute('data-request-id');
             const movieTitle = button.getAttribute('data-movie-title');
 
-            console.log('Modal opened for request:', requestId, movieTitle); // Debug log
+            // console.log('Modal opened for request:', requestId, movieTitle); // Debug log
 
             modalRequestIdInput.value = requestId;
             modalRequestTitleSpan.textContent = movieTitle + ` (ID: ${requestId})`;
@@ -434,15 +434,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            console.log('Searching movies with term:', searchTerm); // Debug log
+            // console.log('Searching movies with term:', searchTerm); // Debug log
 
             fetch(`/api/movies/search?term=${encodeURIComponent(searchTerm)}`)
                 .then(response => {
-                    console.log('Search response status:', response.status); // Debug log
+                    // console.log('Search response status:', response.status); // Debug log
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Search response data:', data);
+                    // console.log('Search response data:', data);
 
                     if (data.success && data.data && data.data.length > 0) {
 
@@ -502,7 +502,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const movieId = this.getAttribute('data-movie-id');
                     const movieName = this.getAttribute('data-movie-name');
                     const movieYear = this.getAttribute('data-movie-year');
-                    console.log('Movie selected:', movieId, movieName, movieYear); // Debug log
+                    // console.log('Movie selected:', movieId, movieName, movieYear); // Debug log
                     selectMovie(movieId, movieName, movieYear, this);
                 });
             });
@@ -538,7 +538,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                console.log('Linking movie:', { requestId, movieId }); // Debug log
+                // console.log('Linking movie:', { requestId, movieId }); // Debug log
 
                 fetch('/Admin/LinkMovieToRequest', {
                     method: 'POST',
@@ -552,11 +552,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                 })
                     .then(response => {
-                        console.log('Link response status:', response.status); // Debug log
+                        // console.log('Link response status:', response.status); // Debug log
                         return response.json();
                     })
                     .then(data => {
-                        console.log('Link response data:', data); // Debug log
+                        // console.log('Link response data:', data); // Debug log
                         if (data.success) {
                             alert(data.message);
                             const modalInstance = bootstrap.Modal.getInstance(linkMovieModal);

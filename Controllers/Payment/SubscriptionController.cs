@@ -25,12 +25,12 @@ namespace MovieWeb.Controllers.API
             MovieWebDbContext context,
             ISubscriptionService subscriptionService,
             IStripeService stripeService,
-            INotificationService notificationService,      // ← THÊM
-            IHubContext<NotificationHub> hubContext,       // ← THÊM
+            INotificationService notificationService,
+            IHubContext<NotificationHub> hubContext,
             ILogger<SubscriptionController> logger)
         {
-            _notificationService = notificationService;    // ← THÊM
-            _hubContext = hubContext;                      // ← THÊM
+            _notificationService = notificationService;
+            _hubContext = hubContext;
             _logger = logger;
             _context = context;
             _subscriptionService = subscriptionService;
@@ -197,6 +197,7 @@ namespace MovieWeb.Controllers.API
                     });
                 }
 
+                // ✅ GỌI SERVICE - Service sẽ tự động gửi thông báo
                 var success = await _subscriptionService.CancelSubscriptionAsync(
                     request.SubscriptionId,
                     request.Reason,
@@ -221,47 +222,8 @@ namespace MovieWeb.Controllers.API
                     );
                 }
 
-                // ========================================
-                // THÊM CODE GỬI THÔNG BÁO VÀO ĐÂY
-                // ========================================
-                try
-                {
-                    // Lấy thông tin plan để hiển thị tên đẹp
-                    var plan = await _context.SubscriptionPlans.FindAsync(subscription.PlanId);
-                    var planName = plan?.DisplayName ?? "gói đăng ký";
-
-                    // 1. Lưu vào DB
-                    await _notificationService.CreateSubscriptionCancelledNotificationAsync(
-                        userId,
-                        planName,
-                        subscription.EndDate,
-                        request.Reason
-                    );
-
-                    // 2. Gửi SignalR real-time
-                    var notificationDto = new
-                    {
-                        NotificationId = 0,
-                        Title = "⚠️ Đã hủy gói đăng ký",
-                        Content = $"Bạn đã hủy gói {planName}. Gói vẫn có hiệu lực đến {subscription.EndDate:dd/MM/yyyy}. Bạn có thể mua lại bất cứ lúc nào!",
-                        Type = "SubscriptionCancelled",
-                        Url = "/nang-cap",
-                        IsRead = false,
-                        CreatedAt = DateTime.UtcNow
-                    };
-
-                    await _hubContext.Clients
-                        .User(userId.ToString())
-                        .SendAsync("ReceiveNotification", notificationDto);
-
-                    _logger.LogInformation("✅ Sent cancellation notification to User {UserId}", userId);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "❌ Error sending cancellation notification");
-                    // Không throw để không làm fail API cancel
-                }
-                // ========================================
+                // ❌ ĐÃ XÓA: Code gửi thông báo trùng lặp ở đây
+                // Service đã tự động gửi notification rồi
 
                 return Ok(new ApiResponse<object>
                 {
@@ -278,9 +240,10 @@ namespace MovieWeb.Controllers.API
                 });
             }
         }
+
         // GET: api/subscription/check-active
         [HttpGet("check-active")]
-        [Authorize] // Đảm bảo chỉ user đã đăng nhập mới gọi được
+        [Authorize]
         public async Task<IActionResult> CheckActiveSubscription()
         {
             var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -289,16 +252,14 @@ namespace MovieWeb.Controllers.API
                 return Unauthorized(new { success = false, message = "User not found" });
             }
 
-            // ✅ SỬA LẠI CÂU TRUY VẤN - CHỈ TÌM GÓI CÓ STATUS LÀ "active"
             var activeSubscription = await _context.UserSubscriptions
-                .Include(s => s.SubscriptionPlan) // Thêm Include để lấy được tên gói
+                .Include(s => s.SubscriptionPlan)
                 .FirstOrDefaultAsync(s => s.UserId == userId
                                        && s.EndDate > DateTime.Now
                                        && s.Status == "active");
 
             if (activeSubscription == null)
             {
-                // Nếu không tìm thấy gói nào ACTIVE, trả về false để cho phép mua
                 return Ok(new ApiResponse<object>
                 {
                     Success = true,
@@ -306,7 +267,6 @@ namespace MovieWeb.Controllers.API
                 });
             }
 
-            // Nếu tìm thấy một gói ACTIVE, trả về true và thông tin để JS hiện popup
             return Ok(new ApiResponse<object>
             {
                 Success = true,
@@ -321,6 +281,7 @@ namespace MovieWeb.Controllers.API
                 }
             });
         }
+
         // GET: api/subscription/transactions
         [HttpGet("transactions")]
         [Authorize]
