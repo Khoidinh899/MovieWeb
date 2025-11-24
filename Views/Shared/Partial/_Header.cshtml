@@ -85,7 +85,8 @@
                         <button type="submit"><i class="fas fa-search"></i></button>
                     </div>
                 </form>
-
+            @if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
                 <div class="notification-wrapper d-none d-lg-block position-relative" id="notificationBell">
                     <button class="btn btn-link text-white position-relative p-2 notification-trigger" type="button"
                         aria-label="Thông báo">
@@ -125,13 +126,13 @@
                         </div>
 
                         <div class="notification-footer">
-                            <a href="/thong-bao" class="btn btn-link w-100 text-decoration-none">
+                            <a href="/user/notifications" class="btn btn-link w-100 text-decoration-none">
                                 Xem toàn bộ <i class="bi bi-arrow-right"></i>
                             </a>
                         </div>
                     </div>
                 </div>
-
+            }
                 <div class="dropdown ms-3 position-relative d-none d-lg-block">
                     @if (currentUser != null)
                     {
@@ -170,7 +171,10 @@
                                 </a>
                                 <div class="dropdown-divider"></div>
                             }
-
+                            <a class="dropdown-item dropdown-item-custom" href="/user/notifications">
+                                <i class="bi bi-bell me-2"></i>
+                                <span>Thông báo</span>
+                            </a>
                             <a class="dropdown-item dropdown-item-custom" href="/user/favorite">
                                 <i class="bi bi-heart me-2"></i>
                                 <span>Yêu thích</span>
@@ -314,7 +318,12 @@
                             Quản lý tài khoản
                         </a>
                     </li>
-
+                    <li class="nav-item">
+                        <a class="nav-link" href="/user/notifications">
+                            <i class="bi bi-bell me-2"></i>
+                            Thông báo
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/user/favorite">
                             <i class="bi bi-heart me-2"></i>

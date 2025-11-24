@@ -5,7 +5,8 @@
 .notification-wrapper {
     position: relative;
     margin-right: 15px;
-    z-index: 10000 !important; /* Cao hơn navbar */
+    z-index: 10000 !important;
+    /* Cao hơn navbar */
 }
 
 /* Bell Button */
@@ -46,23 +47,26 @@
     align-items: center !important;
     justify-content: center !important;
     z-index: 10002 !important;
-    transform: none !important; /* Tắt mọi hiệu ứng translate */
+    transform: none !important;
+    /* Tắt mọi hiệu ứng translate */
 }
 
 /* ========== DROPDOWN CONTAINER - CRITICAL FIX ========== */
 .notification-dropdown {
     position: absolute;
-    right: 0 ;
-    top: calc(100% + 15px) ;
+    right: 0;
+    top: calc(100% + 15px);
     width: 420px;
     max-height: 600px;
     background: white;
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0,0,0,0.1) !important;
-    z-index: 10003 !important; /* CAO NHẤT - Phải hiển thị trên tất cả */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+    z-index: 10003 !important;
+    /* CAO NHẤT - Phải hiển thị trên tất cả */
     overflow: hidden;
     animation: slideDown 0.3s ease;
-    isolation: isolate; /* Tạo stacking context mới */
+    isolation: isolate;
+    /* Tạo stacking context mới */
 }
 
 @keyframes slideDown {
@@ -70,6 +74,7 @@
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -314,7 +319,7 @@
         max-height: calc(100vh - 60px) !important;
         z-index: 10003 !important;
     }
-    
+
     .notification-wrapper {
         margin-right: 0;
     }
@@ -323,9 +328,11 @@
 /* Toast Notification */
 .toast-notification {
     position: fixed;
-    top: 80px; /* Dưới navbar */
+    top: 80px;
+    /* Dưới navbar */
     right: 20px;
-    z-index: 10004 !important; /* Cao hơn dropdown */
+    z-index: 10004 !important;
+    /* Cao hơn dropdown */
     min-width: 250px;
     animation: slideInRight 0.3s ease;
 }
@@ -335,6 +342,7 @@
         opacity: 0;
         transform: translateX(100px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -349,10 +357,380 @@
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.2);
-    z-index: 9998; /* Dưới dropdown nhưng trên navbar */
+    z-index: 9998;
+    /* Dưới dropdown nhưng trên navbar */
     display: none;
 }
 
 .notification-overlay.show {
     display: block;
+}
+
+/* ========== NOTIFICATION PAGE STYLES ========== */
+
+.notification-page-container {
+    /* SỬA LẠI Ở ĐÂY: Bỏ margin-top lớn, dùng padding để giống trang Profile */
+    margin-top: 0 !important; 
+    padding-top: 3rem; /* Tương đương class py-5 của Bootstrap (khoảng 48px) */
+    padding-bottom: 3rem;
+    min-height: calc(100vh - 200px);
+}
+
+.notification-page-card {
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border: none;
+    overflow: hidden;
+    background: #fff;
+    animation: fadeIn 0.5s ease;
+}
+
+/* Header đồng bộ màu với Profile */
+.notification-page-header {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    padding: 1.5rem;
+    border: none;
+    color: white;
+}
+
+.notification-page-header h4 {
+    margin: 0;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Filters Section */
+.notification-page-filters {
+    padding: 1.5rem;
+    background: #fff;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+    white-space: nowrap;
+}
+
+/* Buttons Filter style theo Profile */
+.btn-filter {
+    padding: 0.5rem 1rem;
+    border: 2px solid #dee2e6;
+    background: white;
+    color: #6c757d;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.btn-filter:hover {
+    background: #fff;
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+    transform: translateY(-2px);
+    text-decoration: none;
+}
+
+.btn-filter.active {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+    border-color: #ff6b6b;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.btn-filter .badge {
+    font-size: 10px;
+    padding: 3px 6px;
+    margin-left: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    color: inherit;
+}
+
+.btn-filter.active .badge {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+/* Mark All Read Button */
+.btn-mark-all {
+    padding: 0.5rem 1rem;
+    background: white;
+    border: 2px solid #ffc107;
+    color: #ffc107;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.btn-mark-all:hover {
+    background: #ffc107;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+/* Notification List */
+.notification-page-body {
+    padding: 0;
+    min-height: 400px;
+}
+
+.notification-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.notification-page-item {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    position: relative;
+}
+
+.notification-page-item:last-child {
+    border-bottom: none;
+}
+
+/* Hover effect giống Profile Sidebar items */
+.notification-page-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+}
+
+/* Unread styling */
+.notification-page-item.unread {
+    background: #fff9fa;
+    /* Màu hồng nhạt rất nhẹ */
+    border-left: 4px solid #ff6b6b;
+}
+
+.notification-page-item.unread:hover {
+    background: #fff0f0;
+}
+
+.notification-page-item .notification-icon {
+    width: 45px;
+    height: 45px;
+    min-width: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    background: #f8f9fa;
+    color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.notification-page-item:hover .notification-icon {
+    background: white;
+    color: #ff6b6b;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.notification-page-item.unread .notification-icon {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: white;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+}
+
+.notification-page-item .notification-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-page-item .notification-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    color: #333;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.notification-page-item .notification-text {
+    font-size: 14px;
+    margin-bottom: 0.5rem;
+    color: #666;
+    line-height: 1.5;
+}
+
+.notification-page-item .notification-time {
+    font-size: 12px;
+    color: #999;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Empty State */
+.empty-state {
+    padding: 4rem 2rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    opacity: 0.5;
+    margin-bottom: 1rem;
+    display: block;
+    color: #dee2e6;
+}
+
+/* Pagination Styling - Đồng bộ với Profile */
+.notification-pagination {
+    padding: 1.5rem;
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-page {
+    padding: 0.6rem 1rem;
+    background: white;
+    border: 2px solid #dee2e6;
+    color: #333;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    min-width: 40px;
+}
+
+.btn-page:hover {
+    background: #f8f9fa;
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+    transform: translateY(-2px);
+    text-decoration: none;
+}
+
+.btn-page.active {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+    border-color: #ff6b6b;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+    pointer-events: none;
+}
+
+.btn-page.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    border-color: #e9ecef;
+}
+
+.page-info {
+    font-size: 14px;
+    color: #6c757d;
+    margin: 0 1rem;
+    font-weight: 500;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 991px) {
+    .notification-page-container {
+        /* Điều chỉnh margin-top cho mobile */
+        margin-top: 80px;
+    }
+
+    .notification-page-filters {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .filter-group {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .filter-group .btn-filter {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .btn-mark-all {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .notification-page-header {
+        padding: 1rem;
+    }
+
+    .notification-page-item {
+        padding: 1rem;
+        gap: 0.75rem;
+    }
+
+    .notification-page-item:hover {
+        transform: none;
+        /* Tắt hiệu ứng dịch chuyển trên mobile */
+    }
+
+    .notification-page-item .notification-icon {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        font-size: 18px;
+    }
+
+    .notification-page-item .notification-title {
+        font-size: 14px;
+    }
+
+    .notification-page-item .notification-text {
+        font-size: 13px;
+    }
+
+    .notification-pagination {
+        flex-wrap: wrap;
+        gap: 0.3rem;
+    }
+
+    .page-info {
+        width: 100%;
+        text-align: center;
+        margin: 0.5rem 0;
+        order: -1;
+        /* Đưa text info lên đầu */
+    }
 }

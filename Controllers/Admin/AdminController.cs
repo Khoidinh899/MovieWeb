@@ -9,15 +9,15 @@ using MovieWeb.Services;
 using Microsoft.Extensions.Caching.Memory;
 using MovieWeb.Extensions;
 using MovieWeb.Helpers;
-using MovieWeb.Services.Interfaces; // <-- Đã thêm
-using Hangfire;                     // <-- Đã thêm
-using Microsoft.AspNetCore.SignalR; // <-- THÊM DÒNG NÀY
-using MovieWeb.Hubs;              // <-- THÊM DÒNG NÀY
+using MovieWeb.Services.Interfaces;
+using Hangfire;                    
+using Microsoft.AspNetCore.SignalR; 
+using MovieWeb.Hubs;             
 
 namespace MovieWeb.Controllers
 {
     [Authorize]
-    public partial class AdminController : Controller // <-- Thêm "partial"
+    public partial class AdminController : Controller
     {
         // === TẤT CẢ CÁC SERVICE ĐỀU NẰM Ở FILE CHÍNH ===
         private readonly UserManager<User> _userManager;

@@ -20,6 +20,7 @@ namespace MovieWeb.Controllers
         private readonly SignInManager<User> _signInManager;
         private readonly IFavoriteService _favoriteService;
         private readonly IWatchHistoryService _watchHistoryService;
+        private readonly INotificationService _notificationService;
 
         public ProfileController(
             IProfileService profileService,
@@ -28,7 +29,8 @@ namespace MovieWeb.Controllers
             SignInManager<User> signInManager,
             IStudentEmailService studentEmailService,
             IFavoriteService favoriteService,
-            IWatchHistoryService watchHistoryService)
+            IWatchHistoryService watchHistoryService,
+            INotificationService notificationService)
         {
             _profileService = profileService;
             _logger = logger;
@@ -37,6 +39,7 @@ namespace MovieWeb.Controllers
             _studentEmailService = studentEmailService;
             _favoriteService = favoriteService;
             _watchHistoryService = watchHistoryService;
+            _notificationService = notificationService;
         }
 
         private int GetCurrentUserId()
@@ -310,27 +313,27 @@ namespace MovieWeb.Controllers
             });
         }
 
-        [HttpGet("payment-history")]
-        public async Task<IActionResult> PaymentHistory(int page = 1)
-        {
-            var userId = GetCurrentUserId();
-            if (userId == 0) return RedirectToAction("Login", "Auth");
+       [HttpGet("payment-history")]
+public async Task<IActionResult> PaymentHistory(string status = "all", int page = 1)
+{
+    var userId = GetCurrentUserId();
+    if (userId == 0) return RedirectToAction("Login", "Auth");
 
-            ViewBag.UserProfile = await _profileService.GetUserProfileAsync(userId);
-            const int pageSize = 10;
+    ViewBag.UserProfile = await _profileService.GetUserProfileAsync(userId);
+    const int pageSize = 10;
 
-            var history = await _profileService.GetPaymentHistoryAsync(userId, page, pageSize);
+    var history = await _profileService.GetPaymentHistoryAsync(userId, page, pageSize, status);
 
-            ViewBag.CurrentPage = history.CurrentPage;
-            ViewBag.TotalPages = history.TotalPages;
-            ViewBag.TotalTransactions = history.TotalTransactions;
-            ViewBag.PageSize = history.PageSize;
+    ViewBag.CurrentPage = history.CurrentPage;
+    ViewBag.TotalPages = history.TotalPages;
+    ViewBag.TotalTransactions = history.TotalTransactions;
+    ViewBag.PageSize = history.PageSize;
 
-            if (!history.HasTransactions && page == 1)
-                ViewBag.Message = "Bạn chưa có giao dịch nào.";
+    if (!history.HasTransactions && page == 1)
+        ViewBag.Message = "Bạn chưa có giao dịch nào.";
 
-            return View("~/Views/User/PaymentsHistory.cshtml", history.Transactions);
-        }
+    return View("~/Views/User/PaymentsHistory.cshtml", history.Transactions);
+}
 
         [HttpGet("favorite")]
         public async Task<IActionResult> Favorite(int page = 1)
@@ -382,6 +385,59 @@ namespace MovieWeb.Controllers
                 _logger.LogError(ex, "Error loading watch history");
                 TempData["Error"] = "Không thể tải lịch sử xem";
                 return RedirectToAction("Index", "Home");
+            }
+        }
+
+        [HttpGet("notifications")]
+        public async Task<IActionResult> Notifications(string type = "all", string status = "all", int page = 1)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == 0) return RedirectToAction("Login", "Auth");
+
+                // Lấy UserProfile cho sidebar
+                ViewBag.UserProfile = await _profileService.GetUserProfileAsync(userId);
+
+                // Lấy notifications với pagination
+                const int pageSize = 20;
+                var allNotifications = await _notificationService.GetNotificationsAsync(userId, type, 1000);
+
+                // Lọc theo status
+                var filteredNotifications = status switch
+                {
+                    "unread" => allNotifications.Where(n => n.IsRead == false).ToList(),
+                    "read" => allNotifications.Where(n => n.IsRead == true).ToList(),
+                    _ => allNotifications
+                };
+
+                // Pagination
+                var totalNotifications = filteredNotifications.Count;
+                var totalPages = (int)Math.Ceiling(totalNotifications / (double)pageSize);
+                var notifications = filteredNotifications
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                // Lấy unread count
+                var unreadCount = await _notificationService.GetUnreadCountAsync(userId);
+
+                ViewBag.CurrentType = type;
+                ViewBag.CurrentStatus = status;
+                ViewBag.CurrentPage = page;
+                ViewBag.TotalPages = totalPages;
+                ViewBag.TotalNotifications = totalNotifications;
+                ViewBag.UnreadCount = unreadCount;
+                ViewBag.HasPrevious = page > 1;
+                ViewBag.HasNext = page < totalPages;
+
+                return View("~/Views/User/Notifications.cshtml", notifications);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading notifications page");
+                TempData["Error"] = "Không thể tải danh sách thông báo";
+                return RedirectToAction("Profile", "Profile");
             }
         }
 

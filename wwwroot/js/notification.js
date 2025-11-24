@@ -5,6 +5,7 @@
     let currentTab = 'payment';
     let isDropdownOpen = false;
     let signalRConnection = null;
+    const processedNotifIds = new Set();
 
     // ========== CACHE NOTIFICATIONS ==========
     let notificationCache = {
@@ -17,12 +18,12 @@
         const notificationBell = document.querySelector('.notification-trigger');
         
         if (!notificationBell) {
-            console.log('ℹ️ [Notification] User not logged in - skipping initialization');
+            // console.log('ℹ️ [Notification] User not logged in - skipping initialization');
             return; // ❌ DỪNG NGAY NẾU KHÔNG CÓ CHUÔNG (KHÁCH VÃNG LAI)
         }
 
         // ✅ NẾU CÓ CHUÔNG (USER ĐĂNG NHẬP) -> KHỞI TẠO
-        console.log('✅ [Notification] User logged in - initializing...');
+        // console.log('✅ [Notification] User logged in - initializing...');
         initNotifications();
         initSignalR();
     });
@@ -41,7 +42,8 @@
 
         // ========== RECEIVE NOTIFICATION FROM SIGNALR ==========
         signalRConnection.on("ReceiveNotification", function (notificationObject) {
-            console.log("✅ [SignalR] Received notification:", notificationObject);
+            processedNotifIds
+            // console.log("✅ [SignalR] Received notification:", notificationObject);
 
             const notifType = (notificationObject.type || '').toLowerCase();
             const isPaymentNotif = notifType.includes('payment') || notifType.includes('subscription');
@@ -61,7 +63,7 @@
             if (isPaymentNotif && paymentBadge) incrementBadgeCount(paymentBadge);
             if (isMovieNotif && movieBadge) incrementBadgeCount(movieBadge);
 
-            console.log("✅ [Badge] Updated immediately after SignalR");
+            // console.log("✅ [Badge] Updated immediately after SignalR");
 
             // ========== THÊM VÀO DANH SÁCH NẾU DROPDOWN ĐANG MỞ ==========
             if (isDropdownOpen) {
@@ -76,7 +78,7 @@
 
             // ========== SYNC LẠI SỐ BADGE SAU 3 GIÂY ==========
             setTimeout(() => {
-                console.log("🔄 [Badge] Syncing with server...");
+                // console.log("🔄 [Badge] Syncing with server...");
                 updateBadges();
             }, 3000);
         });
@@ -101,11 +103,11 @@
         });
 
         signalRConnection.start()
-            .then(() => console.log("✅ [SignalR] Connected successfully"))
+            // .then(() => console.log("✅ [SignalR] Connected successfully"))
             .catch(err => console.error("❌ [SignalR] Connection error:", err));
 
         signalRConnection.onclose(error => {
-            console.warn("⚠️ [SignalR] Connection closed", error);
+            // console.warn("⚠️ [SignalR] Connection closed", error);
         });
     }
 
@@ -272,7 +274,7 @@
             isDropdownOpen = true;
 
             setActiveTab(currentTab);
-            console.log("🔄 [Dropdown] Opening - Prefetching both notification types...");
+            // console.log("🔄 [Dropdown] Opening - Prefetching both notification types...");
             prefetchNotifications('payment');
             prefetchNotifications('movie');
             loadNotifications();
@@ -295,7 +297,7 @@
     // ========== PREFETCH NOTIFICATIONS (SILENT) ==========
     function prefetchNotifications(type) {
         if (notificationCache[type] !== null) {
-            console.log(`✅ [Cache] ${type} notifications already cached`);
+            // console.log(`✅ [Cache] ${type} notifications already cached`);
             return;
         }
 
@@ -304,7 +306,7 @@
             .then(data => {
                 if (data.success && data.data) {
                     notificationCache[type] = data.data;
-                    console.log(`✅ [Prefetch] ${type} notifications loaded:`, data.data.length);
+                    // console.log(`✅ [Prefetch] ${type} notifications loaded:`, data.data.length);
                 } else {
                     notificationCache[type] = [];
                 }
@@ -320,7 +322,7 @@
         const listContainer = document.getElementById('notificationList');
 
         if (notificationCache[currentTab] !== null) {
-            console.log(`✅ [Cache] Loading ${currentTab} from cache`);
+            // console.log(`✅ [Cache] Loading ${currentTab} from cache`);
 
             if (notificationCache[currentTab].length > 0) {
                 renderNotifications(notificationCache[currentTab]);
@@ -341,11 +343,11 @@
             .then(response => response.ok ? response.json() : Promise.reject('Network error'))
             .then(data => {
                 if (data.success && data.data && data.data.length > 0) {
-                    console.log('📥 [API] Received notifications:', data.data.map(n => ({
-                        id: n.notificationId || n.NotificationId,
-                        title: n.title || n.Title,
-                        createdAt: n.createdAt || n.CreatedAt
-                    })));
+                    // console.log('📥 [API] Received notifications:', data.data.map(n => ({
+                    //     id: n.notificationId || n.NotificationId,
+                    //     title: n.title || n.Title,
+                    //     createdAt: n.createdAt || n.CreatedAt
+                    // })));
 
                     notificationCache[currentTab] = data.data;
                     renderNotifications(data.data);
@@ -526,21 +528,65 @@
     }
 
     function showToast(type, message) {
-        const typeClass = type === 'success' ? 'success' : (type === 'info' ? 'info' : 'danger');
-        const iconClass = type === 'success' ? 'check-circle' : (type === 'info' ? 'info-circle' : 'exclamation-triangle');
-
         const toast = document.createElement('div');
-        toast.className = `alert alert-${typeClass} d-flex align-items-center toast-notification`;
-        toast.innerHTML = `
-            <i class="bi bi-${iconClass} me-2 fs-5"></i>
-            <span>${escapeHtml(message)}</span>
-        `;
-
+        toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} toast-notification`;
+        toast.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : 'x-circle'} me-2"></i>${message}`;
         document.body.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(100px)';
-            setTimeout(() => toast.remove(), 300);
-        }, 4000);
+
+        setTimeout(() => toast.remove(), 3000);
     }
+
+    // ========== NOTIFICATION PAGE FUNCTIONS ==========
+    // (Chỉ chạy trên trang /user/notifications)
+    
+    window.markAsReadAndRedirect = async function (notificationId, url) {
+        try {
+            const token = document.getElementById('RequestVerificationToken')?.value;
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['RequestVerificationToken'] = token;
+
+            const response = await fetch(`/api/notifications/${notificationId}/mark-read`, {
+                method: 'POST',
+                headers: headers
+            });
+
+            if (response.ok) {
+                // Nếu có URL thì redirect, không thì reload
+                if (url && url !== '#' && url !== '') {
+                    window.location.href = url;
+                } else {
+                    window.location.reload();
+                }
+            }
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    };
+
+    window.markAllAsReadPage = async function (type) {
+        if (!confirm('Đánh dấu tất cả thông báo đã đọc?')) return;
+
+        try {
+            const token = document.getElementById('RequestVerificationToken')?.value;
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['RequestVerificationToken'] = token;
+
+            const response = await fetch(`/api/notifications/mark-all-read?type=${type}`, {
+                method: 'POST',
+                headers: headers
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                showToast('success', `Đã đánh dấu ${result.count} thông báo là đã đọc`);
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showToast('error', 'Không thể đánh dấu thông báo');
+            }
+        } catch (error) {
+            console.error('Error marking all as read:', error);
+            showToast('error', 'Có lỗi xảy ra');
+        }
+    };
+
 })();

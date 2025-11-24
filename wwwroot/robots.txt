@@ -1,0 +1,40 @@
+# robots.txt for MoonPhim.me
+# Created: 20/11/2025
+
+# Allow all bots
+User-agent: *
+Allow: /
+
+# Block pages that don't need indexing
+Disallow: /Admin/
+Disallow: /api/
+Disallow: /Account/Login
+Disallow: /Account/Register
+Disallow: /*.json$
+Disallow: /*?*returnUrl=
+Disallow: /Payment/
+
+# Allow Googlebot to access public APIs
+User-agent: Googlebot
+Allow: /api/ads/
+Allow: /api/comments/
+Allow: /api/episodes/
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+# Sitemap
+Sitemap: https://moonphim.me/sitemap.xml
+
+# Crawl delay (optional - reduce server load)
+Crawl-delay: 1

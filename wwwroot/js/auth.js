@@ -110,7 +110,7 @@ function initializeAuth() {
         const token = urlParams.get('token');
 
         if (userId && token) {
-            console.log('🔑 Reset password detected:', { userId, token });
+            // console.log('🔑 Reset password detected:', { userId, token });
             
             switchToResetPassword(userId, token);
             authModal.show();

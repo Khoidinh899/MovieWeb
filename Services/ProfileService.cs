@@ -24,7 +24,7 @@ namespace MovieWeb.Services
         Task<ProfileResult> DeleteAvatarAsync(int userId);
 
         // ===== THÊM HÀM MỚI NÀY =====
-        Task<PaymentHistoryDto> GetPaymentHistoryAsync(int userId, int page, int pageSize = 10);
+        Task<PaymentHistoryDto> GetPaymentHistoryAsync(int userId, int page, int pageSize = 10, string status = "all");
         // =============================
 
         // Admin methods
@@ -337,56 +337,62 @@ namespace MovieWeb.Services
         }
 
         // ===== THÊM HÀM MỚI NÀY VÀO =====
-        public async Task<PaymentHistoryDto> GetPaymentHistoryAsync(int userId, int page, int pageSize = 10)
+        public async Task<PaymentHistoryDto> GetPaymentHistoryAsync(int userId, int page, int pageSize = 10, string status = "all")
+{
+    try
+    {
+        // Query cơ bản
+        var query = _context.Transactions
+            .Where(t => t.UserId == userId);
+
+        // Filter theo status nếu không phải "all"
+        if (status != "all")
         {
-            try
-            {
-                var totalTransactions = await _context.Transactions
-                    .Where(t => t.UserId == userId)
-                    .CountAsync();
-
-                var transactions = await _context.Transactions
-                    .Where(t => t.UserId == userId)
-                    .Include(t => t.SubscriptionPlan)
-                    .Include(t => t.UserSubscription)
-                    .OrderByDescending(t => t.CreatedAt)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Select(t => new PaymentHistoryViewModel // Giả sử VM này đã được định nghĩa
-                    {
-                        TransactionId = t.TransactionId,
-                        SubscriptionId = t.SubscriptionId,
-                        TransactionCode = t.TransactionCode,
-                        PlanName = t.SubscriptionPlan != null ? t.SubscriptionPlan.DisplayName : "Không xác định",
-                        AmountVND = t.AmountVND,
-                        Currency = t.Currency,
-                        Status = t.Status,
-                        PaymentMethod = t.PaymentMethod,
-                        CreatedAt = t.CreatedAt,
-                        StatusDisplay = t.StatusDisplay,
-                        SubscriptionStatus = t.UserSubscription != null ? t.UserSubscription.Status : null,
-                        SubscriptionEndDate = t.UserSubscription != null ? t.UserSubscription.EndDate : null
-                    })
-                    .ToListAsync();
-
-                var totalPages = (int)Math.Ceiling(totalTransactions / (double)pageSize);
-
-                return new PaymentHistoryDto
-                {
-                    Transactions = transactions,
-                    CurrentPage = page,
-                    TotalPages = totalPages,
-                    TotalTransactions = totalTransactions,
-                    PageSize = pageSize
-                };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting payment history for userId: {UserId}", userId);
-                // Trả về DTO rỗng khi có lỗi
-                return new PaymentHistoryDto { CurrentPage = page, PageSize = pageSize };
-            }
+            query = query.Where(t => t.Status.ToLower() == status.ToLower());
         }
+
+        var totalTransactions = await query.CountAsync();
+
+        var transactions = await query
+            .Include(t => t.SubscriptionPlan)
+            .Include(t => t.UserSubscription)
+            .OrderByDescending(t => t.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(t => new PaymentHistoryViewModel
+            {
+                TransactionId = t.TransactionId,
+                SubscriptionId = t.SubscriptionId,
+                TransactionCode = t.TransactionCode,
+                PlanName = t.SubscriptionPlan != null ? t.SubscriptionPlan.DisplayName : "Không xác định",
+                AmountVND = t.AmountVND,
+                Currency = t.Currency,
+                Status = t.Status,
+                PaymentMethod = t.PaymentMethod,
+                CreatedAt = t.CreatedAt,
+                StatusDisplay = t.StatusDisplay,
+                SubscriptionStatus = t.UserSubscription != null ? t.UserSubscription.Status : null,
+                SubscriptionEndDate = t.UserSubscription != null ? t.UserSubscription.EndDate : null
+            })
+            .ToListAsync();
+
+        var totalPages = (int)Math.Ceiling(totalTransactions / (double)pageSize);
+
+        return new PaymentHistoryDto
+        {
+            Transactions = transactions,
+            CurrentPage = page,
+            TotalPages = totalPages,
+            TotalTransactions = totalTransactions,
+            PageSize = pageSize
+        };
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error getting payment history for userId: {UserId}", userId);
+        return new PaymentHistoryDto { CurrentPage = page, PageSize = pageSize };
+    }
+}
 
         // Lấy danh sách tất cả users
         public async Task<List<UserProfileDto>> GetAllUsersAsync()

@@ -272,8 +272,8 @@ namespace MovieWeb.Controllers
                 {
                     _backgroundJobClient.Enqueue<IMovieSyncService>(
                         service => service.SyncMovieFromApiBySlug(movie.ApiId, movie.MovieId));
-                    
-                    _logger.LogInformation("Enqueued episode sync job for movie: {MovieName} (ID: {MovieId}) with ApiSlug: {ApiSlug}", 
+
+                    _logger.LogInformation("Enqueued episode sync job for movie: {MovieName} (ID: {MovieId}) with ApiSlug: {ApiSlug}",
                         movie.Name, movie.MovieId, movie.ApiId);
                 }
                 // ==== KẾT THÚC ====
@@ -494,7 +494,7 @@ namespace MovieWeb.Controllers
                         .Select(n => n.Trim())
                         .Where(n => !string.IsNullOrWhiteSpace(n))
                         .ToList();
-                    
+
                     foreach (var categoryName in categoryNames)
                     {
                         var category = await _context.Categories.FirstOrDefaultAsync(c => c.Name == categoryName);
@@ -617,6 +617,7 @@ namespace MovieWeb.Controllers
         }
 
         // POST: /Admin/ToggleMovieStatus
+        // POST: /Admin/ToggleMovieStatus
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleMovieStatus(int movieId, bool isActive)
@@ -638,6 +639,15 @@ namespace MovieWeb.Controllers
                 movie.UpdatedAt = DateTime.Now;
                 await _context.SaveChangesAsync();
 
+                // 💡 BƯỚC 1: XÓA TẤT CẢ CACHE LIÊN QUAN ĐẾN PHIM (FIX LỖI HIỂN THỊ TRÊN TRANG CHỦ)
+                // Mình giả định IMemoryCache đã được inject là _cache
+                _cache.Remove("banner_movies_entities");
+                _cache.Remove("latest_movies_entities");
+                _cache.Remove("single_movies_entities");
+                _cache.Remove("series_movies_entities");
+                _cache.Remove("hoathinh_movies_entities");
+                // ---------------------------------------------------------------------------------
+
                 await LogAdminActionAsync("TOGGLE_MOVIE_STATUS",
                     $"Changed movie {movie.Name} status to {(isActive ? "Active" : "Inactive")}",
                     movieId.ToString());
@@ -646,7 +656,7 @@ namespace MovieWeb.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error toggling movie status for ID: {MovieId}", movieId);
+                // _logger.LogError(ex, "Error toggling movie status for ID: {MovieId}", movieId);
                 return Json(new { success = false, message = "Có lỗi xảy ra" });
             }
         }

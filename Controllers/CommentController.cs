@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using MovieWeb.Data;
 using MovieWeb.Models.Entities;
 using System.Security.Claims;
+using Microsoft.AspNetCore.SignalR;
+using MovieWeb.Hubs;
+using MovieWeb.Services.Interfaces;
 
 namespace MovieWeb.Controllers
 {
@@ -12,22 +15,31 @@ namespace MovieWeb.Controllers
     public class CommentController : Controller
     {
         private readonly MovieWebDbContext _context;
+        private readonly IHubContext<NotificationHub> _notificationHubContext;
+        private readonly INotificationService _notificationService;
+        private readonly ILogger<CommentController> _logger;
 
-        public CommentController(MovieWebDbContext context)
+        public CommentController
+        (MovieWebDbContext context, 
+        IHubContext<NotificationHub> notificationHubContext, 
+        INotificationService notificationService,
+        ILogger<CommentController> logger)
         {
             _context = context;
+            _notificationHubContext = notificationHubContext;
+            _notificationService = notificationService;
+            _logger = logger;
         }
 
         // ============================================================
         // 💬 GỬI BÌNH LUẬN / ĐÁNH GIÁ
         // ============================================================
-        [Authorize] // ✅ Yêu cầu đăng nhập (user hoặc admin)
+        [Authorize]
         [HttpPost("add")]
         public async Task<IActionResult> Add([FromForm] int movieId, [FromForm] string content, [FromForm] int? rating)
         {
             try
             {
-                // ✅ Lấy user ID từ claim
                 var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (userIdClaim == null)
                 {
@@ -41,14 +53,12 @@ namespace MovieWeb.Controllers
                     return BadRequest(new { success = false, message = "Nội dung không được để trống." });
                 }
 
-                // ✅ Kiểm tra phim có tồn tại không
                 var movieExists = await _context.Movies.AnyAsync(m => m.MovieId == movieId);
                 if (!movieExists)
                 {
                     return NotFound(new { success = false, message = "Phim không tồn tại." });
                 }
 
-                // ✅ Tạo mới comment
                 var comment = new Comment
                 {
                     MovieId = movieId,
@@ -62,7 +72,6 @@ namespace MovieWeb.Controllers
                 _context.Comments.Add(comment);
                 await _context.SaveChangesAsync();
 
-                // ✅ Lấy thông tin user để trả về
                 var user = await _context.Users.FindAsync(userId);
 
                 return Ok(new
@@ -91,22 +100,16 @@ namespace MovieWeb.Controllers
         // ============================================================
         // 💬 LẤY DANH SÁCH BÌNH LUẬN (AJAX)
         // ============================================================
-        // === LIST JSON (sửa canDelete & null-safe user fields)
         [AllowAnonymous]
         [HttpGet("list-json")]
         public async Task<IActionResult> ListJson(int movieId)
         {
-            // Lấy danh tính user hiện tại
             var currentUserName = User.Identity?.Name ?? "";
-           // 🔴 SỬA ĐỔI: Kiểm tra quyền Admin bằng cách so sánh Username.
-        // Việc này giải quyết lỗi khi User.IsInRole("Admin") bị lỗi dù Role đã được gán.
-        var isCurrentUserAdmin = string.Equals(currentUserName, "admin", StringComparison.OrdinalIgnoreCase); 
-        // ^^^^^^ Dùng cách này thay vì User.IsInRole("Admin"); ^^^^^^
+            var isCurrentUserAdmin = string.Equals(currentUserName, "admin", StringComparison.OrdinalIgnoreCase);
 
-        var currentUserIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var currentUserIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var currentUserId = currentUserIdClaim != null ? int.Parse(currentUserIdClaim) : (int?)null;
 
-            // Lấy tất cả bình luận phim này, kèm user
             var comments = await _context.Comments
                 .Include(c => c.User)
                 .Where(c => c.MovieId == movieId && c.IsActive == true)
@@ -124,8 +127,7 @@ namespace MovieWeb.Controllers
                     userName = c.User?.UserName ?? "Ẩn danh",
                     avatar = !string.IsNullOrEmpty(c.User?.Avatar) ? c.User.Avatar : "/images/nouser.png",
                     subscriptionType = c.User.SubscriptionType,
-                    isAdmin = (c.User?.UserName?.ToLower() == "admin"), // còn giữ để hiển thị badge nếu muốn
-                    // canDelete: admin hoặc chính chủ comment
+                    isAdmin = (c.User?.UserName?.ToLower() == "admin"),
                     canDelete = isCurrentUserAdmin || string.Equals(currentUserName, c.User?.UserName, StringComparison.OrdinalIgnoreCase),
                     replies = comments
                         .Where(r => r.ParentCommentId == c.CommentId)
@@ -149,13 +151,14 @@ namespace MovieWeb.Controllers
 
         // ============================================================
         // 💬 TRẢ LỜI BÌNH LUẬN
-        [Authorize] // ⚙️ Thêm dòng này
+        // ============================================================
+        [Authorize]
         [HttpPost("reply")]
         public async Task<IActionResult> Reply([FromForm] int parentId, [FromForm] int movieId, [FromForm] string content)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("UserId")
-            ?? User.FindFirstValue(ClaimTypes.Name);
+                           ?? User.FindFirstValue("UserId")
+                           ?? User.FindFirstValue(ClaimTypes.Name);
 
             if (userIdClaim == null)
             {
@@ -169,7 +172,11 @@ namespace MovieWeb.Controllers
 
             var userId = int.Parse(userIdClaim);
 
-            var parentComment = await _context.Comments.FindAsync(parentId);
+            var parentComment = await _context.Comments
+                .Include(c => c.Movie)
+                .Include(c => c.User)
+                .FirstOrDefaultAsync(c => c.CommentId == parentId);
+
             if (parentComment == null)
             {
                 return NotFound(new { success = false, message = "Bình luận gốc không tồn tại." });
@@ -188,7 +195,50 @@ namespace MovieWeb.Controllers
             _context.Comments.Add(reply);
             await _context.SaveChangesAsync();
 
-            var user = await _context.Users.FindAsync(userId);
+            var currentUser = await _context.Users.FindAsync(userId);
+
+            // ========== GỬI THÔNG BÁO ==========
+            try
+            {
+                var receiverId = parentComment.UserId;
+
+                if (userId != receiverId)
+                {
+                    var senderName = currentUser?.UserName ?? "Ai đó";
+                    var movieName = parentComment.Movie?.Name ?? "phim";
+                    var notificationTitle = "💬 Phản hồi mới";
+                    var notificationContent = $"{senderName} đã trả lời bình luận của bạn trong phim \"{movieName}\"";
+                    var notificationUrl = $"/phim/{parentComment.Movie?.Slug}";
+
+                    // 1️⃣ Lưu vào DB
+                    await _notificationService.CreateNotificationAsync(
+                        receiverId,
+                        notificationTitle,
+                        notificationContent,
+                        "CommentReply",
+                        notificationUrl
+                    );
+
+                    // 2️⃣ Gửi SignalR Real-time
+                    await _notificationHubContext.Clients
+                        .User(receiverId.ToString())
+                        .SendAsync("ReceiveNotification", new
+                        {
+                            Title = notificationTitle,
+                            Content = notificationContent,
+                            Url = notificationUrl,
+                            Type = "CommentReply",
+                            CreatedAt = DateTime.Now, // ✅ ĐỔI: UTC -> Local Time
+                            IsRead = false
+                        });
+
+                    _logger.LogInformation("✅ Sent CommentReply notification to User {ReceiverId}", receiverId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error sending CommentReply notification");
+            }
 
             return Ok(new
             {
@@ -199,17 +249,18 @@ namespace MovieWeb.Controllers
                     reply.CommentId,
                     reply.Content,
                     reply.CreatedAt,
-                    userName = user?.UserName,
-                    avatar = !string.IsNullOrEmpty(user?.Avatar) ? user.Avatar : "/images/nouser.png"
+                    userName = currentUser?.UserName,
+                    avatar = !string.IsNullOrEmpty(currentUser?.Avatar) ? currentUser.Avatar : "/images/nouser.png"
                 }
             });
         }
 
         // ============================================================
-        // ❌ XÓA BÌNH LUẬN (Admin)
-        [Authorize] // yêu cầu đăng nhập
+        // ❌ XÓA BÌNH LUẬN (Admin hoặc Owner)
+        // ============================================================
+        [Authorize]
         [HttpPost("delete")]
-        public async Task<IActionResult> Delete([FromQuery] int commentId) // giữ [FromQuery] để JS hiện tại còn hợp lệ
+        public async Task<IActionResult> Delete([FromQuery] int commentId)
         {
             var userName = User.Identity?.Name;
             if (string.IsNullOrEmpty(userName))
@@ -219,19 +270,16 @@ namespace MovieWeb.Controllers
             if (comment == null)
                 return NotFound(new { success = false, message = "Không tìm thấy bình luận cần xóa." });
 
-            // admin có thể xóa tất cả; chủ comment có thể xóa comment của mình
-           var isAdmin = string.Equals(userName, "admin", StringComparison.OrdinalIgnoreCase);
+            var isAdmin = string.Equals(userName, "admin", StringComparison.OrdinalIgnoreCase);
             var isOwner = string.Equals(userName, (await _context.Users.FindAsync(comment.UserId))?.UserName, StringComparison.OrdinalIgnoreCase);
 
             if (!isAdmin && !isOwner)
                 return Forbid("Chỉ admin hoặc chủ bình luận mới được phép xóa.");
-                
-            // ✅ Logic đã đúng: Xóa comment nếu là Admin HOẶC là Owner
+
             _context.Comments.Remove(comment);
             await _context.SaveChangesAsync();
 
             return Ok(new { success = true, message = "Đã xóa bình luận thành công!" });
         }
     }
-
-    }
+}

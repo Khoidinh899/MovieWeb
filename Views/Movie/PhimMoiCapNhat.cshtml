@@ -1,28 +1,68 @@
 @model List<MovieWeb.Models.Entities.Movie>
 @using MovieWeb.Models.ViewModels
+
 @{
     Layout = "_Layout";
-    var categoryName = ViewBag.CategoryName as string ?? "Phim bộ";
+    var categoryName = "Phim Mới Cập Nhật";
     var filters = ViewBag.Filters as MovieFilterViewModel ?? new MovieFilterViewModel();
+    
+    // ===== BẮT ĐẦU KHỐI SEO =====
+    var request = Context.Request;
+    var baseUrl = $"{request.Scheme}://{request.Host}";
+    var currentUrl = $"{baseUrl}{request.Path}{request.QueryString}";
+    var defaultSeoImage = $"{baseUrl}/images/iconmoon.png";
+    
+    // Tạo title động
+    var pageTitle = "Phim Mới Cập Nhật | Phim Mới Nhất Hôm Nay";
+    var seoDescription = ViewBag.SeoDescription as string ?? "Phim mới cập nhật liên tục, xem phim online miễn phí chất lượng cao, cập nhật nhanh nhất tại MoonPhim.";
+    
+    ViewData["Title"] = pageTitle;
+    // ===== KẾT THÚC KHỐI SEO =====
 }
-@if (!string.IsNullOrEmpty(ViewBag.SeoDescription as string))
-{
-    <meta name="description" content="@ViewBag.SeoDescription" />
-}
+
+@* ===== META TAGS SEO ===== *@
+<meta name="description" content="@seoDescription" />
+<meta name="keywords" content="phim mới, phim mới cập nhật, phim mới nhất, xem phim mới" />
+
+@* Open Graph cho Facebook *@
+<meta property="og:type" content="website" />
+<meta property="og:title" content="@pageTitle" />
+<meta property="og:description" content="@seoDescription" />
+<meta property="og:url" content="@currentUrl" />
+<meta property="og:image" content="@defaultSeoImage" />
+<meta property="og:site_name" content="MoonPhim" />
+<meta property="og:locale" content="vi_VN" />
+
+@* Twitter Card *@
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="@pageTitle" />
+<meta name="twitter:description" content="@seoDescription" />
+<meta name="twitter:image" content="@defaultSeoImage" />
+<meta name="twitter:site" content="@("@")MoonPhim" />
+
+@* Canonical URL *@
+<link rel="canonical" href="@currentUrl" />
+
 @functions {
-    // 💡 (Bạn hãy copy hàm GetPosterUrl của bạn (từ file Search.cshtml) vào đây)
     private string GetPosterUrl(MovieWeb.Models.Entities.Movie m)
     {
-        // ... (Giống hệt file Search.cshtml)
         var candidate = !string.IsNullOrEmpty(m.ThumbUrl) ? m.ThumbUrl : m.PosterUrl;
+
         if (string.IsNullOrEmpty(candidate))
             return Url.Content("~/images/no-image.jpg");
+
         candidate = candidate.Trim();
-        if (candidate.StartsWith("http") || candidate.StartsWith("//")) return candidate;
-        if (candidate.StartsWith("/")) return candidate;
+
+        if (candidate.StartsWith("http") || candidate.StartsWith("//"))
+            return candidate;
+
+        if (candidate.StartsWith("/"))
+            return candidate;
+
         if (candidate.IndexOf("uploads", System.StringComparison.OrdinalIgnoreCase) >= 0)
             return candidate.StartsWith("/") ? candidate : "/" + candidate;
-        var fallbackBase = "https://img.ophim.live/uploads/movies/"; 
+
+        var fallbackBase = "https://img.ophim.live/uploads/movies/";
         return fallbackBase + candidate;
     }
 }
@@ -30,10 +70,30 @@
 @section Styles {
     <link rel="stylesheet" href="~/css/filter-sidebar.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/phimbo.css" asp-append-version="true" />
+
+    @* ===== BREADCRUMB SCHEMA ===== *@
+    <script type="application/ld+json">
+    {
+        "@@context": "https://schema.org",
+        "@@type": "BreadcrumbList",
+        "itemListElement": [{
+            "@@type": "ListItem",
+            "position": 1,
+            "name": "Trang chủ",
+            "item": "@(Context.Request.Scheme)://@(Context.Request.Host)/"
+        },{
+            "@@type": "ListItem",
+            "position": 2,
+            "name": "Phim Mới Cập Nhật"
+        }]
+    }
+    </script>
 }
 
 <section class="container py-4">
-    <h2 class="text-white mb-4">@categoryName</h2>
+    <h2 class="text-white mb-4">
+        <i class="fas fa-fire text-danger"></i> @categoryName
+    </h2>
 
     @* ===== RENDER BỘ LỌC ===== *@
     @await Html.PartialAsync("_FilterSidebar", filters)
@@ -50,12 +110,18 @@
             @foreach (var movie in Model)
             {
                 var imgUrl = GetPosterUrl(movie);
+
                 <div class="col-6 col-sm-4 col-md-3 col-lg-2">
                     <div class="movie-card position-relative overflow-hidden rounded shadow-sm">
                         <a href="/phim/@movie.Slug" class="text-decoration-none text-white">
-                            <img src="@imgUrl" alt="@movie.Name" class="img-fluid w-100" style="aspect-ratio: 2/3; object-fit: cover;" onerror="this.src='@Url.Content("~/images/no-image.jpg")'" />
+                            <img src="@imgUrl"
+                                 alt="@movie.Name"
+                                 class="img-fluid w-100"
+                                 style="aspect-ratio: 2/3; object-fit: cover;"
+                                 onerror="this.src='@Url.Content("~/images/no-image.jpg")'" />
                             <div class="p-2">
                                 <h6 class="text-truncate mb-0">@movie.Name</h6>
+                                <small class="text-muted">@movie.EpisodeCurrent</small>
                             </div>
                         </a>
                     </div>
@@ -63,7 +129,7 @@
             }
         </div>
 
-        @* ===== PHÂN TRANG (ĐÃ SỬA LỖI) ===== *@
+        @* ===== PHÂN TRANG ===== *@
         @if (ViewBag.TotalPages > 1)
         {
             <nav class="mt-4">
@@ -130,22 +196,23 @@
 </section>
 
 <style>
-    .movie-card img { transition: opacity .25s ease; }
-    .movie-card:hover img { opacity: .85; }
+    .movie-card img {
+        transition: opacity .25s ease;
+    }
+    .movie-card:hover img {
+        opacity: .85;
+    }
 </style>
+
 @section Scripts {
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        
-        // Gọi thẳng popup Thể Loại
-        fetchPopupAd("Popup_PhimBo");
+        fetchPopupAd("Popup_PhimMoi");
 
-        // --- Bắt đầu hàm trợ giúp (Copy từ TrangChu.cshtml và sửa lại) ---
-
-        // Hàm gọi API
         async function fetchPopupAd(placementName) {
             try {
                 const response = await fetch(`/api/ads/get-placements?placements=${placementName}`);
+
                 if (!response.ok) {
                     console.error(`Lỗi API (${placementName}):`, response.statusText);
                     return;
@@ -153,17 +220,17 @@
 
                 const banners = await response.json();
                 if (banners && banners.length > 0) {
-                    const banner = banners[0]; 
-                    // Tạo ID modal động để tránh trùng lặp
+                    const banner = banners[0];
                     const modalId = `adModal_${placementName}`;
                     const modalHtml = createAdModalHtml(banner, modalId);
-                    
+
                     document.body.insertAdjacentHTML('beforeend', modalHtml);
-                    
+
                     var adModalElement = document.getElementById(modalId);
                     if (adModalElement) {
                         var adModal = new bootstrap.Modal(adModalElement);
-                        adModal.show(); 
+                        adModal.show();
+
                         adModalElement.addEventListener('hidden.bs.modal', function () {
                             adModalElement.remove();
                         });
@@ -174,35 +241,36 @@
             }
         }
 
-        // Hàm tạo HTML (Lấy từ TrangChu.cshtml)
         function createAdModalHtml(banner, modalId) {
             let closeButtonCss = `
-                position: absolute; 
-                top: -15px; 
-                right: -10px; 
-                background-color: white; 
-                border-radius: 50%; 
-                opacity: 1; 
+                position: absolute;
+                top: -15px;
+                right: -10px;
+                background-color: white;
+                border-radius: 50%;
+                opacity: 1;
                 box-shadow: 0 0 10px rgba(0,0,0,0.5);
                 width: 30px;
                 height: 30px;
                 padding: 0;
             `;
-            
+
             return `
-            <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
-              <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content" style="background-color: transparent; border: none;">
-                  <div class="modal-body" style="padding: 0; position: relative;">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" 
-                            aria-label="Close" style="${closeButtonCss}"></button>
-                    <a href="${banner.clickUrl}" target="_blank" rel="noopener noreferrer">
-                      <img src="${banner.adContentUrl}" class="img-fluid rounded" alt="${banner.adName}">
-                    </a>
+                <div class="modal fade" id="${modalId}" tabindex="-1" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content" style="background-color: transparent; border: none;">
+                      <div class="modal-body" style="padding: 0; position: relative;">
+                        <button type="button" class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Close"
+                                style="${closeButtonCss}"></button>
+                        <a href="${banner.clickUrl}" target="_blank" rel="noopener noreferrer">
+                            <img src="${banner.adContentUrl}" class="img-fluid rounded" alt="${banner.adName}">
+                        </a>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>`;
+                </div>`;
         }
     });
 </script>

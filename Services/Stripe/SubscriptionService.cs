@@ -296,12 +296,12 @@ namespace MovieWeb.Services
         {
             var subscription = await _context.UserSubscriptions
                 .Include(s => s.User)
-                .Include(s => s.SubscriptionPlan) // ← THÊM dòng này để lấy tên gói
+                .Include(s => s.SubscriptionPlan)
                 .FirstOrDefaultAsync(s => s.SubscriptionId == subscriptionId);
 
             if (subscription == null) return false;
 
-            // 1. Đổi status subscription thành "cancelled"
+            // 1️⃣ Đổi status subscription thành "cancelled"
             subscription.Status = "cancelled";
             subscription.CancelledAt = DateTime.Now;
             subscription.CancellationReason = reason;
@@ -316,25 +316,16 @@ namespace MovieWeb.Services
             await _context.SaveChangesAsync();
 
             var daysRemaining = (subscription.EndDate - DateTime.Now).Days;
+            var planType = subscription.SubscriptionPlan?.PlanType ?? "Premium";
 
             Console.WriteLine($"✅ Đã hủy gói thành công:\n" +
                 $"- SubscriptionId: {subscriptionId}\n" +
                 $"- User vẫn dùng đến: {subscription.EndDate:dd/MM/yyyy}\n" +
                 $"- Ngày còn lại: {daysRemaining} ngày");
-            // 2. Tạo notification và gửi real-time qua SignalR
+
+            // 2️⃣ Gửi notification qua DB + SignalR
             try
             {
-                var planType = subscription.SubscriptionPlan?.PlanType ?? "Premium";
-
-                // 1. Lưu vào DB
-                await _notificationService.CreateCancelSubscriptionNotificationAsync(
-                    subscription.UserId,
-                    planType,
-                    subscription.EndDate,
-                    daysRemaining
-                );
-
-                // 2. Gửi SignalR real-time
                 var planDisplay = planType.ToLower() switch
                 {
                     "premium" => "Premium",
@@ -342,23 +333,33 @@ namespace MovieWeb.Services
                     _ => planType
                 };
 
-                var notificationDto = new
-                {
-                    NotificationId = 0,
-                    Title = "⚠️ Gói đăng ký đã được hủy",
-                    Content = $"Gói {planDisplay} của bạn đã được hủy thành công. " +
-                             $"Bạn vẫn có thể sử dụng đầy đủ tính năng đến hết ngày {subscription.EndDate:dd/MM/yyyy} " +
-                             $"(còn {daysRemaining} ngày). " +
-                             $"Sau đó tài khoản sẽ tự động chuyển về gói Free.",
-                    Type = "CancelSubscription",
-                    Url = "/user/profile",
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow
-                };
+                var notificationTitle = "⚠️ Gói đăng ký đã được hủy";
+                var notificationContent = $"Gói {planDisplay} của bạn đã được hủy thành công. " +
+                                 $"Bạn vẫn có thể sử dụng đầy đủ tính năng đến hết ngày {subscription.EndDate:dd/MM/yyyy} " +
+                                 $"(còn {daysRemaining} ngày). " +
+                                 $"Sau đó tài khoản sẽ tự động chuyển về gói Free.";
 
+                // 🔹 Lưu vào DB (dùng NotificationService)
+                await _notificationService.CreateNotificationAsync(
+                    subscription.UserId,
+                    notificationTitle,
+                    notificationContent,
+                    "CancelSubscription",
+                    "/user/payment-history"
+                );
+
+                // 🔹 Gửi SignalR Real-time
                 await _hubContext.Clients
                     .User(subscription.UserId.ToString())
-                    .SendAsync("ReceiveNotification", notificationDto);
+                    .SendAsync("ReceiveNotification", new
+                    {
+                        Title = notificationTitle,
+                        Content = notificationContent,
+                        Type = "CancelSubscription",
+                        Url = "/user/payment-history",
+                        IsRead = false,
+                        CreatedAt = DateTime.Now // ✅ ĐỔI: UTC -> Local Time
+                    });
 
                 _logger.LogInformation("✅ Sent cancel subscription notification to User {UserId}", subscription.UserId);
             }
@@ -367,6 +368,7 @@ namespace MovieWeb.Services
                 _logger.LogError(ex, "❌ Error sending cancel notification to User {UserId}", subscription.UserId);
                 // Không throw để không làm fail việc hủy gói
             }
+
             return true;
         }
         public async Task<bool> RenewSubscriptionAsync(int subscriptionId)

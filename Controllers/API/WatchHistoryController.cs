@@ -97,60 +97,58 @@ namespace MovieWeb.Controllers.API
             }
         }
         [HttpDelete("movie/{movieId}")]
-public async Task<IActionResult> RemoveHistoryByMovie(int movieId)
-{
-    try
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+        public async Task<IActionResult> RemoveHistoryByMovie(int movieId)
         {
-            return Unauthorized(new { message = "Vui lòng đăng nhập" });
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized(new { message = "Vui lòng đăng nhập" });
+                }
+
+                var success = await _watchHistoryService.RemoveHistoryByMovieAsync(userId, movieId);
+                if (!success)
+                {
+                    return NotFound(new { message = "Không tìm thấy lịch sử xem" });
+                }
+
+                return Ok(new { message = "Đã xóa lịch sử xem", success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing history by movie");
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi xóa lịch sử" });
+            }
         }
 
-        var success = await _watchHistoryService.RemoveHistoryByMovieAsync(userId, movieId);
-        if (!success)
+        // ⭐ THÊM API: Xóa toàn bộ lịch sử
+        [HttpDelete("clear-all")]
+        public async Task<IActionResult> ClearAllHistory()
         {
-            return NotFound(new { message = "Không tìm thấy lịch sử xem" });
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                {
+                    return Unauthorized(new { message = "Vui lòng đăng nhập" });
+                }
+
+                var success = await _watchHistoryService.ClearAllHistoryAsync(userId);
+                if (!success)
+                {
+                    return BadRequest(new { message = "Không thể xóa lịch sử" });
+                }
+
+                return Ok(new { message = "Đã xóa toàn bộ lịch sử xem", success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error clearing all history");
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi xóa lịch sử" });
+            }
         }
 
-        return Ok(new { message = "Đã xóa lịch sử xem", success = true });
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error removing history by movie");
-        return StatusCode(500, new { message = "Đã xảy ra lỗi khi xóa lịch sử" });
-    }
-}
-
-// ⭐ THÊM API: Xóa toàn bộ lịch sử
-[HttpDelete("clear-all")]
-public async Task<IActionResult> ClearAllHistory()
-{
-    try
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-        {
-            return Unauthorized(new { message = "Vui lòng đăng nhập" });
-        }
-
-        var success = await _watchHistoryService.ClearAllHistoryAsync(userId);
-        if (!success)
-        {
-            return BadRequest(new { message = "Không thể xóa lịch sử" });
-        }
-
-        return Ok(new { message = "Đã xóa toàn bộ lịch sử xem", success = true });
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error clearing all history");
-        return StatusCode(500, new { message = "Đã xảy ra lỗi khi xóa lịch sử" });
-    }
-}
-
-// ...existing code...
-        // GET: api/watch-history/resume/{movieId}?episodeNumber=1
         [HttpGet("resume/{movieId}")]
         public async Task<IActionResult> GetResumeInfo(int movieId, [FromQuery] int? episodeNumber = null)
         {
