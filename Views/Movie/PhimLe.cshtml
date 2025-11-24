@@ -12,6 +12,32 @@
     <meta name="description" content="@ViewBag.SeoDescription" />
 }
 
+@{
+    var request = Context.Request;
+    var currentUrl = $"{request.Scheme}://{request.Host}{request.Path}{request.QueryString}";
+    var seoTitle = $"{categoryName} - Xem phim {categoryName} mới nhất | MoonPhim";
+    var seoDesc = ViewBag.SeoDescription as string ?? $"Xem {categoryName} mới nhất, chất lượng cao, vietsub + thuyết minh. Cập nhật liên tục tại MoonPhim.";
+    var seoImage = "https://moonphim.me/images/moonphim-logo.jpg";
+}
+
+@* ===== OPEN GRAPH (Facebook, Zalo) ===== *@
+<meta property="og:title" content="@seoTitle" />
+<meta property="og:description" content="@seoDesc" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="@currentUrl" />
+<meta property="og:image" content="@seoImage" />
+<meta property="og:site_name" content="MoonPhim" />
+<meta property="og:locale" content="vi_VN" />
+
+@* ===== TWITTER CARD ===== *@
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="@seoTitle" />
+<meta name="twitter:description" content="@seoDesc" />
+<meta name="twitter:image" content="@seoImage" />
+
+@* ===== CANONICAL URL ===== *@
+<link rel="canonical" href="@currentUrl" />
+
 @functions {
     // 💡 (Bạn hãy copy hàm GetPosterUrl của bạn (từ file Search.cshtml) vào đây)
     private string GetPosterUrl(MovieWeb.Models.Entities.Movie m)
@@ -40,6 +66,25 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/filter-sidebar.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/phimbo.css" asp-append-version="true" />
+
+    @* ===== BREADCRUMB SCHEMA ===== *@
+    <script type="application/ld+json">
+    {
+        "@@context": "https://schema.org",
+        "@@type": "BreadcrumbList",
+        "itemListElement": [{
+            "@@type": "ListItem",
+            "position": 1,
+            "name": "Trang chủ",
+            "item": "@(Context.Request.Scheme)://@(Context.Request.Host)/"
+        },{
+            "@@type": "ListItem",
+            "position": 2,
+            "name": "@categoryName"
+        }]
+    }
+    </script>
 }
 
 <section class="container py-4">
@@ -84,30 +129,60 @@
         @if (ViewBag.TotalPages > 1)
         {
             <nav class="mt-4">
-                <ul class="pagination justify-content-center">
+                <ul class="pagination justify-content-center flex-wrap"> @* Thêm flex-wrap để ko bị tràn màn hình *@
                     @{
                         var currentFilters = new Dictionary<string, string>();
-
-                        // 💡 SỬA ĐỔI: Dùng tên thuộc tính mới
+                        // Giữ nguyên bộ lọc
                         if (!string.IsNullOrEmpty(filters.Type)) currentFilters["Type"] = filters.Type;
                         if (!string.IsNullOrEmpty(filters.Countries)) currentFilters["Countries"] = filters.Countries;
                         if (!string.IsNullOrEmpty(filters.Categories)) currentFilters["Categories"] = filters.Categories;
                         if (!string.IsNullOrEmpty(filters.Language)) currentFilters["Language"] = filters.Language;
                         if (!string.IsNullOrEmpty(filters.Years)) currentFilters["Years"] = filters.Years;
                         if (!string.IsNullOrEmpty(filters.SortBy)) currentFilters["SortBy"] = filters.SortBy;
+
+                        string GetUrl(int page)
+                        {
+                            var queryParams = string.Join("&", currentFilters.Select(kvp => $"{kvp.Key}={System.Net.WebUtility.UrlEncode(kvp.Value)}"));
+                            return $"?Page={page}" + (string.IsNullOrEmpty(queryParams) ? "" : "&" + queryParams);
+                        }
+
+                        int currentPage = ViewBag.CurrentPage;
+                        int totalPages = (int)ViewBag.TotalPages;
+                        // Quy định hiển thị: Trang đầu, trang cuối, và +- 2 trang quanh trang hiện tại
+                        int range = 2; 
                     }
 
-                    @for (int i = 1; i <= (int)ViewBag.TotalPages; i++)
+                    @* Nút Quay lại (Prev) *@
+                    @if (currentPage > 1)
                     {
-                        var queryParams = string.Join("&", currentFilters.Select(kvp =>
-                            $"{kvp.Key}={System.Net.WebUtility.UrlEncode(kvp.Value)}"
-                        ));
+                        <li class="page-item">
+                            <a class="page-link" href="@GetUrl(currentPage - 1)">&laquo;</a>
+                        </li>
+                    }
 
-                        var pageUrl = $"?Page={i}" +
-                                      (string.IsNullOrEmpty(queryParams) ? "" : "&" + queryParams);
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        // Logic: Luôn hiện trang 1, trang cuối, hoặc trang đang chọn +- range
+                        if (i == 1 || i == totalPages || (i >= currentPage - range && i <= currentPage + range))
+                        {
+                            <li class="page-item @(i == currentPage ? "active" : "")">
+                                <a class="page-link" href="@GetUrl(i)">@i</a>
+                            </li>
+                        }
+                        // Logic: Hiện dấu ... nếu khoảng cách quá xa
+                        else if (i == currentPage - range - 1 || i == currentPage + range + 1)
+                        {
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        }
+                    }
 
-                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
-                            <a class="page-link" href="@pageUrl">@i</a>
+                    @* Nút Tiếp theo (Next) *@
+                    @if (currentPage < totalPages)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@GetUrl(currentPage + 1)">&raquo;</a>
                         </li>
                     }
                 </ul>

@@ -56,8 +56,6 @@ Console.WriteLine("━━━━━━━━━━━━━━━━━━━━�
 
 // ===== SERVICE CONFIGURATION =====
 builder.Services.AddControllersWithViews();
-builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor(); // ✅ Blazor Server
 
 // Kết nối DbContext với SQL Server
 builder.Services.AddDbContext<MovieWebDbContext>(options =>
@@ -98,14 +96,14 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    options.Cookie.Name = "MoonPhim.Auth.New"; 
+    // options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.Name = "MoonPhim.Auth.Azure"; 
     
     options.Events.OnRedirectToLogin = context =>
     {
         if (context.Request.Path.StartsWithSegments("/api") || 
-            context.Request.Path.StartsWithSegments("/notificationHub") ||
-            context.Request.Path.StartsWithSegments("/_blazor")) // ✅ THÊM DÒNG NÀY
+            context.Request.Path.StartsWithSegments("/notificationHub"))
         {
             context.Response.StatusCode = 401;
             return Task.CompletedTask;
@@ -117,8 +115,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Events.OnRedirectToAccessDenied = context =>
     {
         if (context.Request.Path.StartsWithSegments("/api") || 
-            context.Request.Path.StartsWithSegments("/notificationHub") ||
-            context.Request.Path.StartsWithSegments("/_blazor")) // ✅ THÊM DÒNG NÀY
+            context.Request.Path.StartsWithSegments("/notificationHub"))
         {
             context.Response.StatusCode = 403;
             return Task.CompletedTask;
@@ -294,6 +291,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseHttpsRedirection(); // ✅ Bật lại dòng này!
 app.UseStaticFiles(); // ✅ Static files phải trước routing
 
 // ===== STRIPE WEBHOOK RAW BODY MIDDLEWARE =====
@@ -313,7 +311,6 @@ app.UseAuthorization();
 
 // ===== MAP HUBS & ENDPOINTS =====
 app.MapHub<NotificationHub>("/notificationHub");
-app.MapBlazorHub(); // ✅ Map Blazor Hub (phải có)
 
 // ===== HANGFIRE DASHBOARD =====
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
@@ -344,6 +341,8 @@ RecurringJob.AddOrUpdate<SendRealtimeNotificationJob>(
         TimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")
     }
 );
+/*===== SITEMAP CACHE REFRESH JOB =====*/
+MovieWeb.Jobs.SitemapCacheRefreshJob.ScheduleRecurringJob();
 
 // ===== ROUTE CONFIGURATION =====
 app.MapControllerRoute(

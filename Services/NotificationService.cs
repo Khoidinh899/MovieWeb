@@ -1,4 +1,4 @@
-// Services/NotificationService.cs - FIXED VERSION
+// Services/NotificationService.cs - FIXED TIMEZONE VERSION
 using MovieWeb.Data;
 using MovieWeb.Models.Entities;
 using MovieWeb.Services.Interfaces;
@@ -17,43 +17,76 @@ namespace MovieWeb.Services
             _logger = logger;
         }
 
-        public async Task CreateMovieRequestCompletedAsync(int userId, int movieId, string movieName)
+        // ========== CREATE NOTIFICATION FOR SINGLE USER ==========
+        public async Task<Notification> CreateNotificationAsync(
+            int userId, 
+            string title, 
+            string content,
+            string type, 
+            string? url = null)
         {
             try
             {
-                var movieSlug = await _context.Movies
-                    .Where(m => m.MovieId == movieId)
-                    .Select(m => m.Slug)
-                    .FirstOrDefaultAsync();
-
-                if (movieSlug == null)
-                {
-                    _logger.LogWarning("Movie (ID: {MovieId}) not found for User (ID: {UserId})", movieId, userId);
-                    return;
-                }
-
                 var notification = new Notification
                 {
                     UserId = userId,
-                    Title = "Phim yêu cầu đã có sẵn! 🎬",
-                    Content = $"Phim '{movieName}' bạn yêu cầu đã được thêm vào hệ thống. Xem ngay!",
-                    Type = "MovieRequestSuccess",
-                    Url = $"/phim/{movieSlug}",
+                    Title = title,
+                    Content = content,
+                    Type = type,
+                    Url = url,
                     IsRead = false,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now // ✅ ĐỔI: UTC -> Local Time (VN +7)
                 };
 
                 _context.Notifications.Add(notification);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("✅ Created MovieRequestSuccess notification for User {UserId}", userId);
+                _logger.LogInformation("✅ Created notification {NotificationId} for User {UserId}", 
+                    notification.NotificationId, userId);
+                return notification;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Error creating notification for User {UserId}", userId);
+                _logger.LogError(ex, "❌ Error in CreateNotificationAsync for User {UserId}", userId);
+                throw;
             }
         }
 
+        // ========== CREATE NOTIFICATIONS FOR MULTIPLE USERS ==========
+        public async Task<List<Notification>> CreateNotificationsAsync(
+            List<int> userIds, 
+            string title,
+            string content, 
+            string type, 
+            string? url = null)
+        {
+            try
+            {
+                var notifications = userIds.Select(userId => new Notification
+                {
+                    UserId = userId,
+                    Title = title,
+                    Content = content,
+                    Type = type,
+                    Url = url,
+                    IsRead = false,
+                    CreatedAt = DateTime.Now // ✅ ĐỔI: UTC -> Local Time
+                }).ToList();
+
+                _context.Notifications.AddRange(notifications);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("✅ Created {Count} notifications", notifications.Count);
+                return notifications;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error in CreateNotificationsAsync");
+                throw;
+            }
+        }
+
+        // ========== GET NOTIFICATIONS ==========
         public async Task<List<NotificationDto>> GetNotificationsAsync(int userId, string type = "all", int limit = 20)
         {
             try
@@ -64,21 +97,21 @@ namespace MovieWeb.Services
                     .AsNoTracking()
                     .Where(n => n.UserId == userId);
 
-                // ========== FIX: FILTER TẤT CẢ CÁC LOẠI MOVIE NOTIFICATIONS ==========
                 if (type == "payment")
                 {
                     query = query.Where(n =>
                         n.Type == "PaymentReminder" ||
                         n.Type == "PaymentSuccess" ||
-                        n.Type == "SubscriptionCancelled");
+                        n.Type == "SubscriptionCancelled" ||
+                        n.Type == "CancelSubscription");
                 }
                 else if (type == "movie")
                 {
-                    // ✅ FIX: Lấy TẤT CẢ các loại movie notifications
                     query = query.Where(n =>
                         n.Type == "MovieRequestSuccess" ||
                         n.Type == "MovieUpdate" ||
-                        n.Type == "movie_request_completed"); // Thêm các type khác nếu có
+                        n.Type == "movie_request_completed" ||
+                        n.Type == "CommentReply");
                 }
 
                 var notifications = await query
@@ -92,7 +125,7 @@ namespace MovieWeb.Services
                         Type = n.Type ?? string.Empty,
                         Url = n.Url,
                         IsRead = n.IsRead ?? false,
-                        CreatedAt = n.CreatedAt ?? DateTime.UtcNow
+                        CreatedAt = n.CreatedAt ?? DateTime.Now // ✅ ĐỔI: UTC -> Now
                     })
                     .ToListAsync();
 
@@ -106,6 +139,7 @@ namespace MovieWeb.Services
             }
         }
 
+        // ========== GET UNREAD COUNT ==========
         public async Task<UnreadCountDto> GetUnreadCountAsync(int userId)
         {
             try
@@ -115,16 +149,17 @@ namespace MovieWeb.Services
                                (n.IsRead == false || n.IsRead == null) &&
                                (n.Type == "PaymentReminder" ||
                                 n.Type == "PaymentSuccess" ||
-                                n.Type == "SubscriptionCancelled"))
+                                n.Type == "SubscriptionCancelled" ||
+                                n.Type == "CancelSubscription"))
                     .CountAsync();
 
-                // ✅ FIX: Đếm TẤT CẢ các loại movie notifications
                 var movieCount = await _context.Notifications
                     .Where(n => n.UserId == userId &&
                                (n.IsRead == false || n.IsRead == null) &&
                                (n.Type == "MovieRequestSuccess" ||
                                 n.Type == "MovieUpdate" ||
-                                n.Type == "movie_request_completed"))
+                                n.Type == "movie_request_completed" ||
+                                n.Type == "CommentReply"))
                     .CountAsync();
 
                 var total = paymentCount + movieCount;
@@ -143,6 +178,7 @@ namespace MovieWeb.Services
             }
         }
 
+        // ========== MARK AS READ ==========
         public async Task<bool> MarkAsReadAsync(int notificationId, int userId)
         {
             try
@@ -169,6 +205,7 @@ namespace MovieWeb.Services
             }
         }
 
+        // ========== MARK ALL AS READ ==========
         public async Task<int> MarkAllAsReadAsync(int userId, string type = "all")
         {
             try
@@ -181,15 +218,16 @@ namespace MovieWeb.Services
                     query = query.Where(n =>
                         n.Type == "PaymentReminder" ||
                         n.Type == "PaymentSuccess" ||
-                        n.Type == "SubscriptionCancelled");
+                        n.Type == "SubscriptionCancelled" ||
+                        n.Type == "CancelSubscription");
                 }
                 else if (type == "movie")
                 {
-                    // ✅ FIX: Mark all movie types
                     query = query.Where(n =>
                         n.Type == "MovieRequestSuccess" ||
                         n.Type == "MovieUpdate" ||
-                        n.Type == "movie_request_completed");
+                        n.Type == "movie_request_completed" ||
+                        n.Type == "CommentReply");
                 }
 
                 var notifications = await query.ToListAsync();
@@ -210,6 +248,7 @@ namespace MovieWeb.Services
             }
         }
 
+        // ========== DELETE NOTIFICATION ==========
         public async Task<bool> DeleteNotificationAsync(int notificationId, int userId)
         {
             try
@@ -232,6 +271,7 @@ namespace MovieWeb.Services
             }
         }
 
+        // ========== DELETE ALL NOTIFICATIONS ==========
         public async Task<int> DeleteAllNotificationsAsync(int userId, string type = "all")
         {
             try
@@ -244,14 +284,16 @@ namespace MovieWeb.Services
                     query = query.Where(n =>
                         n.Type == "PaymentReminder" ||
                         n.Type == "PaymentSuccess" ||
-                        n.Type == "SubscriptionCancelled");
+                        n.Type == "SubscriptionCancelled" ||
+                        n.Type == "CancelSubscription");
                 }
                 else if (type == "movie")
                 {
                     query = query.Where(n =>
                         n.Type == "MovieRequestSuccess" ||
                         n.Type == "MovieUpdate" ||
-                        n.Type == "movie_request_completed");
+                        n.Type == "movie_request_completed" ||
+                        n.Type == "CommentReply");
                 }
 
                 var notifications = await query.ToListAsync();
@@ -268,40 +310,50 @@ namespace MovieWeb.Services
             }
         }
 
-        public async Task<Notification> CreateNotificationAsync(int userId, string title, string content,
-            string type, string? url = null)
+        // ========== SPECIALIZED NOTIFICATION CREATORS ==========
+
+        /// <summary>
+        /// Tạo notification khi phim user yêu cầu đã có
+        /// </summary>
+        public async Task CreateMovieRequestCompletedAsync(int userId, int movieId, string movieName)
         {
             try
             {
-                var notification = new Notification
+                var movieSlug = await _context.Movies
+                    .Where(m => m.MovieId == movieId)
+                    .Select(m => m.Slug)
+                    .FirstOrDefaultAsync();
+
+                if (movieSlug == null)
                 {
-                    UserId = userId,
-                    Title = title,
-                    Content = content,
-                    Type = type,
-                    Url = url,
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow
-                };
+                    _logger.LogWarning("Movie (ID: {MovieId}) not found for User (ID: {UserId})", movieId, userId);
+                    return;
+                }
 
-                _context.Notifications.Add(notification);
-                await _context.SaveChangesAsync();
+                await CreateNotificationAsync(
+                    userId,
+                    "Phim yêu cầu đã có sẵn! 🎬",
+                    $"Phim '{movieName}' bạn yêu cầu đã được thêm vào hệ thống. Xem ngay!",
+                    "MovieRequestSuccess",
+                    $"/phim/{movieSlug}"
+                );
 
-                _logger.LogInformation("✅ Created notification {NotificationId}", notification.NotificationId);
-                return notification;
+                _logger.LogInformation("✅ Created MovieRequestSuccess notification for User {UserId}", userId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Error in CreateNotificationAsync");
-                throw;
+                _logger.LogError(ex, "❌ Error creating MovieRequestSuccess notification for User {UserId}", userId);
             }
         }
 
+        /// <summary>
+        /// Tạo notification nhắc nhở gia hạn
+        /// </summary>
         public async Task CreatePaymentReminderAsync(int userId)
         {
             try
             {
-                var today = DateTime.UtcNow.Date;
+                var today = DateTime.Now.Date; // ✅ ĐỔI: UTC -> Local Time
 
                 var existing = await _context.Notifications
                     .AnyAsync(n => n.UserId == userId &&
@@ -325,19 +377,13 @@ namespace MovieWeb.Services
                     return;
                 }
 
-                var notification = new Notification
-                {
-                    UserId = userId,
-                    Title = "⏰ Thông báo gia hạn gói",
-                    Content = $"Gói {user.SubscriptionType} của bạn sẽ hết hạn vào {user.SubscriptionEndDate.Value:dd/MM/yyyy}. Gia hạn ngay!",
-                    Type = "PaymentReminder",
-                    Url = "/nang-cap",
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _context.Notifications.Add(notification);
-                await _context.SaveChangesAsync();
+                await CreateNotificationAsync(
+                    userId,
+                    "⏰ Thông báo gia hạn gói",
+                    $"Gói {user.SubscriptionType} của bạn sẽ hết hạn vào {user.SubscriptionEndDate.Value:dd/MM/yyyy}. Gia hạn ngay!",
+                    "PaymentReminder",
+                    "/nang-cap"
+                );
 
                 _logger.LogInformation("✅ Created PaymentReminder for User {UserId}", userId);
             }
@@ -349,7 +395,7 @@ namespace MovieWeb.Services
         }
 
         /// <summary>
-        /// Tạo thông báo thanh toán thành công
+        /// Tạo notification thanh toán thành công
         /// </summary>
         public async Task CreatePaymentSuccessNotificationAsync(
             int userId,
@@ -359,19 +405,13 @@ namespace MovieWeb.Services
         {
             try
             {
-                var notification = new Notification
-                {
-                    UserId = userId,
-                    Title = "✅ Thanh toán thành công!",
-                    Content = $"Bạn đã nâng cấp lên gói {subscriptionType} thành công. Có hiệu lực đến {subscriptionEndDate:dd/MM/yyyy}. Cảm ơn bạn đã ủng hộ MoonPhim!",
-                    Type = "PaymentSuccess",
-                    Url = "/user/profile", // Hoặc "/nang-cap"
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _context.Notifications.Add(notification);
-                await _context.SaveChangesAsync();
+                await CreateNotificationAsync(
+                    userId,
+                    "✅ Thanh toán thành công!",
+                    $"Bạn đã nâng cấp lên gói {subscriptionType} thành công. Có hiệu lực đến {subscriptionEndDate:dd/MM/yyyy}. Cảm ơn bạn đã ủng hộ MoonPhim!",
+                    "PaymentSuccess",
+                    "/user/payment-history"
+                );
 
                 _logger.LogInformation("✅ Created PaymentSuccess notification for User {UserId}", userId);
             }
@@ -380,53 +420,9 @@ namespace MovieWeb.Services
                 _logger.LogError(ex, "❌ Error creating PaymentSuccess notification for User {UserId}", userId);
             }
         }
-        public async Task CreateCancelSubscriptionNotificationAsync(
-            int userId,
-            string planType,
-            DateTime endDate,
-            int daysRemaining)
-        {
-            try
-            {
-                var planDisplay = planType.ToLower() switch
-                {
-                    "premium" => "Premium",
-                    "student" => "Student",
-                    _ => planType
-                };
 
-                var notification = new Notification
-                {
-                    UserId = userId,
-                    Title = "⚠️ Gói đăng ký đã được hủy",
-                    Content = $"Gói {planDisplay} của bạn đã được hủy thành công. " +
-                             $"Bạn vẫn có thể sử dụng đầy đủ tính năng đến hết ngày {endDate:dd/MM/yyyy} " +
-                             $"(còn {daysRemaining} ngày). " +
-                             $"Sau đó tài khoản sẽ tự động chuyển về gói Free.",
-                    Type = "CancelSubscription",
-                    Url = "/user/profile",
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _context.Notifications.Add(notification);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation(
-                    "✅ Created cancel subscription notification for User {UserId}, Plan: {PlanType}",
-                    userId, planType
-                );
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex,
-                    "❌ Error creating cancel subscription notification for User {UserId}",
-                    userId
-                );
-            }
-        }
         /// <summary>
-        /// Tạo thông báo khi user hủy gói
+        /// Tạo notification khi user hủy gói
         /// </summary>
         public async Task CreateSubscriptionCancelledNotificationAsync(
             int userId,
@@ -436,55 +432,23 @@ namespace MovieWeb.Services
         {
             try
             {
-                var notification = new Notification
-                {
-                    UserId = userId,
-                    Title = "⚠️ Đã hủy gói đăng ký",
-                    Content = string.IsNullOrEmpty(reason)
-                        ? $"Bạn đã hủy gói {planName}. Gói vẫn có hiệu lực đến {endDate:dd/MM/yyyy}. Bạn có thể mua lại bất cứ lúc nào!"
-                        : $"Bạn đã hủy gói {planName} với lý do: {reason}. Gói vẫn có hiệu lực đến {endDate:dd/MM/yyyy}.",
-                    Type = "SubscriptionCancelled",
-                    Url = "/nang-cap",
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow
-                };
+                var content = string.IsNullOrEmpty(reason)
+                    ? $"Bạn đã hủy gói {planName}. Gói vẫn có hiệu lực đến {endDate:dd/MM/yyyy}. Bạn có thể mua lại bất cứ lúc nào!"
+                    : $"Bạn đã hủy gói {planName} với lý do: {reason}. Gói vẫn có hiệu lực đến {endDate:dd/MM/yyyy}.";
 
-                _context.Notifications.Add(notification);
-                await _context.SaveChangesAsync();
+                await CreateNotificationAsync(
+                    userId,
+                    "⚠️ Đã hủy gói đăng ký",
+                    content,
+                    "CancelSubscription",
+                    "/nang-cap"
+                );
 
-                _logger.LogInformation("✅ Created SubscriptionCancelled notification for User {UserId}", userId);
+                _logger.LogInformation("✅ Created CancelSubscription notification for User {UserId}", userId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Error creating SubscriptionCancelled notification for User {UserId}", userId);
-            }
-        }
-        public async Task<List<Notification>> CreateNotificationsAsync(List<int> userIds, string title,
-            string content, string type, string? url = null)
-        {
-            try
-            {
-                var notifications = userIds.Select(userId => new Notification
-                {
-                    UserId = userId,
-                    Title = title,
-                    Content = content,
-                    Type = type,
-                    Url = url,
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow
-                }).ToList();
-
-                _context.Notifications.AddRange(notifications);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("✅ Created {Count} notifications", notifications.Count);
-                return notifications;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ Error in CreateNotificationsAsync");
-                throw;
+                _logger.LogError(ex, "❌ Error creating CancelSubscription notification for User {UserId}", userId);
             }
         }
     }

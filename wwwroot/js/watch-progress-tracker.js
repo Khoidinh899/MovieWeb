@@ -12,19 +12,25 @@ class WatchProgressTracker {
         this.lastSavedTime = 0;
         this.resumePopup = null;
         this.resumeTime = null;
+        this.authToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value || 
+                         document.querySelector("#RequestVerificationToken")?.value;
+        this.isLoggedIn = document.getElementById('notificationBell') !== null;
     }
 
     // Initialize
     async init() {
+        if (!this.isLoggedIn) { 
+            return; // Không có chuông -> Là khách -> Dừng
+        }
         this.videoPlayer = document.querySelector('video');
         if (!this.videoPlayer) {
             console.error('❌ Video player not found');
             return;
         }
 
-        console.log('✅ Watch progress tracker initialized');
-        console.log('🎬 Movie ID:', this.movieId);
-        console.log('📺 Episode:', this.episodeNumber);
+        // console.log('✅ Watch progress tracker initialized');
+        // console.log('🎬 Movie ID:', this.movieId);
+        // console.log('📺 Episode:', this.episodeNumber);
 
         if (this.resumeTime !== null) {
             this.seekToResumeTime();
@@ -39,7 +45,7 @@ class WatchProgressTracker {
 
     // Seek to resume time when video is ready
     seekToResumeTime() {
-        console.log('⏩ Seeking to resume time:', this.resumeTime);
+        // console.log('⏩ Seeking to resume time:', this.resumeTime);
 
         const seekWhenReady = () => {
             if (this.videoPlayer.readyState >= 2) {
@@ -62,7 +68,7 @@ class WatchProgressTracker {
     async checkResumeInfo() {
         try {
             const url = `/api/watch-history/resume/${this.movieId}${this.episodeNumber ? `?episodeNumber=${this.episodeNumber}` : ''}`;
-            console.log('🔍 Checking resume info:', url);
+            // console.log('🔍 Checking resume info:', url);
 
             const response = await fetch(url, {
                 method: 'GET',
@@ -72,13 +78,13 @@ class WatchProgressTracker {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log('📊 Resume data:', data);
+                // console.log('📊 Resume data:', data);
 
                 if (data.hasHistory && data.watchedDuration > 10 && data.progressPercentage < 95) {
                     this.showResumePopup(data);
                 }
             } else {
-                console.log('ℹ️ No resume history found');
+                // console.log('ℹ️ No resume history found');
             }
         } catch (error) {
             console.error('❌ Error checking resume info:', error);
@@ -94,7 +100,7 @@ class WatchProgressTracker {
             ? `của <strong>Tập ${data.episodeNumber}</strong>` 
             : 'của phim này';
 
-        console.log('🎯 Showing resume popup');
+        // console.log('🎯 Showing resume popup');
 
         const existingPopup = document.getElementById('resumePopup');
         if (existingPopup) existingPopup.remove();
@@ -139,9 +145,9 @@ class WatchProgressTracker {
 
     // Resume playback
     resumePlayback(time, episodeName = null) {
-        console.log('▶️ Resuming playback at:', time, 'Episode:', episodeName);
+        // console.log('▶️ Resuming playback at:', time, 'Episode:', episodeName);
         window.thoiGianXemTiep = time;
-        console.log('HISTORY_LOG: 🚩 Đặt cờ thoiGianXemTiep =', time);
+        // console.log('HISTORY_LOG: 🚩 Đặt cờ thoiGianXemTiep =', time);
         this.resumeTime = time;
         this.closeResumePopup();
 
@@ -226,10 +232,13 @@ class WatchProgressTracker {
     }
 
    async saveProgress(isCompleted = false) {
+    if (!this.isLoggedIn || !this.authToken) {
+             return; 
+        }
 
     // ==== 💡 FIX LỖI QUẢNG CÁO GHI ĐÈ ====
     if (window.dangXemQuangCao === true) {
-        console.log('HISTORY_LOG: 🚩 Đang xem quảng cáo, BỎ QUA lưu lịch sử.');
+        // console.log('HISTORY_LOG: 🚩 Đang xem quảng cáo, BỎ QUA lưu lịch sử.');
         return; // Không lưu lịch sử khi đang xem quảng cáo
     }
     // ==== KẾT THÚC FIX ====
@@ -277,7 +286,7 @@ class WatchProgressTracker {
             data.episodeNumber = this.episodeNumber;
         }
 
-        console.log("💾 Saving progress:", data);
+        // console.log("💾 Saving progress:", data);
 
         // CSRF Token
         const token = document.querySelector("#RequestVerificationToken")?.value;
@@ -294,10 +303,10 @@ class WatchProgressTracker {
 
         if (response.ok) {
             this.lastSavedTime = currentTime;
-            console.log(`✅ Progress saved: ${currentTime}/${duration}`);
+            // console.log(`✅ Progress saved: ${currentTime}/${duration}`);
         } else {
             const msg = await response.text();
-            console.error("❌ Failed to save progress:", response.status, msg);
+            // console.error("❌ Failed to save progress:", response.status, msg);
         }
 
     } catch (error) {
@@ -315,6 +324,9 @@ class WatchProgressTracker {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    const isUserLoggedIn = document.getElementById('notificationBell');
+    if (!isUserLoggedIn) return;
+    
     const movieIdElement = document.querySelector('[data-movie-id]');
 
     if (movieIdElement) {
@@ -333,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.watchProgressTracker.init();
             } else if (checkCount >= 20) {
                 clearInterval(checkVideo);
-                console.log('ℹ️ Waiting for video player...');
+                // console.log('ℹ️ Waiting for video player...');
             }
         }, 500);
     }

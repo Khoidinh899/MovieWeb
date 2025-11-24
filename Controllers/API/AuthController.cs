@@ -47,69 +47,69 @@ namespace MovieWeb.Controllers
         }
 
         // POST: /Auth/Register
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> Register(RegisterDto model)
-{
-    if (!ModelState.IsValid)
-    {
-        _logger.LogWarning("Invalid model state for register: {Errors}",
-            string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
-
-        // Trả về lỗi 400
-        var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-        return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ", errors });
-    }
-
-    try
-    {
-        var result = await _authService.RegisterAsync(model);
-
-        if (result.IsSuccess)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(RegisterDto model)
         {
-            // Kiểm tra URL cấu hình với URL thực tế — gửi email xác thực đúng domain
-            var configuredBaseUrl = (_configuration["AppSettings:BaseUrl"] ?? string.Empty).TrimEnd('/');
-            var actualBaseUrl = $"{Request.Scheme}://{Request.Host}".TrimEnd('/');
-
-            if (!string.Equals(configuredBaseUrl, actualBaseUrl, StringComparison.OrdinalIgnoreCase))
+            if (!ModelState.IsValid)
             {
-                var user = await _userManager.FindByEmailAsync(model.Email);
+                _logger.LogWarning("Invalid model state for register: {Errors}",
+                    string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
 
-                if (user != null)
-                {
-                    var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                    var confirmationLink = $"{actualBaseUrl}/auth/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
-
-                    try
-                    {
-                        await _emailService.SendEmailConfirmationAsync(user.Email!, model.FullName, confirmationLink);
-                        _logger.LogInformation("Sent confirmation email using actual base URL to {Email}", user.Email);
-                    }
-                    catch (Exception exEmail)
-                    {
-                        _logger.LogError(exEmail, "Failed to send fallback confirmation email to {Email}", user.Email);
-                    }
-                }
+                // Trả về lỗi 400
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ", errors });
             }
 
-            // Đăng ký thành công → Redirect tới Login
-            return RedirectToAction(nameof(Login));
+            try
+            {
+                var result = await _authService.RegisterAsync(model);
+
+                if (result.IsSuccess)
+                {
+                    // Kiểm tra URL cấu hình với URL thực tế — gửi email xác thực đúng domain
+                    var configuredBaseUrl = (_configuration["AppSettings:BaseUrl"] ?? string.Empty).TrimEnd('/');
+                    var actualBaseUrl = $"{Request.Scheme}://{Request.Host}".TrimEnd('/');
+
+                    if (!string.Equals(configuredBaseUrl, actualBaseUrl, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var user = await _userManager.FindByEmailAsync(model.Email);
+
+                        if (user != null)
+                        {
+                            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                            var confirmationLink = $"{actualBaseUrl}/auth/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+
+                            try
+                            {
+                                await _emailService.SendEmailConfirmationAsync(user.Email!, model.FullName, confirmationLink);
+                                _logger.LogInformation("Sent confirmation email using actual base URL to {Email}", user.Email);
+                            }
+                            catch (Exception exEmail)
+                            {
+                                _logger.LogError(exEmail, "Failed to send fallback confirmation email to {Email}", user.Email);
+                            }
+                        }
+                    }
+
+                    // Đăng ký thành công → Redirect tới Login
+                    return RedirectToAction(nameof(Login));
+                }
+
+                // Trả về lỗi nếu đăng ký thất bại
+                return BadRequest(new { success = false, message = result.Message ?? "Đăng ký thất bại", errors = result.Errors });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in Register for {Email}", model.Email);
+
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Có lỗi xảy ra trong quá trình đăng ký. Vui lòng thử lại."
+                });
+            }
         }
-
-        // Trả về lỗi nếu đăng ký thất bại
-        return BadRequest(new { success = false, message = result.Message ?? "Đăng ký thất bại", errors = result.Errors });
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error in Register for {Email}", model.Email);
-
-        return StatusCode(500, new
-        {
-            success = false,
-            message = "Có lỗi xảy ra trong quá trình đăng ký. Vui lòng thử lại."
-        });
-    }
-}
 
 
         // GET: /Auth/Login

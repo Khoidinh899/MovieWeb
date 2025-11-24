@@ -7,7 +7,7 @@ const pageSize = 10;
 
 // Load revenue stats on page load
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('Loading revenue statistics...');
+    // console.log('Loading revenue statistics...');
     loadRevenueStats();
     loadRevenueTrend();
     loadPlanRevenue();
@@ -128,7 +128,7 @@ async function loadRevenueStats(startDate = null, endDate = null) {
                 box.classList.add('loaded');
             });
 
-            console.log('Revenue stats loaded successfully');
+            // console.log('Revenue stats loaded successfully');
         } else {
             // Lỗi logic từ API (ví dụ: success = false)
             showError(result.message || 'Không thể tải thống kê doanh thu');
@@ -305,7 +305,7 @@ async function loadRevenueTrend(days = 30) {
                 }
             });
 
-            console.log(`✅ Revenue trend chart loaded successfully (${days} days)`);
+            // console.log(`✅ Revenue trend chart loaded successfully (${days} days)`);
         } else {
             console.warn('No revenue trend data available');
         }
@@ -413,7 +413,7 @@ async function loadPlanRevenue() {
                 }
             });
 
-            console.log('✅ Plan revenue chart loaded successfully');
+            // console.log('✅ Plan revenue chart loaded successfully');
         } else {
             console.warn('No plan revenue data available');
         }
@@ -489,7 +489,7 @@ async function loadRecentTransactions(page = 1, status = 'all') {
             updatePaginationInfo(result.data.items.length, result.data.totalItems);
             renderPagination(result.data.totalPages, page);
 
-            console.log('✅ Recent transactions loaded successfully');
+            // console.log('✅ Recent transactions loaded successfully');
         } else {
             // Trường hợp `result.success` là `false`
             throw new Error(result.message || 'Failed to load transactions');
@@ -701,7 +701,7 @@ async function viewTransactionDetails(transactionId) {
  * ✅ FIXED: Refresh with correct days based on current filter type
  */
 function refreshRevenueStats() {
-    console.log('Refreshing revenue statistics...');
+    // console.log('Refreshing revenue statistics...');
 
     const refreshBtn = document.querySelector('[onclick="refreshRevenueStats()"]');
     if (refreshBtn) {
@@ -729,7 +729,7 @@ function refreshRevenueStats() {
         loadPlanRevenue(),
         loadRecentTransactions(currentPage, currentFilter)
     ]).then(() => {
-        console.log('All revenue stats refreshed');
+        // console.log('All revenue stats refreshed');
         if (refreshBtn) {
             const icon = refreshBtn.querySelector('i');
             if (icon) icon.classList.remove('spinning');

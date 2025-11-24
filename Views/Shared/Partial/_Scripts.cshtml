@@ -15,7 +15,7 @@
     }
     
     function init() {
-        console.log("✅ DOM Ready. Initializing features...");
+        @* console.log("✅ DOM Ready. Initializing features..."); *@
         initNavbarAndScroll();
         initMobileSearch();
         initMobileMenu();
@@ -29,11 +29,11 @@
         const body = document.body;
 
         if (!navbar) {
-            console.log("⚠️ Navbar not found. Aborting scroll effects.");
+            @* console.log("⚠️ Navbar not found. Aborting scroll effects."); *@
             return;
         }
 
-        console.log("✅ Navbar found. Setting up scroll listener...");
+        @* console.log("✅ Navbar found. Setting up scroll listener..."); *@
 
         const isHomePage = body.classList.contains('home-page');
         
@@ -105,9 +105,9 @@
                     top: 0, 
                     behavior: 'smooth' 
                 });
-                console.log("🚀 Scrolling to top...");
+                @* console.log("🚀 Scrolling to top..."); *@
             });
-            console.log("✅ Scroll to top button initialized.");
+            @* console.log("✅ Scroll to top button initialized."); *@
         }
     }
 
@@ -119,16 +119,16 @@
         const mobileSearchInput = document.getElementById('mobileSearchInput');
         
         if (!mobileSearchBtn || !mobileSearchOverlay) {
-            console.log("⚠️ Mobile search elements not found.");
+            @* console.log("⚠️ Mobile search elements not found."); *@
             return;
         }
         
-        console.log("✅ Initializing mobile search...");
+        @* console.log("✅ Initializing mobile search..."); *@
         
         function closeMobileSearch() {
             mobileSearchOverlay.classList.remove('active');
             document.body.classList.remove('search-overlay-active');
-            console.log("🔍 Mobile search closed");
+            @* console.log("🔍 Mobile search closed"); *@
         }
         
         mobileSearchBtn.addEventListener('click', function(e) {
@@ -136,7 +136,7 @@
             e.stopPropagation();
             mobileSearchOverlay.classList.add('active');
             document.body.classList.add('search-overlay-active');
-            console.log("🔍 Mobile search opened");
+            @* console.log("🔍 Mobile search opened"); *@
             setTimeout(() => {
                 if (mobileSearchInput) mobileSearchInput.focus();
             }, 300);
@@ -172,7 +172,7 @@
             });
         });
         
-        console.log("✅ Mobile search initialized successfully!");
+        @* console.log("✅ Mobile search initialized successfully!"); *@
     }
 
     // ===== MOBILE MENU (OFFCANVAS) =====
@@ -181,11 +181,11 @@
         const offcanvasElement = document.getElementById('mobileMenuOffcanvas');
         
         if (!menuToggleBtn || !offcanvasElement) {
-            console.log("⚠️ Mobile menu elements not found.");
+            @* console.log("⚠️ Mobile menu elements not found."); *@
             return;
         }
         
-        console.log("✅ Initializing mobile menu...");
+        @* console.log("✅ Initializing mobile menu..."); *@
         
         // Khởi tạo Bootstrap Offcanvas
         const bsOffcanvas = new bootstrap.Offcanvas(offcanvasElement);
@@ -194,24 +194,24 @@
         menuToggleBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log("📱 Mobile menu toggle clicked");
+            @* console.log("📱 Mobile menu toggle clicked"); *@
             bsOffcanvas.toggle();
         });
         
         // Event listeners cho offcanvas
         offcanvasElement.addEventListener('show.bs.offcanvas', function () {
-            console.log("📱 Mobile menu opening...");
+            @* console.log("📱 Mobile menu opening..."); *@
         });
         
         offcanvasElement.addEventListener('shown.bs.offcanvas', function () {
-            console.log("✅ Mobile menu opened!");
+            @* console.log("✅ Mobile menu opened!"); *@
         });
         
         offcanvasElement.addEventListener('hide.bs.offcanvas', function () {
-            console.log("📱 Mobile menu closing...");
+            @* console.log("📱 Mobile menu closing..."); *@
         });
         
-        console.log("✅ Mobile menu initialized successfully!");
+        @* console.log("✅ Mobile menu initialized successfully!"); *@
     }
 
 // ===== NOTIFICATIONS =====
@@ -220,11 +220,11 @@ function initNotifications() {
     const notificationDropdown = document.querySelector('.notification-dropdown');
 
     if (!notificationDropdown || notificationTriggers.length === 0) {
-        console.log("⚠️ Notification elements not found.");
+        @* console.log("⚠️ Notification elements not found."); *@
         return;
     }
 
-    console.log("✅ Initializing notifications (universal)...");
+    @* console.log("✅ Initializing notifications (universal)..."); *@
 
     // Di chuyển dropdown ra <body>
     document.body.appendChild(notificationDropdown);
@@ -272,7 +272,7 @@ function initNotifications() {
 
             notificationDropdown.style.display = 'block';
             notificationDropdown.classList.add('show');
-            console.log("🔔 Notification dropdown opened");
+            @* console.log("🔔 Notification dropdown opened"); *@
         }
     }
 
@@ -308,7 +308,7 @@ function initNotifications() {
         tab.addEventListener('click', function () {
             notificationTabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
-            console.log(`🔔 Switched to ${this.dataset.tab} tab`);
+            @* console.log(`🔔 Switched to ${this.dataset.tab} tab`); *@
         });
     });
 
@@ -317,11 +317,11 @@ function initNotifications() {
     if (markAllReadBtn) {
         markAllReadBtn.addEventListener('click', function (e) {
             e.preventDefault();
-            console.log("✅ Mark all notifications as read");
+            @* console.log("✅ Mark all notifications as read"); *@
         });
     }
 
-    console.log("✅ Notifications initialized successfully for all devices!");
+    @* console.log("✅ Notifications initialized successfully for all devices!"); *@
 }
 })();
 </script>

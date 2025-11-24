@@ -63,12 +63,116 @@
 
     <meta name="keywords" content="xem phim @Model.Name, @Model.Name vietsub, @Model.Name thuyết minh, @Model.OriginalName, phim @Model.Year@(Model.Categories != null ? ", " + string.Join(", ", Model.Categories.Select(c => c.Name)) : "")" />
 
+    @* ===== OPEN GRAPH (Facebook, Zalo, LinkedIn, etc.) ===== *@
     <meta property="og:title" content="@ViewData["Title"]" />
     <meta property="og:description" content="@seoDescription" />
     <meta property="og:type" content="video.movie" />
     <meta property="og:url" content="@seoUrl" />
     <meta property="og:image" content="@seoImage" />
+    <meta property="og:image:width" content="800" />
+    <meta property="og:image:height" content="1200" />
     <meta property="og:site_name" content="MoonPhim" />
+    <meta property="og:locale" content="vi_VN" />
+
+    @* ===== TWITTER CARD (X/Twitter share) ===== *@
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@ViewData["Title"]" />
+    <meta name="twitter:description" content="@seoDescription" />
+    <meta name="twitter:image" content="@seoImage" />
+    <meta name="twitter:site" content="@("@")MoonPhim" />
+
+    @* ===== CANONICAL URL (Tránh duplicate content) ===== *@
+    <link rel="canonical" href="@seoUrl" />
+
+    @* ===== SCHEMA.ORG JSON-LD (RICH SNIPPETS) ===== *@
+    @{
+        var schemaJson = new System.Text.StringBuilder();
+        schemaJson.AppendLine("{");
+        schemaJson.AppendLine("  \"@context\": \"https://schema.org\",");
+        schemaJson.AppendLine("  \"@type\": \"Movie\",");
+        schemaJson.AppendLine($"  \"name\": {System.Text.Json.JsonSerializer.Serialize(Model.Name)},");
+        schemaJson.AppendLine($"  \"alternateName\": {System.Text.Json.JsonSerializer.Serialize(Model.OriginalName ?? "")},");
+        schemaJson.AppendLine($"  \"image\": \"{seoImage}\",");
+        schemaJson.AppendLine($"  \"description\": {System.Text.Json.JsonSerializer.Serialize(seoDescription)},");
+        schemaJson.AppendLine($"  \"url\": \"{seoUrl}\",");
+        schemaJson.AppendLine($"  \"datePublished\": \"{(Model.CreatedAt?.ToString("yyyy-MM-dd") ?? DateTime.Now.ToString("yyyy-MM-dd"))}\",");
+        
+        if (Model.Year.HasValue)
+        {
+            schemaJson.AppendLine($"  \"dateCreated\": \"{Model.Year.Value}-01-01\",");
+        }
+        
+        if (!string.IsNullOrEmpty(Model.Trailer))
+        {
+            schemaJson.AppendLine("  \"trailer\": {");
+            schemaJson.AppendLine("    \"@type\": \"VideoObject\",");
+            schemaJson.AppendLine($"    \"name\": {System.Text.Json.JsonSerializer.Serialize($"Trailer - {Model.Name}")},");
+            
+            // 1. THÊM DESCRIPTION CHO TRAILER (Bắt buộc)
+            // Lấy luôn mô tả của phim làm mô tả cho trailer để đỡ bị lỗi
+            schemaJson.AppendLine($"    \"description\": {System.Text.Json.JsonSerializer.Serialize(seoDescription)},");
+
+            // 2. THÊM UPLOADDATE CHO TRAILER (Bắt buộc)
+            // Lấy cột CreatedAt trong DB
+            schemaJson.AppendLine($"    \"uploadDate\": \"{(Model.CreatedAt?.ToString("yyyy-MM-ddTHH:mm:sszzz") ?? DateTime.Now.ToString("yyyy-MM-ddTHH:mm:sszzz"))}\",");
+
+            schemaJson.AppendLine($"    \"embedUrl\": \"{Model.Trailer}\",");
+            schemaJson.AppendLine($"    \"thumbnailUrl\": \"{seoImage}\"");
+            schemaJson.AppendLine("  },");
+        }
+        
+        if (Model.Rating.HasValue && Model.Rating > 0)
+        {
+            schemaJson.AppendLine("  \"aggregateRating\": {");
+            schemaJson.AppendLine("    \"@type\": \"AggregateRating\",");
+            schemaJson.AppendLine($"    \"ratingValue\": \"{Model.Rating.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\",");
+            schemaJson.AppendLine("    \"bestRating\": \"10\",");
+            if (Model.RatingCount.HasValue && Model.RatingCount > 0)
+            {
+                schemaJson.AppendLine("    \"worstRating\": \"1\",");
+                schemaJson.AppendLine($"    \"ratingCount\": {Model.RatingCount.Value}");
+            }
+            else
+            {
+                schemaJson.AppendLine("    \"worstRating\": \"1\"");
+            }
+            schemaJson.AppendLine("  },");
+        }
+        
+        if (Model.Actors != null && Model.Actors.Any())
+        {
+            var actors = string.Join(",", Model.Actors.Take(10).Select(a => $"{{\"@type\":\"Person\",\"name\":{System.Text.Json.JsonSerializer.Serialize(a.Name)}}}"));
+            schemaJson.AppendLine($"  \"actor\": [{actors}],");
+        }
+        
+        if (Model.Directors != null && Model.Directors.Any())
+        {
+            var directors = string.Join(",", Model.Directors.Take(5).Select(d => $"{{\"@type\":\"Person\",\"name\":{System.Text.Json.JsonSerializer.Serialize(d.Name)}}}"));
+            schemaJson.AppendLine($"  \"director\": [{directors}],");
+        }
+        
+        if (Model.Categories != null && Model.Categories.Any())
+        {
+            var genres = string.Join(",", Model.Categories.Select(c => System.Text.Json.JsonSerializer.Serialize(c.Name)));
+            schemaJson.AppendLine($"  \"genre\": [{genres}],");
+        }
+        
+        if (Model.Countries != null && Model.Countries.Any())
+        {
+            schemaJson.AppendLine("  \"countryOfOrigin\": {");
+            schemaJson.AppendLine("    \"@type\": \"Country\",");
+            schemaJson.AppendLine($"    \"name\": {System.Text.Json.JsonSerializer.Serialize(Model.Countries.FirstOrDefault()?.Name ?? "")}");
+            schemaJson.AppendLine("  },");
+        }
+        
+        schemaJson.AppendLine($"  \"contentRating\": \"{Model.Quality ?? "HD"}\",");
+        schemaJson.AppendLine($"  \"inLanguage\": \"{Model.Language ?? "Vietsub"}\",");
+        schemaJson.AppendLine($"  \"duration\": \"{Model.Time ?? "N/A"}\"");
+        schemaJson.AppendLine("}");
+    }
+    <script type="application/ld+json">
+        @Html.Raw(schemaJson.ToString())
+    </script>
 
     @* --- KẾT THÚC KHỐI SEO --- *@
 }
@@ -354,9 +458,9 @@
         window.movieId = @Model.MovieId;
         window.isLoggedIn = @Html.Raw(User.Identity.IsAuthenticated.ToString().ToLower());
         
-        console.log('🎬 Movie ID:', window.movieId);
+        @* console.log('🎬 Movie ID:', window.movieId);
         console.log('🔐 Is Logged In:', window.isLoggedIn);
-        console.log('👤 Username:', '@User.Identity?.Name');
+        console.log('👤 Username:', '@User.Identity?.Name'); *@
     </script>
     
     <!-- ✅ SAU ĐÓ MỚI LOAD favorite-handler.js -->
@@ -365,9 +469,9 @@
     <script>
         const movieId = @Model.MovieId;
         const isLoggedIn = @Html.Raw(User.Identity.IsAuthenticated.ToString().ToLower());
-        console.log('Movie ID:', movieId);
+        @* console.log('Movie ID:', movieId);
         console.log('Is Logged In:', isLoggedIn);
-        console.log('User Claims:', '@User.Identity?.Name');
+        console.log('User Claims:', '@User.Identity?.Name'); *@
         let selectedRating = 0;
         
         function renderUserBadge(comment) {

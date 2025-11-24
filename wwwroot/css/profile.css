@@ -114,14 +114,16 @@
     margin-bottom: 0.5rem;
 }
 
-.form-control, .form-select {
+.form-control,
+.form-select {
     border-radius: 8px;
     border: 1px solid #dee2e6;
     padding: 0.75rem 1rem;
     transition: all 0.3s ease;
 }
 
-.form-control:focus, .form-select:focus {
+.form-control:focus,
+.form-select:focus {
     border-color: #ff6b6b;
     box-shadow: 0 0 0 0.2rem rgba(255, 107, 107, 0.25);
 }
@@ -194,7 +196,7 @@
     .profile-sidebar {
         margin-bottom: 2rem;
     }
-    
+
     .stat-box {
         margin-bottom: 1rem;
     }
@@ -205,25 +207,25 @@
         width: 100px;
         height: 100px;
     }
-    
+
     .avatar-overlay {
         width: 35px;
         height: 35px;
     }
-    
+
     .stat-icon {
         font-size: 2rem;
     }
-    
+
     .stat-number {
         font-size: 1.5rem;
     }
-    
+
     .btn-group-sm .btn {
         padding: 0.25rem 0.5rem;
         font-size: 0.75rem;
     }
-    
+
     .table-responsive {
         font-size: 0.875rem;
     }
@@ -235,6 +237,7 @@
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -261,9 +264,10 @@
     border-left: none;
 }
 
-.input-group .form-control:focus + .btn-outline-secondary {
+.input-group .form-control:focus+.btn-outline-secondary {
     border-color: #ff6b6b;
 }
+
 /* Subscription Tags */
 .subscription-tag {
     padding: 4px 10px;
@@ -281,7 +285,7 @@
 }
 
 .subscription-tag.moonstu {
-    background: linear-gradient(135deg, #00C9FF, #92FE9D); 
+    background: linear-gradient(135deg, #00C9FF, #92FE9D);
     color: #000;
 }
 
@@ -292,74 +296,6 @@
 
 .subscription-tag i {
     font-size: 12px;
-}
-/* Payment History Styles */
-
-.payment-container {
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 0 1rem;
-}
-
-.payment-container h2 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #333;
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.payment-container h2::before {
-    content: "📋";
-    font-size: 1.5rem;
-}
-
-/* Table Styles */
-.payment-container table {
-    width: 100%;
-    background: white;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.payment-container thead {
-    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-}
-
-.payment-container thead th {
-    padding: 1.2rem 1rem;
-    color: white;
-    font-weight: 600;
-    text-align: left;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border: none;
-}
-
-.payment-container tbody tr {
-    border-bottom: 1px solid #f0f0f0;
-    transition: all 0.3s ease;
-}
-
-.payment-container tbody tr:last-child {
-    border-bottom: none;
-}
-
-.payment-container tbody tr:hover {
-    background-color: #f8f9fa;
-    transform: scale(1.005);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.payment-container tbody td {
-    padding: 1.2rem 1rem;
-    color: #333;
-    font-size: 0.95rem;
-    vertical-align: middle;
 }
 
 /* Status Badge */
@@ -381,10 +317,12 @@
     background: linear-gradient(135deg, #FFD700, #FFA500);
     color: #000;
 }
+
 .status-badge.status-stacked {
-    background: linear-gradient(135deg, #ff6bb8, #24bbee); 
+    background: linear-gradient(135deg, #ff6bb8, #24bbee);
     color: rgb(255, 255, 255);
 }
+
 .status-cancelled,
 .status-failed {
     background: linear-gradient(135deg, #ff6b6b, #ee5a24);
@@ -495,6 +433,7 @@
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -505,252 +444,126 @@
         opacity: 0;
         transform: translateY(50px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
     }
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-    .payment-container {
-        padding: 0 1rem;
-    }
-    
-    .payment-container table {
-        font-size: 0.9rem;
-    }
-    
-    .payment-container thead th,
-    .payment-container tbody td {
-        padding: 1rem 0.75rem;
-    }
-}
-
-@media (max-width: 768px) {
-    .payment-container h2 {
-        font-size: 1.5rem;
-    }
-    
-    /* .payment-container table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-    } */
-    
-    .payment-container thead th,
-    .payment-container tbody td {
-        padding: 0.8rem 0.6rem;
-        font-size: 0.85rem;
-    }
-    
+@media (max-width: 767px) {
     .status-badge {
         padding: 0.3rem 0.8rem;
         font-size: 0.75rem;
     }
-    
+
     .cancel-btn {
         padding: 0.4rem 0.8rem;
         font-size: 0.75rem;
     }
-    
+
     .confirm-box {
         padding: 1.5rem;
         margin: 1rem;
     }
-    
+
     .confirm-box h3 {
         font-size: 1.3rem;
     }
-    
+
     .confirm-btn {
         padding: 0.6rem 1.5rem;
         font-size: 0.85rem;
         margin: 0.3rem;
     }
-    /* ===== BẮT ĐẦU: Code sửa bảng Lịch sử thanh toán cho mobile ===== */
 
-/* 1. Ẩn hàng tiêu đề (Mã GD, Gói...) trên mobile */
-.payment-container thead {
-    display: none;
-}
-
-/* 2. Biến mỗi hàng <tr> thành một "card" */
-.payment-container table,
-.payment-container tbody,
-.payment-container tr {
-    display: block;
-    width: 100%;
-}
-
-.payment-container tr {
-    margin-bottom: 1rem; /* Khoảng cách giữa các "card" */
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    background: #fff;
-}
-
-/* 3. Biến mỗi ô <td> thành một hàng, và căn lề phải cho data */
-.payment-container td {
-    display: block;
-    padding: 0.8rem 1rem;
-    text-align: right; /* Căn lề phải cho data */
-    position: relative; /* Cần thiết cho ::before */
-    border-bottom: 1px solid #f0f0f0;
-    font-size: 0.9rem;
-    white-space: normal; /* Cho phép chữ tự xuống hàng */
-}
-
-/* 4. Thêm "label" (tiêu đề) vào trước mỗi data */
-.payment-container td::before {
-    content: attr(data-label); /* Sẽ lấy từ HTML (xem bước 5) */
-    position: absolute;
-    left: 1rem;
-    font-weight: 600;
-    color: #333;
-    text-align: left;
-    padding-right: 15px;
-}
-
-/* 5. Gán "label" cho từng cột bằng thứ tự */
-.payment-container td:nth-of-type(1)::before { content: "Mã GD:"; }
-.payment-container td:nth-of-type(2)::before { content: "Gói:"; }
-.payment-container td:nth-of-type(3)::before { content: "Số tiền:"; }
-.payment-container td:nth-of-type(4)::before { content: "Trạng thái:"; }
-.payment-container td:nth-of-type(5)::before { content: "Ngày thanh toán:"; }
-.payment-container td:nth-of-type(6)::before { content: "Ngày hết hạn:"; }
-.payment-container td:nth-of-type(7)::before { content: "Ghi chú:"; }
-
-/* 6. Căn chỉnh lại cho đẹp */
-.payment-container td:last-child {
-    border-bottom: none; /* Bỏ viền ở ô cuối */
-}
-.payment-container td:nth-of-type(7) {
-    text-align: left; /* Ô "Ghi chú" nên căn trái */
-}
-.payment-container td:nth-of-type(7)::before {
-    display: none; /* Ẩn label "Ghi chú:" vì nút Hủy gói đã rõ ràng */
-}
-
-/* ===== KẾT THÚC: Code sửa bảng Lịch sử thanh toán ===== */
-}
-
-@media (max-width: 480px) {
-    .payment-container thead th {
-        font-size: 0.75rem;
-        padding: 0.7rem 0.5rem;
+    /* Pagination Styles */
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 2rem;
+        gap: 0.5rem;
+        flex-wrap: wrap;
     }
-    
-    .payment-container tbody td {
-        font-size: 0.8rem;
-        padding: 0.7rem 0.5rem;
+
+    .pagination-btn {
+        padding: 0.6rem 1rem;
+        border: 2px solid #dee2e6;
+        background: white;
+        color: #333;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
     }
-    
-    .confirm-btn {
-        display: block;
-        width: 100%;
-        margin: 0.5rem 0;
+
+    .pagination-btn:hover:not(.disabled) {
+        background: #f8f9fa;
+        border-color: #ff6b6b;
+        color: #ff6b6b;
+        transform: translateY(-2px);
+        text-decoration: none;
     }
-}
-/* Thêm vào cuối file profile.css */
 
-/* Pagination Styles */
-.pagination-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 2rem;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
+    .pagination-btn.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
 
-.pagination-btn {
-    padding: 0.6rem 1rem;
-    border: 2px solid #dee2e6;
-    background: white;
-    color: #333;
-    border-radius: 8px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    font-size: 0.9rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-}
+    .pagination-btn.active {
+        background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        color: white;
+        border-color: #ff6b6b;
+        pointer-events: none;
+    }
 
-.pagination-btn:hover:not(.disabled) {
-    background: #f8f9fa;
-    border-color: #ff6b6b;
-    color: #ff6b6b;
-    transform: translateY(-2px);
-    text-decoration: none;
-}
+    /* Back button improvement */
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: white;
+        border: 2px solid #ff6b6b;
+        color: #ff6b6b;
+        border-radius: 10px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
 
-.pagination-btn.disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    pointer-events: none;
-}
+    .back-btn:hover {
+        background: #ff6b6b;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+        text-decoration: none;
+    }
 
-.pagination-btn.active {
-    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-    color: white;
-    border-color: #ff6b6b;
-    pointer-events: none;
-}
+    /* Page numbers */
+    .page-numbers {
+        display: flex;
+        gap: 0.3rem;
+        align-items: center;
+    }
 
-/* Back button improvement */
-.back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: white;
-    border: 2px solid #ff6b6b;
-    color: #ff6b6b;
-    border-radius: 10px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-.back-btn:hover {
-    background: #ff6b6b;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-    text-decoration: none;
-}
-
-/* Page numbers */
-.page-numbers {
-    display: flex;
-    gap: 0.3rem;
-    align-items: center;
-}
-
-.page-number {
-    min-width: 40px;
-    height: 40px;
-    padding: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Thêm khoảng cách với navbar */
-.payment-container {
-    margin-top: 100px !important;
+    .page-number {
+        min-width: 40px;
+        height: 40px;
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 }
 
 @media (max-width: 768px) {
-    .payment-container {
-        margin-top: 80px !important;
-    }
-    
     .pagination-container {
         gap: 0.3rem;
     }
@@ -770,6 +583,7 @@
         display: none;
     }
 }
+
 /* Change Password Page Styles */
 .change-password-container {
     margin-top: 100px;
@@ -858,11 +672,12 @@
     .change-password-container {
         margin-top: 80px;
     }
-    
+
     .change-password-body {
         padding: 1.5rem;
     }
 }
+
 /* Avatar Selection Modal Styles - Thêm vào cuối file profile.css */
 
 .avatar-grid {
@@ -956,7 +771,7 @@
         gap: 1rem;
         padding: 0.5rem;
     }
-    
+
     .avatar-option:hover {
         transform: scale(1.05);
     }
@@ -967,23 +782,28 @@
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
 /* ===== Thêm code responsive cho trang Profile ===== */
 @media (max-width: 767px) {
-    
+
     /* Căn chỉnh card Thông tin cơ bản */
-    .card-body .row > .col-md-3.text-muted {
-        color: #343a40 !important; /* Cho label đậm hơn, không bị mờ */
+    .card-body .row>.col-md-3.text-muted {
+        color: #343a40 !important;
+        /* Cho label đậm hơn, không bị mờ */
         font-weight: 600;
-        padding-bottom: 0; /* Giảm khoảng cách dưới label */
+        padding-bottom: 0;
+        /* Giảm khoảng cách dưới label */
         margin-bottom: 0;
     }
 
-    .card-body .row > .col-md-9 {
-        padding-top: 4px; /* Thêm 1 chút khoảng cách trên value */
+    .card-body .row>.col-md-9 {
+        padding-top: 4px;
+        /* Thêm 1 chút khoảng cách trên value */
     }
 
     /* Căn chỉnh tiêu đề "label" và "value" cho đồng bộ */
     .card-body .row.mb-3 {
-        margin-bottom: 0.5rem !important; /* Giảm khoảng cách giữa các cặp label/value */
+        margin-bottom: 0.5rem !important;
+        /* Giảm khoảng cách giữa các cặp label/value */
     }
 }

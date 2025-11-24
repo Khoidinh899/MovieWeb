@@ -1,19 +1,30 @@
 @{
     // ==========================================================
-    // ===== ✅ BẮT ĐẦU KHỐI CHUẨN BỊ BIẾN SEO MẶC ĐỊNH =====
+    // ===== ✅ BẮT ĐẦU KHỐI CHUẨN BỊ BIẾN SEO =====
     // ==========================================================
     
-    // 1. Chuẩn bị Mô tả (Lấy từ text trong trang)
+    // 1. Chuẩn bị Mô tả
     var seoDescription = "Với sự bùng nổ của các nền tảng phát trực tuyến phim, MoonPhim nổi bật lên như một trang web xem phim miễn phí uy tín, mang đến cho người dùng trải nghiệm xem phim tuyệt vời nhất.";
     
-    // 2. Chuẩn bị Ảnh (Image) và URL
+    // 2. Chuẩn bị URL và Image
     var request = Context.Request;
-    var baseUrl = $"{request.Scheme}://{request.Host}"; // Ví dụ: https://localhost:5000
-    var seoUrl = $"{baseUrl}{request.Path}"; // URL đầy đủ của trang
-    var seoImage = $"{baseUrl}/images/iconmoon.png"; // Ảnh logo (phải là URL tuyệt đối)
+    var baseUrl = $"{request.Scheme}://{request.Host}"; 
+    var seoUrl = $"{baseUrl}{request.Path}";
+    var seoImage = $"{baseUrl}/images/iconmoon.png"; 
 
-    // ==========================================================
-    // ===== KẾT THÚC KHỐI CHUẨN BỊ BIẾN SEO =====
+    // 3. Chuẩn bị Schema JSON-LD (WebSite)
+    var schemaJson = new System.Text.StringBuilder();
+    schemaJson.AppendLine("{");
+    schemaJson.AppendLine("  \"@context\": \"https://schema.org\",");
+    schemaJson.AppendLine("  \"@type\": \"WebSite\",");
+    schemaJson.AppendLine("  \"name\": \"MoonPhim\",");
+    schemaJson.AppendLine($"  \"url\": \"{baseUrl}\",");
+    schemaJson.AppendLine("  \"potentialAction\": {");
+    schemaJson.AppendLine("    \"@type\": \"SearchAction\",");
+    schemaJson.AppendLine($"    \"target\": \"{baseUrl}/tim-kiem?tu-khoa={{search_term_string}}\",");
+    schemaJson.AppendLine("    \"query-input\": \"required name=search_term_string\"");
+    schemaJson.AppendLine("  }");
+    schemaJson.AppendLine("}");
     // ==========================================================
 }
 
@@ -23,27 +34,44 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
-    @* Title này sẽ được lấy từ file LandingPage.cshtml *@
     <title>@ViewData["Title"]</title> 
     
+    @* ===== FAVICON (Đã thêm file .ico) ===== *@
+    <link rel="shortcut icon" href="~/favicon.ico" type="image/x-icon">
     <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png" asp-append-version="true">
     <link rel="icon" type="image/png" sizes="32x32" href="~/favicon-32x32.png" asp-append-version="true">
     <link rel="icon" type="image/png" sizes="16x16" href="~/favicon-16x16.png" asp-append-version="true">
     <link rel="manifest" href="~/site.webmanifest" asp-append-version="true">
 
-    @* --- BẮT ĐẦU KHỐI SEO --- *@
+    @* ===== META SEO ===== *@
     <meta name="description" content="@seoDescription" />
     <meta name="keywords" content="xem phim, xem phim miễn phí, xem phim online, phim HD, phim chất lượng cao, moonphim, bay bổng cùng điện ảnh" />
+    <meta name="theme-color" content="#1c2a39" />
+    <link rel="canonical" href="@seoUrl" />
 
+    @* ===== OPEN GRAPH ===== *@
     <meta property="og:title" content="@ViewData["Title"]" />
     <meta property="og:description" content="@seoDescription" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="@seoUrl" />
     <meta property="og:image" content="@seoImage" />
     <meta property="og:site_name" content="MoonPhim" />
-    @* --- KẾT THÚC KHỐI SEO --- *@
+    <meta property="og:locale" content="vi_VN" />
+
+    @* ===== TWITTER CARDS ===== *@
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@ViewData["Title"]" />
+    <meta name="twitter:description" content="@seoDescription" />
+    <meta name="twitter:image" content="@seoImage" />
+
+    @* ===== SCHEMA MARKUP (JSON-LD) ===== *@
+    <script type="application/ld+json">
+        @Html.Raw(schemaJson.ToString())
+    </script>
 
     <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
+    
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="landing-page">
     @RenderBody()

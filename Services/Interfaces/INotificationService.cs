@@ -1,4 +1,4 @@
-// Services/Interfaces/INotificationService.cs
+// Services/Interfaces/INotificationService.cs - FIXED VERSION
 using MovieWeb.Models.Entities;
 
 namespace MovieWeb.Services.Interfaces
@@ -35,33 +35,54 @@ namespace MovieWeb.Services.Interfaces
         /// </summary>
         Task<int> DeleteAllNotificationsAsync(int userId, string type = "all");
 
+        // ✅ THÊM: Single user notification
         /// <summary>
-        /// Tạo notification mới
+        /// Tạo notification cho 1 user (CommentReply, MovieRequest, etc.)
         /// </summary>
-        Task<Notification> CreateNotificationAsync(int userId, string title, string content,
-            string type, string? url = null);
+        Task<Notification> CreateNotificationAsync(
+            int userId, 
+            string title, 
+            string content, 
+            string type, 
+            string? url = null);
 
         /// <summary>
-        /// Tạo multiple notifications
+        /// Tạo multiple notifications (cho nhiều users cùng lúc)
         /// </summary>
-        Task<List<Notification>> CreateNotificationsAsync(List<int> userIds, string title,
-            string content, string type, string? url = null);
+        Task<List<Notification>> CreateNotificationsAsync(
+            List<int> userIds, 
+            string title,
+            string content, 
+            string type, 
+            string? url = null);
 
         /// <summary>
         /// (Hangfire) Tạo notification nhắc nhở gia hạn cho 1 user
         /// </summary>
         Task CreatePaymentReminderAsync(int userId);
 
-        // ================================================================
-        // ✅ THÊM HÀM NÀY VÀO ĐỂ JOB MOVIE SYNC CÓ THỂ GỌI
-        // ================================================================
         /// <summary>
         /// (Hangfire) Tạo notification khi phim user yêu cầu đã có
         /// </summary>
         Task CreateMovieRequestCompletedAsync(int userId, int movieId, string movieName);
-        Task CreatePaymentSuccessNotificationAsync(int userId, string subscriptionType, DateTime subscriptionEndDate, decimal amountVND);
-        Task CreateCancelSubscriptionNotificationAsync(int userId, string planType, DateTime endDate, int daysRemaining);
-        Task CreateSubscriptionCancelledNotificationAsync(int userId, string planName, DateTime endDate, string? reason = null);
+
+        /// <summary>
+        /// Tạo notification thanh toán thành công
+        /// </summary>
+        Task CreatePaymentSuccessNotificationAsync(
+            int userId, 
+            string subscriptionType, 
+            DateTime subscriptionEndDate, 
+            decimal amountVND);
+
+        /// <summary>
+        /// Tạo notification khi hủy gói
+        /// </summary>
+        Task CreateSubscriptionCancelledNotificationAsync(
+            int userId, 
+            string planName, 
+            DateTime endDate, 
+            string? reason = null);
     }
 
     // ===== DTOs =====

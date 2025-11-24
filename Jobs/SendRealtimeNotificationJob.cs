@@ -1,4 +1,3 @@
-// Jobs/SendRealtimeNotificationJob.cs
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MovieWeb.Data;
@@ -22,41 +21,30 @@ namespace MovieWeb.Jobs
             _logger = logger;
         }
 
-        /// <summary>
-        /// Gửi TẤT CẢ notifications chưa đọc của 1 user qua SignalR
-        /// </summary>
         public async Task Execute(int userId)
         {
             try
             {
-                _logger.LogInformation("╔════════════════════════════════════════╗");
-                _logger.LogInformation("║  SEND REALTIME NOTIFICATION JOB        ║");
-                _logger.LogInformation("╚════════════════════════════════════════╝");
-                _logger.LogInformation("🔔 Bắt đầu gửi notifications cho User {UserId}", userId);
+                // LOG: Tắt bớt log mở đầu cho đỡ rác console server
+                // _logger.LogInformation("🔔 Bắt đầu gửi notifications cho User {UserId}", userId);
 
-                // Lấy tất cả notifications chưa đọc của user
+                // CHIẾN THUẬT MỚI: Chỉ lấy thông báo trong 40 giây gần nhất
+                // Vì Job chạy 30s/lần, ta lấy dư ra 10s để tránh bị sót mạng lag
+                var lookBackTime = DateTime.UtcNow.AddSeconds(-40);
+
                 var notifications = await _context.Notifications
-                    .Where(n => n.UserId == userId && n.IsRead == false)
+                    .Where(n => n.UserId == userId 
+                                && n.IsRead == false 
+                                && n.CreatedAt >= lookBackTime) // <--- CHỈ SỬA DÒNG NÀY
                     .OrderByDescending(n => n.CreatedAt)
                     .ToListAsync();
 
-                if (!notifications.Any())
-                {
-                    _logger.LogInformation("✅ Không có notification nào cần gửi cho User {UserId}", userId);
-                    _logger.LogInformation("═══════════════════════════════════════════");
-                    return;
-                }
-
-                _logger.LogInformation("📤 Tìm thấy {Count} notification(s) chưa đọc, chuẩn bị gửi...", notifications.Count);
-
-                int successCount = 0;
-                int failCount = 0;
+                if (!notifications.Any()) return; // Không có gì mới thì im lặng luôn
 
                 foreach (var notification in notifications)
                 {
                     try
                     {
-                        // Tạo object để gửi qua SignalR (khớp với JavaScript)
                         var notificationObject = new
                         {
                             notificationId = notification.NotificationId,
@@ -68,75 +56,50 @@ namespace MovieWeb.Jobs
                             createdAt = notification.CreatedAt
                         };
 
-                        // ✅ GỬI QUA SIGNALR ĐỂN GROUP CỦA USER
                         await _hubContext.Clients
                             .Group($"User_{userId}")
                             .SendAsync("ReceiveNotification", notificationObject);
-
-                        successCount++;
                         
-                        _logger.LogInformation("✅ Sent notification {NotificationId} to User {UserId}", 
-                            notification.NotificationId, userId);
+                        // Log nhẹ 1 dòng thôi
+                        _logger.LogInformation("✅ Đã bắn Realtime Noti ID: {Id} cho User {User}", notification.NotificationId, userId);
                     }
                     catch (Exception ex)
                     {
-                        failCount++;
-                        _logger.LogError(ex, "❌ Lỗi khi gửi notification {NotificationId} cho User {UserId}", 
-                            notification.NotificationId, userId);
+                        _logger.LogError("❌ Lỗi gửi ID {Id}: {Msg}", notification.NotificationId, ex.Message);
                     }
                 }
-
-                _logger.LogInformation("╔════════════════════════════════════════╗");
-                _logger.LogInformation("║  KẾT QUẢ: {SuccessCount} thành công, {FailCount} thất bại       ║", 
-                    successCount, failCount);
-                _logger.LogInformation("╚════════════════════════════════════════╝");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ LỖI NGHIÊM TRỌNG KHI CHẠY SendRealtimeNotificationJob cho User {UserId}", userId);
-                throw;
+                _logger.LogError(ex, "❌ Lỗi Job Notification User {UserId}", userId);
             }
         }
 
-        /// <summary>
-        /// Gửi tất cả notifications chưa đọc của TẤT CẢ users (chạy manual hoặc schedule)
-        /// </summary>
         public async Task ExecuteForAllUsers()
         {
             try
             {
-                _logger.LogInformation("╔════════════════════════════════════════╗");
-                _logger.LogInformation("║  SEND ALL REALTIME NOTIFICATIONS       ║");
-                _logger.LogInformation("╚════════════════════════════════════════╝");
+                // Tìm những user có thông báo MỚI (trong 40s đổ lại)
+                var lookBackTime = DateTime.UtcNow.AddSeconds(-40);
 
-                // Lấy tất cả userId có notifications chưa đọc
                 var userIds = await _context.Notifications
-                    .Where(n => n.IsRead == false && n.UserId.HasValue && n.UserId.Value > 0)
-                    .Select(n => n.UserId.Value) // ✅ Lấy .Value để convert từ int? → int
+                    .Where(n => n.IsRead == false 
+                                && n.UserId.HasValue 
+                                && n.CreatedAt >= lookBackTime) // <--- Lọc ngay từ đầu để tối ưu
+                    .Select(n => n.UserId.Value)
                     .Distinct()
                     .ToListAsync();
 
-                if (!userIds.Any())
-                {
-                    _logger.LogInformation("✅ Không có notification nào cần gửi");
-                    return;
-                }
-
-                _logger.LogInformation("🔍 Tìm thấy {Count} user(s) có notifications chưa đọc", userIds.Count);
+                if (!userIds.Any()) return;
 
                 foreach (var userId in userIds)
                 {
-                    await Execute(userId); // ✅ Bây giờ userId đã là int, không phải int?
+                    await Execute(userId);
                 }
-
-                _logger.LogInformation("╔════════════════════════════════════════╗");
-                _logger.LogInformation("║  HOÀN THÀNH GỬI CHO TẤT CẢ USERS       ║");
-                _logger.LogInformation("╚════════════════════════════════════════╝");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ LỖI NGHIÊM TRỌNG KHI CHẠY ExecuteForAllUsers");
-                throw;
+                _logger.LogError(ex, "❌ Lỗi Job All Users");
             }
         }
     }
