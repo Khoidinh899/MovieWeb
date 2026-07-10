@@ -17,6 +17,7 @@ namespace MovieWeb.Services
         private readonly IConfiguration _configuration;
         private readonly string _secretKey;
         private readonly string _webhookSecret;
+        private readonly string _currency;
         private readonly decimal _exchangeRate;
         private readonly INotificationService _notificationService;
         private readonly IHubContext<NotificationHub> _hubContext;
@@ -36,6 +37,7 @@ namespace MovieWeb.Services
             _hubContext = hubContext;
             _secretKey = configuration["StripeSettings:SecretKey"] ?? throw new ArgumentNullException("Stripe SecretKey not configured");
             _webhookSecret = configuration["StripeSettings:WebhookSecret"] ?? "";
+            _currency = (configuration["StripeSettings:Currency"] ?? "vnd").ToLower();
             _exchangeRate = decimal.Parse(configuration["SubscriptionSettings:ExchangeRateVNDtoUSD"] ?? "25000");
             StripeConfiguration.ApiKey = _secretKey;
         }
@@ -153,11 +155,15 @@ namespace MovieWeb.Services
 
         public async Task<string> CreatePriceAsync(string productId, SubscriptionPlan plan)
         {
+            long unitAmount = _currency == "vnd" 
+                ? (long)plan.PriceVND 
+                : (long)(plan.PriceUSD * 100);
+
             var options = new PriceCreateOptions
             {
                 Product = productId,
-                UnitAmount = (long)(plan.PriceUSD * 100), // Convert to cents
-                Currency = "usd",
+                UnitAmount = unitAmount,
+                Currency = _currency,
                 Recurring = new PriceRecurringOptions
                 {
                     Interval = "month",
@@ -263,9 +269,9 @@ namespace MovieWeb.Services
                 UserId = user.Id,
                 PlanId = plan.PlanId,
                 TransactionCode = $"TXN_{DateTime.Now:yyyyMMddHHmmss}_{user.Id}",
-                Amount = plan.PriceUSD,
+                Amount = _currency == "vnd" ? plan.PriceVND : plan.PriceUSD,
                 AmountVND = plan.PriceVND,
-                Currency = "USD",
+                Currency = _currency.ToUpper(),
                 PaymentMethod = "stripe",
                 Status = "pending",
                 Description = $"Thanh toán gói {plan.DisplayName}",

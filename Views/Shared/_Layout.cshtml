@@ -1,12 +1,9 @@
 ﻿@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
 @{
-    // ==========================================================
     // ===== ✅ BẮT ĐẦU KHỐI CHUẨN BỊ BIẾN SEO MẶC ĐỊNH =====
-    // ==========================================================
     var request = Context.Request;
     var baseUrl = $"{request.Scheme}://{request.Host}";
     var defaultSeoImage = $"{baseUrl}/images/iconmoon.png";
-    // ==========================================================
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -27,7 +24,7 @@
     <link rel="stylesheet" href="~/css/nangcap.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/filter-sidebar.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    @* ✅ CHỈ LOAD notification.css và chatbot.css KHI USER ĐĂNG NHẬP *@
+    @* CHỈ LOAD notification.css và chatbot.css KHI USER ĐĂNG NHẬP *@
     @if (User.Identity.IsAuthenticated)
     {
         <link rel="stylesheet" href="~/css/notification.css" asp-append-version="true" />

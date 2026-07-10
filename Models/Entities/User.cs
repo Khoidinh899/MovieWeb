@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -80,6 +80,12 @@ namespace MovieWeb.Models.Entities
         public string? StudentEmailVerificationCode { get; set; }
         public DateTime? StudentEmailVerificationExpiry { get; set; }
         public DateTime? StudentEmailVerifiedAt { get; set; }
+
+        // FCM and Notification Preferences
+        public string? FcmToken { get; set; }
+        public bool NotifySystem { get; set; } = true;
+        public bool NotifyPayment { get; set; } = true;
+        public bool NotifyMovie { get; set; } = true;
 
         // Helper method để check xem email .edu có cần verify lại không (mỗi năm 1 lần)
         public bool NeedsStudentEmailReverification()

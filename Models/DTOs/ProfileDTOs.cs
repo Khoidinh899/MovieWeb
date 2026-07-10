@@ -64,6 +64,11 @@ namespace MovieWeb.Models.DTOs
         public string? StudentEmail { get; set; }
         public DateTime? StudentEmailVerifiedAt { get; set; }
         public DateTime? StudentEmailVerificationExpiry { get; set; }
+
+        // Notification Preferences
+        public bool NotifySystem { get; set; }
+        public bool NotifyPayment { get; set; }
+        public bool NotifyMovie { get; set; }
     }
     // DTO để cập nhật thông tin cá nhân
     public class UpdateProfileDto
@@ -97,6 +102,11 @@ namespace MovieWeb.Models.DTOs
 
         [StringLength(500)]
         public string? Bio { get; set; }
+
+        // Notification Preferences
+        public bool NotifySystem { get; set; } = true;
+        public bool NotifyPayment { get; set; } = true;
+        public bool NotifyMovie { get; set; } = true;
     }
 
     // DTO để thay đổi mật khẩu

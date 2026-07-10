@@ -4,7 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // console.log('✅ User Favorite page loaded');
-    
+
     // Attach remove favorite handlers
     attachRemoveFavoriteHandlers();
 });
@@ -12,27 +12,27 @@ document.addEventListener('DOMContentLoaded', () => {
 // Attach event listeners to remove buttons
 function attachRemoveFavoriteHandlers() {
     const removeButtons = document.querySelectorAll('.remove-favorite');
-    
+
     removeButtons.forEach(btn => {
-        btn.addEventListener('click', async function(e) {
+        btn.addEventListener('click', async function (e) {
             e.preventDefault();
             e.stopPropagation();
-            
+
             const movieId = this.dataset.movieId;
             const movieCard = this.closest('.col-md-4, .col-sm-6');
-            
+
             if (!movieId) {
                 console.error('❌ Movie ID not found');
                 return;
             }
-            
+
             if (!confirm('Bạn có chắc muốn xóa phim này khỏi danh sách yêu thích?')) {
                 return;
             }
-            
+
             try {
                 // console.log('🗑️ Removing favorite:', movieId);
-                
+
                 const response = await fetch(`/api/favorites/${movieId}`, {
                     method: 'DELETE',
                     headers: {
@@ -41,20 +41,20 @@ function attachRemoveFavoriteHandlers() {
                     },
                     credentials: 'include'
                 });
-                
+
                 if (response.ok) {
                     // console.log('✅ Removed successfully');
                     showToast('Đã xóa khỏi danh sách yêu thích', 'success');
-                    
+
                     // Remove card with animation
                     if (movieCard) {
                         movieCard.style.transition = 'all 0.3s ease';
                         movieCard.style.opacity = '0';
                         movieCard.style.transform = 'scale(0.8)';
-                        
+
                         setTimeout(() => {
                             movieCard.remove();
-                            
+
                             // Check if grid is empty
                             const remainingCards = document.querySelectorAll('#favoriteGrid .col-md-4, #favoriteGrid .col-sm-6');
                             if (remainingCards.length === 0) {
@@ -67,7 +67,7 @@ function attachRemoveFavoriteHandlers() {
                     console.error('❌ Failed to remove:', response.status, errorText);
                     showToast('Không thể xóa phim khỏi yêu thích', 'danger');
                 }
-                
+
             } catch (error) {
                 console.error('❌ Error removing favorite:', error);
                 showToast('Đã xảy ra lỗi, vui lòng thử lại', 'danger');
@@ -93,7 +93,7 @@ function showToast(message, type = 'success') {
         container.style.zIndex = '9999';
         document.body.appendChild(container);
     }
-    
+
     // Create toast element
     const toastId = 'toast_' + Date.now();
     const toast = document.createElement('div');
@@ -102,16 +102,16 @@ function showToast(message, type = 'success') {
     toast.setAttribute('role', 'alert');
     toast.setAttribute('aria-live', 'assertive');
     toast.setAttribute('aria-atomic', 'true');
-    
+
     const iconMap = {
         'success': 'check-circle',
         'danger': 'exclamation-circle',
         'warning': 'exclamation-triangle',
         'info': 'info-circle'
     };
-    
+
     const icon = iconMap[type] || 'info-circle';
-    
+
     toast.innerHTML = `
         <div class="d-flex">
             <div class="toast-body">
@@ -120,13 +120,13 @@ function showToast(message, type = 'success') {
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
     `;
-    
+
     container.appendChild(toast);
-    
+
     // Initialize and show toast
     const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
     bsToast.show();
-    
+
     // Remove toast after hidden
     toast.addEventListener('hidden.bs.toast', () => {
         toast.remove();

@@ -1,0 +1,170 @@
+/* ========== OVERRIDE ADMIN LAYOUT CSS ========== */
+
+/* Fix modal table layout */
+#viewSyncedMovieModal .modal-dialog {
+    max-width: 900px;
+}
+
+#viewSyncedMovieModal .modal-body {
+    overflow-x: hidden;
+    padding: 1.5rem;
+}
+
+#viewSyncedMovieModal .row {
+    margin: 0;
+}
+
+#viewSyncedMovieModal img {
+    max-height: 350px;
+    width: 100%;
+    object-fit: cover;
+}
+
+/* ✅ TABLE FIXED LAYOUT - OVERRIDE */
+#viewSyncedMovieModal table {
+    table-layout: fixed !important;
+    width: 100% !important;
+    margin-bottom: 0 !important;
+    min-width: auto !important;
+}
+
+#viewSyncedMovieModal table th {
+    width: 100px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
+    white-space: nowrap !important;
+    color: #6c757d !important;
+    font-weight: 600 !important;
+    vertical-align: top !important;
+    padding: 0.75rem 0.5rem !important;
+    border-bottom: 1px solid #dee2e6;
+}
+
+#viewSyncedMovieModal table td {
+    width: auto !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    padding: 0.75rem 0.5rem !important;
+    border-bottom: 1px solid #dee2e6;
+    max-width: 0;
+}
+
+/* Slug column - break long URLs */
+#viewSyncedMovieModal #syncedMovieSlug {
+    display: inline-block;
+    max-width: 100%;
+    word-break: break-all !important;
+    overflow-wrap: break-word !important;
+}
+
+#viewSyncedMovieModal #syncedMovieLink {
+    text-decoration: none;
+    color: #0d6efd;
+}
+
+#viewSyncedMovieModal #syncedMovieLink:hover {
+    text-decoration: underline;
+}
+
+/* Admin Note */
+#viewSyncedMovieModal .alert {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    margin-top: 1rem;
+    overflow-wrap: break-word !important;
+}
+
+#viewSyncedMovieModal #syncedMovieAdminNote {
+    word-wrap: break-word !important;
+    white-space: pre-wrap !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    line-height: 1.6;
+    color: #6c757d;
+    margin: 0;
+}
+
+/* ========== MAIN TABLE FIX - CHỈ ÁP DỤNG CHO DESKTOP (>= 768px) ========== */
+
+@media (min-width: 768px) {
+    /* Override min-width from admin_layout.css */
+    .admin-table table.table-fixed-layout {
+        min-width: auto !important;
+        width: 100% !important;
+    }
+
+    .table-fixed-layout th,
+    .table-fixed-layout td {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .table-fixed-layout th:nth-child(1) { width: 60px; } /* ID */
+    .table-fixed-layout th:nth-child(2) { width: 200px; } /* Tiêu đề */
+    .table-fixed-layout th:nth-child(3) { width: 80px; } /* Năm */
+    .table-fixed-layout th:nth-child(4) { width: 80px; } /* Lượt YC */
+    .table-fixed-layout th:nth-child(5) { width: 120px; } /* Trạng thái */
+    .table-fixed-layout th:nth-child(6) { width: 140px; } /* Ngày tạo */
+    .table-fixed-layout th:nth-child(7) { width: 100px; } /* Phim liên kết */
+    .table-fixed-layout th:nth-child(8) { width: 250px; min-width: 250px; } /* Ghi chú */
+    .table-fixed-layout th:nth-child(9) { width: 180px; min-width: 180px; } /* Hành động */
+
+    /* ========== GHI CHÚ ADMIN COLUMN - HIỂN THỊ ĐẦY ĐỦ (CHỈ DESKTOP) ========== */
+    .table-fixed-layout td:nth-child(8) {
+        max-width: 250px !important;
+        word-wrap: break-word !important;
+        white-space: normal !important;
+        overflow: visible !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+        line-height: 1.4 !important;
+        padding: 0.75rem 0.5rem !important;
+        vertical-align: top !important;
+    }
+
+    /* Button group fix */
+    .table-fixed-layout .btn-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px;
+        justify-content: flex-start;
+    }
+
+    .table-fixed-layout .btn-group .btn {
+        flex: 0 0 auto;
+        min-width: 70px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* ========== RESPONSIVE - CHỈ MODAL ========== */
+
+@media (max-width: 1400px) {
+    #viewSyncedMovieModal .modal-dialog {
+        max-width: 95%;
+    }
+}
+
+@media (max-width: 768px) {
+    #viewSyncedMovieModal .col-md-4,
+    #viewSyncedMovieModal .col-md-8 {
+        width: 100%;
+    }
+
+    #viewSyncedMovieModal img {
+        max-height: 300px;
+        margin-bottom: 1rem;
+    }
+
+    #viewSyncedMovieModal table th {
+        width: 80px !important;
+        min-width: 80px !important;
+        font-size: 0.85rem;
+    }
+
+    #viewSyncedMovieModal table td {
+        font-size: 0.9rem;
+    }
+}

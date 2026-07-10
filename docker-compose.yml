@@ -1,0 +1,105 @@
+services:
+  # ================================
+  # PostgreSQL Database
+  # ================================
+  db:
+    image: postgres:16-alpine
+    container_name: moonphim_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-moonphim}
+      POSTGRES_USER: ${POSTGRES_USER:-moonphim}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - moonphim_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-moonphim} -d ${POSTGRES_DB:-moonphim}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ================================
+  # ASP.NET Core App
+  # ================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: moonphim_app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB:-moonphim};Username=${POSTGRES_USER:-moonphim};Password=${POSTGRES_PASSWORD}"
+      JwtSettings__SecretKey: ${JWT_SECRET_KEY}
+      JwtSettings__Issuer: MoonPhim
+      JwtSettings__Audience: MoonPhim
+      JwtSettings__ExpiryMinutes: 30
+      AppSettings__BaseUrl: ${BASE_URL}
+      AppSettings__FrontendUrl: ${BASE_URL}
+      AdminSettings__Email: ${ADMIN_EMAIL}
+      AdminSettings__Password: ${ADMIN_PASSWORD}
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET}
+      StripeSettings__PublishableKey: ${STRIPE_PUBLISHABLE_KEY}
+      StripeSettings__SecretKey: ${STRIPE_SECRET_KEY}
+      StripeSettings__WebhookSecret: ${STRIPE_WEBHOOK_SECRET}
+      StripeSettings__Currency: vnd
+      StripeSettings__SuccessUrl: ${BASE_URL}/payment/success
+      StripeSettings__CancelUrl: ${BASE_URL}/payment/cancel
+      StripeSettings__WebhookEndpoint: ${BASE_URL}/api/payment/webhook
+      SendGrid__ApiKey: ${SENDGRID_API_KEY}
+      SendGrid__SenderEmail: ${SENDGRID_SENDER_EMAIL}
+      SendGrid__SenderName: MoonPhim
+      Gemini__ApiKey: ${GEMINI_API_KEY}
+      Gemini__Model: gemini-2.5-flash
+    volumes:
+      - ./firebase-key.json:/app/firebase-key.json:ro
+    networks:
+      - moonphim_net
+    expose:
+      - "5000"
+
+  # ================================
+  # Nginx Reverse Proxy
+  # ================================
+  nginx:
+    image: nginx:alpine
+    container_name: moonphim_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_conf:/etc/letsencrypt:ro
+    depends_on:
+      - app
+    networks:
+      - moonphim_net
+
+  # ================================
+  # Certbot (SSL Let's Encrypt)
+  # ================================
+  certbot:
+    image: certbot/certbot:latest
+    container_name: moonphim_certbot
+    volumes:
+      - certbot_www:/var/www/certbot
+      - certbot_conf:/etc/letsencrypt
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+volumes:
+  postgres_data:
+  certbot_www:
+  certbot_conf:
+
+networks:
+  moonphim_net:
+    driver: bridge

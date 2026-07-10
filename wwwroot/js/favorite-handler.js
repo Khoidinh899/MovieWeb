@@ -41,7 +41,7 @@ class FavoriteHandler {
     async checkFavoriteStatus() {
         try {
             // console.log('🔍 Checking favorite status for movie:', this.movieId);
-            
+
             const response = await fetch(`/api/favorites/check/${this.movieId}`, {
                 method: 'GET',
                 headers: {
@@ -72,9 +72,9 @@ class FavoriteHandler {
 
         // ✅ SỬA: Lấy từ window.isLoggedIn
         const isLoggedIn = window.isLoggedIn;
-        
+
         // console.log('🖱️ Toggle favorite clicked - Logged in:', isLoggedIn);
-        
+
         if (!isLoggedIn) {
             this.showToast('Vui lòng đăng nhập để thêm vào yêu thích', 'warning');
             setTimeout(() => {
@@ -107,7 +107,7 @@ class FavoriteHandler {
     // Add to favorites
     async addFavorite() {
         // console.log('➕ Adding movie to favorites:', this.movieId);
-        
+
         const response = await fetch(`/api/favorites/${this.movieId}`, {
             method: 'POST',
             headers: {
@@ -131,7 +131,7 @@ class FavoriteHandler {
     // Remove from favorites
     async removeFavorite() {
         // console.log('➖ Removing movie from favorites:', this.movieId);
-        
+
         const response = await fetch(`/api/favorites/${this.movieId}`, {
             method: 'DELETE',
             headers: {
@@ -205,10 +205,10 @@ class FavoriteHandler {
 // Auto-initialize if movieId exists
 document.addEventListener('DOMContentLoaded', () => {
     // console.log('🚀 DOM loaded - Initializing favorite handler...');
-    
+
     // ✅ SỬA: Lấy từ window.movieId (đã khai báo trong Detail.cshtml)
     const movieId = window.movieId;
-    
+
     if (movieId) {
         // console.log('🎬 Initializing favorite handler for movie ID:', movieId);
         const favoriteHandler = new FavoriteHandler(movieId);

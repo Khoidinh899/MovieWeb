@@ -155,25 +155,32 @@
                 </div>
 
                 <div class="list-group list-group-flush">
-                    <a href="/user/profile" class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "active" : "")">
+                    <a href="/user/profile"
+                        class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "active" : "")">
                         <i class="bi bi-person me-2"></i> Thông tin cá nhân
                     </a>
-                    <a href="/user/edit" class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "Edit" ? "active" : "")">
+                    <a href="/user/edit"
+                        class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "Edit" ? "active" : "")">
                         <i class="bi bi-pencil me-2"></i> Chỉnh sửa thông tin
                     </a>
-                    <a href="/user/change-password" class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "ChangePassword" ? "active" : "")">
+                    <a href="/user/change-password"
+                        class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "ChangePassword" ? "active" : "")">
                         <i class="bi bi-key me-2"></i> Đổi mật khẩu
                     </a>
-                    <a href="/user/notifications" class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "Notifications" ? "active" : "")">
+                    <a href="/user/notifications"
+                        class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "Notifications" ? "active" : "")">
                         <i class="bi bi-bell-fill me-2"></i> Thông báo
                     </a>
-                    <a href="/user/favorite" class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "Favorite" ? "active" : "")">
+                    <a href="/user/favorite"
+                        class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "Favorite" ? "active" : "")">
                         <i class="bi bi-heart-fill me-2 text-danger"></i> Yêu thích
                     </a>
-                    <a href="/user/history" class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "History" ? "active" : "")">
+                    <a href="/user/history"
+                        class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "History" ? "active" : "")">
                         <i class="bi bi-clock-history me-2 text-info"></i> Lịch sử xem
                     </a>
-                    <a href="/user/payment-history" class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "PaymentHistory" ? "active" : "")">
+                    <a href="/user/payment-history"
+                        class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "PaymentHistory" ? "active" : "")">
                         <i class="bi bi-credit-card-2-front me-2"></i> Lịch sử thanh toán
                     </a>
                 </div>
@@ -501,9 +508,8 @@
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="select-tab" data-bs-toggle="tab"
-                                data-bs-target="#selectTabPane" type="button" role="tab" aria-controls="selectTabPane"
-                                aria-selected="false">
+                            <button class="nav-link" id="select-tab" data-bs-toggle="tab" data-bs-target="#selectTabPane"
+                                type="button" role="tab" aria-controls="selectTabPane" aria-selected="false">
                                 <i class="bi bi-grid-3x3-gap me-1"></i> Chọn avatar có sẵn
                             </button>
                         </li>
@@ -513,10 +519,11 @@
                             aria-labelledby="upload-tab" tabindex="0">
                             <div class="text-center p-4">
                                 <img id="avatarPreview" src="/images/nouser.png" alt="Xem trước"
-                                    class="img-thumbnail rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
-                                
+                                    class="img-thumbnail rounded-circle mb-3"
+                                    style="width: 150px; height: 150px; object-fit: cover;">
+
                                 <input type="file" class="form-control" id="avatarUploadInput" accept="image/*">
-                                
+
                                 <button id="saveUploadAvatarBtn" class="btn btn-primary mt-3">
                                     <i class="bi bi-save me-1"></i> Lưu avatar này
                                 </button>
@@ -579,10 +586,10 @@
                         <i class="bi bi-star-fill me-1"></i>
                         Nâng cấp lên <strong>MoonPro</strong> hoặc <strong>MoonStu</strong> để tải lên avatar của riêng bạn!
                     </div>
-                    
+
                     <h6 class="text-center mb-3">Chọn avatar có sẵn</h6>
                     <div class="avatar-grid">
-                         <div class="avatar-option" onclick="selectAvatar('default0.png')">
+                        <div class="avatar-option" onclick="selectAvatar('default0.png')">
                             <img src="/images/default0.png" alt="Avatar 0">
                         </div>
                         <div class="avatar-option" onclick="selectAvatar('default1.png')">
@@ -636,11 +643,11 @@
     <script src="~/js/profile.js" asp-append-version="true"></script>
     <script src="~/js/notification.js" asp-append-version="true"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Lấy dữ liệu từ C# Model
             var isVerified = @Model.IsStudentVerified.ToString().ToLower();
             var verifiedDate = "@Model.StudentEmailVerifiedAt?.ToString("yyyy-MM-dd")";
-            
+
             // Gọi hàm trong file profile.js và truyền dữ liệu C# vào
             checkStudentEmailStatus(isVerified, verifiedDate);
         });

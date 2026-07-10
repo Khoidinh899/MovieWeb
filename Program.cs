@@ -14,11 +14,12 @@ using MovieWeb.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using StripeLib = Stripe;
 using Hangfire;
-using Hangfire.SqlServer;
+using Hangfire.PostgreSql;
 using MovieWeb.Filters;
 using MovieWeb.Jobs;
 using SendGrid.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using MovieWeb.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,11 +56,15 @@ Console.WriteLine($"🗄️ Connection String: {connectionString?[..Math.Min(60,
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
 // ===== SERVICE CONFIGURATION =====
-builder.Services.AddControllersWithViews();
+// ✅ Đăng ký Global Exception Filter
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add<GlobalExceptionFilter>();
+});
 
-// Kết nối DbContext với SQL Server
+// Kết nối DbContext với PostgreSQL
 builder.Services.AddDbContext<MovieWebDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Configure Identity
 builder.Services.AddIdentity<User, Role>(options =>
@@ -142,7 +147,13 @@ builder.Services.AddAuthentication()
                 ?? throw new InvalidOperationException("JWT SecretKey not found"))),
         ClockSkew = TimeSpan.Zero
     };
-});
+})
+    .AddGoogle(options =>
+    {
+        options.ClientId = Environment.GetEnvironmentVariable("Authentication__Google__ClientId") ?? "";
+        options.ClientSecret = Environment.GetEnvironmentVariable("Authentication__Google__ClientSecret") ?? "";
+        options.CallbackPath = "/signin-google";
+    });
 
 // Authorization policies
 builder.Services.AddAuthorization(options =>
@@ -157,17 +168,10 @@ builder.Services.AddHangfire(configuration => configuration
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings()
-    .UseSqlServerStorage(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        new SqlServerStorageOptions
-        {
-            CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
-            SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
-            QueuePollInterval = TimeSpan.Zero,
-            UseRecommendedIsolationLevel = true,
-            DisableGlobalLocks = true,
-            SchemaName = "hangfire"
-        }
+    .UsePostgreSqlStorage(options =>
+        options.UseNpgsqlConnection(
+            builder.Configuration.GetConnectionString("DefaultConnection")
+        )
     ));
 
 builder.Services.AddHangfireServer(options =>
@@ -200,6 +204,7 @@ StripeLib.StripeConfiguration.ApiKey = builder.Configuration["StripeSettings:Sec
 // ===== CORE SERVICES =====
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddSingleton<IFcmNotificationService, FcmNotificationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IStripeService, StripeService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
@@ -284,15 +289,65 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// ===== AUTO SYNC STRIPE PLANS ON NEW ACCOUNT =====
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var context = services.GetRequiredService<MovieWebDbContext>();
+        var stripeService = services.GetRequiredService<IStripeService>();
+        
+        var plans = await context.SubscriptionPlans.ToListAsync();
+        bool needsSync = false;
+        
+        foreach (var plan in plans)
+        {
+            if (!string.IsNullOrEmpty(plan.StripePriceId) && !plan.StripePriceId.Contains("1TCm949wspvAXAKP"))
+            {
+                logger.LogWarning($"⚠️ Resetting stale Stripe Product/Price IDs for plan '{plan.DisplayName}' (old account detected).");
+                plan.StripeProductId = null;
+                plan.StripePriceId = null;
+                needsSync = true;
+            }
+        }
+        
+        if (needsSync)
+        {
+            // Reset all users' StripeCustomerId because Stripe does not allow mixing USD and VND for a single customer
+            logger.LogWarning("⚠️ Resetting all users' StripeCustomerIds due to currency change (USD -> VND).");
+            var users = await context.Users.ToListAsync();
+            foreach (var u in users)
+            {
+                u.StripeCustomerId = null;
+            }
+            
+            await context.SaveChangesAsync();
+            logger.LogInformation("🔄 Syncing subscription plans with the new Stripe account...");
+            await stripeService.SyncSubscriptionPlansToStripeAsync();
+            logger.LogInformation("✅ Stripe plans synchronized successfully!");
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "❌ Failed to auto-sync Stripe plans on startup.");
+    }
+}
+
 // ===== MIDDLEWARE CONFIGURATION =====
+// ✅ Đăng ký Global Exception Handling Middleware (PHẢI ĐẶT ĐẦU TIÊN)
+app.UseGlobalExceptionHandling();
+
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    // app.UseExceptionHandler("/Home/Error"); // ❌ BỎ dòng này vì đã có middleware custom
     app.UseHsts();
 }
 
-app.UseHttpsRedirection(); // ✅ Bật lại dòng này!
-app.UseStaticFiles(); // ✅ Static files phải trước routing
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseStaticFiles(); 
 
 // ===== STRIPE WEBHOOK RAW BODY MIDDLEWARE =====
 app.Use(async (context, next) =>
@@ -328,7 +383,8 @@ RecurringJob.AddOrUpdate<PaymentReminderJob>(
     cronExpression: "0 0 * * *",
     options: new RecurringJobOptions
     {
-        TimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")
+        TimeZone = TimeZoneInfo.FindSystemTimeZoneById(
+            OperatingSystem.IsWindows() ? "SE Asia Standard Time" : "Asia/Bangkok")
     }
 );
 
@@ -338,7 +394,8 @@ RecurringJob.AddOrUpdate<SendRealtimeNotificationJob>(
     cronExpression: "*/5 * * * *",
     options: new RecurringJobOptions
     {
-        TimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")
+        TimeZone = TimeZoneInfo.FindSystemTimeZoneById(
+            OperatingSystem.IsWindows() ? "SE Asia Standard Time" : "Asia/Bangkok")
     }
 );
 /*===== SITEMAP CACHE REFRESH JOB =====*/

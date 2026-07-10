@@ -7,7 +7,7 @@ using MovieWeb.Services.Interfaces;
 
 namespace MovieWeb.Controllers.API
 {
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Identity.Application,JwtScheme")]
     [Route("api/watch-history")]
     [ApiController]
     public class WatchHistoryController : ControllerBase

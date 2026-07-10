@@ -1,6 +1,57 @@
-﻿@{
-    ViewData["Title"] = "Privacy Policy";
+@{
+    ViewData["Title"] = "Chính sách - MoonPhim";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+@section Styles {
+    <link rel="stylesheet" href="~/css/info-pages.css" asp-append-version="true" />
+}
+
+<div class="info-page-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-9">
+                <div class="info-content-card animate-up">
+                    <h1 class="info-page-title">Chính sách & Điều khoản</h1>
+                    
+                    <p class="text-center text-muted mb-5">Cập nhật lần cuối: Ngày 06 tháng 05 năm 2026</p>
+
+                    <h2 class="info-section-title"><i class="bi bi-shield-check"></i> 1. Chính sách bảo mật</h2>
+                    <p class="info-text">
+                        MoonPhim tôn trọng quyền riêng tư của bạn. Chúng tôi chỉ thu thập thông tin cần thiết để cải thiện trải nghiệm người dùng, bao gồm:
+                    </p>
+                    <ul class="info-list">
+                        <li>Thông tin tài khoản (nếu bạn đăng ký) để lưu lịch sử xem và phim yêu thích.</li>
+                        <li>Dữ liệu ẩn danh về hành vi sử dụng để tối ưu hóa tốc độ tải trang.</li>
+                        <li>Chúng tôi cam kết KHÔNG bán thông tin cá nhân của bạn cho bên thứ ba.</li>
+                    </ul>
+
+                    <h2 class="info-section-title"><i class="bi bi-file-earmark-text"></i> 2. Điều khoản sử dụng</h2>
+                    <p class="info-text">
+                        Bằng việc truy cập vào MoonPhim, bạn đồng ý tuân thủ các quy định sau:
+                    </p>
+                    <ul class="info-list">
+                        <li>Sử dụng dịch vụ cho mục đích cá nhân, phi thương mại.</li>
+                        <li>Không thực hiện các hành vi tấn công, phá hoại hoặc can thiệp bất hợp pháp vào hệ thống.</li>
+                        <li>Không sao chép, tải lên lại nội dung từ MoonPhim sang các nền tảng khác khi chưa được phép.</li>
+                    </ul>
+
+                    <h2 class="info-section-title"><i class="bi bi-c-circle"></i> 3. Bản quyền (Copyright)</h2>
+                    <p class="info-text">
+                        MoonPhim là một công cụ tìm kiếm và tổng hợp các liên kết video từ các nguồn công khai trên internet. Chúng tôi không lưu trữ trực tiếp các tệp video trên máy chủ của mình. Nếu bạn là chủ sở hữu bản quyền và muốn yêu cầu gỡ bỏ nội dung, vui lòng liên hệ với chúng tôi qua trang Liên hệ.
+                    </p>
+
+                    <h2 class="info-section-title"><i class="bi bi-exclamation-triangle"></i> 4. Miễn trừ trách nhiệm</h2>
+                    <p class="info-text">
+                        Chúng tôi nỗ lực cung cấp dịch vụ tốt nhất nhưng không đảm bảo rằng trang web sẽ luôn sẵn sàng 100% hoặc không có lỗi kỹ thuật. MoonPhim không chịu trách nhiệm về nội dung của các trang web bên thứ ba mà chúng tôi liên kết tới.
+                    </p>
+
+                    <div class="mt-5 p-3 bg-dark rounded border border-secondary">
+                        <p class="mb-0 info-label text-center">
+                            Việc tiếp tục sử dụng MoonPhim đồng nghĩa với việc bạn chấp nhận các thay đổi trong chính sách này tại từng thời điểm.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

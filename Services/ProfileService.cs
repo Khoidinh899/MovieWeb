@@ -108,7 +108,10 @@ namespace MovieWeb.Services
                         IsStudentVerified = user.IsStudentVerified,
                         StudentEmail = user.StudentEmail,
                         StudentEmailVerifiedAt = user.StudentEmailVerifiedAt,
-                        StudentEmailVerificationExpiry = user.StudentEmailVerificationExpiry
+                        StudentEmailVerificationExpiry = user.StudentEmailVerificationExpiry,
+                        NotifySystem = user.NotifySystem,
+                        NotifyPayment = user.NotifyPayment,
+                        NotifyMovie = user.NotifyMovie
                     })
                     .FirstOrDefaultAsync();
 
@@ -196,7 +199,9 @@ namespace MovieWeb.Services
                 user.Gender = model.Gender;
                 user.Address = model.Address;
                 user.Bio = model.Bio;
-
+                user.NotifySystem = model.NotifySystem;
+                user.NotifyPayment = model.NotifyPayment;
+                user.NotifyMovie = model.NotifyMovie;
                 user.UpdatedAt = DateTime.Now;
 
                 var result = await _userManager.UpdateAsync(user);

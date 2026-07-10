@@ -1,25 +1,256 @@
-﻿@model ErrorViewModel
-@{
-    ViewData["Title"] = "Error";
+﻿@{
+    ViewData["Title"] = "Lỗi";
+    var statusCode = ViewData["StatusCode"] as int? ?? 500;
+    var errorMessage = ViewData["ErrorMessage"] as string ?? "Đã xảy ra lỗi không mong muốn.";
+    var exceptionDetails = ViewData["ExceptionDetails"] as string;
+    var requestId = ViewData["RequestId"] as string;
 }
 
-<h1 class="text-danger">Error.</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - MoonPhim</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-@if (Model.ShowRequestId)
-{
-    <p>
-        <strong>Request ID:</strong> <code>@Model.RequestId</code>
-    </p>
-}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-<h3>Development Mode</h3>
-<p>
-    Swapping to <strong>Development</strong> environment will display more detailed information about the error that occurred.
-</p>
-<p>
-    <strong>The Development environment shouldn't be enabled for deployed applications.</strong>
-    It can result in displaying sensitive information from exceptions to end users.
-    For local debugging, enable the <strong>Development</strong> environment by setting the <strong>ASPNETCORE_ENVIRONMENT</strong> environment variable to <strong>Development</strong>
-    and restarting the app.
-</p>
+        .error-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+            text-align: center;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @@keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .error-code {
+            font-size: 72px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .error-title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .error-message {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .error-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-block;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f1f3f5;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .error-details {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .error-details h3 {
+            color: #dc3545;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .error-details pre {
+            font-size: 12px;
+            color: #495057;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .request-id {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #adb5bd;
+        }
+
+        @@media (max-width: 576px) {
+            .error-container {
+                padding: 30px 20px;
+            }
+
+            .error-code {
+                font-size: 56px;
+            }
+
+            .error-title {
+                font-size: 20px;
+            }
+
+            .error-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">
+            @switch (statusCode)
+            {
+                case 400:
+                    @:⚠️
+                    break;
+                case 401:
+                case 403:
+                    @:🔒
+                    break;
+                case 404:
+                    @:🔍
+                    break;
+                case 500:
+                case 502:
+                case 503:
+                    @:💥
+                    break;
+                default:
+                    @:😕
+                    break;
+            }
+        </div>
+
+        <div class="error-code">@statusCode</div>
+
+        <h1 class="error-title">
+            @switch (statusCode)
+            {
+                case 400:
+                    @:Yêu cầu không hợp lệ
+                    break;
+                case 401:
+                    @:Chưa xác thực
+                    break;
+                case 403:
+                    @:Truy cập bị từ chối
+                    break;
+                case 404:
+                    @:Không tìm thấy trang
+                    break;
+                case 500:
+                    @:Lỗi máy chủ
+                    break;
+                case 502:
+                    @:Bad Gateway
+                    break;
+                case 503:
+                    @:Dịch vụ không khả dụng
+                    break;
+                default:
+                    @:Đã xảy ra lỗi
+                    break;
+            }
+        </h1>
+
+        <p class="error-message">@errorMessage</p>
+
+        <div class="error-actions">
+            <a href="/" class="btn btn-primary">🏠 Về trang chủ</a>
+            <a href="javascript:history.back()" class="btn btn-secondary">← Quay lại</a>
+        </div>
+
+        @if (!string.IsNullOrEmpty(exceptionDetails))
+        {
+            <div class="error-details">
+                <h3>🐛 Chi tiết lỗi (Development Mode):</h3>
+                <pre>@exceptionDetails</pre>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(requestId))
+        {
+            <div class="request-id">
+                Request ID: @requestId
+            </div>
+        }
+    </div>
+</body>
+</html>

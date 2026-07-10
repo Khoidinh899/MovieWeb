@@ -1,0 +1,92 @@
+@{
+    ViewData["Title"] = "Liên hệ - MoonPhim";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/info-pages.css" asp-append-version="true" />
+}
+
+<div class="info-page-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-9">
+                <div class="info-content-card animate-up">
+                    <h1 class="info-page-title">Kết nối với chúng tôi</h1>
+                    
+                    <p class="text-center info-text mb-5">
+                        Bạn có ý tưởng mới, muốn báo lỗi hoặc yêu cầu gỡ bỏ bản quyền? Chúng tôi luôn sẵn sàng lắng nghe bạn 24/7.
+                    </p>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h2 class="info-section-title"><i class="bi bi-chat-dots"></i> Thông tin liên hệ</h2>
+                            
+                            <a href="mailto:contact@moonphim.com" class="contact-item">
+                                <div class="contact-icon">
+                                    <i class="bi bi-envelope-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="info-label">Email</div>
+                                    <div class="fw-bold">contact@moonphim.com</div>
+                                </div>
+                            </a>
+
+                            <a href="https://t.me/moonphim_support" target="_blank" class="contact-item">
+                                <div class="contact-icon">
+                                    <i class="bi bi-telegram"></i>
+                                </div>
+                                <div>
+                                    <div class="info-label">Telegram</div>
+                                    <div class="fw-bold">@@moonphim_support</div>
+                                </div>
+                            </a>
+
+                            <a href="https://facebook.com/moonphim" target="_blank" class="contact-item">
+                                <div class="contact-icon">
+                                    <i class="bi bi-facebook"></i>
+                                </div>
+                                <div>
+                                    <div class="info-label">Facebook</div>
+                                    <div class="fw-bold">fb.com/moonphim</div>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h2 class="info-section-title"><i class="bi bi-pencil-square"></i> Gửi tin nhắn nhanh</h2>
+                            <form id="quickContactForm">
+                                <div class="mb-3">
+                                    <input type="text" class="form-control bg-dark border-secondary text-white" placeholder="Họ tên của bạn" required>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="email" class="form-control bg-dark border-secondary text-white" placeholder="Email liên hệ" required>
+                                </div>
+                                <div class="mb-3">
+                                    <textarea class="form-control bg-dark border-secondary text-white" rows="4" placeholder="Nội dung tin nhắn..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" style="background: #38bdf8; border: none; color: #0f172a;">
+                                    Gửi tin nhắn ngay
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 pt-4 border-top border-secondary text-center">
+                        <h2 class="info-section-title justify-content-center"><i class="bi bi-geo-alt"></i> Trụ sở chính</h2>
+                        <p class="info-text">
+                            Tòa nhà Moon Galaxy, 123 Đường Vũ Trụ, Quận Phim Ảnh, TP. Hồ Chí Minh
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('quickContactForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        alert('Cảm ơn bạn! Tin nhắn của bạn đã được gửi đi. Chúng tôi sẽ phản hồi sớm nhất có thể.');
+        this.reset();
+    });
+</script>

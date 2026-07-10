@@ -1,0 +1,9 @@
+**/.git
+**/.vs
+**/bin
+**/obj
+**/.env.local
+**/.env.production
+**/firebase-key.json
+**/*.user
+**/node_modules

@@ -1,12 +1,13 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace MovieWeb.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialPostgres : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,14 +16,14 @@ namespace MovieWeb.Migrations
                 name: "Actors",
                 columns: table => new
                 {
-                    ActorId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Slug = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Avatar = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    Biography = table.Column<string>(type: "ntext", nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true, defaultValue: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())")
+                    ActorId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Slug = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Avatar = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    Biography = table.Column<string>(type: "text", nullable: true),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: true, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -30,16 +31,37 @@ namespace MovieWeb.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Advertisements",
+                columns: table => new
+                {
+                    AdId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    AdName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Placement = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    AdContentUrl = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
+                    ClickUrl = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    DisplayOrder = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK__Advertisements", x => x.AdId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Categories",
                 columns: table => new
                 {
-                    CategoryId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Slug = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true, defaultValue: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())")
+                    CategoryId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Slug = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: true, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -50,12 +72,12 @@ namespace MovieWeb.Migrations
                 name: "Countries",
                 columns: table => new
                 {
-                    CountryId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Slug = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true, defaultValue: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())")
+                    CountryId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Slug = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: true, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -66,14 +88,14 @@ namespace MovieWeb.Migrations
                 name: "Directors",
                 columns: table => new
                 {
-                    DirectorId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Slug = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Avatar = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    Biography = table.Column<string>(type: "ntext", nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true, defaultValue: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())")
+                    DirectorId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Slug = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Avatar = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    Biography = table.Column<string>(type: "text", nullable: true),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: true, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -84,37 +106,37 @@ namespace MovieWeb.Migrations
                 name: "Movies",
                 columns: table => new
                 {
-                    MovieId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ApiId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    Slug = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    OriginalName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    Content = table.Column<string>(type: "ntext", nullable: true),
-                    Type = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    PosterUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    ThumbUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    TrailerUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    Trailer = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Time = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    EpisodeCurrent = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    EpisodeTotal = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    Quality = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    Poster = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Backdrop = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Language = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    Year = table.Column<int>(type: "int", nullable: true),
-                    ViewCount = table.Column<int>(type: "int", nullable: true, defaultValue: 0),
-                    Rating = table.Column<decimal>(type: "decimal(3,1)", nullable: true, defaultValue: 0m),
-                    RatingCount = table.Column<int>(type: "int", nullable: true, defaultValue: 0),
-                    IsCopyright = table.Column<bool>(type: "bit", nullable: true, defaultValue: false),
-                    IsRecommended = table.Column<bool>(type: "bit", nullable: true, defaultValue: false),
-                    IsBanner = table.Column<bool>(type: "bit", nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true, defaultValue: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())")
+                    MovieId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ApiId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Slug = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    OriginalName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    Content = table.Column<string>(type: "text", nullable: true),
+                    Type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    PosterUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    ThumbUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    TrailerUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    Trailer = table.Column<string>(type: "text", nullable: true),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    Time = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    EpisodeCurrent = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    EpisodeTotal = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Quality = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Poster = table.Column<string>(type: "text", nullable: true),
+                    Backdrop = table.Column<string>(type: "text", nullable: true),
+                    Language = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Year = table.Column<int>(type: "integer", nullable: true),
+                    ViewCount = table.Column<int>(type: "integer", nullable: true, defaultValue: 0),
+                    Rating = table.Column<decimal>(type: "numeric(3,1)", nullable: true, defaultValue: 0m),
+                    RatingCount = table.Column<int>(type: "integer", nullable: true, defaultValue: 0),
+                    IsCopyright = table.Column<bool>(type: "boolean", nullable: true, defaultValue: false),
+                    IsRecommended = table.Column<bool>(type: "boolean", nullable: true, defaultValue: false),
+                    IsBanner = table.Column<bool>(type: "boolean", nullable: true),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: true, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -125,11 +147,11 @@ namespace MovieWeb.Migrations
                 name: "Roles",
                 columns: table => new
                 {
-                    RoleId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Description = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "(getdate())"),
-                    RoleName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
+                    RoleId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Description = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    RoleName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -140,24 +162,24 @@ namespace MovieWeb.Migrations
                 name: "SubscriptionPlans",
                 columns: table => new
                 {
-                    PlanId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    PlanName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    DisplayName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    PriceVND = table.Column<decimal>(type: "decimal(18,0)", nullable: false),
-                    PriceUSD = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    DurationMonths = table.Column<int>(type: "int", nullable: false),
-                    ActualMonths = table.Column<int>(type: "int", nullable: false),
-                    BonusMonths = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
-                    PlanType = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    StripePriceId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    StripeProductId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
-                    IsPopular = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    DisplayOrder = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "(getdate())"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    PlanId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    PlanName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    DisplayName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    PriceVND = table.Column<decimal>(type: "numeric(18,0)", nullable: false),
+                    PriceUSD = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    DurationMonths = table.Column<int>(type: "integer", nullable: false),
+                    ActualMonths = table.Column<int>(type: "integer", nullable: false),
+                    BonusMonths = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    PlanType = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    StripePriceId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    StripeProductId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    IsPopular = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    DisplayOrder = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -168,13 +190,13 @@ namespace MovieWeb.Migrations
                 name: "Episodes",
                 columns: table => new
                 {
-                    EpisodeId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    MovieId = table.Column<int>(type: "int", nullable: false),
-                    ServerName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    EpisodeName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Slug = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    LinkM3u8 = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    EpisodeId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    MovieId = table.Column<int>(type: "integer", nullable: false),
+                    ServerName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    EpisodeName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    Slug = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    LinkM3u8 = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -191,8 +213,8 @@ namespace MovieWeb.Migrations
                 name: "MovieActors",
                 columns: table => new
                 {
-                    MovieId = table.Column<int>(type: "int", nullable: false),
-                    ActorId = table.Column<int>(type: "int", nullable: false)
+                    MovieId = table.Column<int>(type: "integer", nullable: false),
+                    ActorId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -215,8 +237,8 @@ namespace MovieWeb.Migrations
                 name: "MovieCategories",
                 columns: table => new
                 {
-                    MovieId = table.Column<int>(type: "int", nullable: false),
-                    CategoryId = table.Column<int>(type: "int", nullable: false)
+                    MovieId = table.Column<int>(type: "integer", nullable: false),
+                    CategoryId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -239,8 +261,8 @@ namespace MovieWeb.Migrations
                 name: "MovieCountries",
                 columns: table => new
                 {
-                    MovieId = table.Column<int>(type: "int", nullable: false),
-                    CountryId = table.Column<int>(type: "int", nullable: false)
+                    MovieId = table.Column<int>(type: "integer", nullable: false),
+                    CountryId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -263,8 +285,8 @@ namespace MovieWeb.Migrations
                 name: "MovieDirectors",
                 columns: table => new
                 {
-                    MovieId = table.Column<int>(type: "int", nullable: false),
-                    DirectorId = table.Column<int>(type: "int", nullable: false)
+                    MovieId = table.Column<int>(type: "integer", nullable: false),
+                    DirectorId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -287,18 +309,18 @@ namespace MovieWeb.Migrations
                 name: "RequestsMovie",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    movie_title = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    movie_year = table.Column<int>(type: "int", nullable: true),
-                    ophim_slug = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    request_count = table.Column<int>(type: "int", nullable: false, defaultValue: 1),
-                    status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Chờ đồng bộ"),
-                    conversation_log = table.Column<string>(type: "ntext", nullable: true),
-                    created_at = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "(getdate())"),
-                    completed_at = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    admin_note = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    movie_id = table.Column<int>(type: "int", nullable: true)
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    movie_title = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    movie_year = table.Column<int>(type: "integer", nullable: true),
+                    ophim_slug = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    request_count = table.Column<int>(type: "integer", nullable: false, defaultValue: 1),
+                    status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, defaultValue: "Chờ đồng bộ"),
+                    conversation_log = table.Column<string>(type: "text", nullable: true),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    completed_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    admin_note = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    movie_id = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -314,11 +336,11 @@ namespace MovieWeb.Migrations
                 name: "AspNetRoleClaims",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    RoleId = table.Column<int>(type: "int", nullable: false),
-                    ClaimType = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ClaimValue = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    RoleId = table.Column<int>(type: "integer", nullable: false),
+                    ClaimType = table.Column<string>(type: "text", nullable: true),
+                    ClaimValue = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -335,46 +357,50 @@ namespace MovieWeb.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    UserId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    FirstName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    LastName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    Avatar = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    Address = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    Gender = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
+                    UserId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    FirstName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    LastName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Avatar = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    Address = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    Gender = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
                     DateOfBirth = table.Column<DateTime>(type: "date", nullable: true),
-                    Bio = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true, defaultValue: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())"),
-                    LastLogin = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    RoleId = table.Column<int>(type: "int", nullable: false, defaultValue: 2),
-                    EmailConfirmToken = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    PasswordResetToken = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    SubscriptionType = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false, defaultValue: "free"),
-                    SubscriptionStartDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    SubscriptionEndDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    StripeCustomerId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    IsStudentVerified = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    StudentEmail = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    StudentVerifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    StudentEmailVerificationCode = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    StudentEmailVerificationExpiry = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    StudentEmailVerifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Username = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
-                    Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    NormalizedEmail = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
-                    IsEmailConfirmed = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    PasswordHash = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    SecurityStamp = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PhoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PhoneNumberConfirmed = table.Column<bool>(type: "bit", nullable: false),
-                    TwoFactorEnabled = table.Column<bool>(type: "bit", nullable: false),
-                    LockoutEnd = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
-                    LockoutEnabled = table.Column<bool>(type: "bit", nullable: false),
-                    AccessFailedCount = table.Column<int>(type: "int", nullable: false)
+                    Bio = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: true, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()"),
+                    LastLogin = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    RoleId = table.Column<int>(type: "integer", nullable: false, defaultValue: 2),
+                    EmailConfirmToken = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    PasswordResetToken = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    SubscriptionType = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, defaultValue: "free"),
+                    SubscriptionStartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    SubscriptionEndDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    StripeCustomerId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    IsStudentVerified = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    StudentEmail = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    StudentVerifiedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    StudentEmailVerificationCode = table.Column<string>(type: "text", nullable: true),
+                    StudentEmailVerificationExpiry = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    StudentEmailVerifiedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    FcmToken = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    NotifySystem = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    NotifyPayment = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    NotifyMovie = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    Username = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    NormalizedEmail = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    IsEmailConfirmed = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    PasswordHash = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    SecurityStamp = table.Column<string>(type: "text", nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "text", nullable: true),
+                    PhoneNumber = table.Column<string>(type: "text", nullable: true),
+                    PhoneNumberConfirmed = table.Column<bool>(type: "boolean", nullable: false),
+                    TwoFactorEnabled = table.Column<bool>(type: "boolean", nullable: false),
+                    LockoutEnd = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    LockoutEnabled = table.Column<bool>(type: "boolean", nullable: false),
+                    AccessFailedCount = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -390,19 +416,19 @@ namespace MovieWeb.Migrations
                 name: "AdminLogs",
                 columns: table => new
                 {
-                    LogId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    AdminId = table.Column<int>(type: "int", nullable: false),
-                    Action = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    TargetId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    TableName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    RecordId = table.Column<int>(type: "int", nullable: true),
-                    OldValue = table.Column<string>(type: "ntext", nullable: true),
-                    NewValue = table.Column<string>(type: "ntext", nullable: true),
-                    IpAddress = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    UserAgent = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())")
+                    LogId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    AdminId = table.Column<int>(type: "integer", nullable: false),
+                    Action = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    TargetId = table.Column<string>(type: "text", nullable: true),
+                    TableName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    RecordId = table.Column<int>(type: "integer", nullable: true),
+                    OldValue = table.Column<string>(type: "text", nullable: true),
+                    NewValue = table.Column<string>(type: "text", nullable: true),
+                    IpAddress = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    UserAgent = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -418,11 +444,11 @@ namespace MovieWeb.Migrations
                 name: "AspNetUserClaims",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    ClaimType = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ClaimValue = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    ClaimType = table.Column<string>(type: "text", nullable: true),
+                    ClaimValue = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -439,10 +465,10 @@ namespace MovieWeb.Migrations
                 name: "AspNetUserLogins",
                 columns: table => new
                 {
-                    LoginProvider = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    ProviderKey = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    ProviderDisplayName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UserId = table.Column<int>(type: "int", nullable: false)
+                    LoginProvider = table.Column<string>(type: "text", nullable: false),
+                    ProviderKey = table.Column<string>(type: "text", nullable: false),
+                    ProviderDisplayName = table.Column<string>(type: "text", nullable: true),
+                    UserId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -459,8 +485,8 @@ namespace MovieWeb.Migrations
                 name: "AspNetUserRoles",
                 columns: table => new
                 {
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    RoleId = table.Column<int>(type: "int", nullable: false)
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    RoleId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -483,10 +509,10 @@ namespace MovieWeb.Migrations
                 name: "AspNetUserTokens",
                 columns: table => new
                 {
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    LoginProvider = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Value = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    LoginProvider = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Value = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -503,15 +529,16 @@ namespace MovieWeb.Migrations
                 name: "Comments",
                 columns: table => new
                 {
-                    CommentId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    MovieId = table.Column<int>(type: "int", nullable: false),
-                    ParentCommentId = table.Column<int>(type: "int", nullable: true),
-                    Content = table.Column<string>(type: "ntext", nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true, defaultValue: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())")
+                    CommentId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Rating = table.Column<int>(type: "integer", nullable: true),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    MovieId = table.Column<int>(type: "integer", nullable: false),
+                    ParentCommentId = table.Column<int>(type: "integer", nullable: true),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: true, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -539,11 +566,11 @@ namespace MovieWeb.Migrations
                 name: "Favorites",
                 columns: table => new
                 {
-                    FavoriteId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    MovieId = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())")
+                    FavoriteId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    MovieId = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -566,15 +593,15 @@ namespace MovieWeb.Migrations
                 name: "Notifications",
                 columns: table => new
                 {
-                    NotificationId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: true),
-                    Title = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    Content = table.Column<string>(type: "ntext", nullable: false),
-                    Type = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true, defaultValue: "info"),
-                    IsRead = table.Column<bool>(type: "bit", nullable: true, defaultValue: false),
-                    Url = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())")
+                    NotificationId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: true),
+                    Title = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    Type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true, defaultValue: "info"),
+                    IsRead = table.Column<bool>(type: "boolean", nullable: true, defaultValue: false),
+                    Url = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -591,13 +618,13 @@ namespace MovieWeb.Migrations
                 name: "Ratings",
                 columns: table => new
                 {
-                    RatingId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    MovieId = table.Column<int>(type: "int", nullable: false),
-                    Rating = table.Column<int>(type: "int", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())")
+                    RatingId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    MovieId = table.Column<int>(type: "integer", nullable: false),
+                    Rating = table.Column<int>(type: "integer", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -620,11 +647,11 @@ namespace MovieWeb.Migrations
                 name: "UserRequestMovie",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    user_id = table.Column<int>(type: "int", nullable: false),
-                    request_id = table.Column<int>(type: "int", nullable: false),
-                    created_at = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "(getdate())")
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    user_id = table.Column<int>(type: "integer", nullable: false),
+                    request_id = table.Column<int>(type: "integer", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -647,22 +674,22 @@ namespace MovieWeb.Migrations
                 name: "UserSubscriptions",
                 columns: table => new
                 {
-                    SubscriptionId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    PlanId = table.Column<int>(type: "int", nullable: false),
-                    StripeSubscriptionId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    StripeCustomerId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false, defaultValue: "active"),
-                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CancelledAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    NextBillingDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    AutoRenew = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
-                    BonusDaysFromPreviousPackage = table.Column<int>(type: "int", nullable: false),
-                    CancellationReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "(getdate())"),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    SubscriptionId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    PlanId = table.Column<int>(type: "integer", nullable: false),
+                    StripeSubscriptionId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    StripeCustomerId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, defaultValue: "active"),
+                    StartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    EndDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CancelledAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    NextBillingDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    AutoRenew = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    BonusDaysFromPreviousPackage = table.Column<int>(type: "integer", nullable: false),
+                    CancellationReason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -685,15 +712,15 @@ namespace MovieWeb.Migrations
                 name: "WatchHistory",
                 columns: table => new
                 {
-                    HistoryId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    MovieId = table.Column<int>(type: "int", nullable: false),
-                    EpisodeNumber = table.Column<int>(type: "int", nullable: true, defaultValue: 1),
-                    WatchedDuration = table.Column<int>(type: "int", nullable: true, defaultValue: 0),
-                    TotalDuration = table.Column<int>(type: "int", nullable: true, defaultValue: 0),
-                    IsCompleted = table.Column<bool>(type: "bit", nullable: true, defaultValue: false),
-                    LastWatchedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())")
+                    HistoryId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    MovieId = table.Column<int>(type: "integer", nullable: false),
+                    EpisodeNumber = table.Column<int>(type: "integer", nullable: true, defaultValue: 1),
+                    WatchedDuration = table.Column<int>(type: "integer", nullable: true, defaultValue: 0),
+                    TotalDuration = table.Column<int>(type: "integer", nullable: true, defaultValue: 0),
+                    IsCompleted = table.Column<bool>(type: "boolean", nullable: true, defaultValue: false),
+                    LastWatchedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "now()")
                 },
                 constraints: table =>
                 {
@@ -716,28 +743,28 @@ namespace MovieWeb.Migrations
                 name: "Transactions",
                 columns: table => new
                 {
-                    TransactionId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    TransactionCode = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    StripePaymentIntentId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    StripeChargeId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    AmountVND = table.Column<decimal>(type: "decimal(18,0)", nullable: false),
-                    Currency = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false, defaultValue: "USD"),
-                    PaymentMethod = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "stripe"),
-                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false, defaultValue: "pending"),
-                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    PaymentDetails = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    FailureReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    IpAddress = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    UserAgent = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    RefundAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "(getdate())"),
-                    CompletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    PlanId = table.Column<int>(type: "int", nullable: true),
-                    SubscriptionId = table.Column<int>(type: "int", nullable: true)
+                    TransactionId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    TransactionCode = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    StripePaymentIntentId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    StripeChargeId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    Amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    AmountVND = table.Column<decimal>(type: "numeric(18,0)", nullable: false),
+                    Currency = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false, defaultValue: "USD"),
+                    PaymentMethod = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, defaultValue: "stripe"),
+                    Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, defaultValue: "pending"),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    PaymentDetails = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    FailureReason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    IpAddress = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    UserAgent = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    RefundAmount = table.Column<decimal>(type: "numeric(18,2)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "now()"),
+                    CompletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    PlanId = table.Column<int>(type: "integer", nullable: true),
+                    SubscriptionId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -771,6 +798,16 @@ namespace MovieWeb.Migrations
                 name: "IX_AdminLogs_AdminId",
                 table: "AdminLogs",
                 column: "AdminId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Advertisements_IsActive",
+                table: "Advertisements",
+                column: "IsActive");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Advertisements_Placement",
+                table: "Advertisements",
+                column: "Placement");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
@@ -939,8 +976,7 @@ namespace MovieWeb.Migrations
                 name: "UQ__Roles__RoleName",
                 table: "Roles",
                 column: "RoleName",
-                unique: true,
-                filter: "[RoleName] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Plans_StripePriceId",
@@ -1033,22 +1069,19 @@ namespace MovieWeb.Migrations
                 name: "UQ__Users__Email",
                 table: "Users",
                 column: "Email",
-                unique: true,
-                filter: "[Email] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "UQ__Users__Username",
                 table: "Users",
                 column: "Username",
-                unique: true,
-                filter: "[Username] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "UserNameIndex",
                 table: "Users",
                 column: "NormalizedUserName",
-                unique: true,
-                filter: "[NormalizedUserName] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserSubscriptions_PlanId",
@@ -1084,8 +1117,7 @@ namespace MovieWeb.Migrations
                 name: "UQ__WatchHis__8B23F7CD32F4524D",
                 table: "WatchHistory",
                 columns: new[] { "UserId", "MovieId", "EpisodeNumber" },
-                unique: true,
-                filter: "[EpisodeNumber] IS NOT NULL");
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -1093,6 +1125,9 @@ namespace MovieWeb.Migrations
         {
             migrationBuilder.DropTable(
                 name: "AdminLogs");
+
+            migrationBuilder.DropTable(
+                name: "Advertisements");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");

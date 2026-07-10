@@ -54,7 +54,7 @@
                     
                     if (isHomePage && isDesktop) {
                         if (scrollPosition > 50) {
-                            navbar.style.background = 'linear-gradient(135deg, #012c42 0%, #015487 50%, #0477eb 100%)';
+                            navbar.style.background = '#0477eb';
                             navbar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
                             navbar.classList.add('navbar-scrolled');
                         } else {
@@ -63,7 +63,7 @@
                             navbar.classList.remove('navbar-scrolled');
                         }
                     } else if (isHomePage && !isDesktop) {
-                        navbar.style.background = 'linear-gradient(135deg, #012c42 0%, #015487 50%, #0477eb 100%)';
+                        navbar.style.background = '#0477eb';
                         navbar.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.3)';
                         navbar.classList.remove('navbar-scrolled');
                     }

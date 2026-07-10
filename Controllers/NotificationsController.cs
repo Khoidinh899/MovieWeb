@@ -9,7 +9,7 @@ namespace MovieWeb.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = "Identity.Application,JwtScheme")]
     public class NotificationsController : ControllerBase
     {
         // Bỏ _context, dùng _notificationService

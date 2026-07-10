@@ -294,7 +294,7 @@ namespace MovieWeb.Controllers
                 return Json(new { success = false, message = "Có lỗi xảy ra" });
             }
         }
-        
+
         [HttpPost("delete-avatar")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAvatar()
@@ -313,27 +313,27 @@ namespace MovieWeb.Controllers
             });
         }
 
-       [HttpGet("payment-history")]
-public async Task<IActionResult> PaymentHistory(string status = "all", int page = 1)
-{
-    var userId = GetCurrentUserId();
-    if (userId == 0) return RedirectToAction("Login", "Auth");
+        [HttpGet("payment-history")]
+        public async Task<IActionResult> PaymentHistory(string status = "all", int page = 1)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == 0) return RedirectToAction("Login", "Auth");
 
-    ViewBag.UserProfile = await _profileService.GetUserProfileAsync(userId);
-    const int pageSize = 10;
+            ViewBag.UserProfile = await _profileService.GetUserProfileAsync(userId);
+            const int pageSize = 10;
 
-    var history = await _profileService.GetPaymentHistoryAsync(userId, page, pageSize, status);
+            var history = await _profileService.GetPaymentHistoryAsync(userId, page, pageSize, status);
 
-    ViewBag.CurrentPage = history.CurrentPage;
-    ViewBag.TotalPages = history.TotalPages;
-    ViewBag.TotalTransactions = history.TotalTransactions;
-    ViewBag.PageSize = history.PageSize;
+            ViewBag.CurrentPage = history.CurrentPage;
+            ViewBag.TotalPages = history.TotalPages;
+            ViewBag.TotalTransactions = history.TotalTransactions;
+            ViewBag.PageSize = history.PageSize;
 
-    if (!history.HasTransactions && page == 1)
-        ViewBag.Message = "Bạn chưa có giao dịch nào.";
+            if (!history.HasTransactions && page == 1)
+                ViewBag.Message = "Bạn chưa có giao dịch nào.";
 
-    return View("~/Views/User/PaymentsHistory.cshtml", history.Transactions);
-}
+            return View("~/Views/User/PaymentsHistory.cshtml", history.Transactions);
+        }
 
         [HttpGet("favorite")]
         public async Task<IActionResult> Favorite(int page = 1)

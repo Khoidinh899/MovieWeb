@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -69,19 +69,23 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.HasIndex(e => e.StripeCustomerId, "IX_Users_StripeCustomerId");
 
             entity.Property(e => e.Avatar).HasMaxLength(500);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.EmailConfirmToken).HasMaxLength(255);
             entity.Property(e => e.FirstName).HasMaxLength(50);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.LastName).HasMaxLength(50);
             entity.Property(e => e.PasswordResetToken).HasMaxLength(255);
             entity.Property(e => e.RoleId).HasDefaultValue(2);
-            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
 
             entity.Property(e => e.SubscriptionType).HasMaxLength(20).HasDefaultValue("free");
             entity.Property(e => e.StripeCustomerId).HasMaxLength(100);
             entity.Property(e => e.StudentEmail).HasMaxLength(100);
             entity.Property(e => e.IsStudentVerified).HasDefaultValue(false);
+            entity.Property(e => e.FcmToken).HasMaxLength(500);
+            entity.Property(e => e.NotifySystem).HasDefaultValue(true);
+            entity.Property(e => e.NotifyPayment).HasDefaultValue(true);
+            entity.Property(e => e.NotifyMovie).HasDefaultValue(true);
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)
@@ -104,8 +108,8 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.OphimSlug).HasColumnName("ophim_slug").HasMaxLength(255);
             entity.Property(e => e.RequestCount).HasColumnName("request_count").HasDefaultValue(1);
             entity.Property(e => e.Status).HasColumnName("status").IsRequired().HasMaxLength(50).HasDefaultValue("Chờ đồng bộ");
-            entity.Property(e => e.ConversationLog).HasColumnName("conversation_log").HasColumnType("ntext");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.ConversationLog).HasColumnName("conversation_log").HasColumnType("text");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
             entity.Property(e => e.CompletedAt).HasColumnName("completed_at");
             entity.Property(e => e.AdminNote).HasColumnName("admin_note").HasMaxLength(500);
         });
@@ -122,7 +126,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.UserId).HasColumnName("user_id").IsRequired();
             entity.Property(e => e.RequestId).HasColumnName("request_id").IsRequired();
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
 
             entity.HasOne(d => d.User)
                 .WithMany()
@@ -159,13 +163,13 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.IsPopular).HasDefaultValue(false);
             entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
         });
 
         // ===== USER SUBSCRIPTIONS =====
         modelBuilder.Entity<UserSubscription>(entity =>
         {
-            entity.ToTable("UserSubscriptions", tb => tb.HasTrigger("trg_UserSubscription"));
+            entity.ToTable("UserSubscriptions");
 
             entity.HasKey(e => e.SubscriptionId).HasName("PK__UserSubscriptions");
 
@@ -180,7 +184,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.EndDate).IsRequired();
             entity.Property(e => e.AutoRenew).HasDefaultValue(true);
             entity.Property(e => e.CancellationReason).HasMaxLength(500);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
 
             entity.HasOne(d => d.User).WithMany(p => p.UserSubscriptions)
                 .HasForeignKey(d => d.UserId)
@@ -218,7 +222,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.IpAddress).HasMaxLength(50);
             entity.Property(e => e.UserAgent).HasMaxLength(500);
             entity.Property(e => e.RefundAmount).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
 
             entity.HasOne(d => d.User).WithMany(p => p.Transactions)
                 .HasForeignKey(d => d.UserId)
@@ -247,7 +251,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
 
             entity.HasIndex(e => e.Name, "UQ__Roles__RoleName").IsUnique();
 
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.Description).HasMaxLength(255);
 
             entity.Ignore(r => r.NormalizedName);
@@ -266,8 +270,8 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.HasKey(e => e.ActorId).HasName("PK__Actors__57B3EA4B1F26927F");
             entity.HasIndex(e => e.Slug, "UQ__Actors__BC7B5FB688EA0EF4").IsUnique();
             entity.Property(e => e.Avatar).HasMaxLength(500);
-            entity.Property(e => e.Biography).HasColumnType("ntext");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Biography).HasColumnType("text");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Slug).HasMaxLength(100);
@@ -278,11 +282,11 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
         {
             entity.HasKey(e => e.LogId).HasName("PK__AdminLog__5E5486482B3552F5");
             entity.Property(e => e.Action).HasMaxLength(100);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.IpAddress).HasMaxLength(50);
-            entity.Property(e => e.NewValue).HasColumnType("ntext");
-            entity.Property(e => e.OldValue).HasColumnType("ntext");
+            entity.Property(e => e.NewValue).HasColumnType("text");
+            entity.Property(e => e.OldValue).HasColumnType("text");
             entity.Property(e => e.TableName).HasMaxLength(50);
             entity.Property(e => e.UserAgent).HasMaxLength(500);
 
@@ -297,7 +301,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
         {
             entity.HasKey(e => e.CategoryId).HasName("PK__Categori__19093A0BE8B0B1CA");
             entity.HasIndex(e => e.Slug, "UQ__Categori__BC7B5FB63CACE86B").IsUnique();
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.Name).HasMaxLength(100);
@@ -309,10 +313,10 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
         {
             entity.HasKey(e => e.CommentId).HasName("PK__Comments__C3B4DFCADA06B684");
             entity.HasIndex(e => e.MovieId, "IX_Comments_MovieId");
-            entity.Property(e => e.Content).HasColumnType("ntext");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Content).HasColumnType("text");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
 
             entity.HasOne(d => d.Movie).WithMany(p => p.Comments)
                 .HasForeignKey(d => d.MovieId)
@@ -332,7 +336,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
         {
             entity.HasKey(e => e.CountryId).HasName("PK__Countrie__10D1609F99BB0BFD");
             entity.HasIndex(e => e.Slug, "UQ__Countrie__BC7B5FB6D85F4721").IsUnique();
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Slug).HasMaxLength(100);
@@ -344,8 +348,8 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.HasKey(e => e.DirectorId).HasName("PK__Director__26C69E467ECC4538");
             entity.HasIndex(e => e.Slug, "UQ__Director__BC7B5FB6E39C98C0").IsUnique();
             entity.Property(e => e.Avatar).HasMaxLength(500);
-            entity.Property(e => e.Biography).HasColumnType("ntext");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Biography).HasColumnType("text");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Slug).HasMaxLength(100);
@@ -357,7 +361,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.HasKey(e => e.FavoriteId).HasName("PK__Favorite__CE74FAD59B321046");
             entity.HasIndex(e => e.UserId, "IX_Favorites_UserId");
             entity.HasIndex(e => new { e.UserId, e.MovieId }, "UQ__Favorite__A335E50C0B1A2B81").IsUnique();
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
 
             entity.HasOne(d => d.Movie).WithMany(p => p.Favorites)
                 .HasForeignKey(d => d.MovieId)
@@ -380,8 +384,8 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.HasIndex(e => e.Slug, "UQ__Movies__BC7B5FB6B116A7B6").IsUnique();
 
             entity.Property(e => e.ApiId).HasMaxLength(50);
-            entity.Property(e => e.Content).HasColumnType("ntext");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Content).HasColumnType("text");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.EpisodeCurrent).HasMaxLength(50);
             entity.Property(e => e.EpisodeTotal).HasMaxLength(50);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
@@ -400,7 +404,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.Time).HasMaxLength(50);
             entity.Property(e => e.TrailerUrl).HasMaxLength(500);
             entity.Property(e => e.Type).HasMaxLength(50);
-            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.ViewCount).HasDefaultValue(0);
 
             entity.HasMany(d => d.Actors).WithMany(p => p.Movies)
@@ -437,8 +441,8 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
         {
             entity.HasKey(e => e.NotificationId).HasName("PK__Notifica__20CF2E1229953B40");
             entity.HasIndex(e => e.UserId, "IX_Notifications_UserId");
-            entity.Property(e => e.Content).HasColumnType("ntext");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.Content).HasColumnType("text");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.IsRead).HasDefaultValue(false);
             entity.Property(e => e.Title).HasMaxLength(255);
             entity.Property(e => e.Type).HasMaxLength(50).HasDefaultValue("info");
@@ -455,9 +459,9 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
         {
             entity.HasKey(e => e.RatingId).HasName("PK__Ratings__FCCDF87CCCFCF95A");
             entity.HasIndex(e => new { e.UserId, e.MovieId }, "UQ__Ratings__A335E50C987AA62A").IsUnique();
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.Rating1).HasColumnName("Rating");
-            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
 
             entity.HasOne(d => d.Movie).WithMany(p => p.Ratings)
                 .HasForeignKey(d => d.MovieId)
@@ -480,7 +484,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
 
             entity.Property(e => e.EpisodeNumber).HasDefaultValue(1);
             entity.Property(e => e.IsCompleted).HasDefaultValue(false);
-            entity.Property(e => e.LastWatchedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.LastWatchedAt).HasDefaultValueSql("now()");
             entity.Property(e => e.TotalDuration).HasDefaultValue(0);
             entity.Property(e => e.WatchedDuration).HasDefaultValue(0);
 
@@ -511,7 +515,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.DisplayOrder).HasDefaultValue(0);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
 
             entity.HasIndex(e => e.Placement, "IX_Advertisements_Placement");
             entity.HasIndex(e => e.IsActive, "IX_Advertisements_IsActive");

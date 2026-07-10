@@ -19,11 +19,11 @@ namespace MovieWeb.Models.Entities
         public string? ServerName { get; set; } 
 
         [Required]
-        [StringLength(100)]
+        [StringLength(255)]
         public string EpisodeName { get; set; }
 
         [Required]
-        [StringLength(100)]
+        [StringLength(500)]
         public string Slug { get; set; }
         public string? LinkM3u8 { get; set; }
     }

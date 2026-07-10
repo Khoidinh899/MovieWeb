@@ -10,11 +10,16 @@ namespace MovieWeb.Services
     {
         private readonly MovieWebDbContext _context;
         private readonly ILogger<NotificationService> _logger;
+        private readonly IFcmNotificationService _fcmService;
 
-        public NotificationService(MovieWebDbContext context, ILogger<NotificationService> logger)
+        public NotificationService(
+            MovieWebDbContext context, 
+            ILogger<NotificationService> logger,
+            IFcmNotificationService fcmService)
         {
             _context = context;
             _logger = logger;
+            _fcmService = fcmService;
         }
 
         // ========== CREATE NOTIFICATION FOR SINGLE USER ==========
@@ -43,6 +48,38 @@ namespace MovieWeb.Services
 
                 _logger.LogInformation("✅ Created notification {NotificationId} for User {UserId}", 
                     notification.NotificationId, userId);
+
+                // Send FCM push notification
+                try
+                {
+                    var user = await _context.Users.FindAsync(userId);
+                    if (user != null && !string.IsNullOrEmpty(user.FcmToken))
+                    {
+                        bool isEnabled = true;
+                        if (type == "PaymentReminder" || type == "PaymentSuccess" || type == "SubscriptionCancelled" || type == "CancelSubscription")
+                        {
+                            isEnabled = user.NotifyPayment;
+                        }
+                        else if (type == "MovieRequestSuccess" || type == "MovieUpdate" || type == "movie_request_completed" || type == "CommentReply")
+                        {
+                            isEnabled = user.NotifyMovie;
+                        }
+                        else
+                        {
+                            isEnabled = user.NotifySystem;
+                        }
+
+                        if (isEnabled)
+                        {
+                            await _fcmService.SendPushNotificationAsync(user.FcmToken, title, content, type, url);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error sending push notification in CreateNotificationAsync for User {UserId}", userId);
+                }
+
                 return notification;
             }
             catch (Exception ex)
@@ -77,6 +114,41 @@ namespace MovieWeb.Services
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("✅ Created {Count} notifications", notifications.Count);
+
+                // Send FCM push notifications for all users
+                foreach (var userId in userIds)
+                {
+                    try
+                    {
+                        var user = await _context.Users.FindAsync(userId);
+                        if (user != null && !string.IsNullOrEmpty(user.FcmToken))
+                        {
+                            bool isEnabled = true;
+                            if (type == "PaymentReminder" || type == "PaymentSuccess" || type == "SubscriptionCancelled" || type == "CancelSubscription")
+                            {
+                                isEnabled = user.NotifyPayment;
+                            }
+                            else if (type == "MovieRequestSuccess" || type == "MovieUpdate" || type == "movie_request_completed" || type == "CommentReply")
+                            {
+                                isEnabled = user.NotifyMovie;
+                            }
+                            else
+                            {
+                                isEnabled = user.NotifySystem;
+                            }
+
+                            if (isEnabled)
+                            {
+                                await _fcmService.SendPushNotificationAsync(user.FcmToken, title, content, type, url);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error sending push notification in CreateNotificationsAsync for User {UserId}", userId);
+                    }
+                }
+
                 return notifications;
             }
             catch (Exception ex)

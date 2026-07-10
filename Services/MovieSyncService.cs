@@ -88,7 +88,7 @@ namespace MovieWeb.Services
                     // Không cần movieInDb.Episodes.Clear() vì RemoveRange đã theo dõi thay đổi
                 }
 
-                // Dùng HashSet để chống trùng lặp (giống hệt hàm Backfill của ông)
+                // Dùng HashSet để chống trùng lặp (giống hệt hàm Backfill )
                 var addedEpisodeKeys = new HashSet<string>();
                 int addedCount = 0;
                 string firstValidLink = null; // Dùng để cập nhật TrailerUrl cho phim
@@ -101,13 +101,13 @@ namespace MovieWeb.Services
                     {
                         string linkM3u8 = episodeData.LinkM3u8;
 
-                        // Bỏ qua nếu không có link M3U8 (theo logic của ông)
+                        // Bỏ qua nếu không có link M3U8 hợp lệ
                         if (string.IsNullOrEmpty(linkM3u8))
                         {
                             continue;
                         }
 
-                        // Lấy link đầu tiên làm TrailerUrl (giống logic Backfill)
+                        // Lấy link đầu tiên làm TrailerUrl nếu chưa có
                         if (firstValidLink == null)
                         {
                             firstValidLink = linkM3u8;
@@ -165,7 +165,7 @@ namespace MovieWeb.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[Hangfire Job] ❌ THẤT BẠI: Sync tập phim cho MovieID: {MovieId}", movieId);
-                // Ném lỗi lại để Hangfire biết và retry (nếu ông có cài đặt retry)
+                // Ném lỗi lại để Hangfire biết và retry
                 throw;
             }
         }

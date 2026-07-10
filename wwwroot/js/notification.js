@@ -163,10 +163,6 @@
         const isRead = notif.isRead ?? notif.IsRead ?? false;
         const createdAt = notif.createdAt ?? notif.CreatedAt ?? new Date().toISOString();
 
-        const isPaymentType = type.includes('payment') || type.includes('subscription');
-        const icon = isPaymentType ? '<i class="bi bi-credit-card"></i>' : '<i class="bi bi-film"></i>';
-        const iconClass = isPaymentType ? 'payment' : 'movie';
-
         const unreadClass = isRead ? '' : 'unread';
         const timeAgo = formatDateTime(createdAt);
 
@@ -174,9 +170,6 @@
             <a href="${escapeHtml(url)}"
                class="notification-item ${unreadClass} d-flex"
                data-id="${id}">
-                <div class="notification-icon ${iconClass}">
-                    ${icon}
-                </div>
                 <div class="flex-grow-1">
                     <h6 class="mb-1">${escapeHtml(title)}</h6>
                     <p class="mb-1">${escapeHtml(content)}</p>
@@ -529,11 +522,22 @@
 
     function showToast(type, message) {
         const toast = document.createElement('div');
-        toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} toast-notification`;
-        toast.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : 'x-circle'} me-2"></i>${message}`;
+        const alertType = type === 'success' ? 'success' : 
+                          (type === 'info' ? 'info' : 
+                          (type === 'warning' ? 'warning' : 'danger'));
+        
+        toast.className = `alert alert-${alertType} alert-dismissible fade show toast-notification`;
+        toast.innerHTML = `
+            <i class="bi bi-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
         document.body.appendChild(toast);
 
-        setTimeout(() => toast.remove(), 3000);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
     }
 
     // ========== NOTIFICATION PAGE FUNCTIONS ==========

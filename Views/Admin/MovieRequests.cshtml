@@ -375,7 +375,7 @@
                             <tr><th>Loại:</th><td id="syncedMovieType"></td></tr>
                             <tr>
                                 <th>Slug:</th>
-                                <td>
+                                <td class="text-break">
                                     <a id="syncedMovieLink" href="" target="_blank" class="text-primary">
                                         <span id="syncedMovieSlug"></span>
                                         <i class="fas fa-external-link-alt ms-1"></i>
@@ -409,6 +409,9 @@
             _ => "bg-dark",
         };
     }
+}
+@section Styles {
+    <link rel="stylesheet" href="~/admin/admin_movie_requests.css" asp-append-version="true" />
 }
 
 @section Scripts {

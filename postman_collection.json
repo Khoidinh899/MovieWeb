@@ -1,0 +1,109 @@
+{
+  "info": {
+    "name": "MovieWeb API - Movie Detail",
+    "description": "API endpoints for getting movie details (Flutter/Mobile apps)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Movie Detail",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/movie/:slug",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "movie", ":slug"],
+          "variable": [
+            {
+              "key": "slug",
+              "value": "avengers-endgame",
+              "description": "Movie slug"
+            }
+          ]
+        },
+        "description": "Get complete movie details by slug. Returns JSON with all movie information including categories, countries, actors, directors, and episodes."
+      },
+      "response": []
+    },
+    {
+      "name": "Clear Movie Cache",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/movie/:slug/cache",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "movie", ":slug", "cache"],
+          "variable": [
+            {
+              "key": "slug",
+              "value": "avengers-endgame",
+              "description": "Movie slug"
+            }
+          ]
+        },
+        "description": "Clear cache for a specific movie (Admin/Testing endpoint)"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Movie Detail - Not Found Test",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/movie/xyz-not-exists",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "movie", "xyz-not-exists"]
+        },
+        "description": "Test 404 error response when movie doesn't exist"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Movie Detail - Invalid Slug Test",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/movie/",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "movie", ""]
+        },
+        "description": "Test 400 error response for empty slug"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://moonphim.me",
+      "type": "string"
+    },
+    {
+      "key": "localUrl",
+      "value": "https://localhost:5001",
+      "type": "string"
+    }
+  ]
+}

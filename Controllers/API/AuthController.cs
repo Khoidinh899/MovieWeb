@@ -6,6 +6,9 @@ using MovieWeb.Models.DTOs;
 using MovieWeb.Models.Entities;
 using Microsoft.Extensions.Configuration;
 using MovieWeb.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
+using System.Security.Claims;
 
 namespace MovieWeb.Controllers
 {
@@ -249,6 +252,111 @@ namespace MovieWeb.Controllers
 
                 return RedirectToAction("TrangChu", "TrangChu");
             }
+        }
+
+        // ==========================================
+        // GOOGLE OAUTH
+        // ==========================================
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ExternalLogin(string provider, string? returnUrl = null)
+        {
+            var redirectUrl = Url.Action(nameof(ExternalLoginCallback), "Auth", new { returnUrl });
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+            return Challenge(properties, provider);
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> ExternalLoginCallback(string? returnUrl = null, string? remoteError = null)
+        {
+            returnUrl = returnUrl ?? Url.Content("~/");
+
+            if (remoteError != null)
+            {
+                _logger.LogWarning("Remote error from external login: {Error}", remoteError);
+                return RedirectToAction("TrangChu", "TrangChu", new { auth = "login" });
+            }
+
+            var info = await _signInManager.GetExternalLoginInfoAsync();
+            if (info == null)
+            {
+                TempData["ErrorMessage"] = "Đăng nhập bị hủy hoặc có lỗi xảy ra.";
+                return RedirectToAction("TrangChu", "TrangChu", new { auth = "login" });
+            }
+
+            // Đăng nhập bằng provider (Google) nếu user đã từng liên kết
+            var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: true, bypassTwoFactor: true);
+
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("{Name} logged in with {LoginProvider} provider.", info.Principal.Identity?.Name, info.LoginProvider);
+                return LocalRedirect(returnUrl);
+            }
+
+            if (result.IsLockedOut)
+            {
+                return RedirectToAction("AccessDenied");
+            }
+
+            // Nếu user chưa có tài khoản, tạo mới
+            var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+            if (email != null)
+            {
+                var user = await _userManager.FindByEmailAsync(email);
+
+                if (user == null)
+                {
+                    // Tạo user mới
+                    var fullName = info.Principal.FindFirstValue(ClaimTypes.Name) ?? email;
+                    var parts = fullName.Trim().Split(' ');
+                    var firstName = parts.Length > 0 ? parts.Last() : "";
+                    var lastName = parts.Length > 1 ? string.Join(" ", parts.Take(parts.Length - 1)) : "";
+
+                    user = new User
+                    {
+                        UserName = email,
+                        Email = email,
+                        FirstName = firstName,
+                        LastName = lastName,
+                        EmailConfirmed = true, // Google đã xác thực email
+                        RoleId = 2, // User role
+                        CreatedAt = DateTime.Now,
+                        IsActive = true
+                    };
+
+                    var createResult = await _userManager.CreateAsync(user);
+                    if (createResult.Succeeded)
+                    {
+                        createResult = await _userManager.AddLoginAsync(user, info);
+                        if (createResult.Succeeded)
+                        {
+                            await _signInManager.SignInAsync(user, isPersistent: true);
+                            _logger.LogInformation("User created an account using {Name} provider.", info.LoginProvider);
+                            return LocalRedirect(returnUrl);
+                        }
+                    }
+
+                    foreach (var error in createResult.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                }
+                else
+                {
+                    // Liên kết account hiện tại với Google
+                    var addLoginResult = await _userManager.AddLoginAsync(user, info);
+                    if (addLoginResult.Succeeded)
+                    {
+                        await _signInManager.SignInAsync(user, isPersistent: true);
+                        return LocalRedirect(returnUrl);
+                    }
+                }
+            }
+
+            TempData["ErrorMessage"] = "Không thể đăng nhập bằng Google. Vui lòng thử lại.";
+            return RedirectToAction("TrangChu", "TrangChu");
         }
 
 

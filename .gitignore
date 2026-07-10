@@ -1,6 +1,8 @@
 # Bỏ qua file môi trường
 .env # Environment variables
 .env.local  # Local environment variables
+.env.production # Production secrets - KHÔNG commit!
+firebase-key.json # Firebase service account key - KHÔNG commit!
 # Bỏ qua thư mục .vs của Visual Studio
 /.vs
 
@@ -13,3 +15,6 @@
 
 # Bỏ qua file cấu hình deploy
 Properties/PublishProfiles/
+
+# Bỏ qua file .agent
+*.agent
