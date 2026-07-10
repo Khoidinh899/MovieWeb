@@ -23,6 +23,9 @@ using MovieWeb.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ✅ Hỗ trợ lưu DateTime không thuộc múi giờ UTC vào PostgreSQL (giống SQL Server)
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 // ✅ Load .env file - Ưu tiên .env.local cho local development
 if (builder.Environment.IsDevelopment())
 {
