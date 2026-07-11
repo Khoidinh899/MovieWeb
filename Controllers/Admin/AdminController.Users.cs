@@ -326,26 +326,22 @@ namespace MovieWeb.Controllers
                     return Json(new { success = false, message = "Người dùng không tồn tại" });
                 }
 
-                // Kiểm tra user có dữ liệu liên quan không
-                var hasRelatedData = await _context.Comments.AnyAsync(c => c.UserId == userId) ||
-                                     await _context.Favorites.AnyAsync(f => f.UserId == userId) ||
-                                     await _context.Ratings.AnyAsync(r => r.UserId == userId) ||
-                                     await _context.WatchHistories.AnyAsync(w => w.UserId == userId);
+                // Thực hiện Soft-Delete (vô hiệu hóa tài khoản) để lưu trữ lịch sử và chặn email đăng nhập/đăng ký lại
+                user.IsActive = false;
+                user.UpdatedAt = DateTime.Now;
 
-                if (hasRelatedData)
-                {
-                    return Json(new { success = false, message = "Không thể xóa user có dữ liệu liên quan. Hãy khóa tài khoản thay thế." });
-                }
+                // Cập nhật Security Stamp để kích hoạt force logout ngay lập tức cho các phiên đăng nhập hiện tại
+                await _userManager.UpdateSecurityStampAsync(user);
 
-                var result = await _userManager.DeleteAsync(user);
+                var result = await _userManager.UpdateAsync(user);
                 if (result.Succeeded)
                 {
                     // Log admin action
-                    await LogAdminActionAsync("DELETE_USER", $"Deleted user {user.UserName} (ID: {userId})", userId.ToString());
+                    await LogAdminActionAsync("DELETE_USER", $"Soft deleted (disabled) user {user.UserName} (ID: {userId})", userId.ToString());
 
-                    _logger.LogInformation("Admin {AdminId} deleted user {UserId}", currentUser?.Id, userId);
+                    _logger.LogInformation("Admin {AdminId} soft-deleted user {UserId}", currentUser?.Id, userId);
 
-                    return Json(new { success = true, message = "Đã xóa người dùng thành công" });
+                    return Json(new { success = true, message = "Đã xóa và hạn chế tài khoản người dùng thành công" });
                 }
 
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));

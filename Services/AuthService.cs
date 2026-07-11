@@ -112,14 +112,12 @@ namespace MovieWeb.Services
                     return AuthResult.Failed("Email hoặc mật khẩu không đúng");
                 }
 
-                // ==== 💡 FIX LỖI 12: KIỂM TRA TÀI KHOẢN BỊ KHÓA (SỬA TỪ !user.IsActive) ====
-                // Chỉ bị khóa khi IsActive CÓ GIÁ TRỊ VÀ BẰNG false
+                // ==== 💡 KIỂM TRA TÀI KHOẢN BỊ KHÓA HOẶC BỊ HẠN CHẾ ====
                 if (user.IsActive == false)
                 {
-                    _logger.LogWarning($"Login failed for user {model.Email}: Account is locked (IsActive = false).");
-                    return AuthResult.Failed("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên.");
+                    _logger.LogWarning($"Login failed for user {model.Email}: Account is locked/disabled (IsActive = false).");
+                    return AuthResult.Failed("Tài khoản (Email) này đã bị khóa hoặc hạn chế truy cập. Vui lòng liên hệ Quản trị viên.");
                 }
-                // ==== KẾT THÚC FIX ====
 
                 // ⭐ CẬP NHẬT LastLogin
                 user.LastLogin = DateTime.Now;

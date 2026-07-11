@@ -91,12 +91,14 @@
             form.method = 'POST';
             form.action = '/Auth/Logout';
 
-            const token = document.getElementById('RequestVerificationToken').value;
-            const tokenInput = document.createElement('input');
-            tokenInput.type = 'hidden';
-            tokenInput.name = '__RequestVerificationToken';
-            tokenInput.value = token;
-            form.appendChild(tokenInput);
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (tokenInput) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = '__RequestVerificationToken';
+                input.value = tokenInput.value;
+                form.appendChild(input);
+            }
 
             document.body.appendChild(form);
             form.submit();

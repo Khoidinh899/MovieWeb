@@ -36,6 +36,14 @@
                             <input type="password" class="form-control auth-input" id="loginPassword" name="Password" required placeholder="••••••••">
                         </div>
 
+                        <div class="mb-3 d-flex justify-content-between align-items-center">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="loginRememberMe" name="RememberMe" value="true">
+                                <label class="form-check-label text-muted" for="loginRememberMe" style="cursor: pointer; font-size: 0.9rem;">Lưu đăng nhập</label>
+                            </div>
+                            <a href="#" id="showForgotPassword" class="text-muted small">Quên mật khẩu?</a>
+                        </div>
+
                         <button type="submit" class="btn btn-primary w-100 mb-3 auth-btn">
                             <span id="loginBtnText">Đăng nhập</span>
                             <span id="loginLoader" class="spinner-border spinner-border-sm d-none ms-2"></span>
@@ -47,10 +55,6 @@
                             <i class="fab fa-google me-2"></i>
                             Tiếp tục với Google
                         </a>
-                    </div>
-
-                    <div class="text-center mb-3">
-                        <a href="#" id="showForgotPassword" class="text-muted">Quên mật khẩu?</a>
                     </div>
 
                     <hr class="bg-secondary">

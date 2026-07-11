@@ -104,8 +104,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
-    // options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.Cookie.Name = "MoonPhim.Auth.Azure"; 
     
     options.Events.OnRedirectToLogin = context =>
@@ -400,6 +399,7 @@ app.UseRouting();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<UserStatusMiddleware>();
 
 // ===== MAP HUBS & ENDPOINTS =====
 app.MapHub<NotificationHub>("/notificationHub");
