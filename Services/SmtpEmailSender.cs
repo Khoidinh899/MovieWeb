@@ -1,78 +1,66 @@
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Options;
-using SendGrid;
-using SendGrid.Helpers.Mail;
 using Microsoft.AspNetCore.Identity;
 using MovieWeb.Services.Interfaces;
 using MovieWeb.Models.Entities;
+using MovieWeb.Models;
+using System;
 using System.Net;
+using System.Net.Mail;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace MovieWeb.Services
 {
-    public class SendGridOptions
+    public class SmtpEmailSender : IEmailSender, IEmailService, IEmailSender<User>
     {
-        public string? ApiKey { get; set; }
-        public string? SenderEmail { get; set; }
-        public string? SenderName { get; set; }
-    }
+        private readonly ILogger<SmtpEmailSender> _logger;
+        private readonly EmailSettings _settings;
 
-    public class SendGridEmailSender : IEmailSender, IEmailService, IEmailSender<User>
-    {
-        private readonly ILogger _logger;
-        private readonly SendGridOptions _options;
-
-        public SendGridEmailSender(
-            IOptions<SendGridOptions> optionsAccessor,
-            ILogger<SendGridEmailSender> logger)
+        public SmtpEmailSender(
+            IOptions<EmailSettings> optionsAccessor,
+            ILogger<SmtpEmailSender> logger)
         {
-            _options = optionsAccessor.Value;
+            _settings = optionsAccessor.Value;
             _logger = logger;
         }
 
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
-            if (string.IsNullOrEmpty(_options.ApiKey))
+            if (string.IsNullOrEmpty(_settings.SmtpServer))
             {
-                _logger.LogError("❌ SendGrid:ApiKey chưa được cấu hình!");
-                throw new Exception("Lỗi: SendGrid:ApiKey chưa được cấu hình.");
+                _logger.LogError("❌ EmailSettings:SmtpServer chưa được cấu hình!");
+                throw new Exception("Lỗi: EmailSettings:SmtpServer chưa được cấu hình.");
             }
 
-            // ✅ TẠO CLIENT TRỰC TIẾP TỪ API KEY
-            var client = new SendGridClient(_options.ApiKey);
+            var fromEmail = _settings.FromEmail ?? "noreply@moonphim.com";
+            var fromName = _settings.FromName ?? "MoonPhim";
 
-            var fromEmail = _options.SenderEmail ?? "noreply@yourdomain.com";
-            var fromName = _options.SenderName ?? "MovieWeb";
-
-            _logger.LogInformation($"🔹 Chuẩn bị gửi email:");
+            _logger.LogInformation($"🔹 Chuẩn bị gửi email SMTP:");
+            _logger.LogInformation($"   - Server: {_settings.SmtpServer}:{_settings.Port}");
             _logger.LogInformation($"   - From: {fromEmail} ({fromName})");
             _logger.LogInformation($"   - To: {email}");
             _logger.LogInformation($"   - Subject: {subject}");
 
-            var msg = new SendGridMessage()
+            using (var message = new MailMessage())
             {
-                From = new EmailAddress(fromEmail, fromName),
-                Subject = subject,
-                PlainTextContent = StripHtml(htmlMessage),
-                HtmlContent = htmlMessage
-            };
-            msg.AddTo(new EmailAddress(email));
+                message.From = new MailAddress(fromEmail, fromName);
+                message.To.Add(new MailAddress(email));
+                message.Subject = subject;
+                message.Body = htmlMessage;
+                message.IsBodyHtml = true;
 
-            var response = await client.SendEmailAsync(msg);
+                using (var client = new SmtpClient(_settings.SmtpServer, _settings.Port))
+                {
+                    client.UseDefaultCredentials = false;
+                    client.Credentials = new NetworkCredential(_settings.Username, _settings.Password);
+                    client.EnableSsl = _settings.EnableSsl;
 
-            if (response.StatusCode == HttpStatusCode.Accepted ||
-                response.StatusCode == HttpStatusCode.OK)
-            {
-                _logger.LogInformation($"✅ [SendGrid] Gửi email tới {email} THÀNH CÔNG!");
+                    await client.SendMailAsync(message);
+                }
             }
-            else
-            {
-                var responseBody = await response.Body.ReadAsStringAsync();
-                _logger.LogError($"❌ [SendGrid] Gửi email THẤT BẠI!");
-                _logger.LogError($"   - Status Code: {response.StatusCode}");
-                _logger.LogError($"   - Response: {responseBody}");
 
-                throw new Exception($"SendGrid failed: {response.StatusCode} - {responseBody}");
-            }
+            _logger.LogInformation($"✅ [SMTP] Gửi email tới {email} THÀNH CÔNG!");
         }
 
         // =================================================================
@@ -80,7 +68,6 @@ namespace MovieWeb.Services
         // =================================================================
         public async Task SendEmailConfirmationAsync(string email, string subject, string confirmationLink)
         {
-            // Lấy username từ email (hoặc có thể truyền vào nếu cần)
             var userName = email.Split('@')[0];
 
             var htmlBody = $@"
@@ -212,7 +199,7 @@ namespace MovieWeb.Services
                     </ul>
                     
                     <div style='text-align: center; margin: 30px 0;'>
-                        <a href='https://moonphim.com' 
+                        <a href='https://moonphim.me' 
                            style='background: linear-gradient(45deg, #28a745, #20c997); 
                                   color: white; 
                                   padding: 15px 30px; 
@@ -313,15 +300,6 @@ namespace MovieWeb.Services
                 <p>Mã này có hiệu lực trong 15 phút.</p>
             </div>";
             return SendEmailAsync(email, subject, message);
-        }
-
-        // =================================================================
-        // HÀM HELPER - XÓA HTML TAGS ĐỂ TẠO PLAIN TEXT
-        // =================================================================
-        private string StripHtml(string html)
-        {
-            if (string.IsNullOrEmpty(html)) return string.Empty;
-            return System.Text.RegularExpressions.Regex.Replace(html, "<.*?>", string.Empty);
         }
     }
 }

@@ -195,17 +195,12 @@ builder.Services.AddHangfireServer(options =>
 builder.Services.AddScoped<PaymentReminderJob>();
 builder.Services.AddScoped<SendRealtimeNotificationJob>();
 
-// ===== SENDGRID EMAIL SENDER =====
-builder.Services.Configure<SendGridOptions>(builder.Configuration.GetSection("SendGrid"));
+// ===== SMTP EMAIL SENDER =====
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
-builder.Services.AddSendGrid(options =>
-{
-    options.ApiKey = builder.Configuration.GetSection("SendGrid")["ApiKey"];
-});
-
-builder.Services.AddTransient<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender, SendGridEmailSender>();
-builder.Services.AddTransient<IEmailSender<User>, SendGridEmailSender>();
-builder.Services.AddTransient<IEmailService, SendGridEmailSender>();
+builder.Services.AddTransient<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender, SmtpEmailSender>();
+builder.Services.AddTransient<IEmailSender<User>, SmtpEmailSender>();
+builder.Services.AddTransient<IEmailService, SmtpEmailSender>();
 builder.Services.AddScoped<IStudentEmailService, StudentEmailService>();
 
 // ===== STRIPE CONFIGURATION =====

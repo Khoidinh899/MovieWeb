@@ -52,9 +52,13 @@ services:
       StripeSettings__SuccessUrl: ${BASE_URL}/payment/success
       StripeSettings__CancelUrl: ${BASE_URL}/payment/cancel
       StripeSettings__WebhookEndpoint: ${BASE_URL}/api/payment/webhook
-      SendGrid__ApiKey: ${SENDGRID_API_KEY}
-      SendGrid__SenderEmail: ${SENDGRID_SENDER_EMAIL}
-      SendGrid__SenderName: MoonPhim
+      EmailSettings__SmtpServer: ${SMTP_SERVER:-smtp-relay.brevo.com}
+      EmailSettings__Port: ${SMTP_PORT:-587}
+      EmailSettings__Username: ${SMTP_USERNAME}
+      EmailSettings__Password: ${SMTP_PASSWORD}
+      EmailSettings__FromEmail: ${SMTP_FROM_EMAIL}
+      EmailSettings__FromName: ${SMTP_FROM_NAME:-MoonPhim}
+      EmailSettings__EnableSsl: "true"
       Gemini__ApiKey: ${GEMINI_API_KEY}
       Gemini__Model: gemini-2.5-flash
     volumes:
