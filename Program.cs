@@ -156,6 +156,14 @@ builder.Services.AddAuthentication()
         options.ClientId = Environment.GetEnvironmentVariable("Authentication__Google__ClientId") ?? "";
         options.ClientSecret = Environment.GetEnvironmentVariable("Authentication__Google__ClientSecret") ?? "";
         options.CallbackPath = "/signin-google";
+        options.Events = new Microsoft.AspNetCore.Authentication.OAuth.OAuthEvents
+        {
+            OnRedirectToAuthorizationEndpoint = context =>
+            {
+                context.Response.Redirect(context.RedirectUri + "&prompt=select_account");
+                return System.Threading.Tasks.Task.CompletedTask;
+            }
+        };
     });
 
 // Authorization policies
@@ -261,6 +269,15 @@ builder.Services.AddScoped<MovieWeb.Services.Interfaces.IWatchHistoryService, Mo
 
 var app = builder.Build();
 
+// Configure app to trust forwarded headers from Nginx reverse proxy
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+};
+forwardedHeadersOptions.KnownNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
+
 // ===== AUTO MIGRATE DATABASE =====
 using (var scope = app.Services.CreateScope())
 {
@@ -303,11 +320,33 @@ using (var scope = app.Services.CreateScope())
         var stripeService = services.GetRequiredService<IStripeService>();
         
         var plans = await context.SubscriptionPlans.ToListAsync();
+        
+        if (plans.Count == 0)
+        {
+            logger.LogInformation("🌱 Seeding default subscription plans...");
+            var defaultPlans = new List<SubscriptionPlan>
+            {
+                new SubscriptionPlan { PlanName = "MoonPro_1M", DisplayName = "Premium 1 Tháng", Description = "Gói Premium dùng thử", PriceVND = 59000, PriceUSD = 2.36m, DurationMonths = 1, ActualMonths = 1, BonusMonths = 0, PlanType = "Premium", IsActive = true, IsPopular = false, DisplayOrder = 1, CreatedAt = DateTime.UtcNow },
+                new SubscriptionPlan { PlanName = "MoonPro_6M", DisplayName = "Premium 6 Tháng", Description = "Gói Premium 6 tháng - Tặng 1 tháng", PriceVND = 295000, PriceUSD = 11.80m, DurationMonths = 6, ActualMonths = 7, BonusMonths = 1, PlanType = "Premium", IsActive = true, IsPopular = true, DisplayOrder = 2, CreatedAt = DateTime.UtcNow },
+                new SubscriptionPlan { PlanName = "MoonPro_12M", DisplayName = "Premium 12 Tháng", Description = "Gói Premium 12 tháng - Tặng 1 tháng", PriceVND = 649000, PriceUSD = 25.96m, DurationMonths = 12, ActualMonths = 13, BonusMonths = 1, PlanType = "Premium", IsActive = true, IsPopular = false, DisplayOrder = 3, CreatedAt = DateTime.UtcNow },
+                new SubscriptionPlan { PlanName = "MoonStu_1M", DisplayName = "Student 1 Tháng", Description = "Gói Student dùng thử", PriceVND = 39000, PriceUSD = 1.56m, DurationMonths = 1, ActualMonths = 1, BonusMonths = 0, PlanType = "Student", IsActive = true, IsPopular = false, DisplayOrder = 4, CreatedAt = DateTime.UtcNow },
+                new SubscriptionPlan { PlanName = "MoonStu_6M", DisplayName = "Student 6 Tháng", Description = "Gói Student 6 tháng - Tặng 1 tháng", PriceVND = 195000, PriceUSD = 7.80m, DurationMonths = 6, ActualMonths = 7, BonusMonths = 1, PlanType = "Student", IsActive = true, IsPopular = true, DisplayOrder = 5, CreatedAt = DateTime.UtcNow },
+                new SubscriptionPlan { PlanName = "MoonStu_12M", DisplayName = "Student 12 Tháng", Description = "Gói Student 12 tháng - Tặng 1 tháng", PriceVND = 429000, PriceUSD = 17.16m, DurationMonths = 12, ActualMonths = 13, BonusMonths = 1, PlanType = "Student", IsActive = true, IsPopular = false, DisplayOrder = 6, CreatedAt = DateTime.UtcNow }
+            };
+            await context.SubscriptionPlans.AddRangeAsync(defaultPlans);
+            await context.SaveChangesAsync();
+            plans = await context.SubscriptionPlans.ToListAsync();
+        }
+
         bool needsSync = false;
         
         foreach (var plan in plans)
         {
-            if (!string.IsNullOrEmpty(plan.StripePriceId) && !plan.StripePriceId.Contains("1TCm949wspvAXAKP"))
+            if (string.IsNullOrEmpty(plan.StripePriceId) || string.IsNullOrEmpty(plan.StripeProductId))
+            {
+                needsSync = true;
+            }
+            else if (!plan.StripePriceId.Contains("1TCm949wspvAXAKP"))
             {
                 logger.LogWarning($"⚠️ Resetting stale Stripe Product/Price IDs for plan '{plan.DisplayName}' (old account detected).");
                 plan.StripeProductId = null;

@@ -140,17 +140,11 @@ namespace MovieWeb.Services
             // "%" là ký tự đại diện (wildcard) cho SQL Like
             var searchTerm = $"%{movieTitle.Trim()}%";
 
-            // Tên của bảng mã "Không phân biệt chữ hoa, không phân biệt dấu"
-            const string collation = "SQL_Latin1_General_CP1_CI_AI";
-
             var query = _context.Movies
                 .Where(m => m.IsActive == true)
                 .Where(m =>
-                    // CÚ PHÁP ĐÚNG:
-                    // 1. Ép cột m.Name dùng bảng mã (Collate)
-                    // 2. SAU ĐÓ mới so sánh (Like) với searchTerm
-                    EF.Functions.Like(EF.Functions.Collate(m.Name, collation), searchTerm) ||
-                    EF.Functions.Like(EF.Functions.Collate(m.OriginalName, collation), searchTerm)
+                    EF.Functions.ILike(m.Name, searchTerm) ||
+                    (m.OriginalName != null && EF.Functions.ILike(m.OriginalName, searchTerm))
                 );
 
             if (movieYear.HasValue)

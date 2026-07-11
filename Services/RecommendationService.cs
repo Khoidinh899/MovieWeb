@@ -19,9 +19,6 @@ namespace MovieWeb.Services
         private readonly MovieWebDbContext _context;
         private readonly ILogger<RecommendationService> _logger;
 
-        // Bảng mã "Không phân biệt chữ hoa, không phân biệt dấu"
-        private const string Collation = "SQL_Latin1_General_CP1_CI_AI";
-
         public RecommendationService(MovieWebDbContext context, ILogger<RecommendationService> logger)
         {
             _context = context;
@@ -49,10 +46,7 @@ namespace MovieWeb.Services
 
                     // Tìm trong bảng Categories
                     query = query.Where(m => m.Categories.Any(c => 
-                        EF.Functions.Like(
-                            EF.Functions.Collate(c.Name, Collation), 
-                            $"%{genreNormalized}%"
-                        )
+                        EF.Functions.ILike(c.Name, $"%{genreNormalized}%")
                     ));
                 }
 
@@ -62,10 +56,7 @@ namespace MovieWeb.Services
                     var countryNormalized = country.Trim();
 
                     query = query.Where(m => m.Countries.Any(c => 
-                        EF.Functions.Like(
-                            EF.Functions.Collate(c.Name, Collation), 
-                            $"%{countryNormalized}%"
-                        )
+                        EF.Functions.ILike(c.Name, $"%{countryNormalized}%")
                     ));
                 }
 
@@ -84,10 +75,7 @@ namespace MovieWeb.Services
                     };
 
                     query = query.Where(m => 
-                        EF.Functions.Like(
-                            EF.Functions.Collate(m.Type, Collation), 
-                            dbType
-                        )
+                        EF.Functions.ILike(m.Type, dbType)
                     );
                 }
 

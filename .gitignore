@@ -18,3 +18,7 @@ Properties/PublishProfiles/
 
 # Bỏ qua file .agent
 *.agent
+
+# Bỏ qua các file tài liệu nội bộ (.md), trừ README.md
+*.md
+!README.md

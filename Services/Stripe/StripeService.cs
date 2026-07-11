@@ -480,6 +480,12 @@ namespace MovieWeb.Services
                     return;
                 }
 
+                if (existingTransaction.Status == "completed")
+                {
+                    _logger.LogInformation($"Transaction {transactionCode} is already completed. Skipping duplicate fulfillment.");
+                    return;
+                }
+
                 var userId = int.Parse(session.Metadata["user_id"]);
                 var planId = int.Parse(session.Metadata["plan_id"]);
                 var actualMonths = int.Parse(session.Metadata["actual_months"]);

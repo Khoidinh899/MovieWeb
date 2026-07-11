@@ -10,7 +10,7 @@ namespace MovieWeb.Models.Entities
         public List<Movie> SingleMovies { get; set; } = new List<Movie>();
         public List<Movie> TvSeries { get; set; } = new List<Movie>();
         public List<Movie> HoatHinhMovies { get; set; } = new List<Movie>();
-
+        public List<Movie> UpcomingMovies { get; set; } = new List<Movie>(); // Added for upcoming movies with trailers but no episodes
 
         // Banner hiển thị phim hot
         public List<Movie> BannerMovies { get; set; } = new List<Movie>();

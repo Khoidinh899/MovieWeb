@@ -1,4 +1,4 @@
-﻿﻿@using MovieWeb.Helpers
+@using MovieWeb.Helpers
 @using MovieWeb.Models.Entities;
 @model MovieWeb.Models.Entities.HomeViewModel
 @{
@@ -289,10 +289,20 @@
                                     <small class="text-muted">@movie.Year</small>
                                     <span class="badge badge-warning ml-2">
                                         @{
-                                            var currentEp = movie.EpisodeCurrent?.Replace("/", "").Trim();
-                                            var totalEp = movie.EpisodeTotal?.Replace("/", "").Trim();
+                                            var epDisplay = movie.EpisodeCurrent ?? "";
+                                            if (epDisplay.Contains("Hoàn tất", StringComparison.OrdinalIgnoreCase) || 
+                                                epDisplay.Contains("Hoàn Tất", StringComparison.OrdinalIgnoreCase) || 
+                                                epDisplay.Contains("Full", StringComparison.OrdinalIgnoreCase) ||
+                                                epDisplay.Contains("/", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                @epDisplay
+                                            }
+                                            else
+                                            {
+                                                var totalStr = !string.IsNullOrEmpty(movie.EpisodeTotal) ? $"/{movie.EpisodeTotal}" : "";
+                                                @(epDisplay + totalStr)
+                                            }
                                         }
-                                        @currentEp/@totalEp
                                     </span>
                                 </div>
                             </div>
@@ -354,6 +364,51 @@
                 }
             </div>
         </section>
+
+        @if (Model.UpcomingMovies != null && Model.UpcomingMovies.Any())
+        {
+            <section class="mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="section-title">
+                        <i class="fab fa-youtube text-danger"></i> Phim Sắp Chiếu
+                    </h2>
+                </div>
+
+                <div class="row">
+                    @foreach (var movie in Model.UpcomingMovies.Take(12))
+                    {
+                        <div class="col-lg-3 col-md-4 col-sm-6 col-6 mb-4">
+                            <div class="movie-card">
+                                <div class="movie-poster">
+                                    <a href="/phim/@movie.Slug">
+                                        @{
+                                            var posterUrlUp = GetMoviePosterUrl(movie);
+                                        }
+                                        <img src="@posterUrlUp" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
+                                             onerror="this.onerror=null; this.src='/images/404_images.gif';">
+
+                                        <div class="movie-overlay">
+                                            <div class="play-button">
+                                                <i class="fas fa-play"></i>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="movie-info mt-2">
+                                    <h6 class="movie-title">
+                                        <a href="/phim/@movie.Slug" class="text-decoration-none">@movie.Name</a>
+                                    </h6>
+                                    <div class="movie-meta">
+                                        <small class="text-muted">@movie.Year</small>
+                                        <span class="badge badge-danger ml-2">Sắp Chiếu</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
+        }
     </div>
 @section Styles {
         <link rel="stylesheet" href="~/css/home.css" />

@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -66,7 +67,7 @@ namespace MovieWeb.Controllers
                 if (!_cache.TryGetValue(cacheKeyLatest, out List<Movie> latestMovies))
                 {
                     latestMovies = await _context.Movies
-                        .Where(m => m.IsActive == true)
+                        .Where(m => m.IsActive == true && (m.Episodes.Any() || !string.IsNullOrEmpty(m.TrailerUrl)))
                         .OrderByDescending(m => m.UpdatedAt)
                         .Take(12)
                         .ToListAsync();
@@ -80,7 +81,7 @@ namespace MovieWeb.Controllers
                 if (!_cache.TryGetValue(cacheKeySingle, out List<Movie> singleMovies))
                 {
                     singleMovies = await _context.Movies
-                        .Where(m => m.IsActive == true && m.Type == "single")
+                        .Where(m => m.IsActive == true && m.Type == "single" && !string.IsNullOrEmpty(m.TrailerUrl))
                         .OrderByDescending(m => m.UpdatedAt)
                         .Take(12)
                         .ToListAsync();
@@ -94,7 +95,7 @@ namespace MovieWeb.Controllers
                 if (!_cache.TryGetValue(cacheKeySeries, out List<Movie> seriesMovies))
                 {
                     seriesMovies = await _context.Movies
-                        .Where(m => m.IsActive == true && m.Type == "series")
+                        .Where(m => m.IsActive == true && m.Type == "series" && m.Episodes.Any())
                         .OrderByDescending(m => m.UpdatedAt)
                         .Take(12)
                         .ToListAsync();
@@ -108,7 +109,7 @@ namespace MovieWeb.Controllers
                 if (!_cache.TryGetValue(cacheKeyHoatHinh, out List<Movie> hoatHinhMovies))
                 {
                     hoatHinhMovies = await _context.Movies
-                        .Where(m => m.IsActive == true && m.Type == "hoathinh")
+                        .Where(m => m.IsActive == true && m.Type == "hoathinh" && (m.Episodes.Any() || !string.IsNullOrEmpty(m.TrailerUrl)))
                         .OrderByDescending(m => m.UpdatedAt)
                         .Take(12)
                         .ToListAsync();
@@ -116,6 +117,24 @@ namespace MovieWeb.Controllers
                     _cache.Set(cacheKeyHoatHinh, hoatHinhMovies, TimeSpan.FromMinutes(15));
                 }
                 viewModel.HoatHinhMovies = hoatHinhMovies;
+
+                // ===== PHIM SẮP CHIẾU (Upcoming - Chỉ có trailer, chưa có tập phim và chưa có link xem) =====
+                var cacheKeyUpcoming = "upcoming_movies_entities";
+                if (!_cache.TryGetValue(cacheKeyUpcoming, out List<Movie> upcomingMovies))
+                {
+                    upcomingMovies = await _context.Movies
+                        .Include(m => m.Episodes)
+                        .Where(m => m.IsActive == true 
+                                 && !m.Episodes.Any() 
+                                 && string.IsNullOrEmpty(m.TrailerUrl) 
+                                 && !string.IsNullOrEmpty(m.Trailer))
+                        .OrderByDescending(m => m.UpdatedAt ?? m.CreatedAt)
+                        .Take(12)
+                        .ToListAsync();
+
+                    _cache.Set(cacheKeyUpcoming, upcomingMovies, TimeSpan.FromMinutes(15));
+                }
+                viewModel.UpcomingMovies = upcomingMovies;
 
                 bool shouldShowAds = true;
                 var currentUser = await _authService.GetCurrentUserAsync(); // Lấy user hiện tại
@@ -147,7 +166,6 @@ namespace MovieWeb.Controllers
                     // Nếu là Premium/Admin, trả về danh sách rỗng
                     ViewBag.Advertisements = new List<Advertisement>();
                 }
-                // ==== KẾT THÚC FIX ====
 
                 return View("~/Views/Home/TrangChu.cshtml", viewModel);
             }

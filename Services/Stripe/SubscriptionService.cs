@@ -17,13 +17,22 @@ namespace MovieWeb.Services
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly ILogger<SubscriptionService> _logger;
 
-        public SubscriptionService(MovieWebDbContext context, IConfiguration configuration, INotificationService notificationService, IHubContext<NotificationHub> hubContext, ILogger<SubscriptionService> logger)
+        private readonly IStripeService _stripeService;
+
+        public SubscriptionService(
+            MovieWebDbContext context, 
+            IConfiguration configuration, 
+            INotificationService notificationService, 
+            IHubContext<NotificationHub> hubContext, 
+            ILogger<SubscriptionService> logger,
+            IStripeService stripeService)
         {
             _context = context;
             _configuration = configuration;
             _notificationService = notificationService;
             _hubContext = hubContext;
             _logger = logger;
+            _stripeService = stripeService;
             _studentEmailDomains = configuration.GetSection("SubscriptionSettings:StudentEmailDomains").Get<string[]>()
                                     ?? new[] { ".edu", ".edu.vn", ".ac.vn" };
         }
@@ -31,10 +40,34 @@ namespace MovieWeb.Services
         // ===== SUBSCRIPTION PLANS =====
         public async Task<bool> FulfillOrderAsync(string sessionId)
         {
-            // Tạm thời trả về true để hết lỗi
-            // Logic xử lý đơn hàng thật sẽ được thêm vào đây ở bước tiếp theo
-            await Task.CompletedTask; // Giả lập một công việc bất đồng bộ
-            return true;
+            try
+            {
+                _logger.LogInformation("FulfillOrderAsync: Bắt đầu xử lý kích hoạt thủ công từ session: {SessionId}", sessionId);
+                var sessionService = new Stripe.Checkout.SessionService();
+                var session = await sessionService.GetAsync(sessionId);
+
+                if (session == null)
+                {
+                    _logger.LogError("FulfillOrderAsync: Không tìm thấy checkout session từ Stripe: {SessionId}", sessionId);
+                    return false;
+                }
+
+                if (session.PaymentStatus != "paid")
+                {
+                    _logger.LogWarning("FulfillOrderAsync: Session chưa được thanh toán (PaymentStatus: {Status}): {SessionId}", session.PaymentStatus, sessionId);
+                    return false;
+                }
+
+                // Gọi HandleCheckoutCompletedAsync của StripeService
+                await _stripeService.HandleCheckoutCompletedAsync(session);
+                _logger.LogInformation("FulfillOrderAsync: Đã kích hoạt gói cước thành công cho session: {SessionId}", sessionId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "FulfillOrderAsync: Lỗi nghiêm trọng khi kích hoạt session: {SessionId}", sessionId);
+                return false;
+            }
         }
         public async Task<List<SubscriptionPlanDto>> GetAllPlansAsync(bool activeOnly = true)
         {

@@ -209,23 +209,54 @@ namespace MovieWeb.Controllers
         // GET: /Admin/RunBackfillJob (Thủ công)
         [HttpGet("run-backfill-job-123xyz")]
         [AllowAnonymous] // Cho phép gọi mà không cần đăng nhập (vì link đã bí mật)
-        public async Task<IActionResult> RunBackfillJob()
+        public async Task<IActionResult> RunBackfillJob([FromQuery] int? fromPage, [FromQuery] int? toPage)
         {
             _logger.LogWarning("!!! === [JOB THỦ CÔNG] BẮT ĐẦU CHẠY BACKFILL === !!!");
 
             try
             {
-                _logger.LogInformation("...[Backfill] Đang chạy cho Phim Bộ (Series)...");
+                if (fromPage.HasValue && toPage.HasValue)
+                {
+                    int start = Math.Max(1, fromPage.Value);
+                    int end = Math.Max(start, toPage.Value);
+                    _logger.LogWarning($"...[Backfill] Đang tiến hành cào phim từ trang {start} đến {end} từ OPhim API...");
+
+                    for (int page = start; page <= end; page++)
+                    {
+                        _logger.LogInformation($"...[Backfill] Đang cào trang {page}...");
+                        try
+                        {
+                            var response = await _oPhimService.GetLatestMoviesAsync(page);
+                            var movies = response?.Data?.Items;
+                            if (movies != null && movies.Any())
+                            {
+                                await _movieSyncService.SyncMoviesFromApiToDbAsync(movies, 2020);
+                                _logger.LogInformation($"   ✅ Đã đồng bộ xong trang {page} (có {movies.Count} phim)");
+                            }
+                            else
+                            {
+                                _logger.LogWarning($"   ⚠️ Trang {page} không có phim hoặc API lỗi.");
+                            }
+                        }
+                        catch (Exception exPage)
+                        {
+                            _logger.LogError(exPage, $"❌ Lỗi khi cào trang {page}. Bỏ qua để cào tiếp.");
+                        }
+                    }
+                    _logger.LogWarning("...[Backfill] Hoàn tất cào phim từ API.");
+                }
+
+                _logger.LogInformation("...[Backfill] Đang chạy rà soát tập cho Phim Bộ (Series)...");
                 await _movieSyncService.BackfillAllEpisodesAsync();
                 _logger.LogInformation("...[Backfill] Đã xong Phim Bộ.");
 
-                _logger.LogInformation("...[Backfill] Đang chạy cho Phim Lẻ (Single)...");
+                _logger.LogInformation("...[Backfill] Đang chạy rà soát tập cho Phim Lẻ (Single)...");
                 await _movieSyncService.BackfillSingleMoviesAsync();
                 _logger.LogInformation("...[Backfill] Đã xong Phim Lẻ.");
 
                 _logger.LogWarning("!!! === [JOB THỦ CÔNG] BACKFILL HOÀN TẤT === !!!");
 
-                return Ok("Đã chạy xong 2 hàm Backfill. Kiểm tra log và database.");
+                return Ok("Đã chạy xong các tác vụ Backfill. Hãy kiểm tra log và database.");
             }
             catch (Exception ex)
             {
