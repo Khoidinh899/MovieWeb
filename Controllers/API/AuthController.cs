@@ -59,8 +59,12 @@ namespace MovieWeb.Controllers
                 _logger.LogWarning("Invalid model state for register: {Errors}",
                     string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
 
-                // Trả về lỗi 400
+                // Trả về lỗi
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Dữ liệu không hợp lệ", errors });
+                }
                 return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ", errors });
             }
 
@@ -95,11 +99,19 @@ namespace MovieWeb.Controllers
                         }
                     }
 
-                    // Đăng ký thành công → Redirect tới Login
+                    // Đăng ký thành công
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = true, message = "Đăng ký thành công. Vui lòng xác thực email.", email = model.Email });
+                    }
                     return RedirectToAction(nameof(Login));
                 }
 
                 // Trả về lỗi nếu đăng ký thất bại
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = result.Message ?? "Đăng ký thất bại", errors = result.Errors });
+                }
                 return BadRequest(new { success = false, message = result.Message ?? "Đăng ký thất bại", errors = result.Errors });
             }
             catch (Exception ex)

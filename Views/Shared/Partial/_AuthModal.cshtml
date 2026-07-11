@@ -184,6 +184,28 @@
                     </div>
                 </div>
 
+                <!-- ============= EMAIL VERIFICATION SENT MESSAGE ============= -->
+                <div id="emailVerificationSent" class="d-none text-center">
+                    <i class="bi bi-envelope-check text-info" style="font-size: 4rem;"></i>
+                    <h4 class="text-white mt-3">Xác nhận email của bạn</h4>
+                    <p class="text-muted">Chúng tôi đã gửi liên kết xác thực đến địa chỉ email:</p>
+                    <p class="text-light fw-bold mb-3" id="verificationEmailDisplay"></p>
+                    <p class="text-muted"><small>Vui lòng kiểm tra hộp thư đến (bao gồm cả thư rác/spam) và nhấp vào liên kết để kích hoạt tài khoản.</small></p>
+                    
+                    <button id="resendVerificationFromSent" class="btn btn-outline-light w-100 mb-3 auth-btn d-flex align-items-center justify-content-center">
+                        <span id="resendText">Gửi lại email xác thực</span>
+                        <span id="resendLoader" class="spinner-border spinner-border-sm d-none ms-2"></span>
+                    </button>
+                    
+                    <div id="resendCooldownText" class="text-muted d-none mb-3">
+                        Có thể gửi lại sau <span id="cooldownSeconds" class="fw-bold text-warning">30</span> giây
+                    </div>
+                    
+                    <button id="backToLoginFromSent" class="btn btn-primary w-100 auth-btn">
+                        Quay lại Đăng nhập
+                    </button>
+                </div>
+
                 <!-- ============= VERIFICATION SUCCESS MESSAGE ============= -->
                 <div id="verificationSuccess" class="d-none text-center">
                     <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>

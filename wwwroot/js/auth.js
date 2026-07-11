@@ -15,6 +15,14 @@ function initializeAuth() {
     const forgotPasswordForm = document.getElementById('forgotPasswordForm');
     const resetPasswordForm = document.getElementById('resetPasswordForm');
     const verificationSuccess = document.getElementById('verificationSuccess');
+    const emailVerificationSent = document.getElementById('emailVerificationSent');
+    const verificationEmailDisplay = document.getElementById('verificationEmailDisplay');
+    const resendVerificationFromSent = document.getElementById('resendVerificationFromSent');
+    const resendCooldownText = document.getElementById('resendCooldownText');
+    const cooldownSeconds = document.getElementById('cooldownSeconds');
+    const resendText = document.getElementById('resendText');
+    const resendLoader = document.getElementById('resendLoader');
+    let cooldownTimer = null;
 
     setupFormToggles();
     setupModalTriggers();
@@ -101,6 +109,7 @@ function initializeAuth() {
         forgotPasswordForm.classList.add('d-none');
         resetPasswordForm.classList.add('d-none');
         verificationSuccess.classList.add('d-none');
+        emailVerificationSent.classList.add('d-none');
     }
 
     // ===== Check URL for Reset Password =====
@@ -151,6 +160,13 @@ function initializeAuth() {
         resetLoadingState('register');
         resetLoadingState('forgot');
         resetLoadingState('reset');
+        if (cooldownTimer) {
+            clearInterval(cooldownTimer);
+            cooldownTimer = null;
+        }
+        resendCooldownText.classList.add('d-none');
+        resendVerificationFromSent.classList.remove('d-none');
+        resendVerificationFromSent.disabled = false;
     }
 
     // ===== Form Submission Functions =====
@@ -178,6 +194,16 @@ function initializeAuth() {
         document.getElementById('resendVerification')?.addEventListener('click', async e => {
             e.preventDefault();
             await handleResendVerification();
+        });
+
+        document.getElementById('backToLoginFromSent')?.addEventListener('click', e => {
+            e.preventDefault();
+            switchToLogin();
+        });
+
+        resendVerificationFromSent?.addEventListener('click', async e => {
+            e.preventDefault();
+            await handleResendFromSent();
         });
     }
 
@@ -207,12 +233,16 @@ function initializeAuth() {
                 showAlert(result.message, 'danger');
 
                 if (result.message && result.message.includes('chưa được xác thực')) {
-                    const emailVerificationAlert = document.getElementById('emailVerificationAlert');
-                    if (emailVerificationAlert) {
-                        emailVerificationAlert.classList.remove('d-none');
-                        const email = document.getElementById('loginEmail').value;
-                        emailVerificationAlert.dataset.email = email;
-                    }
+                    const email = document.getElementById('loginEmail').value;
+                    fadeOut(loginForm, () => {
+                        hideAllForms();
+                        emailVerificationSent.dataset.email = email;
+                        verificationEmailDisplay.textContent = email;
+                        emailVerificationSent.classList.remove('d-none');
+                        document.querySelector('.modal-title').textContent = 'Xác nhận Email';
+                        fadeIn(emailVerificationSent);
+                        startResendCooldown();
+                    });
                 }
             }
         } catch (error) {
@@ -244,19 +274,25 @@ function initializeAuth() {
         try {
             const response = await fetch('/Auth/Register', {
                 method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 body: formData
             });
 
-            // Hỗ trợ cả response.ok (200) và response.redirected (302)
-            if (response.ok || response.redirected) {
+            const result = await response.json();
 
+            if (response.ok && result.success) {
                 fadeOut(registerForm, () => {
                     hideAllForms();
-                    verificationSuccess.classList.remove('d-none');
+                    emailVerificationSent.dataset.email = result.email || formData.get('Email');
+                    verificationEmailDisplay.textContent = result.email || formData.get('Email');
+                    emailVerificationSent.classList.remove('d-none');
 
-                    document.querySelector('.modal-title').textContent = 'Đăng ký thành công';
+                    document.querySelector('.modal-title').textContent = 'Xác nhận Email';
 
-                    fadeIn(verificationSuccess);
+                    fadeIn(emailVerificationSent);
+                    startResendCooldown();
                 });
 
                 showAlert(
@@ -264,8 +300,6 @@ function initializeAuth() {
                     'success'
                 );
             } else {
-                // Xử lý lỗi JSON trả về từ server
-                const result = await response.json();
                 let errorMessage = result.message;
 
                 if (result.errors && result.errors.length > 0) {
@@ -281,6 +315,68 @@ function initializeAuth() {
         } finally {
             setLoadingState('register', false);
         }
+    }
+
+    async function handleResendFromSent() {
+        const email = emailVerificationSent.dataset.email;
+        if (!email) {
+            showAlert('Không tìm thấy email!', 'warning');
+            return;
+        }
+
+        resendVerificationFromSent.disabled = true;
+        resendLoader.classList.remove('d-none');
+        resendText.textContent = 'Đang gửi lại...';
+
+        try {
+            const formData = new FormData();
+            formData.append('email', email);
+            formData.append('__RequestVerificationToken', getAntiForgeryToken());
+
+            const response = await fetch('/Auth/ResendEmailConfirmation', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert(result.message || 'Email xác thực đã được gửi lại!', 'success');
+                startResendCooldown();
+            } else {
+                showAlert(result.message || 'Gửi lại email xác thực thất bại!', 'danger');
+                resendVerificationFromSent.disabled = false;
+            }
+        } catch (error) {
+            console.error('Resend verification error:', error);
+            showAlert('Có lỗi xảy ra. Vui lòng thử lại!', 'danger');
+            resendVerificationFromSent.disabled = false;
+        } finally {
+            resendLoader.classList.add('d-none');
+            resendText.textContent = 'Gửi lại email xác thực';
+        }
+    }
+
+    function startResendCooldown() {
+        resendVerificationFromSent.disabled = true;
+        resendVerificationFromSent.classList.add('d-none');
+        resendCooldownText.classList.remove('d-none');
+
+        let seconds = 30;
+        cooldownSeconds.textContent = seconds;
+
+        if (cooldownTimer) clearInterval(cooldownTimer);
+        cooldownTimer = setInterval(() => {
+            seconds--;
+            cooldownSeconds.textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(cooldownTimer);
+                cooldownTimer = null;
+                resendCooldownText.classList.add('d-none');
+                resendVerificationFromSent.classList.remove('d-none');
+                resendVerificationFromSent.disabled = false;
+            }
+        }, 1000);
     }
 
 
