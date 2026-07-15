@@ -369,14 +369,77 @@ namespace MovieWeb.Services
                         var movieToUpdate = await _context.Movies.Include(m => m.Episodes).FirstOrDefaultAsync(m => m.MovieId == existingMovie.MovieId);
                         if (movieToUpdate != null)
                         {
+                            // Nếu số tập hiển thị trên API khác số tập hiện tại của DB (Có tập mới)
                             if (movieToUpdate.EpisodeCurrent != apiMovie.EpisodeCurrent)
                             {
-                                movieToUpdate.EpisodeCurrent = apiMovie.EpisodeCurrent;
-                                movieToUpdate.UpdatedAt = DateTime.Now;
-                                _logger.LogInformation($"📝 Cập nhật tập phim: {movieToUpdate.Name}");
-                            }
+                                _logger.LogInformation($"📝 Phát hiện phim '{movieToUpdate.Name}' có tập mới ({movieToUpdate.EpisodeCurrent} -> {apiMovie.EpisodeCurrent}). Đang lấy chi tiết để đồng bộ...");
+                                
+                                var apiResponse = await _oPhimService.GetMovieDetailAsync(apiMovie.Slug);
+                                var apiItem = apiResponse?.Item;
+                                
+                                if (apiItem != null)
+                                {
+                                    movieToUpdate.EpisodeCurrent = apiItem.EpisodeCurrent;
+                                    movieToUpdate.EpisodeTotal = apiItem.EpisodeTotal;
+                                    movieToUpdate.Status = apiItem.Status;
+                                    movieToUpdate.Quality = apiItem.Quality;
+                                    movieToUpdate.Language = apiItem.Lang;
+                                    movieToUpdate.UpdatedAt = DateTime.Now;
 
-                            if ((movieToUpdate.Type == "series" || movieToUpdate.Type == "hoathinh") && string.IsNullOrEmpty(movieToUpdate.TrailerUrl))
+                                    if (apiItem.Type == "single")
+                                    {
+                                        var firstServer = apiItem.Episodes?.FirstOrDefault();
+                                        var firstEpisode = firstServer?.ServerData?.FirstOrDefault();
+                                        if (firstEpisode != null && !string.IsNullOrEmpty(firstEpisode.LinkM3u8))
+                                        {
+                                            movieToUpdate.TrailerUrl = firstEpisode.LinkM3u8;
+                                        }
+                                    }
+                                    else if (apiItem.Type == "series" || apiItem.Type == "hoathinh")
+                                    {
+                                        if (apiItem.Episodes != null)
+                                        {
+                                            var existingEpisodesMap = movieToUpdate.Episodes
+                                                .ToDictionary(e => $"{e.Slug}|{e.ServerName?.Trim() ?? "Vietsub"}", e => e);
+
+                                            foreach (var server in apiItem.Episodes)
+                                            {
+                                                string serverName = server.ServerName?.Trim() ?? "Vietsub";
+                                                foreach (var episodeData in server.ServerData)
+                                                {
+                                                    string linkM3u8 = episodeData.LinkM3u8;
+                                                    if (string.IsNullOrEmpty(linkM3u8)) continue;
+
+                                                    string uniqueKey = $"{episodeData.Slug}|{serverName}";
+                                                    if (existingEpisodesMap.TryGetValue(uniqueKey, out var existingEp))
+                                                    {
+                                                        // Nếu tập đã có nhưng link m3u8 thay đổi -> cập nhật link mới
+                                                        if (existingEp.LinkM3u8 != linkM3u8)
+                                                        {
+                                                            existingEp.LinkM3u8 = linkM3u8;
+                                                            _logger.LogInformation($"      🔄 Cập nhật link tập {episodeData.Name} (Server: {serverName})");
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        // Chưa có tập này -> Thêm mới tập phim
+                                                        var newEp = new DbEpisode
+                                                        {
+                                                            ServerName = serverName,
+                                                            EpisodeName = episodeData.Name,
+                                                            Slug = episodeData.Slug,
+                                                            LinkM3u8 = linkM3u8
+                                                        };
+                                                        movieToUpdate.Episodes.Add(newEp);
+                                                        _logger.LogInformation($"      ✅ Thêm tập mới: Server={serverName}, Tập={episodeData.Name}");
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else if ((movieToUpdate.Type == "series" || movieToUpdate.Type == "hoathinh") && string.IsNullOrEmpty(movieToUpdate.TrailerUrl))
                             {
                                 var apiResponse = await _oPhimService.GetMovieDetailAsync(apiMovie.Slug);
                                 var apiItem = apiResponse?.Item;

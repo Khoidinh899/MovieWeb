@@ -217,7 +217,6 @@ builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 // ===== MOVIE SERVICES =====
 builder.Services.AddScoped<IOPhimService, OPhimService>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
-builder.Services.AddHostedService<BackgroundSyncService>();
 builder.Services.AddScoped<ICategorySyncService, CategorySyncService>();
 builder.Services.AddScoped<ICountrySyncService, CountrySyncService>();
 builder.Services.AddScoped<IActorSyncService, ActorSyncService>();
@@ -437,6 +436,17 @@ RecurringJob.AddOrUpdate<SendRealtimeNotificationJob>(
 );
 /*===== SITEMAP CACHE REFRESH JOB =====*/
 MovieWeb.Jobs.SitemapCacheRefreshJob.ScheduleRecurringJob();
+
+RecurringJob.AddOrUpdate<MovieWeb.Jobs.OPhimCatalogSyncJob>(
+    recurringJobId: "ophim-catalog-sync",
+    methodCall: job => job.Execute(),
+    cronExpression: "0 */3 * * *",
+    options: new RecurringJobOptions
+    {
+        TimeZone = TimeZoneInfo.FindSystemTimeZoneById(
+            OperatingSystem.IsWindows() ? "SE Asia Standard Time" : "Asia/Bangkok")
+    }
+);
 
 // ===== ROUTE CONFIGURATION =====
 app.MapControllerRoute(
