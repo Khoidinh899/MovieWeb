@@ -441,7 +441,7 @@ namespace MovieWeb.Controllers
             var query = _context.Movies
                 .Include(m => m.Countries)  // ✅ Thêm Include
                 .Include(m => m.Categories) // ✅ Thêm Include
-                .Where(m => m.IsActive == true && m.Episodes.Any());
+                .Where(m => m.IsActive == true && (m.Episodes.Any() || !string.IsNullOrEmpty(m.TrailerUrl)));
 
             // ✅ SỬA: Lọc theo Collection<Country>
             if (!string.IsNullOrEmpty(Countries))
@@ -532,7 +532,7 @@ namespace MovieWeb.Controllers
             var query = _context.Movies
                 .Include(m => m.Countries)  // ✅ Thêm Include
                 .Include(m => m.Categories) // ✅ Thêm Include
-                .Where(m => m.IsActive == true && m.Type == "hoathinh" && m.Episodes.Any());
+                .Where(m => m.IsActive == true && m.Type == "hoathinh" && (m.Episodes.Any() || !string.IsNullOrEmpty(m.TrailerUrl)));
 
             // ✅ SỬA: Lọc theo Collection<Country>
             if (!string.IsNullOrEmpty(Countries))
@@ -621,7 +621,7 @@ namespace MovieWeb.Controllers
             var query = _context.Movies
                 .Include(m => m.Countries)
                 .Include(m => m.Categories) // 💡 Thêm Include
-                .Where(m => (m.IsActive ?? false) && m.Episodes.Any() &&
+                .Where(m => (m.IsActive ?? false) && !string.IsNullOrEmpty(m.TrailerUrl) &&
                                (m.Type != null && (
                                    m.Type.ToLower() == "single" ||
                                    m.Type.ToLower() == "phimle" ||
