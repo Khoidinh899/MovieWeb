@@ -7,7 +7,7 @@
 ## 🛠️ Công nghệ sử dụng
 
 ![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-9.0-512BD4?logo=dotnet&logoColor=white)
-![SQL Server](https://img.shields.io/badge/SQL%20Server-2022-CC2927?logo=microsoftsqlserver&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 ![Entity Framework Core](https://img.shields.io/badge/EF%20Core-9.0-512BD4?logo=dotnet&logoColor=white)
 ![SignalR](https://img.shields.io/badge/SignalR-Realtime-00AFF0?logo=dotnet)
 ![Stripe](https://img.shields.io/badge/Stripe-Thanh%20toán-6772E5?logo=stripe&logoColor=white)
@@ -102,7 +102,7 @@ MovieWeb/
 | Vấn đề | Giải pháp |
 |---|---|
 | Xác thực | Cookie Identity + JWT cho API + Google OAuth |
-| Background Job | Hangfire với SQL Server storage |
+| Background Job | Hangfire với PostgreSQL storage |
 | Real-time | ASP.NET Core SignalR |
 | Gửi email | SendGrid transactional email |
 | Push notification | Firebase FCM |
@@ -137,7 +137,7 @@ MovieWeb/
 
 ### Yêu cầu
 - [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9)
-- SQL Server 2019 trở lên (hoặc Azure SQL)
+- **PostgreSQL 14+** (production) hoặc SQL Server (local dev nếu đổi lại provider)
 - Các API key: **Stripe**, **SendGrid**, **Google OAuth**, **Gemini AI**, **Firebase Admin SDK**
 
 ### 1. Clone dự án
@@ -152,8 +152,8 @@ cd MovieWeb
 Tạo file `.env.local` tại thư mục gốc của dự án (file này đã được gitignore):
 
 ```env
-# Database
-ConnectionStrings__DefaultConnection=Server=localhost;Database=MovieWebDb;Trusted_Connection=True;TrustServerCertificate=True;
+# Database (PostgreSQL)
+ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=MovieWebDb;Username=postgres;Password=your_password;
 
 # Google OAuth
 Authentication__Google__ClientId=YOUR_GOOGLE_CLIENT_ID
@@ -258,7 +258,8 @@ Context được xây dựng từ metadata phim và lịch sử xem để đưa 
 | `Microsoft.AspNetCore.Identity.EntityFrameworkCore` | Quản lý người dùng & phân quyền |
 | `Microsoft.AspNetCore.Authentication.Google` | Đăng nhập Google OAuth |
 | `Microsoft.AspNetCore.SignalR.Core` | Giao tiếp real-time |
-| `Hangfire.SqlServer` | Lên lịch background job |
+| `Hangfire.PostgreSql` | Lên lịch background job |
+| `Npgsql.EntityFrameworkCore.PostgreSQL` | EF Core provider cho PostgreSQL |
 | `Stripe.net` | Tích hợp thanh toán |
 | `SendGrid` | Gửi email giao dịch |
 | `FirebaseAdmin` | Push notification FCM |
