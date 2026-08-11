@@ -69,7 +69,33 @@ function initializeAuth() {
             registerForm.classList.remove('d-none');
             document.querySelector('.modal-title').textContent = 'Đăng ký';
             fadeIn(registerForm);
+            renderTurnstileIfNeeded();
         });
+    }
+
+    function renderTurnstileIfNeeded() {
+        setTimeout(() => {
+            if (window.turnstile) {
+                try {
+                    const container = document.querySelector('#registerForm .cf-turnstile');
+                    if (container) {
+                        if (!container.querySelector('iframe')) {
+                            const sitekey = container.getAttribute('data-sitekey');
+                            if (sitekey) {
+                                turnstile.render(container, {
+                                    sitekey: sitekey,
+                                    theme: 'dark'
+                                });
+                            }
+                        } else {
+                            turnstile.reset(container);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Turnstile render error:', e);
+                }
+            }
+        }, 100);
     }
 
     function switchToLogin() {
@@ -307,11 +333,17 @@ function initializeAuth() {
                 }
 
                 showAlert(errorMessage || 'Đăng ký thất bại, vui lòng kiểm tra lại!', 'danger');
+                if (window.turnstile) {
+                    try { turnstile.reset(); } catch (e) { }
+                }
             }
 
         } catch (error) {
             console.error('Register error:', error);
             showAlert('Có lỗi xảy ra khi đăng ký: ' + error.message, 'danger');
+            if (window.turnstile) {
+                try { turnstile.reset(); } catch (e) { }
+            }
         } finally {
             setLoadingState('register', false);
         }
