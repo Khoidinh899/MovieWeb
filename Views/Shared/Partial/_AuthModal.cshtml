@@ -1,3 +1,4 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 <!-- Login/Register/ForgotPassword/ResetPassword Modal -->
 <div class="modal fade" id="authModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -103,6 +104,11 @@
                         <div class="mb-3">
                             <label for="registerFullName" class="form-label text-white">Họ và tên</label>
                             <input type="text" class="form-control auth-input" id="registerFullName" name="FullName" required placeholder="Nguyễn Văn A">
+                        </div>
+
+                        <!-- Cloudflare Turnstile widget -->
+                        <div class="mb-3 d-flex justify-content-center">
+                            <div class="cf-turnstile" data-sitekey="@Configuration["Turnstile:SiteKey"]" data-theme="dark"></div>
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100 mb-3 auth-btn">

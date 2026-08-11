@@ -56,6 +56,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 Console.WriteLine($"🔍 Environment: {builder.Environment.EnvironmentName}");
 Console.WriteLine($"🗄️ Connection String: {connectionString?[..Math.Min(60, connectionString?.Length ?? 0)]}...");
+Console.WriteLine($"🔑 Turnstile SiteKey: {builder.Configuration["Turnstile:SiteKey"]}");
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
 // ===== SERVICE CONFIGURATION =====
@@ -236,6 +237,7 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 builder.Services.AddHttpClient<IGeminiService, GeminiService>();
+builder.Services.AddHttpClient<ITurnstileService, TurnstileService>();
 builder.Services.AddScoped<IMovieRequestService, MovieRequestService>();
 
 builder.Services.AddAntiforgery(options =>

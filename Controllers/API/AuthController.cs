@@ -20,6 +20,7 @@ namespace MovieWeb.Controllers
         private readonly SignInManager<User> _signInManager;
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
+        private readonly ITurnstileService _turnstileService;
 
         public AuthController(
             IAuthService authService,
@@ -27,7 +28,8 @@ namespace MovieWeb.Controllers
             UserManager<User> userManager,
             SignInManager<User> signInManager,
             IConfiguration configuration,
-            IEmailService emailService)
+            IEmailService emailService,
+            ITurnstileService turnstileService)
         {
             _authService = authService;
             _logger = logger;
@@ -35,6 +37,7 @@ namespace MovieWeb.Controllers
             _signInManager = signInManager;
             _configuration = configuration;
             _emailService = emailService;
+            _turnstileService = turnstileService;
         }
 
         // GET: /Auth/Register
@@ -54,6 +57,19 @@ namespace MovieWeb.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterDto model)
         {
+            var turnstileResponse = Request.Form["cf-turnstile-response"].ToString();
+            var clientIp = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            if (!await _turnstileService.VerifyTokenAsync(turnstileResponse, clientIp))
+            {
+                _logger.LogWarning("CAPTCHA verification failed for email: {Email}", model.Email);
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Xác thực CAPTCHA không thành công. Vui lòng thử lại." });
+                }
+                return BadRequest(new { success = false, message = "Xác thực CAPTCHA không thành công." });
+            }
+
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Invalid model state for register: {Errors}",
