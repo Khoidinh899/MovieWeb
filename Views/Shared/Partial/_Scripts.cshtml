@@ -2,7 +2,7 @@
 <script src="~/js/site.js" asp-append-version="true"></script>
 @if (!Context.Request.Path.StartsWithSegments("/Admin"))
 {
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback&render=explicit" async defer></script>
     <script src="~/js/auth.js" asp-append-version="true"></script>
 }
 <script>

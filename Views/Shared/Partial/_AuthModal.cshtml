@@ -107,8 +107,8 @@
                         </div>
 
                         <!-- Cloudflare Turnstile widget -->
-                        <div class="mb-3 d-flex justify-content-center">
-                            <div class="cf-turnstile" data-sitekey="@Configuration["Turnstile:SiteKey"]" data-theme="dark"></div>
+                        <div class="mb-3 d-flex justify-content-center" style="min-height: 65px;">
+                            <div id="turnstile-container" data-sitekey="@Configuration["Turnstile:SiteKey"]"></div>
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100 mb-3 auth-btn">

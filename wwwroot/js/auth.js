@@ -63,6 +63,12 @@ function initializeAuth() {
         });
     }
 
+window.onloadTurnstileCallback = function () {
+    if (typeof renderTurnstileIfNeeded === 'function') {
+        renderTurnstileIfNeeded();
+    }
+};
+
     function switchToRegister() {
         fadeOut(loginForm, () => {
             hideAllForms();
@@ -74,28 +80,34 @@ function initializeAuth() {
     }
 
     function renderTurnstileIfNeeded() {
-        setTimeout(() => {
-            if (window.turnstile) {
-                try {
-                    const container = document.querySelector('#registerForm .cf-turnstile');
-                    if (container) {
-                        if (!container.querySelector('iframe')) {
-                            const sitekey = container.getAttribute('data-sitekey');
-                            if (sitekey) {
-                                turnstile.render(container, {
-                                    sitekey: sitekey,
-                                    theme: 'dark'
-                                });
-                            }
-                        } else {
-                            turnstile.reset(container);
-                        }
-                    }
-                } catch (e) {
-                    console.warn('Turnstile render error:', e);
+        function doRender() {
+            if (!window.turnstile) return false;
+            try {
+                const container = document.getElementById('turnstile-container');
+                if (container) {
+                    const sitekey = container.getAttribute('data-sitekey') || '0x4AAAAAAEM_RWNvD7gEIdY7';
+                    container.innerHTML = '';
+                    turnstile.render('#turnstile-container', {
+                        sitekey: sitekey,
+                        theme: 'dark'
+                    });
+                    return true;
                 }
+            } catch (e) {
+                console.warn('Turnstile render warning:', e);
             }
-        }, 100);
+            return false;
+        }
+
+        if (!doRender()) {
+            let attempts = 0;
+            const interval = setInterval(() => {
+                attempts++;
+                if (doRender() || attempts > 20) {
+                    clearInterval(interval);
+                }
+            }, 250);
+        }
     }
 
     function switchToLogin() {
