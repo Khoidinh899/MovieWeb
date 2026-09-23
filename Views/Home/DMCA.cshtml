@@ -1,0 +1,258 @@
+@{
+    ViewData["Title"] = "Tuyên Bố Miễn Trừ Trách Nhiệm & Bản Quyền DMCA";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <style>
+        .dmca-container {
+            max-width: 900px;
+            margin: 40px auto;
+            color: #e2e8f0;
+        }
+        .dmca-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 35px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+        }
+        .dmca-header {
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .dmca-title {
+            color: #38bdf8;
+            font-weight: 700;
+            font-size: 28px;
+        }
+        .dmca-section {
+            margin-bottom: 25px;
+            line-height: 1.7;
+        }
+        .dmca-section h3 {
+            color: #f1f5f9;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .dmca-section h3 i {
+            color: #38bdf8;
+        }
+        .highlight-box {
+            background: #0f172a;
+            border-left: 4px solid #38bdf8;
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin: 15px 0;
+            color: #cbd5e1;
+        }
+        .report-form-card {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 30px;
+            border: 1px solid #1e293b;
+        }
+        .form-label {
+            color: #38bdf8;
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 6px;
+        }
+        .form-control-custom {
+            background: #1e293b;
+            border: 1px solid #3b82f6;
+            color: #ffffff;
+            font-size: 15px;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .form-control-custom::placeholder {
+            color: #94a3b8 !important;
+            opacity: 1;
+            font-style: italic;
+        }
+        .form-control-custom:focus {
+            background: #1e293b;
+            border-color: #38bdf8;
+            color: #fff;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.3);
+        }
+        .form-check-label-custom {
+            color: #38bdf8 !important;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .btn-submit-dmca {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: #fff;
+            font-weight: 600;
+            padding: 12px 28px;
+            border-radius: 8px;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn-submit-dmca:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+            color: #fff;
+        }
+    </style>
+}
+
+<div class="container dmca-container">
+    <div class="dmca-card">
+        <div class="dmca-header">
+            <h1 class="dmca-title">
+                <i class="fa-solid fa-shield-halved me-2"></i> Tuyên Bố Miễn Trừ Trách Nhiệm & DMCA
+            </h1>
+            <p class="text-secondary mb-0">Chính sách bản quyền và quy trình thông báo gỡ bỏ nội dung trên MoonPhim</p>
+        </div>
+
+        <div class="dmca-section">
+            <h3><i class="fa-solid fa-circle-info"></i> 1. Tuyên bố Miễn trừ Trách nhiệm (Disclaimer)</h3>
+            <p>
+                <strong>MoonPhim</strong> là một trang web hỗ trợ tìm kiếm và hiển thị thông tin phim ảnh trực tuyến. 
+                Chúng tôi tuyệt đối <strong>KHÔNG lưu trữ, tải lên hoặc sở hữu bất kỳ tệp tin phương tiện kỹ thuật số nào</strong> 
+                (MP4, M3U8, MKV, FLV, v.v.) trên các máy chủ do MoonPhim vận hành.
+            </p>
+            <div class="highlight-box">
+                <i class="fa-solid fa-quote-left me-2"></i>
+                Tất cả các nội dung video trình chiếu trên trang web này đều được tự động nhúng (embed code) hoặc liên kết 
+                từ các nguồn chia sẻ mở công cộng của bên thứ ba (như VSMov API và các máy chủ phát lại công cộng độc lập). 
+                MoonPhim không chịu trách nhiệm pháp lý đối với tính hợp pháp hoặc bản quyền của nội dung được lưu trữ tại các nguồn bên thứ ba đó.
+            </div>
+        </div>
+
+        <div class="dmca-section">
+            <h3><i class="fa-solid fa-scale-balanced"></i> 2. Chính sách Tuân thủ Bản quyền (DMCA Policy)</h3>
+            <p>
+                MoonPhim hoàn toàn tôn trọng quyền sở hữu trí tuệ của các tác giả, nhà sản xuất và đơn vị phát hành. 
+                Theo quy định của Đạo luật Bản quyền Thiên niên kỷ Kỹ thuật số (DMCA) và các quy định pháp luật sở hữu trí tuệ hiện hành:
+            </p>
+            <ul>
+                <li>Nếu bạn là chủ sở hữu bản quyền hợp pháp hoặc đại diện được ủy quyền hợp pháp của nội dung xuất hiện trên MoonPhim.</li>
+                <li>Bạn tin rằng liên kết trên MoonPhim đang xâm phạm quyền sở hữu trí tuệ của bạn.</li>
+            </ul>
+            <p>
+                Vui lòng gửi thông báo báo cáo vi phạm theo Form bên dưới. Ban quản trị MoonPhim sẽ xác minh và tiến hành 
+                <strong>gỡ bỏ liên kết vi phạm trong vòng 24 - 48 giờ làm việc</strong>.
+            </p>
+        </div>
+
+        <!-- FORM BÁO CÁO VI PHẠM BẢN QUYỀN -->
+        <div class="report-form-card" id="reportFormSection">
+            <h3 class="text-danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation"></i> Gửi Báo Cáo Vi Phạm Bản Quyền (DMCA Form)
+            </h3>
+            <p class="small mb-4" style="color: #38bdf8; font-size: 14px; font-weight: 500;">
+                <i class="fa-solid fa-circle-info me-1"></i> Các thông tin có dấu (<span class="text-danger">*</span>) là bắt buộc. Báo cáo của bạn sẽ được tự động gửi trực tiếp đến Ban quản trị MoonPhim để xử lý.
+            </p>
+
+            <form id="dmcaReportForm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Họ và tên người đại diện <span class="text-danger">*</span></label>
+                        <input type="text" id="fullName" name="FullName" class="form-control form-control-custom" placeholder="Nhập họ và tên đầy đủ" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Email phản hồi <span class="text-danger">*</span></label>
+                        <input type="email" id="email" name="Email" class="form-control form-control-custom" placeholder="diachiemail@domain.com" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Tổ chức / Đơn vị sở hữu bản quyền</label>
+                        <input type="text" id="organization" name="Organization" class="form-control form-control-custom" placeholder="Tên công ty hoặc Cá nhân sở hữu" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Tên phim bị báo cáo</label>
+                        <input type="text" id="movieTitle" name="MovieTitle" class="form-control form-control-custom" placeholder="Ví dụ: Backrooms, Obsession..." />
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">URL đường dẫn phim vi phạm trên MoonPhim <span class="text-danger">*</span></label>
+                        <input type="url" id="movieUrl" name="MovieUrl" class="form-control form-control-custom" placeholder="https://moonphim.me/phim/ten-phim" required />
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Bằng chứng sở hữu bản quyền & Mô tả chi tiết <span class="text-danger">*</span></label>
+                        <textarea id="proofDetails" name="ProofDetails" rows="4" class="form-control form-control-custom" placeholder="Cung cấp link bằng chứng bản quyền, giấy ủy quyền hoặc chi tiết nội dung vi phạm..." required></textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="declarationCheck" required>
+                            <label class="form-check-label form-check-label-custom" for="declarationCheck">
+                                Tôi xin cam đoan các thông tin khai báo trên là chính xác và tôi là chủ sở hữu bản quyền hoặc đại diện hợp pháp.
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-submit-dmca" id="btnSubmitForm">
+                            <i class="fa-solid fa-paper-plane me-2"></i> Gửi Báo Cáo Khẩn Báo
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const form = document.getElementById("dmcaReportForm");
+            const btnSubmit = document.getElementById("btnSubmitForm");
+
+            // Tự động điền URL nếu có query string ?url=...
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetUrl = urlParams.get('url');
+            const targetTitle = urlParams.get('title');
+            if (targetUrl) {
+                document.getElementById('movieUrl').value = targetUrl;
+            }
+            if (targetTitle) {
+                document.getElementById('movieTitle').value = targetTitle;
+            }
+
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Đang gửi báo cáo...';
+
+                const formData = new FormData(form);
+
+                try {
+                    const response = await fetch("/api/copyright/report", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        alert("✅ " + result.message);
+                        form.reset();
+                    } else {
+                        alert("❌ " + (result.message || "Không thể gửi báo cáo. Vui lòng thử lại sau."));
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("❌ Đã xảy ra lỗi kết nối. Vui lòng thử lại sau.");
+                } finally {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Gửi Báo Cáo Khẩn Báo';
+                }
+            });
+        });
+    </script>
+}

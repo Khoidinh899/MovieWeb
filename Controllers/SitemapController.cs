@@ -131,15 +131,17 @@ namespace MovieWeb.Controllers
 
             foreach (var category in categories)
             {
+                if (string.IsNullOrWhiteSpace(category.Slug)) continue;
+                string safeCatSlug = Uri.EscapeDataString(category.Slug.Trim());
                 sitemap.Add(CreateUrlElement(ns,
-                    url: $"{BASE_URL}/the-loai/{category.Slug}",
+                    url: $"{BASE_URL}/the-loai/{safeCatSlug}",
                     lastmod: DateTime.Now,
                     changefreq: "daily",
                     priority: "0.8"
                 ));
             }
 
-            // 4. ===== QUỐC GIA (COUNTRIES) - Nếu bạn có trang riêng cho từng quốc gia =====
+            // 4. ===== QUỐC GIA (COUNTRIES) =====
             var countries = await _context.Countries
                 .AsNoTracking()
                 .Where(c => c.IsActive == true)
@@ -147,23 +149,22 @@ namespace MovieWeb.Controllers
                 .Select(c => new { c.Slug, c.Name })
                 .ToListAsync();
 
-            // Uncomment nếu bạn có route cho quốc gia, ví dụ: /quoc-gia/{slug}
-            /*
             foreach (var country in countries)
             {
+                if (string.IsNullOrWhiteSpace(country.Slug)) continue;
+                string safeCountrySlug = Uri.EscapeDataString(country.Slug.Trim());
                 sitemap.Add(CreateUrlElement(ns,
-                    url: $"{BASE_URL}/quoc-gia/{country.Slug}",
+                    url: $"{BASE_URL}/quoc-gia/{safeCountrySlug}",
                     lastmod: DateTime.Now,
                     changefreq: "daily",
                     priority: "0.7"
                 ));
             }
-            */
 
             // 5. ===== PHIM (MOVIES) =====
             var movies = await _context.Movies
                 .AsNoTracking()
-                .Where(m => m.IsActive == true)
+                .Where(m => m.IsActive == true && (m.Episodes.Any() || !string.IsNullOrEmpty(m.TrailerUrl)))
                 .OrderByDescending(m => m.UpdatedAt ?? m.CreatedAt)
                 .Select(m => new 
                 { 
@@ -179,6 +180,8 @@ namespace MovieWeb.Controllers
 
             foreach (var movie in movies)
             {
+                if (string.IsNullOrWhiteSpace(movie.Slug)) continue;
+
                 var lastModDate = movie.UpdatedAt ?? movie.CreatedAt ?? DateTime.Now;
                 
                 // Ưu tiên cao hơn cho phim có lượt xem cao
@@ -186,10 +189,12 @@ namespace MovieWeb.Controllers
                               movie.ViewCount > 5000 ? "0.8" :
                               movie.ViewCount > 1000 ? "0.7" : "0.6";
 
+                string safeMovieSlug = Uri.EscapeDataString(movie.Slug.Trim());
+
                 sitemap.Add(CreateUrlElement(ns,
-                    url: $"{BASE_URL}/phim/{movie.Slug}",
+                    url: $"{BASE_URL}/phim/{safeMovieSlug}",
                     lastmod: lastModDate,
-                    changefreq: "weekly",
+                    changefreq: "daily",
                     priority: priority
                 ));
             }

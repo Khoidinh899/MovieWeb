@@ -1,0 +1,442 @@
+@* Partial View: _UpgradeAnnouncementModal.cshtml - Thông báo sự kiện Nâng Cấp MoonPhim 2.0 Đêm 24/09/2026 *@
+<div class="modal fade" id="upgradeAnnouncementModal" tabindex="-1" aria-labelledby="upgradeAnnouncementModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content upgrade-modal-content">
+            <!-- Nút đóng góc phải -->
+            <button type="button" class="btn-close btn-close-white upgrade-modal-close" onclick="closeUpgradeModal()" aria-label="Đóng"></button>
+            
+            <div class="modal-body p-4 p-md-5">
+                <!-- Header Banner -->
+                <div class="text-center mb-4">
+                    <div class="upgrade-badge-glow mb-2">
+                        <span class="badge-tag"><i class="bi bi-stars text-warning me-1"></i> SỰ KIỆN ĐẶC BIỆT</span>
+                    </div>
+                    <h3 class="upgrade-modal-title" id="upgradeAnnouncementModalLabel">
+                        🚀 ĐẠI TIỆC NÂNG CẤP MOONPHIM
+                    </h3>
+                    <div class="upgrade-release-date">
+                        <i class="bi bi-calendar-check-fill text-info me-1"></i> Chính thức ra mắt vào: <strong class="text-warning">Đêm 24/09/2026</strong>
+                    </div>
+                </div>
+
+                <!-- Lời cảm ơn -->
+                <div class="upgrade-thank-you text-center mb-4">
+                    <p class="mb-0">
+                        💖 Cảm ơn bạn đã luôn đồng hành và ủng hộ <strong>MoonPhim</strong> trong suốt thời gian qua! Để mang lại trải nghiệm xem phim hoàn hảo nhất, đội ngũ chúng mình xin gửi tặng bạn loạt tính năng mới:
+                    </p>
+                </div>
+
+                <!-- 3 Tính năng nổi bật -->
+                <div class="upgrade-features-list mb-4">
+                    <div class="upgrade-feature-item">
+                        <div class="feature-icon bg-gradient-phone">
+                            <i class="bi bi-phone-fill"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h6 class="feature-title">1. Xem Phim Tràn Màn Hình Trên Điện Thoại (iOS & Android)</h6>
+                            <p class="feature-desc">Thêm lối tắt ra màn hình chính, xem toàn màn hình cực đã, không bị vướng thanh trình duyệt, mở xem nhanh chỉ 1 chạm!</p>
+                        </div>
+                    </div>
+
+                    <div class="upgrade-feature-item">
+                        <div class="feature-icon bg-gradient-room">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h6 class="feature-title">2. Phòng Xem Phim Chung Cùng Bạn Bè</h6>
+                            <p class="feature-desc">Mời bạn bè, người yêu cùng xem phim từ xa – tự động đồng bộ tua phim, dừng phim cùng một giây theo thời gian thực!</p>
+                        </div>
+                    </div>
+
+                    <div class="upgrade-feature-item">
+                        <div class="feature-icon bg-gradient-chat">
+                            <i class="bi bi-chat-dots-fill"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h6 class="feature-title">3. Bình Luận Chạy Chữ Trực Tiếp Trên Màn Hình</h6>
+                            <p class="feature-desc">Vừa xem vừa gửi bình luận bay qua màn hình, thỏa sức tương tác và chém gió vui nhộn cùng mọi người như ở rạp chiếu phim!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box Đặc Quyền Đăng Ký -->
+                <div class="upgrade-benefit-box mb-4">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-gift-fill text-warning fs-5 me-2"></i>
+                        <h6 class="mb-0 text-white fw-bold">ĐẶC QUYỀN KHI TẠO TÀI KHOẢN HÔM NAY:</h6>
+                    </div>
+                    <ul class="benefit-list mb-0">
+                        <li><i class="bi bi-check2-circle text-success me-2"></i> Trải nghiệm sớm (Early Access) tất cả tính năng mới ngay khi vừa mở cổng.</li>
+                        <li><i class="bi bi-check2-circle text-success me-2"></i> Tự động lưu lịch sử xem phim và đồng bộ danh sách yêu thích xuyên suốt mọi thiết bị.</li>
+                    </ul>
+                </div>
+
+                <!-- Nút Hành Động (CTA) -->
+                <div class="row g-2 mb-3">
+                    <div class="col-12 col-md-7">
+                        <button type="button" class="btn btn-upgrade-primary w-100 py-3" onclick="openAuthFromUpgradeModal()">
+                            <i class="bi bi-person-plus-fill me-2"></i> ĐĂNG KÝ / ĐĂNG NHẬP NGAY
+                        </button>
+                    </div>
+                    <div class="col-12 col-md-5">
+                        <button type="button" class="btn btn-upgrade-secondary w-100 py-3" onclick="closeUpgradeModal()">
+                            <i class="bi bi-play-circle me-2"></i> Xem Phim Ngay
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Checkbox Không hiển thị lại (Màu sáng rõ ràng) -->
+                <div class="text-center pt-2">
+                    <div class="form-check d-inline-flex align-items-center gap-2 upgrade-checkbox-wrapper">
+                        <input class="form-check-input upgrade-custom-checkbox" type="checkbox" id="dontShowUpgradeModalAgain">
+                        <label class="form-check-label upgrade-checkbox-label" for="dontShowUpgradeModalAgain">
+                            Không hiển thị lại thông báo này
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ===================================================
+   MODAL NÂNG CẤP MOONPHIM 2.0 - MOONPHIM BLUE THEME
+   =================================================== */
+#upgradeAnnouncementModal {
+    z-index: 1065 !important;
+}
+
+.upgrade-modal-content {
+    background: linear-gradient(145deg, rgba(10, 20, 40, 0.98) 0%, rgba(15, 28, 55, 0.99) 100%);
+    border: 1px solid rgba(4, 119, 235, 0.45);
+    border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(4, 119, 235, 0.3);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    position: relative;
+    overflow: hidden;
+    color: #e2e8f0;
+}
+
+.upgrade-modal-content::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 10%, rgba(4, 119, 235, 0.2) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.upgrade-modal-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    z-index: 20;
+    opacity: 0.85;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    padding: 8px;
+    transition: all 0.2s ease;
+}
+
+.upgrade-modal-close:hover {
+    opacity: 1;
+    background-color: #0477eb;
+    transform: scale(1.1) rotate(90deg);
+}
+
+.upgrade-badge-glow .badge-tag {
+    display: inline-block;
+    padding: 4px 14px;
+    background: rgba(4, 119, 235, 0.2);
+    border: 1px solid rgba(4, 119, 235, 0.5);
+    border-radius: 30px;
+    color: #38bdf8;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.upgrade-modal-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 0.5px;
+    background: linear-gradient(135deg, #ffffff 0%, #38bdf8 50%, #facc15 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+}
+
+.upgrade-release-date {
+    font-size: 0.95rem;
+    color: #cbd5e1;
+    font-weight: 500;
+}
+
+.upgrade-thank-you p {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: #cbd5e1;
+}
+
+.upgrade-features-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.upgrade-feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    transition: all 0.25s ease;
+}
+
+.upgrade-feature-item:hover {
+    background: rgba(4, 119, 235, 0.1);
+    border-color: rgba(4, 119, 235, 0.4);
+    transform: translateX(4px);
+}
+
+.feature-icon {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #fff;
+}
+
+.bg-gradient-phone {
+    background: linear-gradient(135deg, #06b6d4 0%, #0477eb 100%);
+}
+
+.bg-gradient-room {
+    background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+}
+
+.bg-gradient-chat {
+    background: linear-gradient(135deg, #eab308 0%, #f97316 100%);
+}
+
+.feature-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 3px;
+}
+
+.feature-desc {
+    font-size: 0.83rem;
+    color: #94a3b8;
+    margin-bottom: 0;
+    line-height: 1.45;
+}
+
+.upgrade-benefit-box {
+    padding: 14px 16px;
+    background: rgba(250, 204, 21, 0.06);
+    border: 1px dashed rgba(250, 204, 21, 0.4);
+    border-radius: 12px;
+}
+
+.benefit-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.benefit-list li {
+    font-size: 0.86rem;
+    color: #cbd5e1;
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.benefit-list li:last-child {
+    margin-bottom: 0;
+}
+
+.btn-upgrade-primary {
+    background: linear-gradient(135deg, #0477eb 0%, #0056b3 100%);
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(4, 119, 235, 0.4);
+    transition: all 0.3s ease;
+}
+
+.btn-upgrade-primary:hover {
+    background: linear-gradient(135deg, #258cfb 0%, #0477eb 100%);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(4, 119, 235, 0.6);
+}
+
+.btn-upgrade-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e2e8f0;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.btn-upgrade-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border-color: #fff;
+}
+
+/* Checkbox sáng rõ */
+.upgrade-checkbox-label {
+    color: #f1f5f9 !important;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+}
+
+.upgrade-custom-checkbox {
+    width: 1.15em;
+    height: 1.15em;
+    cursor: pointer;
+    background-color: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    accent-color: #0477eb;
+}
+
+.upgrade-custom-checkbox:checked {
+    background-color: #0477eb;
+    border-color: #0477eb;
+}
+
+/* ===================================================
+   RESPONSIVE CHO MOBILE (Lùi sâu tránh quảng cáo top)
+   =================================================== */
+@@media (max-width: 768px) {
+    #upgradeAnnouncementModal .modal-dialog {
+        margin: 80px 14px 20px 14px !important; /* Lùi xuống 80px để tránh banner quảng cáo trên mobile */
+        max-width: calc(100% - 28px);
+    }
+
+    .upgrade-modal-content {
+        max-height: calc(88vh - 80px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 16px;
+    }
+
+    .upgrade-modal-content .modal-body {
+        padding: 24px 16px 20px 16px !important;
+    }
+
+    .upgrade-modal-title {
+        font-size: 1.25rem;
+    }
+
+    .upgrade-modal-close {
+        top: 12px;
+        right: 12px;
+        padding: 6px;
+        background-color: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .feature-icon {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        font-size: 1rem;
+    }
+
+    .feature-title {
+        font-size: 0.88rem;
+    }
+
+    .feature-desc {
+        font-size: 0.8rem;
+    }
+
+    .btn-upgrade-primary,
+    .btn-upgrade-secondary {
+        padding-top: 11px !important;
+        padding-bottom: 11px !important;
+        font-size: 0.9rem;
+    }
+}
+</style>
+
+<script>
+    (function () {
+        const STORAGE_KEY = 'moonphim_upgrade_popup_2409';
+
+        window.closeUpgradeModal = function () {
+            const checkbox = document.getElementById('dontShowUpgradeModalAgain');
+            if (checkbox && checkbox.checked) {
+                localStorage.setItem(STORAGE_KEY, 'dismissed');
+            }
+
+            const modalEl = document.getElementById('upgradeAnnouncementModal');
+            if (modalEl) {
+                const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                if (modalInstance) {
+                    modalInstance.hide();
+                } else {
+                    modalEl.classList.remove('show');
+                    modalEl.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) backdrop.remove();
+                }
+            }
+        };
+
+        window.openAuthFromUpgradeModal = function () {
+            closeUpgradeModal();
+
+            // Mở Auth Modal nếu có
+            const authModalEl = document.getElementById('authModal');
+            if (authModalEl) {
+                setTimeout(() => {
+                    const authModal = new bootstrap.Modal(authModalEl);
+                    authModal.show();
+                }, 350);
+            }
+        };
+
+        // Tự động kích hoạt hiển thị sau khi trang tải xong 1.5 giây
+        document.addEventListener('DOMContentLoaded', function () {
+            const isDismissed = localStorage.getItem(STORAGE_KEY) === 'dismissed';
+            if (isDismissed) {
+                return; // Người dùng đã chọn không hiển thị lại -> Bỏ qua
+            }
+
+            setTimeout(function () {
+                const modalEl = document.getElementById('upgradeAnnouncementModal');
+                if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const upgradeModal = new bootstrap.Modal(modalEl, {
+                        keyboard: true,
+                        backdrop: 'static'
+                    });
+                    upgradeModal.show();
+                }
+            }, 1200);
+        });
+    })();
+</script>

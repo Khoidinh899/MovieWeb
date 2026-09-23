@@ -1,6 +1,6 @@
 @model MovieWeb.Models.Entities.Movie
 @{
-    ViewData["Title"] = $"{Model.Name} - Xem phim online";
+    ViewData["Title"] = $"{Model.Name} (Phim {Model.Year}) Vietsub Thuyết Minh HD - MoonPhim (Moon Phim)";
     var relatedMovies = ViewBag.RelatedMovies as List<MovieWeb.Models.Entities.Movie>;
 
     // ⭐ ĐỔI: Ưu tiên PosterUrl (dọc) thay vì ThumbUrl (ngang)
@@ -8,7 +8,7 @@
         ? (Model.PosterUrl.StartsWith("http") ? Model.PosterUrl : "https://img.ophim.live/uploads/movies/" + Model.PosterUrl.TrimStart('/'))
         : (!string.IsNullOrEmpty(Model.ThumbUrl) 
             ? (Model.ThumbUrl.StartsWith("http") ? Model.ThumbUrl : "https://img.ophim.live/uploads/movies/" + Model.ThumbUrl.TrimStart('/'))
-            : "/images/no-poster.jpg");
+            : "/images/default-poster.jpg");
             
     var grouped = ViewBag.GroupedEpisodes as Dictionary<string, List<MovieWeb.Models.Entities.Episode>>;
     var serverDisplay = ViewBag.ServerDisplayNames as Dictionary<string, string>;
@@ -19,10 +19,8 @@
     var isSeriesMovie = ViewBag.IsSeriesType ?? false;
     var episode1Url = ViewBag.Episode1Url as string ?? "";
 
-    // ✅ Chỉ hiển thị danh sách tập cho phim bộ hoặc hoạt hình
-    bool shouldShowEpisodeList = (Model.Type?.ToLower() == "series" || Model.Type?.ToLower() == "hoathinh")
-                                  && grouped != null
-                                  && grouped.Any();
+    // ✅ Hiển thị danh sách tập cho tất cả các phim có tập phim
+    bool shouldShowEpisodeList = grouped != null && grouped.Any();
 
     // ⭐ Quảng cáo
     var advertisements = ViewBag.Advertisements as IEnumerable<MovieWeb.Models.Entities.Advertisement> ?? new List<MovieWeb.Models.Entities.Advertisement>();
@@ -31,24 +29,19 @@
     // ===== ✅ BẮT ĐẦU KHỐI CHUẨN BỊ BIẾN SEO =====
     // ==========================================================
 
-    // 1. Chuẩn bị Mô tả (Description) - DÙNG CÁCH AN TOÀN
-    // (Không dùng Model.Description trực tiếp vì nó có thể chứa HTML)
-    var seoDescription = $"Xem phim {Model.Name} ({Model.OriginalName}) vietsub, thuyết minh. Cập nhật phim {Model.Name} mới nhất tại MoonPhim.";
+    // 1. Chuẩn bị Mô tả (Description)
+    var seoDescription = $"Xem phim {Model.Name} ({Model.OriginalName} - {Model.Year}) Vietsub Thuyết Minh HD trọn bộ mới nhất tại MoonPhim (Moon Phim). Xem phim {Model.Name} miễn phí tốc độ cao.";
     
-    // (Nếu Model.Description của bạn AN TOÀN - không có HTML, bạn có thể dùng code này thay thế)
-    // var seoDescription = !string.IsNullOrEmpty(Model.Description) 
-    //     ? (Model.Description.Length > 160 ? Model.Description.Substring(0, 157) + "..." : Model.Description)
-    //     : $"Xem phim {Model.Name} ({Model.OriginalName}) vietsub, thuyết minh.";
-
-    // 2. Chuẩn bị Ảnh (Image) - Copy logic của bạn
+    // 2. Chuẩn bị Ảnh (Image)
     var seoImage = (Model.PosterUrl?.StartsWith("http") == true
                    ? Model.PosterUrl
                    : "https://img.ophim.live/uploads/movies/" + Model.PosterUrl);
 
-    // 3. Chuẩn bị URL (Tự động lấy URL hiện tại)
+    // 3. Chuẩn bị URL
     var request = Context.Request;
     var seoUrl = $"{request.Scheme}://{request.Host}{request.Path}";
-    bool hasValidVideoUrl = !string.IsNullOrEmpty(Model.TrailerUrl);
+    var allEpisodesList = Model.Episodes?.ToList() ?? new List<MovieWeb.Models.Entities.Episode>();
+    bool hasValidVideoUrl = !string.IsNullOrEmpty(Model.TrailerUrl) || allEpisodesList.Any();
 }
 
 @section Styles {
@@ -61,7 +54,7 @@
 
     <meta name="description" content="@seoDescription" />
 
-    <meta name="keywords" content="xem phim @Model.Name, @Model.Name vietsub, @Model.Name thuyết minh, @Model.OriginalName, phim @Model.Year@(Model.Categories != null ? ", " + string.Join(", ", Model.Categories.Select(c => c.Name)) : "")" />
+    <meta name="keywords" content="xem phim @Model.Name, @Model.Name vietsub, @Model.Name thuyet minh, @Model.Name tap moi nhat, lich chieu @Model.Name, @Model.OriginalName, moonphim, moon phim, phimmoi, rophim, motphim, cobephim, motchill, xem phim online, phim @Model.Year@(Model.Categories != null ? ", " + string.Join(", ", Model.Categories.Select(c => c.Name)) : "")" />
 
     @* ===== OPEN GRAPH (Facebook, Zalo, LinkedIn, etc.) ===== *@
     <meta property="og:title" content="@ViewData["Title"]" />
@@ -71,7 +64,7 @@
     <meta property="og:image" content="@seoImage" />
     <meta property="og:image:width" content="800" />
     <meta property="og:image:height" content="1200" />
-    <meta property="og:site_name" content="MoonPhim" />
+    <meta property="og:site_name" content="MoonPhim (Moon Phim)" />
     <meta property="og:locale" content="vi_VN" />
 
     @* ===== TWITTER CARD (X/Twitter share) ===== *@
@@ -84,7 +77,7 @@
     @* ===== CANONICAL URL (Tránh duplicate content) ===== *@
     <link rel="canonical" href="@seoUrl" />
 
-    @* ===== SCHEMA.ORG JSON-LD (RICH SNIPPETS) ===== *@
+    @* ===== SCHEMA.ORG JSON-LD (RICH SNIPPETS & BREADCRUMB) ===== *@
     @{
         var schemaJson = new System.Text.StringBuilder();
         schemaJson.AppendLine("{");
@@ -107,15 +100,8 @@
             schemaJson.AppendLine("  \"trailer\": {");
             schemaJson.AppendLine("    \"@type\": \"VideoObject\",");
             schemaJson.AppendLine($"    \"name\": {System.Text.Json.JsonSerializer.Serialize($"Trailer - {Model.Name}")},");
-            
-            // 1. THÊM DESCRIPTION CHO TRAILER (Bắt buộc)
-            // Lấy luôn mô tả của phim làm mô tả cho trailer để đỡ bị lỗi
             schemaJson.AppendLine($"    \"description\": {System.Text.Json.JsonSerializer.Serialize(seoDescription)},");
-
-            // 2. THÊM UPLOADDATE CHO TRAILER (Bắt buộc)
-            // Lấy cột CreatedAt trong DB
             schemaJson.AppendLine($"    \"uploadDate\": \"{(Model.CreatedAt?.ToString("yyyy-MM-ddTHH:mm:sszzz") ?? DateTime.Now.ToString("yyyy-MM-ddTHH:mm:sszzz"))}\",");
-
             schemaJson.AppendLine($"    \"embedUrl\": \"{Model.Trailer}\",");
             schemaJson.AppendLine($"    \"thumbnailUrl\": \"{seoImage}\"");
             schemaJson.AppendLine("  },");
@@ -173,6 +159,32 @@
     <script type="application/ld+json">
         @Html.Raw(schemaJson.ToString())
     </script>
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@@type": "ListItem",
+          "position": 1,
+          "name": "Trang chủ",
+          "item": "https://moonphim.me/"
+        },
+        {
+          "@@type": "ListItem",
+          "position": 2,
+          "name": "@(Model.Type == "series" ? "Phim Bộ" : Model.Type == "single" ? "Phim Lẻ" : "Hoạt Hình")",
+          "item": "https://moonphim.me/the-loai/@(Model.Type == "series" ? "phim-bo" : Model.Type == "single" ? "phim-le" : "hoat-hinh")"
+        },
+        {
+          "@@type": "ListItem",
+          "position": 3,
+          "name": "@Model.Name",
+          "item": "@seoUrl"
+        }
+      ]
+    }
+    </script>
 
     @* --- KẾT THÚC KHỐI SEO --- *@
 }
@@ -190,9 +202,11 @@
         <div class="overlay"></div>
         <div class="container hero-content">
             <div class="poster-box">
-            <img src="@(string.IsNullOrEmpty(Model.PosterUrl) ? "/images/no-poster.jpg" : $"https://img.ophim.live/uploads/movies/{Model.PosterUrl.TrimStart('/')}")"
+            <img src="@(string.IsNullOrEmpty(Model.PosterUrl) 
+                           ? "/images/default-poster.jpg" 
+                           : (Model.PosterUrl.StartsWith("http") ? Model.PosterUrl : $"https://img.ophim.live/uploads/movies/{Model.PosterUrl.TrimStart('/')}"))"
                  alt="@Model.Name"
-                 onerror="this.src='/images/no-poster.jpg';" />
+                 onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
         </div>
 
             <div class="movie-info">
@@ -206,6 +220,9 @@
                     <span>@Model.Year</span>
                     <span>@Model.Quality</span>
                     <span>@Model.Language</span>
+                    <span class="badge bg-dark border border-secondary text-info ms-1" style="font-weight: 500;" title="Trình phát video nhúng tự động từ VSMov">
+                        <i class="fa-solid fa-server me-1"></i> Nguồn phát: VSMov API
+                    </span>
                 </div>
 
                 <div class="buttons">
@@ -228,6 +245,11 @@
                         <i class="far fa-heart"></i>
                         <span>Yêu thích</span>
                     </button>
+
+                    <a href="/dmca?url=@(Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}"))&title=@(Uri.EscapeDataString(Model.Name))" class="favorite-btn text-danger border-danger" style="text-decoration:none;" title="Báo cáo vi phạm bản quyền">
+                        <i class="fa-solid fa-flag me-1"></i>
+                        <span>Báo cáo bản quyền</span>
+                    </a>
                 </div>
             </div>
         </div>
@@ -241,6 +263,11 @@
                    style="max-height: 500px; border-radius: 10px; background:#000;"
                    data-current-episode-index="-1">
             </video>
+            <iframe id="embedPlayer"
+                    style="display:none; width:100%; height:500px; border:none; border-radius:10px; background:#000;"
+                    allowfullscreen
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups">
+            </iframe>
 
             <div id="ad-modal" class="ad-modal-overlay" style="display: none;">
                 <div class="ad-modal-container">
@@ -308,16 +335,19 @@
 
                 <div class="episode-group" data-server="@key" style="margin-top:15px; display:@show;">
                     <div class="episodes" style="display:flex; flex-wrap:wrap; gap:10px;">
+                        @{ var isFirstEpInGroup = true; }
                         @foreach (var ep in sortedEpisodes)
                         {
+                            var isEpActive = string.Equals(key, defaultServer, StringComparison.OrdinalIgnoreCase) && isFirstEpInGroup;
                             <a href="#"
-                               class="episode-list-item"
+                               class="episode-list-item @(isEpActive ? "active" : "")"
                                data-index="@episodeIndex"
                                data-url="@ep.LinkM3u8"
                                data-episode-name="@ep.EpisodeName">
                                 Tập @ep.EpisodeName
                             </a>
                             episodeIndex++;
+                            isFirstEpInGroup = false;
                         }
                     </div>
                 </div>
@@ -457,6 +487,7 @@
     <script>
         window.movieId = @Model.MovieId;
         window.isLoggedIn = @Html.Raw(User.Identity.IsAuthenticated.ToString().ToLower());
+        window.movieTime = "@Html.Raw(Model.Time ?? "")";
         
         @* console.log('🎬 Movie ID:', window.movieId);
         console.log('🔐 Is Logged In:', window.isLoggedIn);
@@ -576,6 +607,27 @@
                     modal.show();
                 });
             }
+
+            // Server tab switching listener
+            document.querySelectorAll('.server-tab').forEach(tab => {
+                tab.addEventListener('click', function () {
+                    const server = this.dataset.server;
+                    document.querySelectorAll('.server-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+
+                    document.querySelectorAll('.episode-group').forEach(group => {
+                        if (group.dataset.server === server) {
+                            group.style.display = 'block';
+                        } else {
+                            group.style.display = 'none';
+                        }
+                    });
+
+                    if (window.watchProgressTracker) {
+                        window.watchProgressTracker.serverName = server;
+                    }
+                });
+            });
 
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -828,41 +880,114 @@
             loadComments();
 
             const video = document.getElementById("moviePlayer");
-            const trailerUrl = "@(Model.TrailerUrl ?? "")";
+            const trailerUrl = "@Html.Raw(Model.TrailerUrl ?? "")";
+            const ep1Url = "@Html.Raw(episode1Url ?? "")";
             let currentHls = null;
 
-            function playVideo(url) {
+            function isEmbedUrl(url) {
+                if (!url) return false;
+                const lower = url.toLowerCase();
+                if (lower.includes('.m3u8')) return false;
+                if (lower.includes('/video/') || lower.includes('/embed/') || lower.includes('streamvsmov') || lower.includes('vsmov')) return true;
+                return !lower.includes('.m3u8');
+            }
+
+            window.playVideo = function (url, startTime = 0) {
                 if (!url || !url.trim()) {
                     showNotification("Tập này chưa có link video!", "warning");
                     return;
                 }
-                
+
+                if (!startTime && window.thoiGianXemTiep) {
+                    startTime = window.thoiGianXemTiep;
+                    window.thoiGianXemTiep = null;
+                }
 
                 videoContainer.style.display = "block";
-                video.scrollIntoView({ behavior: "smooth", block: "center" });
+                const embedPlayer = document.getElementById("embedPlayer");
 
-                if (currentHls) {
-                    currentHls.destroy();
-                    currentHls = null;
+                const activeButton = document.querySelector(".episode-list-item.active");
+                if (activeButton?.dataset?.episodeName && window.watchProgressTracker) {
+                    window.watchProgressTracker.episodeNumber = parseInt(activeButton.dataset.episodeName);
                 }
 
-                if (Hls.isSupported()) {
-                    const hls = new Hls();
-                    hls.loadSource(url);
-                    hls.attachMedia(video);
-                    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-                    currentHls = hls;
-                } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-                    video.src = url;
-                    video.play();
+                if (isEmbedUrl(url)) {
+                    // === CHẾ ĐỘ EMBED (IFRAME) ===
+                    if (currentHls) {
+                        currentHls.destroy();
+                        currentHls = null;
+                    }
+                    video.pause();
+                    video.removeAttribute('src');
+                    video.style.display = "none";
+                    embedPlayer.style.display = "block";
+
+                    let targetUrl = url;
+                    if (startTime > 0) {
+                        if (targetUrl.includes('#t=')) {
+                            targetUrl = targetUrl.replace(/#t=\d+/, `#t=${startTime}`);
+                        } else if (targetUrl.includes('?')) {
+                            targetUrl = `${targetUrl}&t=${startTime}#t=${startTime}`;
+                        } else {
+                            targetUrl = `${targetUrl}?t=${startTime}#t=${startTime}`;
+                        }
+                    }
+
+                    embedPlayer.src = targetUrl;
+                    embedPlayer.scrollIntoView({ behavior: "smooth", block: "center" });
+
+                    if (window.watchProgressTracker) {
+                        window.watchProgressTracker.startEmbedTracking(startTime);
+                    }
                 } else {
-                    showNotification("Trình duyệt không hỗ trợ phát định dạng .m3u8!", "danger");
+                    // === CHẾ ĐỘ HLS (M3U8) ===
+                    embedPlayer.src = "";
+                    embedPlayer.style.display = "none";
+                    video.style.display = "block";
+                    video.scrollIntoView({ behavior: "smooth", block: "center" });
+
+                    if (currentHls) {
+                        currentHls.destroy();
+                        currentHls = null;
+                    }
+
+                    if (Hls.isSupported()) {
+                        const hls = new Hls();
+                        hls.loadSource(url);
+                        hls.attachMedia(video);
+                        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                            if (startTime > 0) video.currentTime = startTime;
+                            video.play();
+                        });
+                        currentHls = hls;
+                    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                        video.src = url;
+                        if (startTime > 0) video.currentTime = startTime;
+                        video.play();
+                    } else {
+                        showNotification("Trình duyệt không hỗ trợ phát định dạng .m3u8!", "danger");
+                    }
+
+                    if (window.watchProgressTracker) {
+                        window.watchProgressTracker.stopEmbedTracking();
+                        window.watchProgressTracker.videoPlayer = video;
+                        window.watchProgressTracker.startTracking();
+                    }
                 }
-            }
+            };
 
             if (watchBtn) {
                 watchBtn.addEventListener("click", () => {
-                    playVideo(trailerUrl);
+                    const firstEpItem = document.querySelector(".episode-list-item");
+                    if (firstEpItem && firstEpItem.dataset.url) {
+                        firstEpItem.click();
+                    } else if (ep1Url && ep1Url.trim()) {
+                        playVideo(ep1Url);
+                    } else if (trailerUrl && trailerUrl.trim()) {
+                        playVideo(trailerUrl);
+                    } else {
+                        showNotification("Không tìm thấy nguồn phim!", "warning");
+                    }
                 });
             }
 

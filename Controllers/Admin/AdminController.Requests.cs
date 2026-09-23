@@ -304,65 +304,62 @@ namespace MovieWeb.Controllers
 
                 _logger.LogInformation("🤖 [AUTO SYNC] Bắt đầu tìm phim: {Title} ({Year})", request.MovieTitle, request.MovieYear);
 
-                // 2. Tìm kiếm trên OPhim API
-                var searchResults = await _oPhimService.SearchMoviesAsync(request.MovieTitle, 1);
+                // 2. Tìm kiếm thông minh trên VSMov API (Kết hợp cả Slug lẫn Từ khóa/Keyword)
+                string? finalSlug = request.OphimSlug;
 
-                if (searchResults?.Data?.Items == null || !searchResults.Data.Items.Any())
+                // Cách 1: Nếu đã có slug trong request -> thử kiểm tra chi tiết phim
+                if (!string.IsNullOrEmpty(finalSlug))
                 {
-                    _logger.LogWarning("❌ [AUTO SYNC] Không tìm thấy kết quả nào");
+                    var detail = await _vsMovService.GetMovieDetailAsync(finalSlug);
+                    if (detail?.Item == null)
+                    {
+                        finalSlug = null;
+                    }
+                }
+
+                // Cách 2: Tìm kiếm theo Từ khóa (Keyword search) - Bắt được tên tiếng Anh/gốc
+                if (string.IsNullOrEmpty(finalSlug))
+                {
+                    var searchResult = await _vsMovService.SearchMoviesAsync(request.MovieTitle, 1);
+                    if (searchResult?.Items != null && searchResult.Items.Any())
+                    {
+                        finalSlug = searchResult.Items.First().Slug;
+                    }
+                }
+
+                // Cách 3: Thử tạo Slug từ Tên phim (Tên tiếng Việt / slugified)
+                if (string.IsNullOrEmpty(finalSlug))
+                {
+                    string slugFromTitle = MovieWeb.Services.CategorySyncService.GenerateSlug(request.MovieTitle);
+                    var detailFromSlug = await _vsMovService.GetMovieDetailAsync(slugFromTitle);
+                    if (detailFromSlug?.Item != null)
+                    {
+                        finalSlug = slugFromTitle;
+                    }
+                }
+
+                // Cách 4: Thử dùng nguyên văn nhập vào làm Slug (nếu user gõ trực tiếp slug dạng 'am-anh')
+                if (string.IsNullOrEmpty(finalSlug))
+                {
+                    string rawSlug = request.MovieTitle.Trim().ToLower();
+                    var detailRaw = await _vsMovService.GetMovieDetailAsync(rawSlug);
+                    if (detailRaw?.Item != null)
+                    {
+                        finalSlug = rawSlug;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(finalSlug))
+                {
+                    _logger.LogWarning("❌ [AUTO SYNC] Không tìm thấy phim nào trên VSMov theo cả Slug và Từ khóa");
                     return Json(new
                     {
                         success = false,
-                        message = "Không tìm thấy phim nào trên OPhim"
+                        message = "Không tìm thấy phim nào trên VSMov (đã thử cả Slug và Tìm kiếm từ khóa)"
                     });
                 }
 
-                // 3. Lọc theo năm (nếu có)
-                var matchedMovies = searchResults.Data.Items.AsEnumerable();
-
-                if (request.MovieYear.HasValue && request.MovieYear > 0)
-                {
-                    matchedMovies = matchedMovies.Where(m => m.Year == request.MovieYear);
-                }
-
-                var movieList = matchedMovies.ToList();
-
-                if (!movieList.Any())
-                {
-                    _logger.LogWarning("❌ [AUTO SYNC] Không có phim nào khớp năm {Year}", request.MovieYear);
-                    return Json(new
-                    {
-                        success = false,
-                        message = $"Không tìm thấy phim '{request.MovieTitle}' năm {request.MovieYear}"
-                    });
-                }
-
-                // 4. Nếu có nhiều kết quả → trả về danh sách để admin chọn
-                if (movieList.Count > 1)
-                {
-                    _logger.LogInformation("🔍 [AUTO SYNC] Tìm thấy {Count} kết quả, cần admin chọn", movieList.Count);
-
-                    var options = movieList.Select(m => new
-                    {
-                        slug = m.Slug,
-                        name = m.Name,
-                        originalName = m.OriginName,
-                        year = m.Year,
-                        posterUrl = m.PosterUrl,
-                        type = m.Type
-                    }).ToList();
-
-                    return Json(new
-                    {
-                        success = true,
-                        needsSelection = true,
-                        options = options
-                    });
-                }
-
-                // 5. Nếu chỉ có 1 kết quả → tự động sync luôn
-                var selectedMovie = movieList.First();
-                return await ExecuteAutoSyncAsync(requestId, selectedMovie.Slug);
+                return await ExecuteAutoSyncAsync(requestId, finalSlug);
             }
             catch (Exception ex)
             {
@@ -436,8 +433,8 @@ namespace MovieWeb.Controllers
                     });
                 }
 
-                // 2. Lấy chi tiết phim từ OPhim
-                var movieDetail = await _oPhimService.GetMovieDetailAsync(slug);
+                // 2. Lấy chi tiết phim từ VSMov
+                var movieDetail = await _vsMovService.GetMovieDetailAsync(slug);
 
                 if (movieDetail?.Item == null)
                 {
@@ -445,7 +442,7 @@ namespace MovieWeb.Controllers
                     return Json(new
                     {
                         success = false,
-                        message = "Không thể lấy thông tin chi tiết phim từ OPhim"
+                        message = "Không thể lấy thông tin chi tiết phim từ VSMov"
                     });
                 }
 
@@ -456,16 +453,8 @@ namespace MovieWeb.Controllers
                 request.AdminNote = $"Đang tự động đồng bộ: {movieDetail.Item.Name}...";
                 await _context.SaveChangesAsync();
 
-                // 4. Sync phim vào DB qua MovieSyncService
-                var apiMovies = new List<MovieWeb.Models.API.Movie> { movieDetail.Item };
-                await _movieSyncService.SyncMoviesFromApiToDbAsync(apiMovies, 0);
-
-                _logger.LogInformation("💾 [AUTO SYNC] Đã sync vào DB");
-
-                // 5. Lấy lại phim từ DB (vì MovieSyncService vừa thêm)
-                var syncedMovie = await _context.Movies
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(m => m.Slug == slug);
+                // 4. Sync phim vào DB qua MovieSyncService bằng VSMov
+                var syncedMovie = await _movieSyncService.SyncSingleMovieFromVSMovBySlugAsync(slug);
 
                 if (syncedMovie == null)
                 {

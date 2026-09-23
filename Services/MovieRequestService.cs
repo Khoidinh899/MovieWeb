@@ -17,16 +17,16 @@ namespace MovieWeb.Services
     public class MovieRequestService : IMovieRequestService
     {
         private readonly MovieWebDbContext _context;
-        private readonly IOPhimService _ophimService;
+        private readonly IVSMovService _vsMovService;
         private readonly ILogger<MovieRequestService> _logger;
 
         public MovieRequestService(
             MovieWebDbContext context,
-            IOPhimService ophimService,
+            IVSMovService vsMovService,
             ILogger<MovieRequestService> logger)
         {
             _context = context;
-            _ophimService = ophimService;
+            _vsMovService = vsMovService;
             _logger = logger;
         }
 
@@ -159,11 +159,11 @@ namespace MovieWeb.Services
         {
             try
             {
-                var searchResult = await _ophimService.SearchMoviesAsync(movieTitle, page: 1);
+                var searchResult = await _vsMovService.SearchMoviesAsync(movieTitle, page: 1);
 
-                if (searchResult?.Data?.Items != null && searchResult.Data.Items.Count > 0)
+                if (searchResult?.Items != null && searchResult.Items.Count > 0)
                 {
-                    var firstMovie = searchResult.Data.Items.First();
+                    var firstMovie = searchResult.Items.First();
                     return new OPhimSearchResult
                     {
                         Found = true,
@@ -176,7 +176,7 @@ namespace MovieWeb.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error searching movie on OPhim: {movieTitle}");
+                _logger.LogError(ex, $"Error searching movie on VSMov: {movieTitle}");
                 return new OPhimSearchResult { Found = false };
             }
         }

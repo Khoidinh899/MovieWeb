@@ -91,44 +91,19 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!watchBtn) return;
 
         watchBtn.addEventListener('click', async () => {
-            // console.log('🎯 Bấm nút "Xem phim"');
-
-            // ✅ ẨN CẢ 2 NÚT SAU KHI BẤM
-            if (heroButtons) {
-                heroButtons.style.display = 'none';
-            }
-
-            // ✅ HIỂN THỊ VIDEO CONTAINER TRƯỚC
-            videoContainer.style.display = 'block';
-            videoPlayer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            const iframe = document.getElementById('youtube-trailer-iframe');
-            if (iframe) {
-                iframe.remove(); // Xóa hẳn iframe để tắt nhạc
-            }
-            videoPlayer.style.display = 'block';
-
-            // ✅ NẾU LÀ PHIM BỘ: Phát tập 1
-            if (isSeriesType) {
-                const ep1Source = episode1Url || (allEpisodes.length > 0 ? allEpisodes[0].src : null);
-
-                if (!ep1Source) {
-                    alert('Không tìm thấy tập 1!');
-                    return;
-                }
-
-                // console.log('📺 Phim bộ → Phát tập 1:', ep1Source);
-                await attemptToPlayEpisode(0, ep1Source);
+            const firstEp = document.querySelector('.episode-list-item');
+            if (firstEp && firstEp.dataset.url) {
+                firstEp.click();
                 return;
             }
 
-            // ✅ NẾU LÀ PHIM LẺ: Phát từ TrailerUrl (M3U8 phim chính)
-            if (!isSeriesType && movieMainUrl) {
-                // console.log('🎬 Phim lẻ → Phát từ TrailerUrl:', movieMainUrl);
-                await playMovieDirectly(movieMainUrl);
-                return;
+            const source = episode1Url || movieMainUrl || (allEpisodes.length > 0 ? allEpisodes[0].src : null);
+            if (source) {
+                if (heroButtons) heroButtons.style.display = 'none';
+                videoContainer.style.display = 'block';
+                videoPlayer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await playMovieDirectly(source);
             }
-
-            alert('Không tìm thấy nguồn phim!');
         });
     }
 
@@ -201,11 +176,12 @@ document.addEventListener('DOMContentLoaded', function () {
             episode.button.addEventListener('click', async (e) => {
                 e.preventDefault();
 
+                document.querySelectorAll('.episode-list-item').forEach(el => el.classList.remove('active'));
+                episode.button.classList.add('active');
+
                 if (episode.index === currentEpisodeIndex) return;
 
-                // console.log('🎯 Click vào', episode.name);
-
-                // ✅ ẨN NÚT XEM PHIM/TRAILER
+                // ẨN NÚT XEM PHIM/TRAILER
                 if (heroButtons) {
                     heroButtons.style.display = 'none';
                 }

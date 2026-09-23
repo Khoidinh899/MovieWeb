@@ -1,6 +1,6 @@
-/* ================================
-   RESUME POPUP STYLES
-   ================================ */
+/* ===================================================
+   RESUME POPUP STYLES - MOONPHIM BLUE THEME
+   =================================================== */
 
 .resume-popup {
     position: fixed;
@@ -9,7 +9,7 @@
     transform: translate(-50%, -50%) scale(0.9);
     z-index: 10000;
     opacity: 0;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: none;
 }
 
@@ -20,43 +20,42 @@
 }
 
 .resume-content {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-    border-radius: 16px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(145deg, rgba(10, 20, 40, 0.98) 0%, rgba(15, 28, 55, 0.99) 100%);
+    border-radius: 20px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(4, 119, 235, 0.3);
     width: 420px;
     max-width: 90vw;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(4, 119, 235, 0.45);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: #e2e8f0;
 }
 
 .resume-header {
-    padding: 20px 24px;
+    padding: 18px 22px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .resume-title {
     margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: 1.15rem;
+    font-weight: 700;
     color: white;
     display: flex;
     align-items: center;
-    gap: 10px;
-}
-
-.resume-title i {
-    color: #4fc3f7;
-    font-size: 1.4rem;
+    gap: 8px;
+    letter-spacing: 0.3px;
 }
 
 .resume-close {
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 1.25rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #cbd5e1;
+    font-size: 1.1rem;
     cursor: pointer;
     width: 32px;
     height: 32px;
@@ -64,107 +63,89 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
 }
 
 .resume-close:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: rotate(90deg);
+    background: #0477eb;
+    color: #fff;
+    transform: rotate(90deg) scale(1.05);
 }
 
 .resume-body {
-    padding: 24px;
+    padding: 24px 22px;
 }
 
-.resume-text {
-    color: white;
-    font-size: 1rem;
-    margin-bottom: 16px;
-    text-align: center;
+.resume-main-text {
+    font-size: 0.95rem;
+    color: #cbd5e1;
+    margin-bottom: 8px;
 }
 
-.resume-text strong {
-    color: #4fc3f7;
-    font-size: 1.2rem;
+.resume-ep-badge {
+    display: inline-block;
+    padding: 8px 22px;
+    background: linear-gradient(135deg, rgba(4, 119, 235, 0.25) 0%, rgba(14, 165, 233, 0.18) 100%);
+    border: 1px solid rgba(4, 119, 235, 0.5);
+    border-radius: 30px;
+    color: #38bdf8;
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin: 8px 0 12px 0;
+    box-shadow: 0 4px 15px rgba(4, 119, 235, 0.25);
 }
 
-.resume-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: rgba(255, 255, 255, 0.8);
+.resume-sub-text {
     font-size: 0.9rem;
-    margin-bottom: 12px;
-}
-
-.resume-time {
-    color: #4fc3f7;
-    font-weight: 600;
-    font-family: 'Courier New', monospace;
-}
-
-.resume-progress-bar {
-    height: 8px;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.resume-progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #4fc3f7 0%, #29b6f6 100%);
-    border-radius: 10px;
-    transition: width 0.3s ease;
-    box-shadow: 0 0 10px rgba(79, 195, 247, 0.6);
+    color: #94a3b8;
 }
 
 .resume-actions {
     display: flex;
     gap: 12px;
-    padding: 20px 24px;
-    background: rgba(0, 0, 0, 0.2);
+    padding: 16px 22px 20px 22px;
+    background: rgba(0, 0, 0, 0.25);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .resume-btn {
     flex: 1;
-    padding: 12px 20px;
+    padding: 12px 18px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 0.95rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: all 0.3s ease;
-}
-
-.resume-btn i {
-    font-size: 1rem;
+    transition: all 0.25s ease;
 }
 
 .resume-btn-primary {
-    background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);
+    background: linear-gradient(135deg, #0477eb 0%, #0056b3 100%);
     color: white;
-    box-shadow: 0 4px 12px rgba(79, 195, 247, 0.4);
+    box-shadow: 0 4px 15px rgba(4, 119, 235, 0.4);
 }
 
 .resume-btn-primary:hover {
-    background: linear-gradient(135deg, #29b6f6 0%, #03a9f4 100%);
+    background: linear-gradient(135deg, #258cfb 0%, #0477eb 100%);
+    color: #fff;
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(79, 195, 247, 0.6);
+    box-shadow: 0 6px 20px rgba(4, 119, 235, 0.6);
 }
 
 .resume-btn-secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .resume-btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    border-color: #fff;
     transform: translateY(-2px);
 }
 
@@ -179,50 +160,41 @@
     background: rgba(0, 0, 0, 0.7);
     z-index: -1;
     backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
 }
 
 /* Mobile Responsive */
 @media (max-width: 576px) {
     .resume-content {
-        width: 95vw;
-        max-width: 380px;
+        width: calc(100vw - 32px);
+        margin: 0 16px;
     }
     
     .resume-header {
-        padding: 16px 20px;
+        padding: 14px 18px;
     }
     
     .resume-title {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
     }
     
     .resume-body {
-        padding: 20px;
+        padding: 18px 16px;
+    }
+    
+    .resume-ep-badge {
+        font-size: 1.05rem;
+        padding: 6px 16px;
     }
     
     .resume-actions {
         flex-direction: column;
-        gap: 10px;
-        padding: 16px 20px;
+        gap: 8px;
+        padding: 14px 16px 18px 16px;
     }
     
     .resume-btn {
         width: 100%;
+        padding: 11px 16px;
     }
-}
-
-/* Animation */
-@keyframes slideIn {
-    from {
-        transform: translate(-50%, -60%) scale(0.8);
-        opacity: 0;
-    }
-    to {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
-    }
-}
-
-.resume-popup.show {
-    animation: slideIn 0.3s ease;
 }

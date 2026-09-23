@@ -27,13 +27,18 @@ namespace MovieWeb.Controllers
                     .Include(m => m.Countries)
                     .AsQueryable();
 
-                // Search
+                // Search (Hỗ trợ tiếng Việt có dấu / không dấu, chữ hoa / chữ thường & slug)
                 if (!string.IsNullOrWhiteSpace(search))
                 {
+                    var trimmedSearch = search.Trim();
+                    var searchSlug = CategorySyncService.GenerateSlug(trimmedSearch);
+
                     query = query.Where(m =>
-                        m.Name.Contains(search) ||
-                        (m.OriginalName != null && m.OriginalName.Contains(search)) ||
-                        m.Slug.Contains(search));
+                        EF.Functions.ILike(m.Name, $"%{trimmedSearch}%") ||
+                        (m.OriginalName != null && EF.Functions.ILike(m.OriginalName, $"%{trimmedSearch}%")) ||
+                        EF.Functions.ILike(m.Slug, $"%{trimmedSearch}%") ||
+                        (!string.IsNullOrEmpty(searchSlug) && EF.Functions.ILike(m.Slug, $"%{searchSlug}%"))
+                    );
                     ViewBag.Search = search;
                 }
 
@@ -119,8 +124,15 @@ namespace MovieWeb.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading movies list");
-                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải danh sách phim";
-                return RedirectToAction("Dashboard");
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải danh sách phim: " + ex.Message;
+                ViewBag.TotalPages = 1;
+                ViewBag.CurrentPage = 1;
+                ViewBag.PageSize = pageSize;
+                ViewBag.TotalMovies = 0;
+                ViewBag.ActiveMovies = 0;
+                ViewBag.ManualMovies = 0;
+                ViewBag.ApiMovies = 0;
+                return View("Movies", new List<AdminMovieListDto>());
             }
         }
 

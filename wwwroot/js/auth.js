@@ -86,11 +86,18 @@ window.onloadTurnstileCallback = function () {
                 const container = document.getElementById('turnstile-container');
                 if (container) {
                     const sitekey = container.getAttribute('data-sitekey') || '0x4AAAAAAEM_RWNvD7gEIdY7';
+                    const oldWidgetId = container.getAttribute('data-widget-id');
+                    if (oldWidgetId) {
+                        try { turnstile.remove(oldWidgetId); } catch (e) {}
+                    }
                     container.innerHTML = '';
-                    turnstile.render('#turnstile-container', {
+                    const widgetId = turnstile.render('#turnstile-container', {
                         sitekey: sitekey,
                         theme: 'dark'
                     });
+                    if (widgetId) {
+                        container.setAttribute('data-widget-id', widgetId);
+                    }
                     return true;
                 }
             } catch (e) {

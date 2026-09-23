@@ -167,11 +167,35 @@
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-    .filter-sidebar {
-        padding: 18px;
+    .filter-container {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
     }
+
+    .filter-sidebar {
+        padding: 16px;
+    }
+    
     .filter-sidebar.show {
-        padding: 18px;
+        padding: 16px;
+        max-height: 75vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+
+    /* Tùy chỉnh thanh cuộn nội bộ đẹp mắt trên Mobile */
+    .filter-sidebar::-webkit-scrollbar {
+        width: 5px;
+    }
+    .filter-sidebar::-webkit-scrollbar-track {
+        background: #141414;
+        border-radius: 4px;
+    }
+    .filter-sidebar::-webkit-scrollbar-thumb {
+        background: #e94560;
+        border-radius: 4px;
     }
 
     /* Trên mobile, cho nhãn (fe-name) và nút (fe-results) xếp chồng */
@@ -186,9 +210,11 @@
     }
     .fe-buttons {
         flex-direction: column; /* Nút xếp chồng */
+        gap: 10px;
     }
     .fe-buttons .btn {
         max-width: 100%; /* Nút chiếm 100% */
+        width: 100%;
     }
     .year-input-container {
         width: 100%;

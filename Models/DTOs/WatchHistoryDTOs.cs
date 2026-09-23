@@ -8,6 +8,7 @@ namespace MovieWeb.Models.DTOs
         public int WatchedDuration { get; set; } // Giây
         public int TotalDuration { get; set; } // Giây
         public bool IsCompleted { get; set; }
+        public string? ServerName { get; set; }
     }
 
     // DTO trả về lịch sử xem phim
@@ -26,6 +27,7 @@ namespace MovieWeb.Models.DTOs
         public string? Quality { get; set; }
         public int? Year { get; set; }
         public int? EpisodeNumber { get; set; }
+        public string? ServerName { get; set; }
         public int WatchedDuration { get; set; }
         public int TotalDuration { get; set; }
         public int ProgressPercentage { get; set; } // % đã xem
@@ -50,6 +52,7 @@ namespace MovieWeb.Models.DTOs
     {
         public bool HasHistory { get; set; }
         public int? EpisodeNumber { get; set; }
+        public string? ServerName { get; set; }
         public int WatchedDuration { get; set; }
         public int TotalDuration { get; set; }
         public int ProgressPercentage { get; set; }

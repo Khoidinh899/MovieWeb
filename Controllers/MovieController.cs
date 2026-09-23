@@ -139,25 +139,9 @@ namespace MovieWeb.Controllers
             // 🧠 Phân loại phim
             bool isSeriesType = movie.Type?.ToLower() == "series" || movie.Type?.ToLower() == "hoathinh";
 
-            // 🎞️ Lấy tập 1
-            string? episode1Url = null;
-            if (isSeriesType)
-            {
-                if (!string.IsNullOrEmpty(movie.TrailerUrl))
-                {
-                    episode1Url = movie.TrailerUrl;
-                }
-                else
-                {
-                    var firstEpisode = allEpisodes
-                        .Where(e => e.EpisodeName == "1" || e.Slug == "1")
-                        .OrderBy(e => e.EpisodeName)
-                        .FirstOrDefault();
-
-                    if (firstEpisode != null)
-                        episode1Url = firstEpisode.LinkM3u8;
-                }
-            }
+            // 🎞️ Lấy tập đầu tiên để phát (cho cả phim lẻ và phim bộ)
+            var firstEpisode = allEpisodes.FirstOrDefault();
+            string? episode1Url = firstEpisode?.LinkM3u8 ?? movie.TrailerUrl;
 
             // 📢 Quảng cáo
             var advertisements = await _context.Advertisements
@@ -485,12 +469,12 @@ namespace MovieWeb.Controllers
                 query = query.Where(m => m.Language == Language);
             }
 
-            // Sắp xếp theo UpdatedAt (mới nhất lên đầu)
+            // Sắp xếp theo Năm rồi đến UpdatedAt (mới nhất lên đầu)
             query = SortBy switch
             {
                 "view" => query.OrderByDescending(m => m.ViewCount),
                 "year" => query.OrderByDescending(m => m.Year),
-                _ => query.OrderByDescending(m => m.UpdatedAt)
+                _ => query.OrderByDescending(m => m.Year).ThenByDescending(m => m.UpdatedAt)
             };
 
             var totalMovies = await query.CountAsync();
@@ -581,7 +565,7 @@ namespace MovieWeb.Controllers
             {
                 "view" => query.OrderByDescending(m => m.ViewCount),
                 "year" => query.OrderByDescending(m => m.Year),
-                _ => query.OrderByDescending(m => m.UpdatedAt)
+                _ => query.OrderByDescending(m => m.Year).ThenByDescending(m => m.UpdatedAt)
             };
 
             var totalMovies = await query.CountAsync();
@@ -608,6 +592,112 @@ namespace MovieWeb.Controllers
 
             return View(movies);
         }
+
+        // ============================================================
+        // 🌟 DANH SÁCH PHIM MỚI CẬP NHẬT
+        // ============================================================
+        [Route("the-loai/phim-moi")]
+        [Route("phim-moi")]
+        public async Task<IActionResult> PhimMoi([FromQuery] MovieFilterViewModel filters)
+        {
+            int pageSize = filters.PageSize > 0 ? filters.PageSize : 20;
+            int page = filters.Page > 0 ? filters.Page : 1;
+
+            var query = _context.Movies
+                .Include(m => m.Countries)
+                .Include(m => m.Categories)
+                .Where(m => (m.IsActive ?? false) && (m.Episodes.Any() || !string.IsNullOrEmpty(m.TrailerUrl)));
+
+            if (!string.IsNullOrWhiteSpace(filters.Type))
+            {
+                query = query.Where(m => m.Type == filters.Type);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filters.Countries))
+            {
+                var countryList = filters.Countries.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+                if (countryList.Any())
+                {
+                    query = query.Where(m => m.Countries.Any(c => countryList.Contains(c.Slug)));
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(filters.Categories))
+            {
+                var categoryList = filters.Categories.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+                if (categoryList.Any())
+                {
+                    query = query.Where(m => categoryList.All(catSlug => m.Categories.Any(c => c.Slug == catSlug)));
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(filters.Language))
+            {
+                query = query.Where(m => m.Language == filters.Language);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filters.Years))
+            {
+                var yearList = new List<int>();
+                foreach (var yearStr in filters.Years.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    if (int.TryParse(yearStr, out int year))
+                    {
+                        yearList.Add(year);
+                    }
+                }
+                if (yearList.Any())
+                {
+                    query = query.Where(m => m.Year.HasValue && yearList.Contains(m.Year.Value));
+                }
+            }
+
+            query = (filters.SortBy?.ToLower()) switch
+            {
+                "view" or "views" => query.OrderByDescending(m => m.ViewCount ?? 0),
+                "year" => query.OrderByDescending(m => m.Year).ThenByDescending(m => m.UpdatedAt ?? m.CreatedAt),
+                _ => query.OrderByDescending(m => m.UpdatedAt ?? m.CreatedAt)
+            };
+
+            int totalMovies = await query.CountAsync();
+            int totalPages = (int)Math.Ceiling(totalMovies / (double)pageSize);
+
+            var movies = await query
+                .Select(m => new Movie
+                {
+                    MovieId = m.MovieId,
+                    Name = m.Name,
+                    Slug = m.Slug,
+                    ThumbUrl = m.ThumbUrl,
+                    PosterUrl = m.PosterUrl
+                })
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var countries = await _context.Countries
+                .Where(c => c.IsActive == true)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+
+            var categories = await _context.Categories
+                .Where(c => c.IsActive == true)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+
+            ViewBag.CategoryName = "Phim mới cập nhật";
+            ViewBag.Countries = countries;
+            ViewBag.Categories = categories;
+            ViewBag.CategorySlug = "phim-moi";
+            ViewBag.Filters = filters;
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+            ViewData["Title"] = "Phim Mới Cập Nhật | Phim Mới Vietsub Thuyết Minh";
+            ViewBag.SeoDescription = "Tổng hợp danh sách phim mới nhất, phim mới cập nhật vietsub, lồng tiếng chất lượng cao tại MoonPhim.";
+
+            return View("PhimBo", movies);
+        }
+
         // ============================================================
         // 🎬 DANH SÁCH PHIM LẺ (ĐÃ SỬA CHO CHỌN NHIỀU)
         // ============================================================
@@ -686,7 +776,7 @@ namespace MovieWeb.Controllers
                 "newest" => query.OrderByDescending(m => m.Year).ThenByDescending(m => m.CreatedAt),
                 "rating" => query.OrderByDescending(m => m.Rating ?? 0),
                 "views" => query.OrderByDescending(m => m.ViewCount ?? 0),
-                _ => query.OrderByDescending(m => m.UpdatedAt ?? m.CreatedAt)
+                _ => query.OrderByDescending(m => m.Year).ThenByDescending(m => m.UpdatedAt ?? m.CreatedAt)
             };
 
             // ===== PHÂN TRANG =====
@@ -812,7 +902,7 @@ namespace MovieWeb.Controllers
                 "newest" => query.OrderByDescending(m => m.Year).ThenByDescending(m => m.CreatedAt),
                 "rating" => query.OrderByDescending(m => m.Rating ?? 0),
                 "views" => query.OrderByDescending(m => m.ViewCount ?? 0),
-                _ => query.OrderByDescending(m => m.UpdatedAt ?? m.CreatedAt)
+                _ => query.OrderByDescending(m => m.Year).ThenByDescending(m => m.UpdatedAt ?? m.CreatedAt)
             };
 
             // ===== PHÂN TRANG =====

@@ -21,6 +21,13 @@ namespace MovieWeb.Controllers
             return View();
         }
 
+        [Route("dmca")]
+        [Route("mien-tru-trach-nhiem")]
+        public IActionResult DMCA()
+        {
+            return View();
+        }
+
         [Route("contact")]
         public IActionResult Contact()
         {

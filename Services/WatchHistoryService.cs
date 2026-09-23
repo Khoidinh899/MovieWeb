@@ -53,6 +53,7 @@ namespace MovieWeb.Services
                         Quality = w.Movie.Quality,
                         Year = w.Movie.Year,
                         EpisodeNumber = w.EpisodeNumber,
+                        ServerName = w.ServerName,
                         WatchedDuration = w.WatchedDuration ?? 0,
                         TotalDuration = w.TotalDuration ?? 0,
                         ProgressPercentage = w.TotalDuration > 0
@@ -102,6 +103,10 @@ namespace MovieWeb.Services
                     history.WatchedDuration = dto.WatchedDuration;
                     history.TotalDuration = dto.TotalDuration;
                     history.IsCompleted = dto.IsCompleted;
+                    if (!string.IsNullOrEmpty(dto.ServerName))
+                    {
+                        history.ServerName = dto.ServerName;
+                    }
                     history.LastWatchedAt = DateTime.Now;
                 }
                 else
@@ -126,6 +131,7 @@ namespace MovieWeb.Services
                         UserId = userId,
                         MovieId = dto.MovieId,
                         EpisodeNumber = dto.EpisodeNumber,
+                        ServerName = dto.ServerName,
                         WatchedDuration = dto.WatchedDuration,
                         TotalDuration = dto.TotalDuration,
                         IsCompleted = dto.IsCompleted,
@@ -236,6 +242,7 @@ public async Task<bool> ClearAllHistoryAsync(int userId)
                 {
                     HasHistory = true,
                     EpisodeNumber = history.EpisodeNumber,
+                    ServerName = history.ServerName,
                     WatchedDuration = history.WatchedDuration ?? 0,
                     TotalDuration = history.TotalDuration ?? 0,
                     ProgressPercentage = history.TotalDuration > 0

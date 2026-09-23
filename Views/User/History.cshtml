@@ -10,7 +10,7 @@
     {
         if (string.IsNullOrEmpty(posterUrl))
         {
-            return "/images/no-poster.jpg";
+            return "/images/default-poster.jpg";
         }
 
         if (posterUrl.StartsWith("http"))
@@ -19,6 +19,19 @@
         }
 
         return "https://img.ophim.live/uploads/movies/" + posterUrl.TrimStart('/');
+    }
+
+    public string FormatTimeDuration(int totalSeconds)
+    {
+        if (totalSeconds <= 0) return "0:00";
+        var hrs = totalSeconds / 3600;
+        var mins = (totalSeconds % 3600) / 60;
+        var secs = totalSeconds % 60;
+        if (hrs > 0)
+        {
+            return $"{hrs}:{mins:D2}:{secs:D2}";
+        }
+        return $"{mins}:{secs:D2}";
     }
 }
 
@@ -79,7 +92,20 @@
                                                 <img src="@GetMoviePosterUrl(item.PosterUrl)"
                                                      alt="@item.Name"
                                                      loading="lazy"
-                                                     onerror="this.onerror=null; this.src='/images/no-poster.jpg';">
+                                                     onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
+
+                                                @if (item.IsCompleted)
+                                                {
+                                                    <span class="progress-indicator completed">
+                                                        <i class="bi bi-check-circle me-1"></i>Đã xem xong
+                                                    </span>
+                                                }
+                                                else if (item.WatchedDuration > 0)
+                                                {
+                                                    <span class="progress-indicator">
+                                                        <i class="bi bi-play-circle me-1"></i>@FormatTimeDuration(item.WatchedDuration)
+                                                    </span>
+                                                }
 
                                                 <div class="watch-progress">
                                                     <div class="progress-bar" style="width:@item.ProgressPercentage%"></div>
@@ -104,6 +130,13 @@
                                                     {
                                                         <span> • @item.Quality</span>
                                                     }
+
+                                                    <span class="d-flex justify-content-between align-items-center w-100 mt-1">
+                                                        <small class="text-warning fw-semibold">
+                                                            <i class="bi bi-stopwatch me-1"></i>Đã xem: @FormatTimeDuration(item.WatchedDuration)
+                                                        </small>
+                                                        <small class="text-info fw-bold">@item.ProgressPercentage%</small>
+                                                    </span>
 
                                                     <small class="text-muted d-block mt-1">
                                                         @item.LastWatchedAt.ToString("dd/MM/yyyy HH:mm")

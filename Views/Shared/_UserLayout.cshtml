@@ -1,10 +1,11 @@
-﻿@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
 <!DOCTYPE html>
 <html lang="vi">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="monetag" content="1bd43555dd0c57f4ee0258b218db6891">
     <title>@ViewData["Title"] - MoonPhim</title>
     <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png" asp-append-version="true">
     <link rel="icon" type="image/png" sizes="32x32" href="~/favicon-32x32.png" asp-append-version="true">
@@ -24,6 +25,10 @@
         <link rel="stylesheet" href="~/css/notification.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/chatbot.css" asp-append-version="true" />
     }
+
+    <!-- Google AdSense Auto Ads Script -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8229451063311920"
+            crossorigin="anonymous"></script>
 
     @await RenderSectionAsync("Styles", required: false)
 </head>

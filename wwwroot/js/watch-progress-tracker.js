@@ -1,36 +1,39 @@
-// ================================
-// WATCH PROGRESS TRACKER - FIXED
-// ================================
+// ===================================================
+// WATCH PROGRESS TRACKER - CLEAN & USER FRIENDLY RESUME
+// ===================================================
 
 class WatchProgressTracker {
     constructor(movieId, episodeNumber = null) {
         this.movieId = movieId;
         this.episodeNumber = episodeNumber;
+        this.serverName = null;
         this.videoPlayer = null;
+        this.embedPlayer = null;
         this.saveInterval = null;
-        this.saveIntervalTime = 30000; // 30 seconds
+        this.saveIntervalTime = 12000; // 12 seconds
         this.lastSavedTime = 0;
         this.resumePopup = null;
         this.resumeTime = null;
         this.authToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value || 
                          document.querySelector("#RequestVerificationToken")?.value;
         this.isLoggedIn = document.getElementById('notificationBell') !== null;
+
+        // Embed iframe tracking properties
+        this.isEmbedMode = false;
+        this.embedAccumulatedSeconds = 0;
+        this.embedLastTick = 0;
+        this.embedTimer = null;
+        this.embedTotalDuration = 2700;
+        this.overlayClicked = false;
     }
 
     // Initialize
     async init() {
         if (!this.isLoggedIn) { 
-            return; // Không có chuông -> Là khách -> Dừng
+            return; // Không đăng nhập -> Dừng
         }
         this.videoPlayer = document.querySelector('video');
-        if (!this.videoPlayer) {
-            console.error('❌ Video player not found');
-            return;
-        }
-
-        // console.log('✅ Watch progress tracker initialized');
-        // console.log('🎬 Movie ID:', this.movieId);
-        // console.log('📺 Episode:', this.episodeNumber);
+        this.embedPlayer = document.getElementById('embedPlayer');
 
         if (this.resumeTime !== null) {
             this.seekToResumeTime();
@@ -43,9 +46,101 @@ class WatchProgressTracker {
         this.startTracking();
     }
 
+    // Tự động phát hiện ServerName hiện tại từ DOM
+    getCurrentServerName() {
+        const activeTab = document.querySelector('.server-tab.active');
+        if (activeTab && activeTab.dataset.server) {
+            return activeTab.dataset.server;
+        }
+        const activeButton = document.querySelector('.episode-list-item.active');
+        if (activeButton) {
+            const group = activeButton.closest('.episode-group');
+            if (group && group.dataset.server) {
+                return group.dataset.server;
+            }
+        }
+        return this.serverName || null;
+    }
+
+    // Lớp phủ tàng hình bắt cú click Play đầu tiên trên Iframe
+    setupIframeClickOverlay(startTime = 0) {
+        const embedPlayer = document.getElementById('embedPlayer');
+        if (!embedPlayer || embedPlayer.style.display === 'none') return;
+
+        const parentWrapper = embedPlayer.parentElement;
+        if (!parentWrapper) return;
+
+        let overlay = document.getElementById('iframeClickOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'iframeClickOverlay';
+            overlay.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 5;
+                background: transparent;
+                cursor: pointer;
+            `;
+            parentWrapper.style.position = 'relative';
+            parentWrapper.appendChild(overlay);
+        }
+
+        overlay.style.display = 'block';
+        this.overlayClicked = false;
+
+        const handleOverlayClick = () => {
+            this.overlayClicked = true;
+            overlay.style.display = 'none';
+            this.startEmbedTracking(startTime);
+        };
+
+        overlay.onclick = handleOverlayClick;
+    }
+
+    // Embed Tracking Timer
+    startEmbedTracking(startTime = 0) {
+        this.isEmbedMode = true;
+        this.embedAccumulatedSeconds = startTime;
+        this.embedLastTick = Date.now();
+        this.lastSavedTime = startTime;
+
+        if (this.embedTimer) clearInterval(this.embedTimer);
+
+        this.embedTimer = setInterval(() => {
+            if (!document.hidden && this.isEmbedMode) {
+                const now = Date.now();
+                const delta = (now - this.embedLastTick) / 1000;
+                this.embedLastTick = now;
+                if (delta > 0 && delta < 5) {
+                    this.embedAccumulatedSeconds += delta;
+                }
+            } else {
+                this.embedLastTick = Date.now();
+            }
+        }, 1000);
+
+        this.startTracking();
+    }
+
+    stopEmbedTracking() {
+        this.isEmbedMode = false;
+        if (this.embedTimer) {
+            clearInterval(this.embedTimer);
+            this.embedTimer = null;
+        }
+    }
+
     // Seek to resume time when video is ready
     seekToResumeTime() {
-        // console.log('⏩ Seeking to resume time:', this.resumeTime);
+        if (this.isEmbedMode) {
+            this.embedAccumulatedSeconds = this.resumeTime || 0;
+            this.resumeTime = null;
+            return;
+        }
+        if (!this.videoPlayer) return;
 
         const seekWhenReady = () => {
             if (this.videoPlayer.readyState >= 2) {
@@ -68,7 +163,6 @@ class WatchProgressTracker {
     async checkResumeInfo() {
         try {
             const url = `/api/watch-history/resume/${this.movieId}${this.episodeNumber ? `?episodeNumber=${this.episodeNumber}` : ''}`;
-            // console.log('🔍 Checking resume info:', url);
 
             const response = await fetch(url, {
                 method: 'GET',
@@ -78,29 +172,26 @@ class WatchProgressTracker {
 
             if (response.ok) {
                 const data = await response.json();
-                // console.log('📊 Resume data:', data);
 
                 if (data.hasHistory && data.watchedDuration > 10 && data.progressPercentage < 95) {
                     this.showResumePopup(data);
                 }
-            } else {
-                // console.log('ℹ️ No resume history found');
             }
         } catch (error) {
             console.error('❌ Error checking resume info:', error);
         }
     }
 
-    // Show resume popup
+    // Show clean, friendly resume popup
     showResumePopup(data) {
-        const minutes = Math.floor(data.watchedDuration / 60);
-        const seconds = data.watchedDuration % 60;
-        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        const episodeText = data.episodeNumber 
-            ? `của <strong>Tập ${data.episodeNumber}</strong>` 
-            : 'của phim này';
+        let episodeBadgeHtml = '';
 
-        // console.log('🎯 Showing resume popup');
+        if (data.episodeNumber) {
+            let serverText = data.serverName ? ` - Server ${data.serverName}` : '';
+            episodeBadgeHtml = `<div class="resume-ep-badge"><i class="fas fa-play me-2"></i>Tập ${data.episodeNumber}${serverText}</div>`;
+        } else {
+            episodeBadgeHtml = `<div class="resume-ep-badge"><i class="fas fa-play me-2"></i>Phim này</div>`;
+        }
 
         const existingPopup = document.getElementById('resumePopup');
         if (existingPopup) existingPopup.remove();
@@ -111,27 +202,22 @@ class WatchProgressTracker {
         popupDiv.innerHTML = `
             <div class="resume-content">
                 <div class="resume-header">
-                    <h4 class="resume-title"><i class="fas fa-play-circle"></i> Xem tiếp</h4>
-                    <button class="resume-close" onclick="window.watchProgressTracker.closeResumePopup()">
+                    <h4 class="resume-title"><i class="fas fa-history text-warning me-1"></i> BẠN ĐANG XEM DỞ</h4>
+                    <button class="resume-close" onclick="window.watchProgressTracker.closeResumePopup()" aria-label="Đóng">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <div class="resume-body">
-                    <p>Bạn đã xem đến <strong>${data.progressPercentage}%</strong> ${episodeText}</p>
-                    <div class="resume-info">
-                        <span>Thời gian: <span>${timeString}</span></span>
-                        <span>${data.progressPercentage}%</span>
-                    </div>
-                    <div class="resume-progress-bar">
-                        <div class="resume-progress-fill" style="width:${data.progressPercentage}%"></div>
-                    </div>
+                <div class="resume-body text-center">
+                    <p class="resume-main-text">Hệ thống ghi nhận bạn đang xem dở:</p>
+                    ${episodeBadgeHtml}
+                    <p class="resume-sub-text mt-2 mb-0">Bạn có muốn tiếp tục xem tiếp không?</p>
                 </div>
                 <div class="resume-actions">
-                    <button class="resume-btn resume-btn-secondary" onclick="window.watchProgressTracker.closeResumePopup()">
+                    <button class="resume-btn resume-btn-secondary" onclick="window.watchProgressTracker.restartPlayback('${data.serverName || ''}')">
                         <i class="fas fa-redo"></i> Xem từ đầu
                     </button>
-                    <button class="resume-btn resume-btn-primary" onclick="window.watchProgressTracker.resumePlayback(${data.watchedDuration}, ${data.episodeNumber})">
-                        <i class="fas fa-play"></i> Xem tiếp (${timeString})
+                    <button class="resume-btn resume-btn-primary" onclick="window.watchProgressTracker.resumePlayback(${data.watchedDuration || 0}, ${data.episodeNumber}, '${data.serverName || ''}')">
+                        <i class="fas fa-play"></i> Xem tiếp
                     </button>
                 </div>
             </div>
@@ -143,17 +229,64 @@ class WatchProgressTracker {
         setTimeout(() => popupDiv.classList.add('show'), 100);
     }
 
-    // Resume playback
-    resumePlayback(time, episodeName = null) {
-        // console.log('▶️ Resuming playback at:', time, 'Episode:', episodeName);
-        window.thoiGianXemTiep = time;
-        // console.log('HISTORY_LOG: 🚩 Đặt cờ thoiGianXemTiep =', time);
-        this.resumeTime = time;
+    // Restart playback from beginning (Tập 1 hoặc từ đầu)
+    restartPlayback(serverName = null) {
         this.closeResumePopup();
 
-        const existingVideo = document.querySelector('video');
+        if (serverName) {
+            const serverTab = document.querySelector(`.server-tab[data-server="${serverName}"]`);
+            if (serverTab) serverTab.click();
+        }
 
-        if (existingVideo && existingVideo.readyState >= 2) {
+        // Chọn tập 1 nếu là phim bộ
+        let firstEpisodeBtn = null;
+        if (serverName) {
+            const group = document.querySelector(`.episode-group[data-server="${serverName}"]`);
+            if (group) firstEpisodeBtn = group.querySelector('.episode-list-item');
+        }
+        if (!firstEpisodeBtn) {
+            firstEpisodeBtn = document.querySelector('.episode-list-item');
+        }
+
+        if (firstEpisodeBtn) {
+            firstEpisodeBtn.click();
+        } else {
+            const watchBtn = document.getElementById('watchBtn');
+            if (watchBtn) watchBtn.click();
+        }
+    }
+
+    // Resume playback (Kích hoạt lại đúng Server & Tập phim)
+    resumePlayback(time, episodeName = null, serverName = null) {
+        const effectiveTime = Math.max(0, time - 5);
+        window.thoiGianXemTiep = effectiveTime;
+        this.resumeTime = effectiveTime;
+        this.closeResumePopup();
+
+        // 1. Tự động bấm chọn lại Server Tab nếu có thông tin Server
+        if (serverName) {
+            const serverTab = document.querySelector(`.server-tab[data-server="${serverName}"]`);
+            if (serverTab) {
+                serverTab.click();
+            }
+        }
+
+        const embedPlayer = document.getElementById('embedPlayer');
+        const isEmbedActive = embedPlayer && embedPlayer.style.display !== 'none';
+
+        if (isEmbedActive && window.playVideo) {
+            const activeItem = document.querySelector('.episode-list-item.active');
+            const currentUrl = activeItem ? activeItem.dataset.url : (window.episode1Url || window.trailerUrl);
+            window.playVideo(currentUrl, time);
+            this.setupIframeClickOverlay(time);
+            if (typeof showNotification === 'function') {
+                showNotification(`▶️ Đang mở Tập ${episodeName || 1}...`, "info");
+            }
+            return;
+        }
+
+        const existingVideo = document.querySelector('video');
+        if (existingVideo && existingVideo.style.display !== 'none' && existingVideo.readyState >= 2) {
             existingVideo.currentTime = time;
             existingVideo.play().catch(err => console.error('❌ Error playing video:', err));
             this.resumeTime = null;
@@ -163,22 +296,37 @@ class WatchProgressTracker {
         let playButton = null;
 
         if (episodeName) {
-            const episodes = document.querySelectorAll('.episode-list-item');
-            playButton = [...episodes].find(ep => ep.dataset.episodeName == episodeName);
+            let episodes = document.querySelectorAll('.episode-list-item');
+            if (serverName) {
+                const group = document.querySelector(`.episode-group[data-server="${serverName}"]`);
+                if (group) {
+                    episodes = group.querySelectorAll('.episode-list-item');
+                }
+            }
+            playButton = [...episodes].find(ep => ep.dataset.episodeName == episodeName || ep.textContent.trim().includes(episodeName));
         }
 
         if (!playButton) playButton = document.getElementById('watchBtn');
 
         if (playButton) {
+            window.thoiGianXemTiep = time;
+
             playButton.click();
 
             let checkCount = 0;
-            const checkVideo = setInterval(() => {
+            const checkPlayer = setInterval(() => {
                 checkCount++;
+                const embed = document.getElementById('embedPlayer');
                 const video = document.querySelector('video');
 
-                if (video && video.src) {
-                    clearInterval(checkVideo);
+                if (embed && embed.style.display !== 'none') {
+                    clearInterval(checkPlayer);
+                    this.setupIframeClickOverlay(time);
+                    if (typeof showNotification === 'function') {
+                        showNotification(`▶️ Đang mở Tập ${episodeName || 1}...`, "info");
+                    }
+                } else if (video && video.src && video.style.display !== 'none') {
+                    clearInterval(checkPlayer);
 
                     const seekWhenReady = () => {
                         if (video.readyState >= 2) {
@@ -198,7 +346,7 @@ class WatchProgressTracker {
                         }
                     };
                     seekWhenReady();
-                } else if (checkCount >= 20) clearInterval(checkVideo);
+                } else if (checkCount >= 20) clearInterval(checkPlayer);
             }, 500);
         }
     }
@@ -220,133 +368,113 @@ class WatchProgressTracker {
 
         this.saveInterval = setInterval(() => this.saveProgress(), this.saveIntervalTime);
 
-        this.videoPlayer.addEventListener('ended', () => this.saveProgress(true));
+        if (this.videoPlayer) {
+            this.videoPlayer.addEventListener('ended', () => this.saveProgress(true));
+
+            let pauseTimeout;
+            this.videoPlayer.addEventListener('pause', () => {
+                clearTimeout(pauseTimeout);
+                pauseTimeout = setTimeout(() => this.saveProgress(), 1500);
+            });
+        }
 
         window.addEventListener('beforeunload', () => this.saveProgress());
-
-        let pauseTimeout;
-        this.videoPlayer.addEventListener('pause', () => {
-            clearTimeout(pauseTimeout);
-            pauseTimeout = setTimeout(() => this.saveProgress(), 2000);
+        window.addEventListener('pagehide', () => this.saveProgress());
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) this.saveProgress();
         });
     }
 
    async saveProgress(isCompleted = false) {
-    if (!this.isLoggedIn || !this.authToken) {
+        if (!this.isLoggedIn || !this.authToken) {
              return; 
         }
 
-    // ==== 💡 FIX LỖI QUẢNG CÁO GHI ĐÈ ====
-    if (window.dangXemQuangCao === true) {
-        // console.log('HISTORY_LOG: 🚩 Đang xem quảng cáo, BỎ QUA lưu lịch sử.');
-        return; // Không lưu lịch sử khi đang xem quảng cáo
-    }
-    // ==== KẾT THÚC FIX ====
-
-    // Luôn tìm player mới nhất phòng trường hợp bị thay đổi khi đổi tập
-    this.videoPlayer = document.querySelector("video");
-    if (!this.videoPlayer) return;
-
-    // =============================
-    // 🔧 FIX LỖI: cập nhật số tập chính xác
-    // =============================
-    const activeButton = document.querySelector(".episode-list-item.active");
-
-    if (activeButton?.dataset?.episodeName) {
-        // Nếu có tập active → cập nhật
-        this.episodeNumber = parseInt(activeButton.dataset.episodeName);
-    } else {
-        // Nếu không có active (phim lẻ), kiểm tra dữ liệu trong server
-        const movieIdElement = document.querySelector("[data-movie-id]");
-
-        // Chỉ reset về null nếu hoàn toàn KHÔNG có thuộc tính data-episode-number
-        if (movieIdElement && !movieIdElement.hasAttribute("data-episode-number")) {
-            this.episodeNumber = null;
-        }
-    }
-    // =============================
-
-    const currentTime = Math.floor(this.videoPlayer.currentTime);
-    const duration = Math.floor(this.videoPlayer.duration);
-
-    // Điều kiện không cần lưu
-    if (currentTime < 10 || !duration || duration <= 0) return;
-    if (Math.abs(currentTime - this.lastSavedTime) < 5 && !isCompleted) return;
-
-    try {
-        // Payload gửi lên server
-        const data = {
-            movieId: this.movieId,
-            watchedDuration: currentTime,
-            totalDuration: duration,
-            isCompleted: isCompleted || currentTime / duration > 0.95
-        };
-
-        if (this.episodeNumber !== null && this.episodeNumber !== undefined) {
-            data.episodeNumber = this.episodeNumber;
+        // Bỏ qua khi xem quảng cáo
+        if (window.dangXemQuangCao === true) {
+            return;
         }
 
-        // console.log("💾 Saving progress:", data);
-
-        // CSRF Token
-        const token = document.querySelector("#RequestVerificationToken")?.value;
-
-        const response = await fetch("/api/watch-history", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json",
-                ...(token && { RequestVerificationToken: token })
-            },
-            body: JSON.stringify(data)
-        });
-
-        if (response.ok) {
-            this.lastSavedTime = currentTime;
-            // console.log(`✅ Progress saved: ${currentTime}/${duration}`);
+        // Cập nhật số tập và Server đang xem
+        const activeButton = document.querySelector(".episode-list-item.active");
+        if (activeButton?.dataset?.episodeName) {
+            this.episodeNumber = parseInt(activeButton.dataset.episodeName);
         } else {
-            const msg = await response.text();
-            // console.error("❌ Failed to save progress:", response.status, msg);
+            const movieIdElement = document.querySelector("[data-movie-id]");
+            if (movieIdElement && !movieIdElement.hasAttribute("data-episode-number")) {
+                this.episodeNumber = null;
+            }
         }
 
-    } catch (error) {
-        console.error("❌ Error saving progress:", error);
+        this.serverName = this.getCurrentServerName();
+
+        let currentTime = 0;
+        let duration = 0;
+
+        const embedPlayer = document.getElementById("embedPlayer");
+        const isEmbedActive = embedPlayer && embedPlayer.style.display !== "none" && embedPlayer.src;
+
+        if (isEmbedActive || this.isEmbedMode) {
+            currentTime = Math.floor(this.embedAccumulatedSeconds);
+            duration = this.embedTotalDuration || 2700;
+        } else {
+            this.videoPlayer = document.querySelector("video");
+            if (!this.videoPlayer) return;
+
+            currentTime = Math.floor(this.videoPlayer.currentTime || 0);
+            duration = Math.floor(this.videoPlayer.duration || 0);
+        }
+
+        if (currentTime < 10 || !duration || duration <= 0) return;
+        if (Math.abs(currentTime - this.lastSavedTime) < 5 && !isCompleted) return;
+
+        try {
+            const data = {
+                movieId: this.movieId,
+                watchedDuration: currentTime,
+                totalDuration: duration,
+                isCompleted: isCompleted || (currentTime / duration > 0.95),
+                serverName: this.serverName
+            };
+
+            if (this.episodeNumber !== null && this.episodeNumber !== undefined) {
+                data.episodeNumber = this.episodeNumber;
+            }
+
+            const token = document.querySelector("#RequestVerificationToken")?.value || this.authToken;
+
+            const response = await fetch("/api/watch-history", {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(token && { RequestVerificationToken: token })
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                this.lastSavedTime = currentTime;
+            }
+        } catch (error) {
+            console.error("❌ Error saving watch progress:", error);
+        }
     }
-}
 
     stopTracking() {
         if (this.saveInterval) {
             clearInterval(this.saveInterval);
             this.saveInterval = null;
         }
+        this.stopEmbedTracking();
     }
 }
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     const isUserLoggedIn = document.getElementById('notificationBell');
-    if (!isUserLoggedIn) return;
-    
-    const movieIdElement = document.querySelector('[data-movie-id]');
-
-    if (movieIdElement) {
-        const movieId = parseInt(movieIdElement.dataset.movieId);
-        const episodeNumber = movieIdElement.dataset.episodeNumber ? parseInt(movieIdElement.dataset.episodeNumber) : null;
-
-        window.watchProgressTracker = new WatchProgressTracker(movieId, episodeNumber);
-
-        let checkCount = 0;
-        const checkVideo = setInterval(() => {
-            checkCount++;
-            const video = document.querySelector('video');
-
-            if (video) {
-                clearInterval(checkVideo);
-                window.watchProgressTracker.init();
-            } else if (checkCount >= 20) {
-                clearInterval(checkVideo);
-                // console.log('ℹ️ Waiting for video player...');
-            }
-        }, 500);
+    if (isUserLoggedIn && window.movieId) {
+        window.watchProgressTracker = new WatchProgressTracker(window.movieId);
+        window.watchProgressTracker.init();
     }
 });

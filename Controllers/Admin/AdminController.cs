@@ -28,7 +28,7 @@ namespace MovieWeb.Controllers
         private readonly INotificationService _notificationService;
         private readonly IBackgroundJobClient _backgroundJobClient;
         private readonly IHubContext<NotificationHub> _notificationHubContext;
-        private readonly IOPhimService _oPhimService;
+        private readonly IVSMovService _vsMovService;
         private readonly IMovieSyncService _movieSyncService;
         private readonly IEmailService _emailService;
 
@@ -42,7 +42,7 @@ namespace MovieWeb.Controllers
             INotificationService notificationService,
             IBackgroundJobClient backgroundJobClient,
             IHubContext<NotificationHub> notificationHubContext,
-            IOPhimService oPhimService,
+            IVSMovService vsMovService,
             IMovieSyncService movieSyncService,
             IEmailService emailService
         )
@@ -55,7 +55,7 @@ namespace MovieWeb.Controllers
             _notificationService = notificationService;
             _backgroundJobClient = backgroundJobClient;
             _notificationHubContext = notificationHubContext;
-            _oPhimService = oPhimService;
+            _vsMovService = vsMovService;
             _movieSyncService = movieSyncService;
             _emailService = emailService;
         }
@@ -219,31 +219,9 @@ namespace MovieWeb.Controllers
                 {
                     int start = Math.Max(1, fromPage.Value);
                     int end = Math.Max(start, toPage.Value);
-                    _logger.LogWarning($"...[Backfill] Đang tiến hành cào phim từ trang {start} đến {end} từ OPhim API...");
-
-                    for (int page = start; page <= end; page++)
-                    {
-                        _logger.LogInformation($"...[Backfill] Đang cào trang {page}...");
-                        try
-                        {
-                            var response = await _oPhimService.GetLatestMoviesAsync(page);
-                            var movies = response?.Data?.Items;
-                            if (movies != null && movies.Any())
-                            {
-                                await _movieSyncService.SyncMoviesFromApiToDbAsync(movies, 2020);
-                                _logger.LogInformation($"   ✅ Đã đồng bộ xong trang {page} (có {movies.Count} phim)");
-                            }
-                            else
-                            {
-                                _logger.LogWarning($"   ⚠️ Trang {page} không có phim hoặc API lỗi.");
-                            }
-                        }
-                        catch (Exception exPage)
-                        {
-                            _logger.LogError(exPage, $"❌ Lỗi khi cào trang {page}. Bỏ qua để cào tiếp.");
-                        }
-                    }
-                    _logger.LogWarning("...[Backfill] Hoàn tất cào phim từ API.");
+                    _logger.LogWarning($"...[Backfill] Đang tiến hành cào phim từ trang {start} đến {end} từ VSMov API...");
+                    await _movieSyncService.SyncMoviesFromVSMovApiAsync(start, end);
+                    _logger.LogWarning("...[Backfill] Hoàn tất cào phim từ VSMov API.");
                 }
 
                 _logger.LogInformation("...[Backfill] Đang chạy rà soát tập cho Phim Bộ (Series)...");
@@ -262,6 +240,33 @@ namespace MovieWeb.Controllers
             {
                 _logger.LogError(ex, "!!! === [JOB THỦ CÔNG] LỖI NẶNG KHI CHẠY BACKFILL === !!!");
                 return StatusCode(500, "Lỗi server nghiêm trọng, xem log ngay.");
+            }
+        }
+
+        // =================================================================
+        // GET: /Admin/RunVSMovBackfill (Thủ công - Nguồn dự phòng VSMov)
+        // =================================================================
+        [HttpGet("run-vsmov-backfill-123xyz")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RunVSMovBackfill([FromQuery] int? fromPage, [FromQuery] int? toPage)
+        {
+            _logger.LogWarning("!!! === [JOB THỦ CÔNG] BẮT ĐẦU CHẠY VSMOV BACKFILL === !!!");
+
+            try
+            {
+                int start = fromPage ?? 1;
+                int end = toPage ?? 10;
+
+                _logger.LogWarning($"[VSMov Backfill] Đang đồng bộ phim từ VSMov, trang {start} đến {end}...");
+                await _movieSyncService.BackfillFromVSMovAsync(start, end);
+
+                _logger.LogWarning("!!! === [JOB THỦ CÔNG] VSMOV BACKFILL HOÀN TẤT === !!!");
+                return Ok($"Đã chạy xong VSMov Backfill (trang {start} đến {end}). Hãy kiểm tra log và database.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "!!! === [JOB THỦ CÔNG] LỖI NẶNG KHI CHẠY VSMOV BACKFILL === !!!");
+                return StatusCode(500, "Lỗi server nghiêm trọng khi chạy VSMov Backfill, xem log ngay.");
             }
         }
     }

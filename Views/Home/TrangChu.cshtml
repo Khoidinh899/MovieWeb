@@ -6,7 +6,7 @@
     ViewData["IsHomePage"] = true; //gắn cờ đánh dấu đây là trang chủ
 
     // 1. Chuẩn bị Mô tả (Description)
-    var seoDescription = "MoonPhim - Xem phim online miễn phí. Cập nhật phim mới, phim hay, phim vietsub, thuyết minh nhanh nhất. Thư viện phim khổng lồ.";
+    var seoDescription = "MoonPhim - Xem phim online miễn phí thay thế PhimMoi, RoPhim, MotPhim, CoBePhim, MotChill. Cập nhật phim mới, phim hay, phim vietsub, thuyết minh nhanh nhất. Thư viện phim HD khổng lồ.";
 
     // 2. Chuẩn bị Ảnh (Image) - Lấy ảnh phim hot đầu tiên
     var seoImage = "/images/mooner_logo_large.png"; // Dùng ảnh logo làm dự phòng
@@ -40,7 +40,7 @@
         }
 
         // ===== SỬA 1: Dùng ảnh fallback local =====
-        return "/images/404_images.gif";
+        return "/images/default-poster.jpg";
     }
 }
 
@@ -101,7 +101,7 @@
                                                 var heroPosterUrl = GetMoviePosterUrl(movie);
                                             }
                                             <img src="@heroPosterUrl" alt="@movie.Name" class="img-fluid rounded shadow-lg"
-                                                onerror="this.onerror=null; this.src='/images/404_images.gif';">
+                                                onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
                                         </div>
                                     </div>
                                 </div>
@@ -163,7 +163,7 @@
                                         var posterUrl = GetMoviePosterUrl(movie);
                                     }
                                     <img src="@posterUrl" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
-                                        onerror="this.onerror=null; this.src='/images/404_images.gif';">
+                                        onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
 
                                     <div class="movie-overlay">
                                         <div class="play-button">
@@ -219,7 +219,7 @@
                                         var posterUrl2 = GetMoviePosterUrl(movie);
                                     }
                                     <img src="@posterUrl2" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
-                                        onerror="this.onerror=null; this.src='/images/404_images.gif';">
+                                        onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
 
                                     <div class="movie-overlay">
                                         <div class="play-button">
@@ -272,7 +272,7 @@
                                         var posterUrl3 = GetMoviePosterUrl(movie);
                                     }
                                     <img src="@posterUrl3" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
-                                        onerror="this.onerror=null; this.src='/images/404_images.gif';">
+                                        onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
 
                                     <div class="movie-overlay">
                                         <div class="play-button">
@@ -331,7 +331,7 @@
                                         var posterUrl4 = GetMoviePosterUrl(movie);
                                     }
                                     <img src="@posterUrl4" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
-                                        onerror="this.onerror=null; this.src='/images/404_images.gif';">
+                                        onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
 
                                     <div class="movie-overlay">
                                         <div class="play-button">
@@ -385,7 +385,7 @@
                                             var posterUrlUp = GetMoviePosterUrl(movie);
                                         }
                                         <img src="@posterUrlUp" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
-                                             onerror="this.onerror=null; this.src='/images/404_images.gif';">
+                                             onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
 
                                         <div class="movie-overlay">
                                             <div class="play-button">

@@ -68,7 +68,8 @@ namespace MovieWeb.Controllers
                 {
                     latestMovies = await _context.Movies
                         .Where(m => m.IsActive == true && (m.Episodes.Any() || !string.IsNullOrEmpty(m.TrailerUrl)))
-                        .OrderByDescending(m => m.UpdatedAt)
+                        .OrderByDescending(m => m.Year)
+                        .ThenByDescending(m => m.UpdatedAt)
                         .Take(12)
                         .ToListAsync();
 
@@ -82,7 +83,8 @@ namespace MovieWeb.Controllers
                 {
                     singleMovies = await _context.Movies
                         .Where(m => m.IsActive == true && m.Type == "single" && !string.IsNullOrEmpty(m.TrailerUrl))
-                        .OrderByDescending(m => m.UpdatedAt)
+                        .OrderByDescending(m => m.Year)
+                        .ThenByDescending(m => m.UpdatedAt)
                         .Take(12)
                         .ToListAsync();
 
@@ -96,7 +98,8 @@ namespace MovieWeb.Controllers
                 {
                     seriesMovies = await _context.Movies
                         .Where(m => m.IsActive == true && m.Type == "series" && m.Episodes.Any())
-                        .OrderByDescending(m => m.UpdatedAt)
+                        .OrderByDescending(m => m.Year)
+                        .ThenByDescending(m => m.UpdatedAt)
                         .Take(12)
                         .ToListAsync();
 
@@ -110,7 +113,8 @@ namespace MovieWeb.Controllers
                 {
                     hoatHinhMovies = await _context.Movies
                         .Where(m => m.IsActive == true && m.Type == "hoathinh" && (m.Episodes.Any() || !string.IsNullOrEmpty(m.TrailerUrl)))
-                        .OrderByDescending(m => m.UpdatedAt)
+                        .OrderByDescending(m => m.Year)
+                        .ThenByDescending(m => m.UpdatedAt)
                         .Take(12)
                         .ToListAsync();
 

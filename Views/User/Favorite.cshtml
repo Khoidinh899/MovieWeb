@@ -9,7 +9,7 @@
     {
         if (string.IsNullOrEmpty(posterUrl))
         {
-            return "/images/no-poster.jpg";
+            return "/images/default-poster.jpg";
         }
         
         if (posterUrl.StartsWith("http"))
@@ -68,7 +68,7 @@
                                                 <img src="@GetMoviePosterUrl(movie.PosterUrl)" 
                                                      alt="@movie.Name" 
                                                      loading="lazy"
-                                                     onerror="this.onerror=null; this.src='/images/no-poster.jpg';">
+                                                     onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
                                             </div>
                                             <div class="movie-info">
                                                 <h6 class="movie-title">@movie.Name</h6>

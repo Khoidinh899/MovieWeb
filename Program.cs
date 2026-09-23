@@ -68,7 +68,10 @@ builder.Services.AddControllersWithViews(options =>
 
 // Kết nối DbContext với PostgreSQL
 builder.Services.AddDbContext<MovieWebDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+});
 
 // Configure Identity
 builder.Services.AddIdentity<User, Role>(options =>
@@ -134,7 +137,13 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 // ✅ Thêm JWT Authentication (cho API nếu cần)
-builder.Services.AddAuthentication()
+var jwtSecretKey = builder.Configuration["JwtSettings:SecretKey"];
+if (string.IsNullOrWhiteSpace(jwtSecretKey))
+{
+    jwtSecretKey = "LocalDevelopmentSecretKey_MoonPhim_2026_MustBeLongEnoughForHS256!";
+}
+
+var authBuilder = builder.Services.AddAuthentication()
 .AddJwtBearer("JwtScheme", options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
@@ -143,18 +152,25 @@ builder.Services.AddAuthentication()
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
-        ValidAudience = builder.Configuration["JwtSettings:Audience"],
+        ValidIssuer = builder.Configuration["JwtSettings:Issuer"] ?? "MoonPhim",
+        ValidAudience = builder.Configuration["JwtSettings:Audience"] ?? "MoonPhim",
         IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"] 
-                ?? throw new InvalidOperationException("JWT SecretKey not found"))),
+            Encoding.UTF8.GetBytes(jwtSecretKey)),
         ClockSkew = TimeSpan.Zero
     };
-})
-    .AddGoogle(options =>
+});
+
+var googleClientId = Environment.GetEnvironmentVariable("Authentication__Google__ClientId") 
+    ?? builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = Environment.GetEnvironmentVariable("Authentication__Google__ClientSecret") 
+    ?? builder.Configuration["Authentication:Google:ClientSecret"];
+
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    authBuilder.AddGoogle(options =>
     {
-        options.ClientId = Environment.GetEnvironmentVariable("Authentication__Google__ClientId") ?? "";
-        options.ClientSecret = Environment.GetEnvironmentVariable("Authentication__Google__ClientSecret") ?? "";
+        options.ClientId = googleClientId;
+        options.ClientSecret = googleClientSecret;
         options.CallbackPath = "/signin-google";
         options.Events = new Microsoft.AspNetCore.Authentication.OAuth.OAuthEvents
         {
@@ -165,6 +181,7 @@ builder.Services.AddAuthentication()
             }
         };
     });
+}
 
 // Authorization policies
 builder.Services.AddAuthorization(options =>
@@ -217,6 +234,7 @@ builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 
 // ===== MOVIE SERVICES =====
 builder.Services.AddScoped<IOPhimService, OPhimService>();
+builder.Services.AddScoped<IVSMovService, VSMovService>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 builder.Services.AddScoped<ICategorySyncService, CategorySyncService>();
 builder.Services.AddScoped<ICountrySyncService, CountrySyncService>();
@@ -439,10 +457,10 @@ RecurringJob.AddOrUpdate<SendRealtimeNotificationJob>(
 /*===== SITEMAP CACHE REFRESH JOB =====*/
 MovieWeb.Jobs.SitemapCacheRefreshJob.ScheduleRecurringJob();
 
-RecurringJob.AddOrUpdate<MovieWeb.Jobs.OPhimCatalogSyncJob>(
-    recurringJobId: "ophim-catalog-sync",
+RecurringJob.AddOrUpdate<MovieWeb.Jobs.VSMovCatalogSyncJob>(
+    recurringJobId: "vsmov-catalog-sync",
     methodCall: job => job.Execute(),
-    cronExpression: "0 */3 * * *",
+    cronExpression: "0 * * * *", // Runs every 60 minutes (1 hour)
     options: new RecurringJobOptions
     {
         TimeZone = TimeZoneInfo.FindSystemTimeZoneById(

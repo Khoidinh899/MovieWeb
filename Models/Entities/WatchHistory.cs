@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace MovieWeb.Models.Entities;
@@ -20,6 +20,8 @@ public partial class WatchHistory
     public bool? IsCompleted { get; set; }
 
     public DateTime? LastWatchedAt { get; set; }
+
+    public string? ServerName { get; set; }
 
     public virtual Movie Movie { get; set; } = null!;
 

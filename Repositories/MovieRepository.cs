@@ -19,7 +19,8 @@ namespace MovieWeb.Repositories
         {
             var query = _context.Movies
                 .Where(m => m.IsActive == true)
-                .OrderByDescending(m => m.UpdatedAt)
+                .OrderByDescending(m => m.Year)
+                .ThenByDescending(m => m.UpdatedAt)
                 .AsNoTracking();
 
             var totalCount = await query.CountAsync();

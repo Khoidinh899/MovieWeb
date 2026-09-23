@@ -7,19 +7,18 @@ namespace MovieWeb.Helpers
         // ✅ Domain ảnh mới của Ophim (đang hoạt động)
         private static readonly string ApiImageBaseUrl = "https://img.ophim.live/uploads/movies/";
 
-        /// <summary>
-        /// Lấy URL đầy đủ cho poster phim
-        /// </summary>
         public static string GetPoster(string? posterFileName)
         {
-            if (string.IsNullOrEmpty(posterFileName))
-                return "/images/no-poster.png"; // Ảnh mặc định nếu thiếu
+            if (string.IsNullOrWhiteSpace(posterFileName))
+                return "/images/default-poster.jpg";
 
-            if (posterFileName.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-                return posterFileName; // Nếu là full URL thì trả về luôn
+            if (posterFileName.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                posterFileName.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return posterFileName;
+            }
 
-            // Ghép domain + tên file
-            return $"{ApiImageBaseUrl}{posterFileName}";
+            return $"{ApiImageBaseUrl}{posterFileName.TrimStart('/')}";
         }
 
         /// <summary>
@@ -27,13 +26,17 @@ namespace MovieWeb.Helpers
         /// </summary>
         public static string GetThumb(string? thumbFileName)
         {
-            if (string.IsNullOrEmpty(thumbFileName))
-                return "/images/no-thumb.png"; // Ảnh mặc định nếu thiếu
+            if (string.IsNullOrWhiteSpace(thumbFileName))
+                return "/images/default-poster.jpg";
 
-            if (thumbFileName.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            if (thumbFileName.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                thumbFileName.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
                 return thumbFileName;
+            }
 
-            return $"{ApiImageBaseUrl}{thumbFileName}";
+            return $"{ApiImageBaseUrl}{thumbFileName.TrimStart('/')}";
         }
     }
 }
+

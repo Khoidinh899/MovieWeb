@@ -1,4 +1,4 @@
-﻿@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
 @{
     // ===== ✅ BẮT ĐẦU KHỐI CHUẨN BỊ BIẾN SEO MẶC ĐỊNH =====
     var request = Context.Request;
@@ -11,7 +11,45 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - MoonPhim</title>
+    <meta name="monetag" content="1bd43555dd0c57f4ee0258b218db6891">
+
+    <!-- Google AdSense Auto Ads Script -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8229451063311920"
+            crossorigin="anonymous"></script>
+
+    <!-- In-Page Push Position Fix (Đã loại trừ khung thông báo Noti, Chatbot, Toast để không bị kéo xuống dưới) -->
+    <style>
+        iframe[style*="fixed"],
+        iframe[style*="position: fixed"],
+        iframe[style*="position:fixed"],
+        body > div[style*="fixed"]:not(#header):not(.navbar):not(.modal):not(#homeAdModal):not([class*="noti"]):not([id*="noti"]):not([class*="notification"]):not([id*="notification"]):not([class*="toast"]):not([id*="toast"]):not([class*="chatbot"]):not([id*="chatbot"]),
+        body > div[style*="position: fixed"]:not(#header):not(.navbar):not(.modal):not(#homeAdModal):not([class*="noti"]):not([id*="noti"]):not([class*="notification"]):not([id*="notification"]):not([class*="toast"]):not([id*="toast"]):not([class*="chatbot"]):not([id*="chatbot"]),
+        [class*="in-page-push"],
+        [id*="ipp-container"] {
+            top: auto !important;
+            bottom: 80px !important;
+            right: 20px !important;
+            left: auto !important;
+            z-index: 2147483647 !important;
+        }
+    </style>
+    <title>@ViewData["Title"] - MoonPhim | Xem Phim Online Miễn Phí | Moon Phim Vietsub HD</title>
+
+    <!-- Schema.org WebSite & Brand Organization Markup (MoonPhim / Moon Phim) -->
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@type": "WebSite",
+      "name": "MoonPhim",
+      "alternateName": ["Moon Phim", "MoonPhim.me", "Moon Phim Online", "MoonPhim HD"],
+      "url": "https://moonphim.me/",
+      "potentialAction": {
+        "@@type": "SearchAction",
+        "target": "https://moonphim.me/tim-kiem?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
     <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png" asp-append-version="true">
     <link rel="icon" type="image/png" sizes="32x32" href="~/favicon-32x32.png" asp-append-version="true">
     <link rel="icon" type="image/png" sizes="16x16" href="~/favicon-16x16.png" asp-append-version="true">
@@ -36,10 +74,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
     @* --- BẮT ĐẦU KHỐI SEO MẶC ĐỊNH --- *@
+    <meta name="keywords" content="moonphim, moon phim, moonphim me, moon phim online, phimmoi, phim moi, rophim, ro phim, cobephim, co be phim, motphim, mot phim, motchill, phimmoichill, xem phim online, phim vietsub, phim thuyet minh, xem phim mien phi, bay bong cung dien anh" />
     <meta name="theme-color" content="#1c2a39" />
-    <meta name="author" content="MoonPhim" />
+    <meta name="author" content="MoonPhim (Moon Phim)" />
 
-    <meta property="og:site_name" content="MoonPhim" />
+    <meta property="og:site_name" content="MoonPhim (Moon Phim) - PhimMoi | RoPhim | MotPhim Vietsub Full HD" />
     <meta property="og:image" content="@defaultSeoImage" />
     <meta property="og:locale" content="vi_VN" />
     @* --- KẾT THÚC KHỐI SEO MẶC ĐỊNH --- *@
@@ -59,6 +98,7 @@
 
     @await Html.PartialAsync("Partial/_Header")
     @await Html.PartialAsync("Partial/_AuthModal")
+    @await Html.PartialAsync("Partial/_UpgradeAnnouncementModal")
 
     <main role="main">
         @RenderBody()
@@ -89,6 +129,63 @@
 }
 
 <script src="~/js/search.js" asp-append-version="true"></script>
+
+    <!-- Monetag In-Page Push & Vignette (Chạy sau khi toàn bộ trang dựng xong) -->
+    <script>
+        window.addEventListener('load', function () {
+            // Nạp In-Page Push (Zone 11708841)
+            var ipp = document.createElement('script');
+            ipp.dataset.zone = '11708841';
+            ipp.src = 'https://nap5k.com/tag.min.js';
+            document.body.appendChild(ipp);
+
+            // Nạp Vignette (Zone 11708850)
+            var vig = document.createElement('script');
+            vig.dataset.zone = '11708850';
+            vig.src = 'https://n6wxm.com/vignette.min.js';
+            document.body.appendChild(vig);
+        });
+    </script>
+
+    <!-- Monetag OnClick (Popunder) Ads Script - Chống vòng lặp chuyển hướng Mobile & Giới hạn 24h -->
+    <script>
+        (function () {
+            var STORAGE_KEY = 'moonphim_pop_done';
+            var COOLDOWN = 24 * 60 * 60 * 1000; // 24 tiếng
+
+            var lastShown = localStorage.getItem(STORAGE_KEY);
+            var now = Date.now();
+
+            // 1. Đã bật trong 24h qua -> Chặn hoàn toàn
+            if (lastShown && (now - parseInt(lastShown, 10)) < COOLDOWN) {
+                return;
+            }
+
+            var isFired = false;
+
+            var triggerPopunder = function () {
+                if (isFired) return;
+                isFired = true;
+
+                // Ghi nhận ngay mốc thời gian để không lặp lại
+                localStorage.setItem(STORAGE_KEY, Date.now().toString());
+
+                // Gỡ toàn bộ sự kiện chạm/click ngay lập tức
+                window.removeEventListener('click', triggerPopunder, true);
+                window.removeEventListener('touchend', triggerPopunder, true);
+
+                // Nạp script OnClick Monetag (Zone 11708858)
+                var s = document.createElement('script');
+                s.dataset.zone = '11708858';
+                s.src = 'https://al5sm.com/tag.min.js';
+                (document.body || document.documentElement).appendChild(s);
+            };
+
+            // Bắt sự kiện click hoặc nhả ngón tay ở chế độ capture
+            window.addEventListener('click', triggerPopunder, true);
+            window.addEventListener('touchend', triggerPopunder, true);
+        })();
+    </script>
 </body>
 
 </html>

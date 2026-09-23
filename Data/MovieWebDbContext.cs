@@ -43,6 +43,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
     public virtual DbSet<UserSubscription> UserSubscriptions { get; set; }
     public virtual DbSet<Transaction> Transactions { get; set; }
     public virtual DbSet<Advertisement> Advertisements { get; set; }
+    public virtual DbSet<CopyrightReport> CopyrightReports { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

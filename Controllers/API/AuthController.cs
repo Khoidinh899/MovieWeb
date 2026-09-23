@@ -288,8 +288,15 @@ namespace MovieWeb.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult ExternalLogin(string provider, string? returnUrl = null)
+        public async Task<IActionResult> ExternalLogin(string provider, string? returnUrl = null)
         {
+            var schemes = await _signInManager.GetExternalAuthenticationSchemesAsync();
+            if (!schemes.Any(s => s.Name.Equals(provider, StringComparison.OrdinalIgnoreCase)))
+            {
+                TempData["ErrorMessage"] = $"Phương thức đăng nhập {provider} chưa được cấu hình.";
+                return RedirectToAction("TrangChu", "TrangChu", new { auth = "login" });
+            }
+
             var redirectUrl = Url.Action(nameof(ExternalLoginCallback), "Auth", new { returnUrl });
             var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
             return Challenge(properties, provider);

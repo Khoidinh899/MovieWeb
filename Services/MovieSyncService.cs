@@ -23,12 +23,17 @@ namespace MovieWeb.Services
         Task BackfillAllEpisodesAsync();
         Task BackfillSingleMoviesAsync();
         Task SyncMovieFromApiBySlug(string apiSlug, int movieId);
+        Task BackfillFromVSMovAsync(int fromPage = 1, int toPage = 10);
+        Task SyncMoviesFromVSMovApiAsync(int startPage = 1, int endPage = 10);
+        Task<DbMovie?> SyncSingleMovieFromVSMovBySlugAsync(string slug);
+        Task<(DbMovie? Movie, bool WasUpdatedOrAdded)> SyncSingleMovieFromVSMovBySlugWithStatusAsync(string slug);
     }
 
     public class MovieSyncService : IMovieSyncService
     {
         private readonly MovieWebDbContext _context;
         private readonly IOPhimService _oPhimService;
+        private readonly IVSMovService _vsMovService;
         private readonly ILogger<MovieSyncService> _logger;
         private readonly ICategorySyncService _categorySyncService;
         private readonly ICountrySyncService _countrySyncService;
@@ -38,6 +43,7 @@ namespace MovieWeb.Services
         public MovieSyncService(
             MovieWebDbContext context,
             IOPhimService oPhimService,
+            IVSMovService vsMovService,
             ILogger<MovieSyncService> logger,
             ICategorySyncService categorySyncService,
             ICountrySyncService countrySyncService,
@@ -46,6 +52,7 @@ namespace MovieWeb.Services
         {
             _context = context;
             _oPhimService = oPhimService;
+            _vsMovService = vsMovService;
             _logger = logger;
             _categorySyncService = categorySyncService;
             _countrySyncService = countrySyncService;
@@ -675,6 +682,412 @@ namespace MovieWeb.Services
             }
 
             _logger.LogInformation($"*** HOÀN TẤT: Đã cập nhật link xem cho {updatedMovieCount}/{moviesToProcess.Count} phim lẻ. ***");
+        }
+
+        public async Task SyncMoviesFromVSMovApiAsync(int startPage = 1, int endPage = 10)
+        {
+            await BackfillFromVSMovAsync(startPage, endPage);
+        }
+
+        // =================================================================
+        // HÀM ĐỒNG BỘ TỪ NGUỒN VSMOV (DỰ PHÒNG THAY THẾ OPHIM)
+        // =================================================================
+        public async Task BackfillFromVSMovAsync(int fromPage = 1, int toPage = 10)
+        {
+            _logger.LogWarning($"🔄🔄🔄 [VSMov] BẮT ĐẦU ĐỒNG BỘ TỪ VSMOV - Trang {fromPage} đến {toPage}");
+
+            int totalUpdated = 0;
+            int totalAdded = 0;
+            int totalSkipped = 0;
+
+            for (int page = fromPage; page <= toPage; page++)
+            {
+                try
+                {
+                    _logger.LogInformation($"[VSMov] 📄 Đang cào trang {page}...");
+                    var listResponse = await _vsMovService.GetLatestMoviesAsync(page);
+
+                    if (listResponse?.Items == null || !listResponse.Items.Any())
+                    {
+                        _logger.LogWarning($"[VSMov] ⚠️ Trang {page} không có phim hoặc API lỗi. Dừng.");
+                        break;
+                    }
+
+                    _logger.LogInformation($"[VSMov] ✅ Trang {page}: {listResponse.Items.Count} phim");
+
+                    foreach (var vsItem in listResponse.Items)
+                    {
+                        try
+                        {
+                            if (string.IsNullOrEmpty(vsItem.Slug))
+                            {
+                                totalSkipped++;
+                                continue;
+                            }
+
+                            // 1. Tìm phim trong DB theo slug
+                            var movieInDb = await _context.Movies
+                                .Include(m => m.Episodes)
+                                .FirstOrDefaultAsync(m => m.Slug == vsItem.Slug);
+
+                            // 2. Lấy chi tiết phim từ VSMov API
+                            var detailResponse = await _vsMovService.GetMovieDetailAsync(vsItem.Slug);
+                            var vsDetail = detailResponse?.Item;
+
+                            if (detailResponse?.Episodes == null || !detailResponse.Episodes.Any())
+                            {
+                                _logger.LogWarning($"[VSMov] ⚠️ Phim '{vsItem.Slug}' không có episodes từ VSMov. Bỏ qua.");
+                                totalSkipped++;
+                                continue;
+                            }
+
+                            if (movieInDb != null)
+                            {
+                                // === PHIM ĐÃ CÓ TRONG DB: CẬP NHẬT LINK TỪ VSMOV ===
+                                _logger.LogInformation($"[VSMov] 🔄 Cập nhật phim đã có: '{movieInDb.Name}' (ID: {movieInDb.MovieId})");
+
+                                // Xóa tất cả episode cũ
+                                if (movieInDb.Episodes.Any())
+                                {
+                                    _context.Episodes.RemoveRange(movieInDb.Episodes);
+                                    movieInDb.Episodes.Clear();
+                                }
+
+                                var addedEpisodeKeys = new HashSet<string>();
+                                string firstValidLink = null;
+
+                                foreach (var server in detailResponse.Episodes)
+                                {
+                                    string serverName = server.ServerName?.Trim() ?? "VSMov";
+
+                                    if (server.ServerData == null) continue;
+
+                                    foreach (var epData in server.ServerData)
+                                    {
+                                        string linkEmbed = epData.LinkEmbed;
+                                        if (string.IsNullOrEmpty(linkEmbed)) continue;
+
+                                        if (firstValidLink == null) firstValidLink = linkEmbed;
+
+                                        string uniqueKey = $"{epData.Slug}|{serverName}";
+                                        if (addedEpisodeKeys.Add(uniqueKey))
+                                        {
+                                            movieInDb.Episodes.Add(new DbEpisode
+                                            {
+                                                MovieId = movieInDb.MovieId,
+                                                ServerName = serverName,
+                                                EpisodeName = epData.Name ?? "1",
+                                                Slug = epData.Slug ?? "tap-1",
+                                                LinkM3u8 = linkEmbed // Lưu link embed vào cột LinkM3u8
+                                            });
+                                        }
+                                    }
+                                }
+
+                                // Cập nhật metadata & Poster/Thumb URL từ VSMov
+                                if (!string.IsNullOrEmpty(vsDetail.PosterUrl) && vsDetail.PosterUrl.StartsWith("http"))
+                                    movieInDb.PosterUrl = vsDetail.PosterUrl;
+                                else if (!string.IsNullOrEmpty(vsItem.PosterUrl) && vsItem.PosterUrl.StartsWith("http"))
+                                    movieInDb.PosterUrl = vsItem.PosterUrl;
+
+                                if (!string.IsNullOrEmpty(vsDetail.ThumbUrl) && vsDetail.ThumbUrl.StartsWith("http"))
+                                    movieInDb.ThumbUrl = vsDetail.ThumbUrl;
+                                else if (!string.IsNullOrEmpty(vsItem.ThumbUrl) && vsItem.ThumbUrl.StartsWith("http"))
+                                    movieInDb.ThumbUrl = vsItem.ThumbUrl;
+
+                                if (!string.IsNullOrEmpty(vsDetail.EpisodeCurrent))
+                                    movieInDb.EpisodeCurrent = vsDetail.EpisodeCurrent;
+                                if (!string.IsNullOrEmpty(vsDetail.EpisodeTotal))
+                                    movieInDb.EpisodeTotal = vsDetail.EpisodeTotal;
+                                if (!string.IsNullOrEmpty(vsDetail.Status))
+                                    movieInDb.Status = vsDetail.Status;
+                                movieInDb.UpdatedAt = DateTime.Now;
+
+                                totalUpdated++;
+                                _logger.LogInformation($"[VSMov] ✅ Đã cập nhật: '{movieInDb.Name}' - {movieInDb.Episodes.Count} tập mới từ VSMov");
+                            }
+                            else
+                            {
+                                // === PHIM CHƯA CÓ TRONG DB: TẠO MỚI ===
+                                _logger.LogInformation($"[VSMov] ➕ Tạo mới phim: '{vsDetail.Name}'");
+
+                                var newMovie = new DbMovie
+                                {
+                                    ApiId = vsItem.Id.ToString(),
+                                    Slug = vsDetail.Slug ?? vsItem.Slug,
+                                    Name = vsDetail.Name ?? vsItem.Name,
+                                    OriginalName = vsDetail.OriginName ?? vsItem.OriginName,
+                                    Type = vsDetail.Type ?? "series",
+                                    Status = vsDetail.Status ?? "ongoing",
+                                    PosterUrl = vsDetail.PosterUrl ?? vsItem.PosterUrl,
+                                    ThumbUrl = vsDetail.ThumbUrl ?? vsItem.ThumbUrl,
+                                    Time = vsDetail.Time,
+                                    EpisodeCurrent = vsDetail.EpisodeCurrent,
+                                    EpisodeTotal = vsDetail.EpisodeTotal,
+                                    Quality = vsDetail.Quality ?? "HD",
+                                    Language = vsDetail.Lang ?? "Vietsub",
+                                    Year = vsDetail.Year > 0 ? vsDetail.Year : (vsItem.Year > 0 ? vsItem.Year : 2024),
+                                    IsActive = true,
+                                    CreatedAt = DateTime.Now,
+                                    UpdatedAt = DateTime.Now,
+                                    IsBanner = false,
+                                    Description = vsDetail.Content,
+                                };
+
+                                // Sync categories & countries nếu có
+                                if (vsDetail.Category != null && vsDetail.Category.Any())
+                                {
+                                    var apiCategories = vsDetail.Category.Select(c => new MovieWeb.Models.API.Category
+                                    {
+                                        Name = c.Name,
+                                        Slug = c.Slug
+                                    }).ToList();
+                                    newMovie.Categories = await _categorySyncService.SyncCategoriesAsync(apiCategories);
+                                }
+
+                                if (vsDetail.Country != null && vsDetail.Country.Any())
+                                {
+                                    var apiCountries = vsDetail.Country.Select(c => new MovieWeb.Models.API.Country
+                                    {
+                                        Name = c.Name,
+                                        Slug = c.Slug
+                                    }).ToList();
+                                    newMovie.Countries = await _countrySyncService.SyncCountriesAsync(apiCountries);
+                                }
+
+                                if (vsDetail.Actor != null && vsDetail.Actor.Any())
+                                {
+                                    newMovie.Actors = await _actorSyncService.SyncActorsAsync(vsDetail.Actor);
+                                }
+
+                                if (vsDetail.Director != null && vsDetail.Director.Any())
+                                {
+                                    newMovie.Directors = await _directorSyncService.SyncDirectorsAsync(vsDetail.Director);
+                                }
+
+                                // Thêm episodes
+                                var addedKeys = new HashSet<string>();
+                                foreach (var server in detailResponse.Episodes)
+                                {
+                                    string serverName = server.ServerName?.Trim() ?? "VSMov";
+                                    if (server.ServerData == null) continue;
+
+                                    foreach (var epData in server.ServerData)
+                                    {
+                                        string linkEmbed = epData.LinkEmbed;
+                                        if (string.IsNullOrEmpty(linkEmbed)) continue;
+
+                                        if (string.IsNullOrEmpty(newMovie.TrailerUrl))
+                                            newMovie.TrailerUrl = linkEmbed;
+
+                                        string uniqueKey = $"{epData.Slug}|{serverName}";
+                                        if (addedKeys.Add(uniqueKey))
+                                        {
+                                            newMovie.Episodes.Add(new DbEpisode
+                                            {
+                                                ServerName = serverName,
+                                                EpisodeName = epData.Name ?? "1",
+                                                Slug = epData.Slug ?? "tap-1",
+                                                LinkM3u8 = linkEmbed
+                                            });
+                                        }
+                                    }
+                                }
+
+                                if (newMovie.Episodes.Any())
+                                {
+                                    _context.Movies.Add(newMovie);
+                                    totalAdded++;
+                                    _logger.LogInformation($"[VSMov] ✅ Đã tạo mới: '{newMovie.Name}' - {newMovie.Episodes.Count} tập");
+                                }
+                                else
+                                {
+                                    totalSkipped++;
+                                    _logger.LogWarning($"[VSMov] ⚠️ Phim '{vsDetail.Name}' không có tập nào với link hợp lệ. Bỏ qua.");
+                                }
+                            }
+
+                            // Delay nhẹ để tránh spam API
+                            await Task.Delay(200);
+                        }
+                        catch (Exception exMovie)
+                        {
+                            _logger.LogError(exMovie, $"[VSMov] ❌ Lỗi khi xử lý phim '{vsItem.Slug}'");
+                            totalSkipped++;
+                        }
+                    }
+
+                    // Lưu mỗi trang
+                    if (_context.ChangeTracker.HasChanges())
+                    {
+                        await _context.SaveChangesAsync();
+                        SitemapCacheRefreshJob.TriggerImmediately();
+                        _logger.LogInformation($"[VSMov] 💾 Đã lưu dữ liệu trang {page} vào DB.");
+                    }
+
+                    // Delay giữa các trang
+                    await Task.Delay(500);
+                }
+                catch (Exception exPage)
+                {
+                    _logger.LogError(exPage, $"[VSMov] ❌ Lỗi khi cào trang {page}. Bỏ qua.");
+                }
+            }
+
+            // Lưu phần còn lại
+            if (_context.ChangeTracker.HasChanges())
+            {
+                await _context.SaveChangesAsync();
+                SitemapCacheRefreshJob.TriggerImmediately();
+            }
+
+            _logger.LogWarning($"🔄🔄🔄 [VSMov] HOÀN TẤT: Cập nhật={totalUpdated}, Thêm mới={totalAdded}, Bỏ qua={totalSkipped}");
+        }
+
+        public async Task<DbMovie?> SyncSingleMovieFromVSMovBySlugAsync(string slug)
+        {
+            var (movie, _) = await SyncSingleMovieFromVSMovBySlugWithStatusAsync(slug);
+            return movie;
+        }
+
+        public async Task<(DbMovie? Movie, bool WasUpdatedOrAdded)> SyncSingleMovieFromVSMovBySlugWithStatusAsync(string slug)
+        {
+            _logger.LogInformation($"[VSMov Sync] Bắt đầu đồng bộ phim slug '{slug}'...");
+
+            var detailResponse = await _vsMovService.GetMovieDetailAsync(slug);
+            if (detailResponse?.Item == null)
+            {
+                _logger.LogWarning($"[VSMov Sync] ❌ Không tìm thấy thông tin chi tiết phim cho slug: {slug}");
+                return (null, false);
+            }
+
+            var vsDetail = detailResponse.Item;
+            bool isNewMovie = false;
+            bool wasEpisodesModified = false;
+
+            var movieInDb = await _context.Movies
+                .Include(m => m.Episodes)
+                .Include(m => m.Categories)
+                .Include(m => m.Countries)
+                .FirstOrDefaultAsync(m => m.Slug == slug);
+
+            if (movieInDb == null)
+            {
+                isNewMovie = true;
+                movieInDb = new DbMovie
+                {
+                    ApiId = vsDetail.Id.ToString(),
+                    Slug = vsDetail.Slug ?? slug,
+                    Name = vsDetail.Name,
+                    OriginalName = vsDetail.OriginName,
+                    Type = vsDetail.Type ?? "series",
+                    Status = vsDetail.Status ?? "ongoing",
+                    PosterUrl = vsDetail.PosterUrl,
+                    ThumbUrl = vsDetail.ThumbUrl,
+                    Time = vsDetail.Time,
+                    EpisodeCurrent = vsDetail.EpisodeCurrent,
+                    EpisodeTotal = vsDetail.EpisodeTotal,
+                    Quality = vsDetail.Quality ?? "HD",
+                    Language = vsDetail.Lang ?? "Vietsub",
+                    Year = vsDetail.Year > 0 ? vsDetail.Year : 2024,
+                    IsActive = true,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now,
+                    Description = vsDetail.Content
+                };
+
+                if (vsDetail.Category != null && vsDetail.Category.Any())
+                {
+                    var apiCategories = vsDetail.Category.Select(c => new MovieWeb.Models.API.Category { Name = c.Name, Slug = c.Slug }).ToList();
+                    movieInDb.Categories = await _categorySyncService.SyncCategoriesAsync(apiCategories);
+                }
+
+                if (vsDetail.Country != null && vsDetail.Country.Any())
+                {
+                    var apiCountries = vsDetail.Country.Select(c => new MovieWeb.Models.API.Country { Name = c.Name, Slug = c.Slug }).ToList();
+                    movieInDb.Countries = await _countrySyncService.SyncCountriesAsync(apiCountries);
+                }
+
+                if (vsDetail.Actor != null && vsDetail.Actor.Any())
+                {
+                    movieInDb.Actors = await _actorSyncService.SyncActorsAsync(vsDetail.Actor);
+                }
+
+                if (vsDetail.Director != null && vsDetail.Director.Any())
+                {
+                    movieInDb.Directors = await _directorSyncService.SyncDirectorsAsync(vsDetail.Director);
+                }
+
+                _context.Movies.Add(movieInDb);
+            }
+            else
+            {
+                if (!string.Equals(movieInDb.EpisodeCurrent, vsDetail.EpisodeCurrent, StringComparison.OrdinalIgnoreCase) ||
+                    !string.Equals(movieInDb.Status, vsDetail.Status, StringComparison.OrdinalIgnoreCase))
+                {
+                    wasEpisodesModified = true;
+                }
+
+                if (!string.IsNullOrEmpty(vsDetail.PosterUrl) && vsDetail.PosterUrl.StartsWith("http"))
+                    movieInDb.PosterUrl = vsDetail.PosterUrl;
+                if (!string.IsNullOrEmpty(vsDetail.ThumbUrl) && vsDetail.ThumbUrl.StartsWith("http"))
+                    movieInDb.ThumbUrl = vsDetail.ThumbUrl;
+
+                movieInDb.EpisodeCurrent = vsDetail.EpisodeCurrent;
+                movieInDb.EpisodeTotal = vsDetail.EpisodeTotal;
+                movieInDb.Status = vsDetail.Status;
+                movieInDb.UpdatedAt = DateTime.Now;
+            }
+
+            var existingEpisodesCount = movieInDb.Episodes.Count;
+
+            if (detailResponse.Episodes != null)
+            {
+                var existingKeys = new HashSet<string>(
+                    movieInDb.Episodes.Select(e => $"{e.Slug}|{e.ServerName}")
+                );
+
+                foreach (var server in detailResponse.Episodes)
+                {
+                    string serverName = server.ServerName?.Trim() ?? "VSMov";
+                    if (server.ServerData == null) continue;
+
+                    foreach (var epData in server.ServerData)
+                    {
+                        string linkEmbed = epData.LinkEmbed;
+                        if (string.IsNullOrEmpty(linkEmbed)) continue;
+
+                        string uniqueKey = $"{epData.Slug}|{serverName}";
+                        if (existingKeys.Add(uniqueKey))
+                        {
+                            wasEpisodesModified = true;
+                            movieInDb.Episodes.Add(new DbEpisode
+                            {
+                                MovieId = movieInDb.MovieId,
+                                ServerName = serverName,
+                                EpisodeName = epData.Name ?? "1",
+                                Slug = epData.Slug ?? "tap-1",
+                                LinkM3u8 = linkEmbed
+                            });
+                        }
+                    }
+                }
+            }
+
+            bool wasUpdatedOrAdded = isNewMovie || wasEpisodesModified;
+
+            if (wasUpdatedOrAdded)
+            {
+                await _context.SaveChangesAsync();
+                SitemapCacheRefreshJob.TriggerImmediately();
+                _logger.LogInformation($"[VSMov Sync] ✅ Đã lưu/cập nhật phim '{movieInDb.Name}' với {movieInDb.Episodes.Count} tập!");
+            }
+            else
+            {
+                _logger.LogInformation($"[VSMov Sync] ℹ️ Phim '{movieInDb.Name}' đã tồn tại đầy đủ, không có thay đổi.");
+            }
+
+            return (movieInDb, wasUpdatedOrAdded);
         }
     }
 }
