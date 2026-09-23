@@ -489,6 +489,18 @@ RecurringJob.AddOrUpdate<MovieWeb.Jobs.VSMovCatalogSyncJob>(
     }
 );
 
+/*===== CLEANUP UNCONFIRMED USERS (BOT SPAM) JOB =====*/
+RecurringJob.AddOrUpdate<MovieWeb.Jobs.CleanupUnconfirmedUsersJob>(
+    recurringJobId: "cleanup-unconfirmed-users-daily",
+    methodCall: job => job.Execute(),
+    cronExpression: "0 2 * * *", // Runs every day at 02:00 AM (VN Time)
+    options: new RecurringJobOptions
+    {
+        TimeZone = TimeZoneInfo.FindSystemTimeZoneById(
+            OperatingSystem.IsWindows() ? "SE Asia Standard Time" : "Asia/Bangkok")
+    }
+);
+
 // ===== ROUTE CONFIGURATION =====
 app.MapControllerRoute(
     name: "landing",
