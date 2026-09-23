@@ -11,9 +11,9 @@
         path = (path || window.location.pathname).toLowerCase().trim();
         if (path === '/' || path === '/trang-chu' || path === '/trangchu' || path === '') {
             return 'home';
-        } else if (path.includes('phim-bo') || path.includes('/series')) {
-            return 'series';
-        } else if (path.includes('phim-moi') || path.includes('phim-le') || path.includes('hoat-hinh') || path.includes('/the-loai') || path.includes('/quoc-gia')) {
+        } else if (path.startsWith('/phim/')) {
+            return 'watching';
+        } else if (path.includes('phim-moi') || path.includes('phim-le') || path.includes('phim-bo') || path.includes('hoat-hinh') || path.includes('/the-loai') || path.includes('/quoc-gia')) {
             return 'new';
         } else if (path.includes('/user/history') || path.includes('/user/favorite') || path.includes('lich-su')) {
             return 'history';
@@ -119,7 +119,7 @@
             }
         });
 
-        // 3. Nạp các file script đặc thù của trang (như user-history.js, user-favorite.js, profile.js)
+        // 3. Nạp các file script đặc thù của trang
         var newScripts = doc.querySelectorAll('script[src]');
         newScripts.forEach(function (script) {
             var src = script.getAttribute('src');
@@ -188,6 +188,18 @@
             // Đợi CSS fade-out kết thúc một nhịp ngắn (140ms)
             setTimeout(function () {
                 mainElement.innerHTML = newMain.innerHTML;
+
+                // Thực thi các đoạn script nội tuyến bên trong vùng <main> mới nạp
+                var inlineScripts = mainElement.querySelectorAll('script');
+                inlineScripts.forEach(function (oldScript) {
+                    var newScript = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(function (attr) {
+                        newScript.setAttribute(attr.name, attr.value);
+                    });
+                    newScript.textContent = oldScript.textContent;
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+
                 window.history.pushState({ path: url, targetTab: targetTab }, '', url);
                 window.scrollTo({ top: 0, behavior: 'instant' });
 
@@ -207,30 +219,79 @@
 
     // Khởi chạy lại các sự kiện trang sau khi swap DOM
     function reinitializePageScripts() {
-        // 1. User History handlers
+        // 1. Khởi tạo lại Bootstrap Carousel Banner Trang Chủ
+        if (window.bootstrap && window.bootstrap.Carousel && document.getElementById('movieCarousel')) {
+            try {
+                var carouselEl = document.getElementById('movieCarousel');
+                var existingInstance = bootstrap.Carousel.getInstance(carouselEl);
+                if (existingInstance) {
+                    existingInstance.dispose();
+                }
+                new bootstrap.Carousel(carouselEl, {
+                    interval: 4000,
+                    ride: 'carousel',
+                    wrap: true
+                });
+            } catch (e) {
+                console.warn('Carousel init error:', e);
+            }
+        }
+
+        // 2. User History & Favorite handlers
         if (typeof attachRemoveHistoryHandlers === 'function') {
             attachRemoveHistoryHandlers();
         }
         if (typeof attachClearAllHandler === 'function') {
             attachClearAllHandler();
         }
-
-        // 2. User Favorite handlers
         if (typeof attachRemoveFavoriteHandlers === 'function') {
             attachRemoveFavoriteHandlers();
         }
 
-        // 3. Filter Sidebar triggers
-        if (typeof initFilterSidebar === 'function') {
-            initFilterSidebar();
-        }
-
-        // 4. Tooltips & Bootstrap components
+        // 3. Tooltips & Bootstrap components
         if (window.bootstrap && window.bootstrap.Tooltip) {
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
+        }
+    }
+
+    // Xử lý khi bấm nút "Đang Xem" (Now Playing / Quick Resume)
+    function handleNowPlayingClick(e) {
+        if (e) e.preventDefault();
+
+        var lastWatchedRaw = localStorage.getItem('moon_current_watching');
+        var lastWatched = null;
+        try {
+            if (lastWatchedRaw) lastWatched = JSON.parse(lastWatchedRaw);
+        } catch (err) {}
+
+        if (lastWatched && lastWatched.url) {
+            // Có phim đang xem -> Chuyển thẳng tới trang xem phim
+            window.location.href = lastWatched.url;
+        } else {
+            // Chưa có phim nào -> Hiển thị hộp thoại kính mờ phong cách MoonPhim
+            if (window.MoonDialog) {
+                window.MoonDialog.confirm({
+                    title: 'Chưa có phim đang xem ✨',
+                    message: 'Bạn chưa xem bộ phim nào nè! Hãy cùng khám phá kho phim bom tấn vietsub cực hay tại MoonPhim ngay nhé 🍿',
+                    confirmText: 'Khám Phá Phim Mới',
+                    cancelText: 'Về Trang Chủ',
+                    type: 'primary',
+                    icon: 'info',
+                    iconClass: 'bi-film'
+                }).then(function (isExplore) {
+                    if (isExplore) {
+                        executeSpaNavigation('/the-loai/phim-moi-cap-nhat', 'new');
+                    } else {
+                        executeSpaNavigation('/trang-chu', 'home');
+                    }
+                });
+            } else {
+                alert('Bạn chưa xem bộ phim nào nè! Hãy cùng khám phá kho phim tại MoonPhim nhé 🍿');
+                window.location.href = '/the-loai/phim-moi-cap-nhat';
+            }
         }
     }
 
@@ -250,6 +311,12 @@
                 var target = this.getAttribute('data-nav-target');
                 var href = this.getAttribute('href');
                 var isUserLoggedIn = document.body.getAttribute('data-user-logged-in') === 'true';
+
+                // Nút ĐANG XEM (Now Playing)
+                if (target === 'watching') {
+                    handleNowPlayingClick(e);
+                    return;
+                }
 
                 // Nếu là nút Profile hoặc History mà user chưa đăng nhập -> Mở modal Auth
                 if ((target === 'profile' || target === 'history') && !isUserLoggedIn) {

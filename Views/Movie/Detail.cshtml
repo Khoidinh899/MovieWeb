@@ -550,7 +550,16 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            
+            // Tự động lưu thông tin phim đang xem vào bộ nhớ máy (dành cho Tab Đang Xem)
+            try {
+                localStorage.setItem('moon_current_watching', JSON.stringify({
+                    url: window.location.pathname,
+                    slug: '@Model.Slug',
+                    name: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Name)),
+                    updatedAt: Date.now()
+                }));
+            } catch (e) {}
+
             // ✅ THÊM: Ẩn/hiện nút khi video đang phát
             const watchBtn = document.getElementById("watchBtn");
             const trailerBtn = document.getElementById("trailerBtn");
