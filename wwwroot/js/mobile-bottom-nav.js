@@ -203,6 +203,14 @@
             // Đồng bộ CSS & Script của trang mới vào DOM rồi mới thực thi
             syncAssetsFromNewDoc(doc).then(function () {
                 setTimeout(function () {
+                    // Dọn dẹp tracker và popup xem dở trước khi đổi trang
+                    const oldResumePopup = document.getElementById('resumePopup');
+                    if (oldResumePopup) oldResumePopup.remove();
+                    if (window.watchProgressTracker) {
+                        try { window.watchProgressTracker.stopTracking(); } catch (e) {}
+                        window.watchProgressTracker = null;
+                    }
+
                     mainElement.innerHTML = newMain.innerHTML;
 
                     // Thực thi TẤT CẢ các đoạn script trang mới (trong newMain và trong doc.body / @section Scripts)
@@ -264,21 +272,28 @@
 
     // Khởi chạy lại các sự kiện trang sau khi swap DOM
     function reinitializePageScripts() {
-        // 1. Chi tiết phim (HLS player, episodes, comments)
-        if (typeof window.initMovieDetailPage === 'function') {
-            try {
-                window.initMovieDetailPage();
-            } catch (e) {
-                console.warn('Movie detail init error:', e);
-            }
-        }
+        // 1. Chi tiết phim (HLS player, episodes, comments) - CHỈ CHẠY TRÊN TRANG CHI TIẾT PHIM
+        const isPhimPath = /^\/phim(\/|$)/i.test(window.location.pathname);
+        const hasMovieElements = document.querySelector('.detail-wrapper, #videoContainer, #watchBtn, [data-movie-id]') !== null;
+        const isMoviePage = isPhimPath || hasMovieElements;
 
-        // 1.1. Bộ theo dõi tiến độ xem & popup xem dở
-        if (typeof window.initWatchProgressTracker === 'function') {
-            try {
-                window.initWatchProgressTracker();
-            } catch (e) {
-                console.warn('Watch progress tracker init error:', e);
+        if (isMoviePage) {
+            if (typeof window.initMovieDetailPage === 'function') {
+                try {
+                    window.initMovieDetailPage();
+                } catch (e) {
+                    console.warn('Movie detail init error:', e);
+                }
+            }
+        } else {
+            // Không phải trang phim -> Reset sạch sẽ để không bao giờ rò rỉ ID phim cũ
+            window.initMovieDetailPage = null;
+            window.movieId = null;
+            const popup = document.getElementById('resumePopup');
+            if (popup) popup.remove();
+            if (window.watchProgressTracker) {
+                try { window.watchProgressTracker.stopTracking(); } catch (e) {}
+                window.watchProgressTracker = null;
             }
         }
 

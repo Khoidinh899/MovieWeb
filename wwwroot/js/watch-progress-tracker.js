@@ -2,6 +2,12 @@
 // WATCH PROGRESS TRACKER - CLEAN & USER FRIENDLY RESUME
 // ===================================================
 
+function isMovieDetailPage() {
+    const isPhimUrl = /^\/phim(\/|$)/i.test(window.location.pathname);
+    const hasDetailElements = document.querySelector('.detail-wrapper, #videoContainer, #watchBtn, [data-movie-id]') !== null;
+    return isPhimUrl || hasDetailElements;
+}
+
 class WatchProgressTracker {
     constructor(movieId, episodeNumber = null) {
         this.movieId = movieId;
@@ -31,6 +37,11 @@ class WatchProgressTracker {
 
     // Initialize
     async init() {
+        if (!isMovieDetailPage()) {
+            this.closeResumePopup();
+            return;
+        }
+
         this.isLoggedIn = (window.isLoggedIn === true) || 
                           (document.body.getAttribute('data-user-logged-in') === 'true') ||
                           (document.getElementById('notificationBell') !== null);
@@ -189,6 +200,10 @@ class WatchProgressTracker {
 
     // Show clean, friendly resume popup
     showResumePopup(data) {
+        if (!isMovieDetailPage()) {
+            return;
+        }
+
         let episodeBadgeHtml = '';
 
         if (data.episodeNumber) {
@@ -477,7 +492,17 @@ class WatchProgressTracker {
 
 // Initialize
 function initWatchProgressTrackerGlobal(mId) {
-    const targetMovieId = mId || window.movieId;
+    if (!isMovieDetailPage()) {
+        if (window.watchProgressTracker) {
+            try { window.watchProgressTracker.stopTracking(); } catch (e) {}
+            window.watchProgressTracker = null;
+        }
+        const existingPopup = document.getElementById('resumePopup');
+        if (existingPopup) existingPopup.remove();
+        return;
+    }
+
+    const targetMovieId = mId || window.movieId || document.querySelector('[data-movie-id]')?.getAttribute('data-movie-id');
     const isUserLoggedIn = (window.isLoggedIn === true) || 
                            (document.body.getAttribute('data-user-logged-in') === 'true') ||
                            (document.getElementById('notificationBell') !== null);
@@ -493,8 +518,10 @@ function initWatchProgressTrackerGlobal(mId) {
 
 window.initWatchProgressTracker = initWatchProgressTrackerGlobal;
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => initWatchProgressTrackerGlobal());
-} else {
-    initWatchProgressTrackerGlobal();
+if (isMovieDetailPage()) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => initWatchProgressTrackerGlobal());
+    } else {
+        initWatchProgressTrackerGlobal();
+    }
 }
