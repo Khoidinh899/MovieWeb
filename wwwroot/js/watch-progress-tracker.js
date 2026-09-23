@@ -16,7 +16,9 @@ class WatchProgressTracker {
         this.resumeTime = null;
         this.authToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value || 
                          document.querySelector("#RequestVerificationToken")?.value;
-        this.isLoggedIn = document.getElementById('notificationBell') !== null;
+        this.isLoggedIn = (window.isLoggedIn === true) || 
+                          (document.body.getAttribute('data-user-logged-in') === 'true') ||
+                          (document.getElementById('notificationBell') !== null);
 
         // Embed iframe tracking properties
         this.isEmbedMode = false;
@@ -29,6 +31,9 @@ class WatchProgressTracker {
 
     // Initialize
     async init() {
+        this.isLoggedIn = (window.isLoggedIn === true) || 
+                          (document.body.getAttribute('data-user-logged-in') === 'true') ||
+                          (document.getElementById('notificationBell') !== null);
         if (!this.isLoggedIn) { 
             return; // Không đăng nhập -> Dừng
         }
@@ -173,7 +178,7 @@ class WatchProgressTracker {
             if (response.ok) {
                 const data = await response.json();
 
-                if (data.hasHistory && data.watchedDuration > 10 && data.progressPercentage < 95) {
+                if (data.hasHistory && data.watchedDuration >= 5 && data.progressPercentage < 95) {
                     this.showResumePopup(data);
                 }
             }
@@ -471,10 +476,25 @@ class WatchProgressTracker {
 }
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    const isUserLoggedIn = document.getElementById('notificationBell');
-    if (isUserLoggedIn && window.movieId) {
-        window.watchProgressTracker = new WatchProgressTracker(window.movieId);
+function initWatchProgressTrackerGlobal(mId) {
+    const targetMovieId = mId || window.movieId;
+    const isUserLoggedIn = (window.isLoggedIn === true) || 
+                           (document.body.getAttribute('data-user-logged-in') === 'true') ||
+                           (document.getElementById('notificationBell') !== null);
+
+    if (isUserLoggedIn && targetMovieId) {
+        if (window.watchProgressTracker) {
+            try { window.watchProgressTracker.stopTracking(); } catch (e) {}
+        }
+        window.watchProgressTracker = new WatchProgressTracker(targetMovieId);
         window.watchProgressTracker.init();
     }
-});
+}
+
+window.initWatchProgressTracker = initWatchProgressTrackerGlobal;
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => initWatchProgressTrackerGlobal());
+} else {
+    initWatchProgressTrackerGlobal();
+}

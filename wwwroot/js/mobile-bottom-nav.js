@@ -227,10 +227,13 @@
                     });
 
                     // Thực thi lần lượt các inline script
+                    // Thực thi lần lượt các inline script trong Global Scope (window)
                     scriptsToRun.forEach(function (code) {
                         try {
-                            var runner = new Function(code);
-                            runner();
+                            var s = document.createElement('script');
+                            s.textContent = code;
+                            document.body.appendChild(s);
+                            s.remove();
                         } catch (e) {
                             console.warn('SPA inline script execution error:', e);
                         }
@@ -267,6 +270,15 @@
                 window.initMovieDetailPage();
             } catch (e) {
                 console.warn('Movie detail init error:', e);
+            }
+        }
+
+        // 1.1. Bộ theo dõi tiến độ xem & popup xem dở
+        if (typeof window.initWatchProgressTracker === 'function') {
+            try {
+                window.initWatchProgressTracker();
+            } catch (e) {
+                console.warn('Watch progress tracker init error:', e);
             }
         }
 

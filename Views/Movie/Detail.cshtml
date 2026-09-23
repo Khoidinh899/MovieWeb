@@ -560,6 +560,11 @@
                 }));
             } catch (e) {}
 
+            // Kích hoạt kiểm tra lịch sử xem dở để hiển thị popup xem tiếp
+            if (typeof window.initWatchProgressTracker === 'function') {
+                window.initWatchProgressTracker(@Model.MovieId);
+            }
+
             // ✅ THÊM: Ẩn/hiện nút khi video đang phát
             const watchBtn = document.getElementById("watchBtn");
             const trailerBtn = document.getElementById("trailerBtn");

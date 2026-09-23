@@ -160,29 +160,31 @@
 
 @* ===== 💡 JAVASCRIPT VIẾT LẠI HOÀN TOÀN 💡 ===== *@
 <script>
-    function toggleFilter() {
+    window.toggleFilter = function() {
         const sidebar = document.getElementById('filterSidebar');
         const toggleBtn = document.getElementById('filterToggleBtn');
         const chevron = document.getElementById('filterChevron');
 
-        sidebar.classList.toggle('show');
-        toggleBtn.classList.toggle('active');
+        if (sidebar) sidebar.classList.toggle('show');
+        if (toggleBtn) toggleBtn.classList.toggle('active');
 
-        if (chevron) {
+        if (chevron && sidebar) {
             chevron.style.transform = sidebar.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
         }
-    }
+    };
 
     // ===== HÀM MỚI: Xử lý CHỌN NHIỀU (Countries, Categories, Years) =====
-    function selectFilterMulti(event, name, value) {
+    window.selectFilterMulti = function(event, name, value) {
         const form = document.getElementById('filterForm');
+        if (!form) return;
         const input = form.querySelector(`input[name="${name}"]`);
+        if (!input) return;
         const clickedItem = event.target;
 
         let valueList = (input.value || "").split(',').filter(Boolean);
 
         const allButton = clickedItem.parentElement.querySelector('.item');
-        allButton.classList.remove('active');
+        if (allButton) allButton.classList.remove('active');
 
         const index = valueList.indexOf(value);
         if (index > -1) {
@@ -193,7 +195,7 @@
             clickedItem.classList.add('active');
         }
 
-        if (valueList.length === 0) {
+        if (valueList.length === 0 && allButton) {
             allButton.classList.add('active');
         }
 
@@ -204,12 +206,14 @@
             const yearTextInput = document.querySelector('.year-input-container input[type="text"]');
             if (yearTextInput) yearTextInput.value = input.value;
         }
-    }
+    };
 
     // ===== HÀM MỚI: Xử lý nút "TẤT CẢ" (cho CHỌN NHIỀU) =====
-    function clearFilterMulti(event, name) {
+    window.clearFilterMulti = function(event, name) {
         const form = document.getElementById('filterForm');
+        if (!form) return;
         const input = form.querySelector(`input[name="${name}"]`);
+        if (!input) return;
         const clickedItem = event.target;
 
         // 1. Xóa hết giá trị input
@@ -229,11 +233,12 @@
             const yearTextInput = document.querySelector('input[name="YearsInput"]');
             if (yearTextInput) yearTextInput.value = "";
         }
-    }
+    };
 
     // ===== HÀM CŨ: Xử lý CHỌN MỘT (Type, Language, SortBy) =====
-    function selectFilterSingle(event, name, value) {
+    window.selectFilterSingle = function(event, name, value) {
         const form = document.getElementById('filterForm');
+        if (!form) return;
         const input = form.querySelector(`input[name="${name}"]`);
 
         if (input) {
@@ -248,12 +253,10 @@
         activeItem.classList.add('active');
 
         // ⭐ Cập nhật form action khi chọn Type
-        if (name === 'Type') {
-            updateFormAction();
+        if (name === 'Type' && typeof window.updateFormAction === 'function') {
+            window.updateFormAction();
         }
-
-
-    }
+    };
 
     // ===== HÀM CŨ: Xử lý khi GÕ VÀO Ô NĂM =====
     function clearFilterButtons(containerElement) {
