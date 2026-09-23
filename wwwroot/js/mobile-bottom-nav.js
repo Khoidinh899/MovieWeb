@@ -1,11 +1,12 @@
 /* ==========================================================================
-   MOONPHIM - LIQUID GLASS 3D MOBILE BOTTOM NAVIGATION & SPA ENGINE
+   MOONPHIM - LIQUID GLASS 3D MOBILE BOTTOM NAVIGATION & DUAL GESTURE ENGINE
    ========================================================================== */
 
 (function (window, document) {
     'use strict';
 
     var isNavigating = false;
+    var TAB_ORDER = ['new', 'watching', 'home', 'history', 'profile'];
 
     function getNavTargetForPath(path) {
         path = (path || window.location.pathname).toLowerCase().trim();
@@ -295,6 +296,149 @@
         }
     }
 
+    // ==========================================================================
+    // 🚀 DUAL GESTURE ENGINE (HỆ THỐNG CỬ CHỈ KÉP THÔNG MINH)
+    // ==========================================================================
+    function initDualGestureEngine() {
+        if (window.innerWidth > 768) return; // Chỉ áp dụng trên thiết bị di động / tablet
+
+        // 1. Khởi tạo phần tử thị giác cho Cử chỉ vuốt mép (Edge Gesture Indicator)
+        var edgeIndicator = document.getElementById('moonEdgeGestureIndicator');
+        if (!edgeIndicator) {
+            edgeIndicator = document.createElement('div');
+            edgeIndicator.id = 'moonEdgeGestureIndicator';
+            edgeIndicator.className = 'moon-edge-gesture-indicator';
+            edgeIndicator.innerHTML = '<i class="bi bi-chevron-left" id="moonEdgeGestureIcon"></i>';
+            document.body.appendChild(edgeIndicator);
+        }
+        var edgeIcon = document.getElementById('moonEdgeGestureIcon');
+
+        var edgeStartX = 0;
+        var edgeStartY = 0;
+        var edgeMode = null; // 'left' (Back) | 'right' (Forward)
+        var isEdgeGestureActive = false;
+
+        // Bắt đầu chạm màn hình
+        document.addEventListener('touchstart', function (e) {
+            if (e.touches.length !== 1) return;
+            var touch = e.touches[0];
+            var x = touch.clientX;
+            var y = touch.clientY;
+
+            // Bỏ qua nếu chạm vào video player hoặc thanh điều hướng đáy
+            var targetTag = e.target.tagName.toLowerCase();
+            if (targetTag === 'video' || targetTag === 'iframe' || e.target.closest('#mobileBottomNav')) return;
+
+            var screenWidth = window.innerWidth;
+            var EDGE_THRESHOLD = 45; // 45px tính từ mép
+
+            if (x <= EDGE_THRESHOLD) {
+                edgeStartX = x;
+                edgeStartY = y;
+                edgeMode = 'left';
+                isEdgeGestureActive = true;
+            } else if (x >= screenWidth - EDGE_THRESHOLD) {
+                edgeStartX = x;
+                edgeStartY = y;
+                edgeMode = 'right';
+                isEdgeGestureActive = true;
+            } else {
+                isEdgeGestureActive = false;
+                edgeMode = null;
+            }
+        }, { passive: true });
+
+        // Di chuyển ngón tay vuốt mép
+        document.addEventListener('touchmove', function (e) {
+            if (!isEdgeGestureActive || !edgeMode) return;
+            var touch = e.touches[0];
+            var deltaX = touch.clientX - edgeStartX;
+            var deltaY = touch.clientY - edgeStartY;
+
+            // Kiểm tra xem có phải vuốt ngang rõ ràng không
+            if (Math.abs(deltaX) > Math.abs(deltaY) * 1.3 && Math.abs(deltaX) > 20) {
+                if (edgeMode === 'left' && deltaX > 0) {
+                    // Vuốt từ mép trái sang phải -> Chuẩn bị Back
+                    edgeIndicator.className = 'moon-edge-gesture-indicator left visible' + (deltaX > 65 ? ' triggered' : '');
+                    if (edgeIcon) edgeIcon.className = 'bi bi-chevron-left';
+                } else if (edgeMode === 'right' && deltaX < 0) {
+                    // Vuốt từ mép phải sang trái -> Chuẩn bị Forward
+                    edgeIndicator.className = 'moon-edge-gesture-indicator right visible' + (Math.abs(deltaX) > 65 ? ' triggered' : '');
+                    if (edgeIcon) edgeIcon.className = 'bi bi-chevron-right';
+                }
+            }
+        }, { passive: true });
+
+        // Kết thúc chạm ngón tay
+        document.addEventListener('touchend', function (e) {
+            if (!isEdgeGestureActive || !edgeMode) return;
+            var touch = e.changedTouches[0];
+            var deltaX = touch.clientX - edgeStartX;
+            var deltaY = touch.clientY - edgeStartY;
+
+            if (Math.abs(deltaX) > Math.abs(deltaY) * 1.3 && Math.abs(deltaX) > 65) {
+                if (edgeMode === 'left' && deltaX > 65) {
+                    // Kích hoạt Quay Lại (Back)
+                    window.history.back();
+                } else if (edgeMode === 'right' && deltaX < -65) {
+                    // Kích hoạt Tiến Tới (Forward)
+                    window.history.forward();
+                }
+            }
+
+            // Ẩn indicator mượt mà
+            edgeIndicator.classList.remove('visible', 'triggered');
+            isEdgeGestureActive = false;
+            edgeMode = null;
+        }, { passive: true });
+
+        // 2. CỬ CHỈ QUẸT TRÊN THANH DOCK CHÂN TRANG (DOCK SWIPE NAVIGATION)
+        var navContainer = document.getElementById('mobileBottomNav');
+        if (!navContainer) return;
+        var dockEl = navContainer.querySelector('.liquid-glass-dock');
+        if (!dockEl) return;
+
+        var dockTouchStartX = 0;
+        var dockTouchStartY = 0;
+
+        dockEl.addEventListener('touchstart', function (e) {
+            if (e.touches.length !== 1) return;
+            dockTouchStartX = e.touches[0].clientX;
+            dockTouchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        dockEl.addEventListener('touchend', function (e) {
+            if (e.changedTouches.length !== 1) return;
+            var touch = e.changedTouches[0];
+            var deltaX = touch.clientX - dockTouchStartX;
+            var deltaY = touch.clientY - dockTouchStartY;
+
+            // Nhận diện cú quẹt ngang trên thanh dock (> 35px)
+            if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3) {
+                var currentTarget = getNavTargetForPath(window.location.pathname);
+                var currentIndex = TAB_ORDER.indexOf(currentTarget);
+                if (currentIndex === -1) currentIndex = 2; // Mặc định ở Trang Chủ
+
+                var nextIndex = currentIndex;
+                if (deltaX < -35) {
+                    // Quẹt sang trái -> Chuyển sang Tab bên phải
+                    nextIndex = Math.min(TAB_ORDER.length - 1, currentIndex + 1);
+                } else if (deltaX > 35) {
+                    // Quẹt sang phải -> Chuyển sang Tab bên trái
+                    nextIndex = Math.max(0, currentIndex - 1);
+                }
+
+                if (nextIndex !== currentIndex) {
+                    var nextTabName = TAB_ORDER[nextIndex];
+                    var nextTabItem = navContainer.querySelector('[data-nav-target="' + nextTabName + '"]');
+                    if (nextTabItem) {
+                        nextTabItem.click();
+                    }
+                }
+            }
+        }, { passive: true });
+    }
+
     function initMobileBottomNav() {
         var navContainer = document.getElementById('mobileBottomNav');
         if (!navContainer) return;
@@ -305,7 +449,10 @@
         // Đồng bộ tab active ban đầu & vị trí quả cầu
         setTimeout(syncActiveTabByCurrentUrl, 80);
 
-        // Xử lý Click / Touch
+        // Khởi chạy Hệ thống Cử chỉ kép thông minh
+        initDualGestureEngine();
+
+        // Xử lý Click / Touch từng tab
         navItems.forEach(function (item) {
             item.addEventListener('click', function (e) {
                 var target = this.getAttribute('data-nav-target');
