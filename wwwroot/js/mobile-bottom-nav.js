@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MOONPHIM - LIQUID GLASS 3D MOBILE BOTTOM NAVIGATION & DUAL GESTURE ENGINE
+   MOONPHIM - LIQUID GLASS 3D MOBILE BOTTOM NAVIGATION & FULL SPA ENGINE
    ========================================================================== */
 
 (function (window, document) {
@@ -138,7 +138,7 @@
     }
 
     // Khởi tạo SPA Transition cho Mobile Navigation
-    function executeSpaNavigation(url, targetTab) {
+    function executeSpaNavigation(url, targetTab, isPopState) {
         if (isNavigating) return;
         isNavigating = true;
 
@@ -150,7 +150,7 @@
 
         // 1. Kích hoạt hiệu ứng mờ dần (Fade out) & Quả cầu trượt lướt tức thì
         mainElement.classList.add('page-fading');
-        setActiveTab(targetTab);
+        setActiveTab(targetTab || getNavTargetForPath(url));
 
         // 2. Fetch trang đích ngầm
         fetch(url, {
@@ -186,7 +186,7 @@
             // Đồng bộ CSS & Script của trang mới vào DOM
             syncAssetsFromNewDoc(doc);
 
-            // Đợi CSS fade-out kết thúc một nhịp ngắn (140ms)
+            // Đợi CSS fade-out kết thúc một nhịp ngắn (120ms)
             setTimeout(function () {
                 mainElement.innerHTML = newMain.innerHTML;
 
@@ -201,7 +201,10 @@
                     oldScript.parentNode.replaceChild(newScript, oldScript);
                 });
 
-                window.history.pushState({ path: url, targetTab: targetTab }, '', url);
+                if (!isPopState) {
+                    window.history.pushState({ path: url, targetTab: targetTab }, '', url);
+                }
+
                 window.scrollTo({ top: 0, behavior: 'instant' });
 
                 // Khởi động lại các event listener của trang mới
@@ -210,7 +213,7 @@
                 // Fade in lại
                 mainElement.classList.remove('page-fading');
                 isNavigating = false;
-            }, 140);
+            }, 120);
         })
         .catch(function (err) {
             console.warn('SPA Navigation fallback to normal load:', err);
@@ -220,7 +223,16 @@
 
     // Khởi chạy lại các sự kiện trang sau khi swap DOM
     function reinitializePageScripts() {
-        // 1. Khởi tạo lại Bootstrap Carousel Banner Trang Chủ
+        // 1. Chi tiết phim (HLS player, episodes, comments)
+        if (typeof window.initMovieDetailPage === 'function') {
+            try {
+                window.initMovieDetailPage();
+            } catch (e) {
+                console.warn('Movie detail init error:', e);
+            }
+        }
+
+        // 2. Khởi tạo lại Bootstrap Carousel Banner Trang Chủ
         if (window.bootstrap && window.bootstrap.Carousel && document.getElementById('movieCarousel')) {
             try {
                 var carouselEl = document.getElementById('movieCarousel');
@@ -238,7 +250,7 @@
             }
         }
 
-        // 2. User History & Favorite handlers
+        // 3. User History & Favorite handlers
         if (typeof attachRemoveHistoryHandlers === 'function') {
             attachRemoveHistoryHandlers();
         }
@@ -249,13 +261,35 @@
             attachRemoveFavoriteHandlers();
         }
 
-        // 3. Tooltips & Bootstrap components
+        // 4. Gắn chặn click các thẻ phim để đi qua SPA
+        attachMovieCardSpaInterceptors();
+
+        // 5. Tooltips & Bootstrap components
         if (window.bootstrap && window.bootstrap.Tooltip) {
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
         }
+    }
+
+    // Chuyển hướng các thẻ phim sang SPA mượt mà trên mobile
+    function attachMovieCardSpaInterceptors() {
+        if (window.innerWidth > 768) return;
+
+        var movieLinks = document.querySelectorAll('a[href^="/phim/"]');
+        movieLinks.forEach(function (link) {
+            if (link.dataset.spaBound === 'true') return;
+            link.dataset.spaBound = 'true';
+
+            link.addEventListener('click', function (e) {
+                var href = this.getAttribute('href');
+                if (href && href.startsWith('/phim/')) {
+                    e.preventDefault();
+                    executeSpaNavigation(href, 'watching');
+                }
+            });
+        });
     }
 
     // Xử lý khi bấm nút "Đang Xem" (Now Playing / Quick Resume)
@@ -269,8 +303,8 @@
         } catch (err) {}
 
         if (lastWatched && lastWatched.url) {
-            // Có phim đang xem -> Chuyển thẳng tới trang xem phim
-            window.location.href = lastWatched.url;
+            // Có phim đang xem -> Chuyển thẳng tới trang xem phim qua SPA ngầm
+            executeSpaNavigation(lastWatched.url, 'watching');
         } else {
             // Chưa có phim nào -> Hiển thị hộp thoại kính mờ phong cách MoonPhim
             if (window.MoonDialog) {
@@ -291,7 +325,7 @@
                 });
             } else {
                 alert('Bạn chưa xem bộ phim nào nè! Hãy cùng khám phá kho phim tại MoonPhim nhé 🍿');
-                window.location.href = '/the-loai/phim-moi-cap-nhat';
+                executeSpaNavigation('/the-loai/phim-moi-cap-nhat', 'new');
             }
         }
     }
@@ -300,7 +334,7 @@
     // 🚀 DUAL GESTURE ENGINE (HỆ THỐNG CỬ CHỈ KÉP THÔNG MINH)
     // ==========================================================================
     function initDualGestureEngine() {
-        if (window.innerWidth > 768) return; // Chỉ áp dụng trên thiết bị di động / tablet
+        if (window.innerWidth > 768) return;
 
         // 1. Khởi tạo phần tử thị giác cho Cử chỉ vuốt mép (Edge Gesture Indicator)
         var edgeIndicator = document.getElementById('moonEdgeGestureIndicator');
@@ -318,19 +352,17 @@
         var edgeMode = null; // 'left' (Back) | 'right' (Forward)
         var isEdgeGestureActive = false;
 
-        // Bắt đầu chạm màn hình
         document.addEventListener('touchstart', function (e) {
             if (e.touches.length !== 1) return;
             var touch = e.touches[0];
             var x = touch.clientX;
             var y = touch.clientY;
 
-            // Bỏ qua nếu chạm vào video player hoặc thanh điều hướng đáy
             var targetTag = e.target.tagName.toLowerCase();
             if (targetTag === 'video' || targetTag === 'iframe' || e.target.closest('#mobileBottomNav')) return;
 
             var screenWidth = window.innerWidth;
-            var EDGE_THRESHOLD = 45; // 45px tính từ mép
+            var EDGE_THRESHOLD = 45;
 
             if (x <= EDGE_THRESHOLD) {
                 edgeStartX = x;
@@ -348,28 +380,23 @@
             }
         }, { passive: true });
 
-        // Di chuyển ngón tay vuốt mép
         document.addEventListener('touchmove', function (e) {
             if (!isEdgeGestureActive || !edgeMode) return;
             var touch = e.touches[0];
             var deltaX = touch.clientX - edgeStartX;
             var deltaY = touch.clientY - edgeStartY;
 
-            // Kiểm tra xem có phải vuốt ngang rõ ràng không
             if (Math.abs(deltaX) > Math.abs(deltaY) * 1.3 && Math.abs(deltaX) > 20) {
                 if (edgeMode === 'left' && deltaX > 0) {
-                    // Vuốt từ mép trái sang phải -> Chuẩn bị Back
                     edgeIndicator.className = 'moon-edge-gesture-indicator left visible' + (deltaX > 65 ? ' triggered' : '');
                     if (edgeIcon) edgeIcon.className = 'bi bi-chevron-left';
                 } else if (edgeMode === 'right' && deltaX < 0) {
-                    // Vuốt từ mép phải sang trái -> Chuẩn bị Forward
                     edgeIndicator.className = 'moon-edge-gesture-indicator right visible' + (Math.abs(deltaX) > 65 ? ' triggered' : '');
                     if (edgeIcon) edgeIcon.className = 'bi bi-chevron-right';
                 }
             }
         }, { passive: true });
 
-        // Kết thúc chạm ngón tay
         document.addEventListener('touchend', function (e) {
             if (!isEdgeGestureActive || !edgeMode) return;
             var touch = e.changedTouches[0];
@@ -378,15 +405,12 @@
 
             if (Math.abs(deltaX) > Math.abs(deltaY) * 1.3 && Math.abs(deltaX) > 65) {
                 if (edgeMode === 'left' && deltaX > 65) {
-                    // Kích hoạt Quay Lại (Back)
                     window.history.back();
                 } else if (edgeMode === 'right' && deltaX < -65) {
-                    // Kích hoạt Tiến Tới (Forward)
                     window.history.forward();
                 }
             }
 
-            // Ẩn indicator mượt mà
             edgeIndicator.classList.remove('visible', 'triggered');
             isEdgeGestureActive = false;
             edgeMode = null;
@@ -413,7 +437,6 @@
             var deltaX = touch.clientX - dockTouchStartX;
             var deltaY = touch.clientY - dockTouchStartY;
 
-            // Nhận diện cú quẹt ngang trên thanh dock (> 35px)
             if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3) {
                 var currentTarget = getNavTargetForPath(window.location.pathname);
                 var currentIndex = TAB_ORDER.indexOf(currentTarget);
@@ -421,10 +444,8 @@
 
                 var nextIndex = currentIndex;
                 if (deltaX < -35) {
-                    // Quẹt sang trái -> Chuyển sang Tab bên phải
                     nextIndex = Math.min(TAB_ORDER.length - 1, currentIndex + 1);
                 } else if (deltaX > 35) {
-                    // Quẹt sang phải -> Chuyển sang Tab bên trái
                     nextIndex = Math.max(0, currentIndex - 1);
                 }
 
@@ -451,6 +472,9 @@
 
         // Khởi chạy Hệ thống Cử chỉ kép thông minh
         initDualGestureEngine();
+
+        // Gắn chặn click các thẻ phim để vào phim qua SPA ngầm
+        attachMovieCardSpaInterceptors();
 
         // Xử lý Click / Touch từng tab
         navItems.forEach(function (item) {
@@ -493,14 +517,11 @@
             });
         });
 
-        // Xử lý nút Back/Forward của trình duyệt
+        // Xử lý nút Back/Forward của trình duyệt (PopState) HOÀN TOÀN BẰNG SPA
         window.addEventListener('popstate', function (e) {
-            syncActiveTabByCurrentUrl();
-            if (e.state && e.state.path) {
-                executeSpaNavigation(e.state.path, e.state.targetTab || getNavTargetForPath(e.state.path));
-            } else {
-                window.location.reload();
-            }
+            var currentPath = window.location.pathname + window.location.search;
+            var targetTab = (e.state && e.state.targetTab) ? e.state.targetTab : getNavTargetForPath(window.location.pathname);
+            executeSpaNavigation(currentPath, targetTab, true);
         });
 
         // Lắng nghe thay đổi kích thước / xoay màn hình để định vị lại quả cầu

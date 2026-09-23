@@ -549,7 +549,7 @@
             }, 5000);
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
+        window.initMovieDetailPage = function () {
             // Tự động lưu thông tin phim đang xem vào bộ nhớ máy (dành cho Tab Đang Xem)
             try {
                 localStorage.setItem('moon_current_watching', JSON.stringify({
@@ -1028,6 +1028,12 @@
                     playVideo(url);
                 });
             });
-        });
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener("DOMContentLoaded", window.initMovieDetailPage);
+        } else {
+            window.initMovieDetailPage();
+        }
     </script>
 }
