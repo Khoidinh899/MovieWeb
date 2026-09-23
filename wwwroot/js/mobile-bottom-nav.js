@@ -23,17 +23,18 @@
         return null;
     }
 
-    // Cập nhật vị trí viên thuốc trượt kính lỏng (Liquid Sliding Pill)
-    function updatePillPosition(targetEl) {
+    // Cập nhật vị trí Quả cầu Kính Lỏng 3D trượt dạng giọt nước (Gliding Liquid Orb)
+    function updateSlidingOrbPosition(targetEl) {
         var navContainer = document.getElementById('mobileBottomNav');
         if (!navContainer) return;
 
         var dock = navContainer.querySelector('.liquid-glass-dock');
-        var pill = navContainer.querySelector('.liquid-pill-indicator');
-        if (!dock || !pill) return;
+        var orb = navContainer.querySelector('#liquidSlidingOrb');
+        var orbIcon = navContainer.querySelector('#liquidOrbIcon');
+        if (!dock || !orb) return;
 
         if (!targetEl) {
-            pill.classList.remove('active');
+            orb.classList.remove('active');
             return;
         }
 
@@ -42,12 +43,19 @@
 
         if (itemRect.width === 0) return;
 
-        var leftOffset = itemRect.left - dockRect.left;
-        var itemWidth = itemRect.width;
+        // Tính vị trí tâm chính xác của nút bấm tương ứng
+        var itemCenterX = itemRect.left - dockRect.left + (itemRect.width / 2);
+        var orbRadius = 24; // Bán kính quả cầu 48px
+        var targetX = itemCenterX - orbRadius;
 
-        pill.style.width = itemWidth + 'px';
-        pill.style.transform = 'translateX(' + leftOffset + 'px)';
-        pill.classList.add('active');
+        orb.style.transform = 'translate3d(' + targetX + 'px, 0, 0)';
+        orb.classList.add('active');
+
+        // Cập nhật icon bên trong quả cầu
+        var targetIcon = targetEl.getAttribute('data-icon');
+        if (targetIcon && orbIcon) {
+            orbIcon.className = 'liquid-orb-icon bi ' + targetIcon;
+        }
     }
 
     function setActiveTab(targetName) {
@@ -68,10 +76,10 @@
             }
         }
 
-        updatePillPosition(activeEl);
+        updateSlidingOrbPosition(activeEl);
     }
 
-    // Tự động đồng bộ Active tab theo URL
+    // Tự động đồng bộ Active tab theo URL hiện tại
     function syncActiveTabByCurrentUrl() {
         var target = getNavTargetForPath(window.location.pathname);
         setActiveTab(target);
@@ -84,7 +92,6 @@
         newLinks.forEach(function (link) {
             var href = link.getAttribute('href');
             if (!href) return;
-            // Chuẩn hóa so sánh URL
             var exists = Array.prototype.some.call(document.querySelectorAll('link[rel="stylesheet"]'), function (existingLink) {
                 return existingLink.getAttribute('href') === href || existingLink.href === link.href;
             });
@@ -140,7 +147,7 @@
             return;
         }
 
-        // 1. Kích hoạt hiệu ứng mờ dần (Fade out) & Di chuyển viên thuốc + Orb lập tức
+        // 1. Kích hoạt hiệu ứng mờ dần (Fade out) & Quả cầu trượt lướt tức thì
         mainElement.classList.add('page-fading');
         setActiveTab(targetTab);
 
@@ -178,7 +185,7 @@
             // Đồng bộ CSS & Script của trang mới vào DOM
             syncAssetsFromNewDoc(doc);
 
-            // Đợi CSS fade-out kết thúc một nhịp ngắn (150ms)
+            // Đợi CSS fade-out kết thúc một nhịp ngắn (140ms)
             setTimeout(function () {
                 mainElement.innerHTML = newMain.innerHTML;
                 window.history.pushState({ path: url, targetTab: targetTab }, '', url);
@@ -190,7 +197,7 @@
                 // Fade in lại
                 mainElement.classList.remove('page-fading');
                 isNavigating = false;
-            }, 150);
+            }, 140);
         })
         .catch(function (err) {
             console.warn('SPA Navigation fallback to normal load:', err);
@@ -234,7 +241,7 @@
         var navItems = navContainer.querySelectorAll('.liquid-nav-item');
         if (!navItems.length) return;
 
-        // Đồng bộ tab active ban đầu & viên thuốc
+        // Đồng bộ tab active ban đầu & vị trí quả cầu
         setTimeout(syncActiveTabByCurrentUrl, 80);
 
         // Xử lý Click / Touch
@@ -282,11 +289,11 @@
             }
         });
 
-        // Lắng nghe thay đổi kích thước / xoay màn hình để tính lại vị trí viên thuốc
+        // Lắng nghe thay đổi kích thước / xoay màn hình để định vị lại quả cầu
         window.addEventListener('resize', function () {
             var activeEl = navContainer.querySelector('.liquid-nav-item.active');
             if (activeEl) {
-                updatePillPosition(activeEl);
+                updateSlidingOrbPosition(activeEl);
             }
         });
 
