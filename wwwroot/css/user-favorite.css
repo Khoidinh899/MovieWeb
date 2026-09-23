@@ -133,11 +133,12 @@ body.user-page .movie-card .btn.remove-favorite {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
     z-index: 10;
-    opacity: 0;
+    opacity: 1 !important;
     padding: 0;
     line-height: 1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 body.user-page .movie-card:hover .btn.remove-favorite {
@@ -147,7 +148,11 @@ body.user-page .movie-card:hover .btn.remove-favorite {
 body.user-page .movie-card .btn.remove-favorite:hover {
     background: #dc3545;
     transform: scale(1.15);
-    box-shadow: 0 3px 10px rgba(220, 53, 69, 0.4);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.5);
+}
+
+body.user-page .movie-card .btn.remove-favorite:active {
+    transform: scale(0.92);
 }
 
 /* Movie Info */

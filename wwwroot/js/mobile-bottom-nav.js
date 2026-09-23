@@ -323,6 +323,12 @@
             link.addEventListener('click', function (e) {
                 var href = this.getAttribute('href');
                 if (href && href.startsWith('/phim/')) {
+                    try {
+                        localStorage.setItem('moon_current_watching', JSON.stringify({
+                            url: href,
+                            updatedAt: Date.now()
+                        }));
+                    } catch (err) {}
                     e.preventDefault();
                     executeSpaNavigation(href, 'watching');
                 }
@@ -330,42 +336,89 @@
         });
     }
 
+    // Hiển thị hộp thoại khi chưa có phim đang xem
+    function showNoWatchingDialog() {
+        if (window.MoonDialog) {
+            window.MoonDialog.confirm({
+                title: 'Chưa có phim đang xem ✨',
+                message: 'Bạn chưa xem bộ phim nào nè! Hãy cùng khám phá kho phim bom tấn vietsub cực hay tại MoonPhim ngay nhé 🍿',
+                confirmText: 'Khám Phá Phim Mới',
+                cancelText: 'Về Trang Chủ',
+                type: 'primary',
+                icon: 'info',
+                iconClass: 'bi-film'
+            }).then(function (isExplore) {
+                if (isExplore) {
+                    executeSpaNavigation('/the-loai/phim-moi-cap-nhat', 'new');
+                } else {
+                    executeSpaNavigation('/trang-chu', 'home');
+                }
+            });
+        } else {
+            alert('Bạn chưa xem bộ phim nào nè! Hãy cùng khám phá kho phim tại MoonPhim nhé 🍿');
+            executeSpaNavigation('/the-loai/phim-moi-cap-nhat', 'new');
+        }
+    }
+
     // Xử lý khi bấm nút "Đang Xem" (Now Playing / Quick Resume)
     function handleNowPlayingClick(e) {
         if (e) e.preventDefault();
 
+        // 1. Nếu người dùng đang ở ngay trang chi tiết / xem phim -> cuộn mượt đến player
+        if (window.location.pathname.startsWith('/phim/')) {
+            var playerEl = document.getElementById('videoContainer') || document.querySelector('.detail-header') || document.body;
+            playerEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setActiveTab('watching');
+            return;
+        }
+
+        // 2. Lấy phim gần nhất từ bộ nhớ máy
         var lastWatchedRaw = localStorage.getItem('moon_current_watching');
         var lastWatched = null;
         try {
             if (lastWatchedRaw) lastWatched = JSON.parse(lastWatchedRaw);
         } catch (err) {}
 
-        if (lastWatched && lastWatched.url) {
-            // Có phim đang xem -> Chuyển thẳng tới trang xem phim qua SPA ngầm
+        if (lastWatched && lastWatched.url && lastWatched.url.startsWith('/phim/')) {
+            // Có phim đang xem -> Chuyển thẳng tới trang chi tiết phim đó
             executeSpaNavigation(lastWatched.url, 'watching');
-        } else {
-            // Chưa có phim nào -> Hiển thị hộp thoại kính mờ phong cách MoonPhim
-            if (window.MoonDialog) {
-                window.MoonDialog.confirm({
-                    title: 'Chưa có phim đang xem ✨',
-                    message: 'Bạn chưa xem bộ phim nào nè! Hãy cùng khám phá kho phim bom tấn vietsub cực hay tại MoonPhim ngay nhé 🍿',
-                    confirmText: 'Khám Phá Phim Mới',
-                    cancelText: 'Về Trang Chủ',
-                    type: 'primary',
-                    icon: 'info',
-                    iconClass: 'bi-film'
-                }).then(function (isExplore) {
-                    if (isExplore) {
-                        executeSpaNavigation('/the-loai/phim-moi-cap-nhat', 'new');
-                    } else {
-                        executeSpaNavigation('/trang-chu', 'home');
-                    }
-                });
-            } else {
-                alert('Bạn chưa xem bộ phim nào nè! Hãy cùng khám phá kho phim tại MoonPhim nhé 🍿');
-                executeSpaNavigation('/the-loai/phim-moi-cap-nhat', 'new');
-            }
+            return;
         }
+
+        // 3. Nếu bộ nhớ máy chưa có -> Truy vấn API lịch sử xem gần nhất từ máy chủ
+        fetch('/api/watch-history?page=1&pageSize=1', {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(function (res) {
+            if (!res.ok) throw new Error('History fetch error');
+            return res.json();
+        })
+        .then(function (data) {
+            var latestItem = null;
+            if (data && data.items && data.items.length > 0) {
+                latestItem = data.items[0];
+            } else if (Array.isArray(data) && data.length > 0) {
+                latestItem = data[0];
+            }
+
+            if (latestItem && latestItem.slug) {
+                var targetUrl = '/phim/' + latestItem.slug;
+                try {
+                    localStorage.setItem('moon_current_watching', JSON.stringify({
+                        url: targetUrl,
+                        slug: latestItem.slug,
+                        name: latestItem.name || '',
+                        updatedAt: Date.now()
+                    }));
+                } catch (err) {}
+                executeSpaNavigation(targetUrl, 'watching');
+            } else {
+                showNoWatchingDialog();
+            }
+        })
+        .catch(function () {
+            showNoWatchingDialog();
+        });
     }
 
     // ==========================================================================
