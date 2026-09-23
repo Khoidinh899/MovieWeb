@@ -79,7 +79,14 @@ namespace MovieWeb.Services
                 var baseUrl = _configuration["AppSettings:BaseUrl"] ?? "https://localhost:5001";
                 var confirmUrl = $"{baseUrl}/auth/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
 
-                await _emailService.SendEmailConfirmationAsync(user.Email!, model.FullName, confirmUrl);
+                try
+                {
+                    await _emailService.SendEmailConfirmationAsync(user.Email!, model.FullName, confirmUrl);
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError(emailEx, "⚠️ [REGISTER] Không thể gửi email xác thực tới {Email}. Link: {Link}", user.Email, confirmUrl);
+                }
 
                 return AuthResult.Success("Đăng ký thành công. Vui lòng xác thực email.");
             }

@@ -325,9 +325,15 @@ window.onloadTurnstileCallback = function () {
                 body: formData
             });
 
-            const result = await response.json();
+            let result = null;
+            try {
+                result = await response.json();
+            } catch (jsonError) {
+                console.error('Response is not JSON:', jsonError);
+                result = { success: false, message: 'Máy chủ phản hồi không đúng định dạng. Vui lòng thử lại!' };
+            }
 
-            if (response.ok && result.success) {
+            if (response.ok && result && result.success) {
                 fadeOut(registerForm, () => {
                     hideAllForms();
                     emailVerificationSent.dataset.email = result.email || formData.get('Email');
@@ -345,9 +351,9 @@ window.onloadTurnstileCallback = function () {
                     'success'
                 );
             } else {
-                let errorMessage = result.message;
+                let errorMessage = result ? result.message : 'Đăng ký thất bại';
 
-                if (result.errors && result.errors.length > 0) {
+                if (result && result.errors && result.errors.length > 0) {
                     errorMessage = result.errors.join(', ');
                 }
 
@@ -359,7 +365,7 @@ window.onloadTurnstileCallback = function () {
 
         } catch (error) {
             console.error('Register error:', error);
-            showAlert('Có lỗi xảy ra khi đăng ký: ' + error.message, 'danger');
+            showAlert('Có lỗi xảy ra khi đăng ký: ' + (error.message || 'Vui lòng thử lại sau!'), 'danger');
             if (window.turnstile) {
                 try { turnstile.reset(); } catch (e) { }
             }

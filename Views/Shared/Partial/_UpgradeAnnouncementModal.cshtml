@@ -1,9 +1,17 @@
 @* Partial View: _UpgradeAnnouncementModal.cshtml - Thông báo sự kiện Nâng Cấp MoonPhim 2.0 Đêm 24/09/2026 *@
+@inject MovieWeb.Services.Interfaces.IAuthService _authService
+@{
+    var currentUser = await _authService.GetCurrentUserAsync();
+    var isAuthenticated = currentUser != null || (User.Identity?.IsAuthenticated == true);
+}
+
 <div class="modal fade" id="upgradeAnnouncementModal" tabindex="-1" aria-labelledby="upgradeAnnouncementModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content upgrade-modal-content">
-            <!-- Nút đóng góc phải -->
-            <button type="button" class="btn-close btn-close-white upgrade-modal-close" onclick="closeUpgradeModal()" aria-label="Đóng"></button>
+            <!-- Nút đóng góc phải nổi bật rõ ràng -->
+            <button type="button" class="upgrade-modal-close" onclick="closeUpgradeModal()" aria-label="Đóng" title="Đóng thông báo">
+                <i class="bi bi-x-lg"></i>
+            </button>
             
             <div class="modal-body p-4 p-md-5">
                 <!-- Header Banner -->
@@ -59,31 +67,57 @@
                     </div>
                 </div>
 
-                <!-- Box Đặc Quyền Đăng Ký -->
-                <div class="upgrade-benefit-box mb-4">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="bi bi-gift-fill text-warning fs-5 me-2"></i>
-                        <h6 class="mb-0 text-white fw-bold">ĐẶC QUYỀN KHI TẠO TÀI KHOẢN HÔM NAY:</h6>
+                @if (isAuthenticated)
+                {
+                    <!-- Box Thành Viên Đã Đăng Nhập -->
+                    <div class="upgrade-benefit-box mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-shield-fill-check text-success fs-5 me-2"></i>
+                            <h6 class="mb-0 text-white fw-bold">XIN CHÀO @(currentUser?.FullName ?? currentUser?.UserName ?? "BẠN")! BẠN ĐÃ LÀ THÀNH VIÊN:</h6>
+                        </div>
+                        <ul class="benefit-list mb-0">
+                            <li><i class="bi bi-check2-circle text-success me-2"></i> Tài khoản của bạn đã được kích hoạt quyền <strong>Trải nghiệm sớm (Early Access)</strong> tất cả tính năng mới.</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i> Toàn bộ tiến trình xem, lịch sử và danh sách yêu thích luôn được tự động lưu và đồng bộ.</li>
+                        </ul>
                     </div>
-                    <ul class="benefit-list mb-0">
-                        <li><i class="bi bi-check2-circle text-success me-2"></i> Trải nghiệm sớm (Early Access) tất cả tính năng mới ngay khi vừa mở cổng.</li>
-                        <li><i class="bi bi-check2-circle text-success me-2"></i> Tự động lưu lịch sử xem phim và đồng bộ danh sách yêu thích xuyên suốt mọi thiết bị.</li>
-                    </ul>
-                </div>
 
-                <!-- Nút Hành Động (CTA) -->
-                <div class="row g-2 mb-3">
-                    <div class="col-12 col-md-7">
-                        <button type="button" class="btn btn-upgrade-primary w-100 py-3" onclick="openAuthFromUpgradeModal()">
-                            <i class="bi bi-person-plus-fill me-2"></i> ĐĂNG KÝ / ĐĂNG NHẬP NGAY
-                        </button>
+                    <!-- Nút Hành Động khi đã đăng nhập -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-12">
+                            <button type="button" class="btn btn-upgrade-primary w-100 py-3" onclick="closeUpgradeModal()">
+                                <i class="bi bi-play-circle-fill me-2"></i> KHÁM PHÁ & XEM PHIM NGAY
+                            </button>
+                        </div>
                     </div>
-                    <div class="col-12 col-md-5">
-                        <button type="button" class="btn btn-upgrade-secondary w-100 py-3" onclick="closeUpgradeModal()">
-                            <i class="bi bi-play-circle me-2"></i> Xem Phim Ngay
-                        </button>
+                }
+                else
+                {
+                    <!-- Box Đặc Quyền Đăng Ký (Khi chưa đăng nhập) -->
+                    <div class="upgrade-benefit-box mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-gift-fill text-warning fs-5 me-2"></i>
+                            <h6 class="mb-0 text-white fw-bold">ĐẶC QUYỀN KHI TẠO TÀI KHOẢN HÔM NAY:</h6>
+                        </div>
+                        <ul class="benefit-list mb-0">
+                            <li><i class="bi bi-check2-circle text-success me-2"></i> Trải nghiệm sớm (Early Access) tất cả tính năng mới ngay khi vừa mở cổng.</li>
+                            <li><i class="bi bi-check2-circle text-success me-2"></i> Tự động lưu lịch sử xem phim và đồng bộ danh sách yêu thích xuyên suốt mọi thiết bị.</li>
+                        </ul>
                     </div>
-                </div>
+
+                    <!-- Nút Hành Động khi chưa đăng nhập (CTA) -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-md-7">
+                            <button type="button" class="btn btn-upgrade-primary w-100 py-3" onclick="openAuthFromUpgradeModal()">
+                                <i class="bi bi-person-plus-fill me-2"></i> ĐĂNG KÝ / ĐĂNG NHẬP NGAY
+                            </button>
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <button type="button" class="btn btn-upgrade-secondary w-100 py-3" onclick="closeUpgradeModal()">
+                                <i class="bi bi-play-circle me-2"></i> Xem Phim Ngay
+                            </button>
+                        </div>
+                    </div>
+                }
 
                 <!-- Checkbox Không hiển thị lại (Màu sáng rõ ràng) -->
                 <div class="text-center pt-2">
@@ -132,21 +166,30 @@
 
 .upgrade-modal-close {
     position: absolute;
-    top: 18px;
-    right: 18px;
-    z-index: 20;
-    opacity: 0.85;
-    background-color: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    top: 16px;
+    right: 16px;
+    z-index: 30;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.18);
+    border: 2px solid rgba(255, 255, 255, 0.45);
     border-radius: 50%;
-    padding: 8px;
-    transition: all 0.2s ease;
+    color: #ffffff;
+    font-size: 1.15rem;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .upgrade-modal-close:hover {
-    opacity: 1;
-    background-color: #0477eb;
+    background: #ef4444;
+    border-color: #f87171;
+    color: #ffffff;
     transform: scale(1.1) rotate(90deg);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5);
 }
 
 .upgrade-badge-glow .badge-tag {
@@ -351,11 +394,14 @@
     }
 
     .upgrade-modal-close {
-        top: 12px;
-        right: 12px;
-        padding: 6px;
-        background-color: rgba(0, 0, 0, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        top: 10px;
+        right: 10px;
+        width: 36px;
+        height: 36px;
+        background: rgba(255, 255, 255, 0.25);
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        color: #ffffff;
+        font-size: 1rem;
     }
 
     .feature-icon {

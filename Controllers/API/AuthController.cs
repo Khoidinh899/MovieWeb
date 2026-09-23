@@ -134,6 +134,15 @@ namespace MovieWeb.Controllers
             {
                 _logger.LogError(ex, "Error in Register for {Email}", model.Email);
 
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Có lỗi xảy ra trong quá trình đăng ký. Vui lòng thử lại sau ít phút."
+                    });
+                }
+
                 return StatusCode(500, new
                 {
                     success = false,

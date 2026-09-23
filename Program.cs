@@ -213,7 +213,28 @@ builder.Services.AddScoped<PaymentReminderJob>();
 builder.Services.AddScoped<SendRealtimeNotificationJob>();
 
 // ===== SMTP EMAIL SENDER =====
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.Configure<EmailSettings>(options =>
+{
+    builder.Configuration.GetSection("EmailSettings").Bind(options);
+
+    var smtpServer = Environment.GetEnvironmentVariable("SMTP_SERVER");
+    if (!string.IsNullOrWhiteSpace(smtpServer)) options.SmtpServer = smtpServer.Trim();
+
+    var smtpPort = Environment.GetEnvironmentVariable("SMTP_PORT");
+    if (!string.IsNullOrWhiteSpace(smtpPort) && int.TryParse(smtpPort, out int port)) options.Port = port;
+
+    var smtpUser = Environment.GetEnvironmentVariable("SMTP_USERNAME");
+    if (!string.IsNullOrWhiteSpace(smtpUser)) options.Username = smtpUser.Trim();
+
+    var smtpPass = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
+    if (!string.IsNullOrWhiteSpace(smtpPass)) options.Password = smtpPass.Trim();
+
+    var smtpFromEmail = Environment.GetEnvironmentVariable("SMTP_FROM_EMAIL");
+    if (!string.IsNullOrWhiteSpace(smtpFromEmail)) options.FromEmail = smtpFromEmail.Trim();
+
+    var smtpFromName = Environment.GetEnvironmentVariable("SMTP_FROM_NAME");
+    if (!string.IsNullOrWhiteSpace(smtpFromName)) options.FromName = smtpFromName.Trim();
+});
 
 builder.Services.AddTransient<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender, SmtpEmailSender>();
 builder.Services.AddTransient<IEmailSender<User>, SmtpEmailSender>();

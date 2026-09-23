@@ -27,14 +27,14 @@ namespace MovieWeb.Services
 
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
-            if (string.IsNullOrEmpty(_settings.SmtpServer))
-            {
-                _logger.LogError("❌ EmailSettings:SmtpServer chưa được cấu hình!");
-                throw new Exception("Lỗi: EmailSettings:SmtpServer chưa được cấu hình.");
-            }
+            var fromEmail = string.IsNullOrWhiteSpace(_settings.FromEmail) ? "support@moonphim.me" : _settings.FromEmail.Trim();
+            var fromName = string.IsNullOrWhiteSpace(_settings.FromName) ? "MoonPhim" : _settings.FromName.Trim();
 
-            var fromEmail = _settings.FromEmail ?? "noreply@moonphim.com";
-            var fromName = _settings.FromName ?? "MoonPhim";
+            if (string.IsNullOrWhiteSpace(_settings.SmtpServer) || string.IsNullOrWhiteSpace(_settings.Username) || string.IsNullOrWhiteSpace(_settings.Password))
+            {
+                _logger.LogWarning($"⚠️ [SMTP] Chưa cấu hình đầy đủ SMTP Server/Username/Password. Bỏ qua gửi email tới {email}. Subject: {subject}");
+                return;
+            }
 
             _logger.LogInformation($"🔹 Chuẩn bị gửi email SMTP:");
             _logger.LogInformation($"   - Server: {_settings.SmtpServer}:{_settings.Port}");
@@ -42,25 +42,34 @@ namespace MovieWeb.Services
             _logger.LogInformation($"   - To: {email}");
             _logger.LogInformation($"   - Subject: {subject}");
 
-            using (var message = new MailMessage())
+            try
             {
-                message.From = new MailAddress(fromEmail, fromName);
-                message.To.Add(new MailAddress(email));
-                message.Subject = subject;
-                message.Body = htmlMessage;
-                message.IsBodyHtml = true;
-
-                using (var client = new SmtpClient(_settings.SmtpServer, _settings.Port))
+                using (var message = new MailMessage())
                 {
-                    client.UseDefaultCredentials = false;
-                    client.Credentials = new NetworkCredential(_settings.Username, _settings.Password);
-                    client.EnableSsl = _settings.EnableSsl;
+                    message.From = new MailAddress(fromEmail, fromName);
+                    message.To.Add(new MailAddress(email));
+                    message.Subject = subject;
+                    message.Body = htmlMessage;
+                    message.IsBodyHtml = true;
 
-                    await client.SendMailAsync(message);
+                    using (var client = new SmtpClient(_settings.SmtpServer, _settings.Port))
+                    {
+                        client.UseDefaultCredentials = false;
+                        client.Credentials = new NetworkCredential(_settings.Username, _settings.Password);
+                        client.EnableSsl = _settings.EnableSsl;
+                        client.Timeout = 15000; // 15s timeout
+
+                        await client.SendMailAsync(message);
+                    }
                 }
-            }
 
-            _logger.LogInformation($"✅ [SMTP] Gửi email tới {email} THÀNH CÔNG!");
+                _logger.LogInformation($"✅ [SMTP] Gửi email tới {email} THÀNH CÔNG!");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ [SMTP] Lỗi khi gửi email tới {Email}", email);
+                throw;
+            }
         }
 
         // =================================================================
@@ -68,6 +77,7 @@ namespace MovieWeb.Services
         // =================================================================
         public async Task SendEmailConfirmationAsync(string email, string subject, string confirmationLink)
         {
+            _logger.LogInformation($"🔗 [CONFIRMATION LINK] Link xác thực email cho {email}: {confirmationLink}");
             var userName = email.Split('@')[0];
 
             var htmlBody = $@"

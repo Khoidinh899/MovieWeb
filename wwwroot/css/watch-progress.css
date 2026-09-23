@@ -52,24 +52,27 @@
 }
 
 .resume-close {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #cbd5e1;
+    background: rgba(255, 255, 255, 0.18);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    color: #ffffff;
     font-size: 1.1rem;
     cursor: pointer;
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .resume-close:hover {
-    background: #0477eb;
+    background: #ef4444;
+    border-color: #f87171;
     color: #fff;
-    transform: rotate(90deg) scale(1.05);
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
 }
 
 .resume-body {
