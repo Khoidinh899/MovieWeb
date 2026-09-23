@@ -1,0 +1,66 @@
+@* ==========================================================================
+   MOONPHIM - IOS SAFARI PWA INSTALL PROMPT PARTIAL
+   ========================================================================== *@
+
+<div id="iosInstallPrompt" role="dialog" aria-label="Hướng dẫn cài đặt ứng dụng">
+    <div class="ios-prompt-content">
+        <div class="ios-prompt-icon">
+            <img src="~/apple-touch-icon.png" alt="MoonPhim App Icon" />
+        </div>
+        <div class="ios-prompt-text">
+            <div class="ios-prompt-title">
+                <span>Cài đặt MoonPhim App</span>
+                <button type="button" class="ios-prompt-close" id="closeIosPromptBtn" aria-label="Đóng">&times;</button>
+            </div>
+            <p class="ios-prompt-desc">
+                Nhấn nút <strong>Chia sẻ <i class="bi bi-share"></i></strong> ở thanh dưới cùng Safari rồi chọn <strong>"Thêm vào MH chính" <i class="bi bi-plus-square"></i></strong> để xem phim tràn viền không quảng cáo trình duyệt!
+            </p>
+        </div>
+    </div>
+    <div class="ios-prompt-pointer">
+        <i class="bi bi-arrow-down"></i> Nhấn nút chia sẻ ở dưới màn hình
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+    function checkIosPrompt() {
+        var isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        var isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+
+        // Chỉ hiện trên thiết bị iOS và khi chưa cài đặt PWA
+        if (!isIos || isStandalone) return;
+
+        var STORAGE_KEY = 'moonphim_ios_prompt_dismissed';
+        var COOLDOWN = 7 * 24 * 60 * 60 * 1000; // 7 ngày
+
+        var lastDismissed = localStorage.getItem(STORAGE_KEY);
+        if (lastDismissed && (Date.now() - parseInt(lastDismissed, 10)) < COOLDOWN) {
+            return;
+        }
+
+        var promptEl = document.getElementById('iosInstallPrompt');
+        if (!promptEl) return;
+
+        // Hiện sau 2.5s khi người dùng đã vào xem trang
+        setTimeout(function () {
+            promptEl.classList.add('show');
+        }, 2500);
+
+        var closeBtn = document.getElementById('closeIosPromptBtn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function () {
+                promptEl.classList.remove('show');
+                localStorage.setItem(STORAGE_KEY, Date.now().toString());
+            });
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', checkIosPrompt);
+    } else {
+        checkIosPrompt();
+    }
+})();
+</script>

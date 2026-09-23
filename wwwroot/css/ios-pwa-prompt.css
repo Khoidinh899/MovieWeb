@@ -1,0 +1,92 @@
+/* ==========================================================================
+   MOONPHIM - IOS SAFARI PWA INSTALL PROMPT
+   ========================================================================== */
+
+#iosInstallPrompt {
+    position: fixed;
+    bottom: calc(85px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%) translateY(120%);
+    width: calc(100% - 32px);
+    max-width: 420px;
+    z-index: 2147483645;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7), 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+
+#iosInstallPrompt.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.ios-prompt-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.ios-prompt-icon img {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.ios-prompt-text {
+    flex: 1;
+}
+
+.ios-prompt-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ios-prompt-close {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.ios-prompt-close:hover {
+    color: #ffffff;
+}
+
+.ios-prompt-desc {
+    font-size: 0.8rem;
+    color: #cbd5e1;
+    line-height: 1.45;
+    margin: 0;
+}
+
+.ios-prompt-desc strong {
+    color: #38bdf8;
+}
+
+.ios-prompt-pointer {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}

@@ -1,1 +1,70 @@
-{"name":"","short_name":"","icons":[{"src":"/android-chrome-192x192.png","sizes":"192x192","type":"image/png"},{"src":"/android-chrome-512x512.png","sizes":"512x512","type":"image/png"}],"theme_color":"#ffffff","background_color":"#ffffff","display":"standalone"}
+{
+  "name": "MoonPhim - Xem Phim Online Miễn Phí",
+  "short_name": "MoonPhim",
+  "description": "Xem phim online miễn phí tốc độ cao Full HD Vietsub Thuyết minh",
+  "start_url": "/trang-chu",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#1c2a39",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Trang Chủ",
+      "short_name": "Trang Chủ",
+      "description": "Khám phá phim mới hot",
+      "url": "/trang-chu",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Phim Mới Cập Nhật",
+      "short_name": "Phim Mới",
+      "description": "Các tập phim mới nhất hôm nay",
+      "url": "/the-loai/phim-moi-cap-nhat",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Lịch Sử Xem",
+      "short_name": "Xem Tiếp",
+      "description": "Tiếp tục theo dõi các bộ phim đang xem",
+      "url": "/lich-su-xem",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Tìm Kiếm Phim",
+      "short_name": "Tìm Kiếm",
+      "description": "Tìm kiếm bộ phim yêu thích",
+      "url": "/tim-kiem",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
