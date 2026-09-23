@@ -92,6 +92,7 @@
                                                 <img src="@GetMoviePosterUrl(item.PosterUrl)"
                                                      alt="@item.Name"
                                                      loading="lazy"
+                                                     decoding="async"
                                                      onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
 
                                                 @if (item.IsCompleted)

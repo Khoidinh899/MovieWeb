@@ -50,6 +50,13 @@
       }
     }
     </script>
+    <!-- Resource Preconnect & DNS-Prefetch for Fast Asset Loading -->
+    <link rel="preconnect" href="https://img.ophim.live" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
+    <link rel="dns-prefetch" href="https://challenges.cloudflare.com">
+
     <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png" asp-append-version="true">
     <link rel="icon" type="image/png" sizes="32x32" href="~/favicon-32x32.png" asp-append-version="true">
     <link rel="icon" type="image/png" sizes="16x16" href="~/favicon-16x16.png" asp-append-version="true">
@@ -61,17 +68,14 @@
     <link rel="stylesheet" href="~/css/header.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/nangcap.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/filter-sidebar.css" asp-append-version="true" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     @* CHỈ LOAD notification.css và chatbot.css KHI USER ĐĂNG NHẬP *@
     @if (User.Identity.IsAuthenticated)
     {
         <link rel="stylesheet" href="~/css/notification.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/chatbot.css" asp-append-version="true" />
     }
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
     @* --- BẮT ĐẦU KHỐI SEO MẶC ĐỊNH --- *@
     <meta name="keywords" content="moonphim, moon phim, moonphim me, moon phim online, phimmoi, phim moi, rophim, ro phim, cobephim, co be phim, motphim, mot phim, motchill, phimmoichill, xem phim online, phim vietsub, phim thuyet minh, xem phim mien phi, bay bong cung dien anh" />
@@ -130,20 +134,28 @@
 
 <script src="~/js/search.js" asp-append-version="true"></script>
 
-    <!-- Monetag In-Page Push & Vignette (Chạy sau khi toàn bộ trang dựng xong) -->
+    <!-- Monetag In-Page Push & Vignette (Chạy sau khi toàn bộ trang dựng xong qua Idle Callback) -->
     <script>
         window.addEventListener('load', function () {
-            // Nạp In-Page Push (Zone 11708841)
-            var ipp = document.createElement('script');
-            ipp.dataset.zone = '11708841';
-            ipp.src = 'https://nap5k.com/tag.min.js';
-            document.body.appendChild(ipp);
+            var loadMonetag = function () {
+                // Nạp In-Page Push (Zone 11708841)
+                var ipp = document.createElement('script');
+                ipp.dataset.zone = '11708841';
+                ipp.src = 'https://nap5k.com/tag.min.js';
+                document.body.appendChild(ipp);
 
-            // Nạp Vignette (Zone 11708850)
-            var vig = document.createElement('script');
-            vig.dataset.zone = '11708850';
-            vig.src = 'https://n6wxm.com/vignette.min.js';
-            document.body.appendChild(vig);
+                // Nạp Vignette (Zone 11708850)
+                var vig = document.createElement('script');
+                vig.dataset.zone = '11708850';
+                vig.src = 'https://n6wxm.com/vignette.min.js';
+                document.body.appendChild(vig);
+            };
+
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(loadMonetag, { timeout: 1200 });
+            } else {
+                setTimeout(loadMonetag, 600);
+            }
         });
     </script>
 
@@ -171,8 +183,8 @@
                 localStorage.setItem(STORAGE_KEY, Date.now().toString());
 
                 // Gỡ toàn bộ sự kiện chạm/click ngay lập tức
-                window.removeEventListener('click', triggerPopunder, true);
-                window.removeEventListener('touchend', triggerPopunder, true);
+                window.removeEventListener('click', triggerPopunder, { capture: true, passive: true });
+                window.removeEventListener('touchend', triggerPopunder, { capture: true, passive: true });
 
                 // Nạp script OnClick Monetag (Zone 11708858)
                 var s = document.createElement('script');
@@ -181,9 +193,9 @@
                 (document.body || document.documentElement).appendChild(s);
             };
 
-            // Bắt sự kiện click hoặc nhả ngón tay ở chế độ capture
-            window.addEventListener('click', triggerPopunder, true);
-            window.addEventListener('touchend', triggerPopunder, true);
+            // Bắt sự kiện click hoặc nhả ngón tay ở chế độ passive để không chặn scrolling trên mobile
+            window.addEventListener('click', triggerPopunder, { capture: true, passive: true });
+            window.addEventListener('touchend', triggerPopunder, { capture: true, passive: true });
         })();
     </script>
 </body>

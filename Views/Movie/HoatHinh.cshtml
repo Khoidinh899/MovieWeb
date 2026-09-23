@@ -118,6 +118,8 @@
                                  alt="@movie.Name"
                                  class="img-fluid w-100"
                                  style="aspect-ratio: 2/3; object-fit: cover;"
+                                 loading="lazy"
+                                 decoding="async"
                                  onerror="this.src='@Url.Content("~/images/no-image.jpg")'" />
                             <div class="p-2">
                                 <h6 class="text-truncate mb-0">@movie.Name</h6>

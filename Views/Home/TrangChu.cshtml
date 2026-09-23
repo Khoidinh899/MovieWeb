@@ -101,6 +101,7 @@
                                                 var heroPosterUrl = GetMoviePosterUrl(movie);
                                             }
                                             <img src="@heroPosterUrl" alt="@movie.Name" class="img-fluid rounded shadow-lg"
+                                                decoding="async"
                                                 onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
                                         </div>
                                     </div>
@@ -162,7 +163,7 @@
                                     @{
                                         var posterUrl = GetMoviePosterUrl(movie);
                                     }
-                                    <img src="@posterUrl" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
+                                    <img src="@posterUrl" alt="@movie.Name" class="img-fluid rounded" loading="lazy" decoding="async"
                                         onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
 
                                     <div class="movie-overlay">
@@ -218,7 +219,7 @@
                                     @{
                                         var posterUrl2 = GetMoviePosterUrl(movie);
                                     }
-                                    <img src="@posterUrl2" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
+                                    <img src="@posterUrl2" alt="@movie.Name" class="img-fluid rounded" loading="lazy" decoding="async"
                                         onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
 
                                     <div class="movie-overlay">
@@ -271,7 +272,7 @@
                                     @{
                                         var posterUrl3 = GetMoviePosterUrl(movie);
                                     }
-                                    <img src="@posterUrl3" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
+                                    <img src="@posterUrl3" alt="@movie.Name" class="img-fluid rounded" loading="lazy" decoding="async"
                                         onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
 
                                     <div class="movie-overlay">
@@ -330,7 +331,7 @@
                                     @{
                                         var posterUrl4 = GetMoviePosterUrl(movie);
                                     }
-                                    <img src="@posterUrl4" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
+                                    <img src="@posterUrl4" alt="@movie.Name" class="img-fluid rounded" loading="lazy" decoding="async"
                                         onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
 
                                     <div class="movie-overlay">
@@ -384,7 +385,7 @@
                                         @{
                                             var posterUrlUp = GetMoviePosterUrl(movie);
                                         }
-                                        <img src="@posterUrlUp" alt="@movie.Name" class="img-fluid rounded" loading="lazy"
+                                        <img src="@posterUrlUp" alt="@movie.Name" class="img-fluid rounded" loading="lazy" decoding="async"
                                              onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
 
                                         <div class="movie-overlay">

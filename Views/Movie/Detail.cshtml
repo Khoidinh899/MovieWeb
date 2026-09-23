@@ -206,6 +206,7 @@
                            ? "/images/default-poster.jpg" 
                            : (Model.PosterUrl.StartsWith("http") ? Model.PosterUrl : $"https://img.ophim.live/uploads/movies/{Model.PosterUrl.TrimStart('/')}"))"
                  alt="@Model.Name"
+                 decoding="async"
                  onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
         </div>
 
