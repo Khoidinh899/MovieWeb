@@ -86,7 +86,7 @@
         setActiveTab(target);
     }
 
-    // Nạp đồng bộ CSS & Script còn thiếu từ trang mới sang DOM hiện tại
+    // Nạp đồng bộ CSS & Script còn thiếu từ trang mới sang DOM hiện tại (trả về Promise)
     function syncAssetsFromNewDoc(doc) {
         // 1. Đồng bộ các thẻ <link rel="stylesheet">
         var newLinks = doc.querySelectorAll('link[rel="stylesheet"]');
@@ -120,21 +120,38 @@
             }
         });
 
-        // 3. Nạp các file script đặc thù của trang
+        // 3. Nạp và chờ các file script đặc thù của trang (như HLS.js, video-ads-handler.js, favorite-handler.js)
         var newScripts = doc.querySelectorAll('script[src]');
+        var scriptPromises = [];
+
         newScripts.forEach(function (script) {
             var src = script.getAttribute('src');
             if (!src) return;
+
+            // Bỏ qua các script layout dùng chung đã nạp sẵn
+            if (src.includes('bootstrap') || src.includes('site.js') || src.includes('signalr') ||
+                src.includes('mobile-bottom-nav.js') || src.includes('moon-dialog.js') ||
+                src.includes('notification.js') || src.includes('chatbot.js')) {
+                return;
+            }
+
             var scriptExists = Array.prototype.some.call(document.querySelectorAll('script[src]'), function (existingScript) {
                 return existingScript.getAttribute('src') === src || existingScript.src === script.src;
             });
 
             if (!scriptExists) {
-                var newScriptEl = document.createElement('script');
-                newScriptEl.src = src;
-                document.body.appendChild(newScriptEl);
+                var p = new Promise(function (resolve) {
+                    var newScriptEl = document.createElement('script');
+                    newScriptEl.src = src;
+                    newScriptEl.onload = function () { resolve(); };
+                    newScriptEl.onerror = function () { resolve(); };
+                    document.body.appendChild(newScriptEl);
+                });
+                scriptPromises.push(p);
             }
         });
+
+        return Promise.all(scriptPromises);
     }
 
     // Khởi tạo SPA Transition cho Mobile Navigation
@@ -183,40 +200,61 @@
             // Đồng bộ class body
             document.body.className = doc.body.className;
 
-            // Đồng bộ CSS & Script của trang mới vào DOM
-            syncAssetsFromNewDoc(doc);
+            // Đồng bộ CSS & Script của trang mới vào DOM rồi mới thực thi
+            syncAssetsFromNewDoc(doc).then(function () {
+                setTimeout(function () {
+                    mainElement.innerHTML = newMain.innerHTML;
 
-            // Đợi CSS fade-out kết thúc một nhịp ngắn (120ms)
-            setTimeout(function () {
-                mainElement.innerHTML = newMain.innerHTML;
+                    // Thực thi TẤT CẢ các đoạn script trang mới (trong newMain và trong doc.body / @section Scripts)
+                    var scriptsToRun = [];
 
-                // Thực thi các đoạn script nội tuyến bên trong vùng <main> mới nạp
-                var inlineScripts = mainElement.querySelectorAll('script');
-                inlineScripts.forEach(function (oldScript) {
-                    var newScript = document.createElement('script');
-                    Array.from(oldScript.attributes).forEach(function (attr) {
-                        newScript.setAttribute(attr.name, attr.value);
+                    // 1. Script nội tuyến trong newMain
+                    newMain.querySelectorAll('script:not([src])').forEach(function (s) {
+                        if (s.textContent.trim()) {
+                            scriptsToRun.push(s.textContent);
+                        }
                     });
-                    newScript.textContent = oldScript.textContent;
-                    oldScript.parentNode.replaceChild(newScript, oldScript);
-                });
 
-                if (!isPopState) {
-                    window.history.pushState({ path: url, targetTab: targetTab }, '', url);
-                }
+                    // 2. Script nội tuyến trong doc.body (như @section Scripts chứa initMovieDetailPage)
+                    doc.querySelectorAll('body script:not([src])').forEach(function (s) {
+                        var text = s.textContent.trim();
+                        if (text && !scriptsToRun.includes(text)) {
+                            // Bỏ qua inline script antiforgery nếu có
+                            if (!text.includes('RequestVerificationToken') && !text.includes('RequestVerificationToken')) {
+                                scriptsToRun.push(text);
+                            }
+                        }
+                    });
 
-                window.scrollTo({ top: 0, behavior: 'instant' });
+                    // Thực thi lần lượt các inline script
+                    scriptsToRun.forEach(function (code) {
+                        try {
+                            var runner = new Function(code);
+                            runner();
+                        } catch (e) {
+                            console.warn('SPA inline script execution error:', e);
+                        }
+                    });
 
-                // Khởi động lại các event listener của trang mới
-                reinitializePageScripts();
+                    if (!isPopState) {
+                        window.history.pushState({ path: url, targetTab: targetTab }, '', url);
+                    }
 
-                // Fade in lại
-                mainElement.classList.remove('page-fading');
-                isNavigating = false;
-            }, 120);
+                    window.scrollTo({ top: 0, behavior: 'instant' });
+
+                    // Khởi động lại các event listener của trang mới
+                    reinitializePageScripts();
+
+                    // Fade in lại
+                    mainElement.classList.remove('page-fading');
+                    isNavigating = false;
+                }, 80);
+            });
         })
         .catch(function (err) {
             console.warn('SPA Navigation fallback to normal load:', err);
+            mainElement.classList.remove('page-fading');
+            isNavigating = false;
             window.location.href = url;
         });
     }

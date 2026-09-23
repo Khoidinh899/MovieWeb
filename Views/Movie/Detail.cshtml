@@ -342,7 +342,7 @@
                         @foreach (var ep in sortedEpisodes)
                         {
                             var isEpActive = string.Equals(key, defaultServer, StringComparison.OrdinalIgnoreCase) && isFirstEpInGroup;
-                            <a href="#"
+                            <a href="javascript:void(0)"
                                class="episode-list-item @(isEpActive ? "active" : "")"
                                data-index="@episodeIndex"
                                data-url="@ep.LinkM3u8"
