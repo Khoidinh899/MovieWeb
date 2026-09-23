@@ -84,12 +84,11 @@
             }
         </div>
 
-        @* ===== PHÂN TRANG ===== *@
+        @* ===== PHÂN TRANG (ĐÃ SỬA LỖI) ===== *@
         @if (ViewBag.TotalPages > 1)
         {
             <nav class="mt-4">
-                <ul class="pagination justify-content-center">
-
+                <ul class="pagination justify-content-center flex-wrap">
                     @{
                         var currentFilters = new Dictionary<string, string>();
 
@@ -99,23 +98,51 @@
                         if (!string.IsNullOrEmpty(filters.Language)) currentFilters["Language"] = filters.Language;
                         if (!string.IsNullOrEmpty(filters.Years)) currentFilters["Years"] = filters.Years;
                         if (!string.IsNullOrEmpty(filters.SortBy)) currentFilters["SortBy"] = filters.SortBy;
+
+                        string GetUrl(int page)
+                        {
+                            var queryParams = string.Join("&", currentFilters.Select(kvp => $"{kvp.Key}={System.Net.WebUtility.UrlEncode(kvp.Value)}"));
+                            return $"?Page={page}" + (string.IsNullOrEmpty(queryParams) ? "" : "&" + queryParams);
+                        }
+
+                        int currentPage = ViewBag.CurrentPage;
+                        int totalPages = (int)ViewBag.TotalPages;
+                        int range = 2; 
                     }
 
-                    @for (int i = 1; i <= (int)ViewBag.TotalPages; i++)
+                    @* Nút Quay lại (Prev) *@
+                    @if (currentPage > 1)
                     {
-                        var queryParams = string.Join("&",
-                            currentFilters.Select(kvp =>
-                                $"{kvp.Key}={System.Net.WebUtility.UrlEncode(kvp.Value)}"
-                            ));
+                        <li class="page-item">
+                            <a class="page-link" href="@GetUrl(currentPage - 1)">&laquo;</a>
+                        </li>
+                    }
 
-                        var pageUrl = $"?Page={i}" + (string.IsNullOrEmpty(queryParams) ? "" : "&" + queryParams);
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        if (i == 1 || i == totalPages || (i >= currentPage - range && i <= currentPage + range))
+                        {
+                            <li class="page-item @(i == currentPage ? "active" : "")">
+                                <a class="page-link" href="@GetUrl(i)">@i</a>
+                            </li>
+                        }
+                        else if (i == currentPage - range - 1 || i == currentPage + range + 1)
+                        {
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        }
+                    }
 
-                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
-                            <a class="page-link" href="@pageUrl">@i</a>
+                    @* Nút Tiếp theo (Next) *@
+                    @if (currentPage < totalPages)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@GetUrl(currentPage + 1)">&raquo;</a>
                         </li>
                     }
                 </ul>
-           </nav>
+            </nav>
         }
     }
 </section>

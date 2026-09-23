@@ -4,8 +4,16 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="monetag" content="1bd43555dd0c57f4ee0258b218db6891">
+    
+    <!-- Web App & PWA iOS Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MoonPhim" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="MoonPhim" />
+
     <title>@ViewData["Title"] - MoonPhim</title>
     <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png" asp-append-version="true">
     <link rel="icon" type="image/png" sizes="32x32" href="~/favicon-32x32.png" asp-append-version="true">
@@ -19,6 +27,8 @@
     <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/user.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/header.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/mobile-bottom-nav.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/ios-pwa-prompt.css" asp-append-version="true" />
 
     @if (User.Identity.IsAuthenticated)
     {
@@ -48,9 +58,12 @@
     </main>
 
     @await Html.PartialAsync("Partial/_Footer")
+    @await Html.PartialAsync("Partial/_MobileBottomNav")
+    @await Html.PartialAsync("Partial/_IosInstallPrompt")
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     @await Html.PartialAsync("Partial/_Scripts")
+    <script src="~/js/mobile-bottom-nav.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
     @if (User.Identity.IsAuthenticated)

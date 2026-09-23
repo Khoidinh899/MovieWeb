@@ -19,20 +19,20 @@ html, body {
 @media (max-width: 768px) {
     /* Đẩy nội dung trang lên trên một khoảng an toàn để không bị che bởi Bottom Nav */
     body {
-        padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
     }
 
     /* Đẩy vị trí In-Page Push của Monetag, Chatbot & Toast lên trên thanh điều hướng */
     iframe[style*="fixed"],
     iframe[style*="position: fixed"],
     iframe[style*="position:fixed"],
-    body > div[style*="fixed"]:not(#header):not(.navbar):not(.modal):not(#homeAdModal):not(#mobileBottomNav):not(#iosInstallPrompt),
-    body > div[style*="position: fixed"]:not(#header):not(.navbar):not(.modal):not(#homeAdModal):not(#mobileBottomNav):not(#iosInstallPrompt),
+    body > div[style*="fixed"]:not(#header):not(.navbar):not(.modal):not(#homeAdModal):not(#mobileBottomNav):not(#iosInstallPrompt):not(#filterSidebar),
+    body > div[style*="position: fixed"]:not(#header):not(.navbar):not(.modal):not(#homeAdModal):not(#mobileBottomNav):not(#iosInstallPrompt):not(#filterSidebar),
     [class*="in-page-push"],
     [id*="ipp-container"],
     .chatbot-toggle-btn,
     .toast-container {
-        bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
+        bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
     }
 
     /* 3. KHUNG DOCK KÍNH LỎNG LIQUID GLASS (FLOATING DOCK) */
@@ -69,7 +69,7 @@ html, body {
         pointer-events: auto;
 
         /* Hiệu ứng Kính lỏng Liquid Glass đa tầng */
-        background: rgba(15, 23, 42, 0.78);
+        background: rgba(15, 23, 42, 0.82);
         backdrop-filter: blur(28px) saturate(200%);
         -webkit-backdrop-filter: blur(28px) saturate(200%);
         
@@ -89,10 +89,10 @@ html, body {
         left: 0;
         height: calc(100% - 12px);
         border-radius: 28px;
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.05));
-        border: 1px solid rgba(255, 255, 255, 0.22);
+        background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(2, 132, 199, 0.08));
+        border: 1px solid rgba(56, 189, 248, 0.35);
         box-shadow: 
-            0 4px 15px rgba(0, 0, 0, 0.25),
+            0 4px 15px rgba(56, 189, 248, 0.2),
             inset 0 1px 2px rgba(255, 255, 255, 0.4);
         pointer-events: none;
         z-index: 1;
@@ -144,18 +144,18 @@ html, body {
         transition: color 0.3s ease, transform 0.3s ease;
     }
 
-    /* 6. TRẠNG THÁI ACTIVE (NỔI 3D & PHÁT SÁNG DẠ QUANG) */
-    .liquid-nav-item.active {
+    /* 6. TRẠNG THÁI ACTIVE CỦA CÁC TAB BÌNH THƯỜNG (PHIM MỚI, PHIM BỘ, XEM TIẾP, CÁ NHÂN) */
+    .liquid-nav-item.active:not(.center-home) {
         color: #38bdf8;
     }
 
-    .liquid-nav-item.active .liquid-nav-icon {
+    .liquid-nav-item.active:not(.center-home) .liquid-nav-icon {
         transform: translateY(-4px) scale(1.18);
         color: #38bdf8;
         filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.65)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
     }
 
-    .liquid-nav-item.active .liquid-nav-label {
+    .liquid-nav-item.active:not(.center-home) .liquid-nav-label {
         color: #f8fafc;
         transform: translateY(-2px);
     }
@@ -166,44 +166,49 @@ html, body {
         z-index: 3;
     }
 
+    /* Trạng thái BÌNH THƯỜNG (KHI KHÔNG ACTIVE) của nút Trang Chủ */
     .center-home-orb {
-        width: 50px;
-        height: 50px;
-        margin-top: -24px; /* Nhô cao lên khỏi thanh dock */
+        width: 48px;
+        height: 48px;
+        margin-top: -20px; /* Nhô cao nhẹ khỏi thanh dock */
         border-radius: 50%;
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #0f172a 100%);
-        border: 2px solid rgba(255, 255, 255, 0.35);
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+        border: 1.5px solid rgba(255, 255, 255, 0.18);
         display: flex;
         align-items: center;
         justify-content: center;
         box-shadow: 
-            0 8px 24px rgba(2, 132, 199, 0.55),
-            0 3px 8px rgba(0, 0, 0, 0.4),
-            inset 0 2px 4px rgba(255, 255, 255, 0.6);
-        transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
+            0 6px 16px rgba(0, 0, 0, 0.45),
+            inset 0 1px 2px rgba(255, 255, 255, 0.25);
+        transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
     }
 
     .center-home-orb i {
-        font-size: 1.45rem;
-        color: #ffffff;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+        font-size: 1.35rem;
+        color: #94a3b8;
+        transition: color 0.3s ease, filter 0.3s ease;
     }
 
     .liquid-nav-item.center-home .liquid-nav-label {
         margin-top: 3px;
         font-size: 0.65rem;
-        color: #cbd5e1;
+        color: #94a3b8;
     }
 
-    /* Khi nút Trang chủ Active */
+    /* Khi nút Trang chủ ĐƯỢC CHỌN (ACTIVE) -> Nổi bật 3D & Xanh dạ quang */
     .liquid-nav-item.center-home.active .center-home-orb {
         transform: translateY(-6px) scale(1.12);
         background: linear-gradient(135deg, #38bdf8 0%, #0284c7 50%, #0369a1 100%);
         border-color: rgba(255, 255, 255, 0.7);
         box-shadow: 
-            0 12px 30px rgba(56, 189, 248, 0.75),
+            0 12px 28px rgba(56, 189, 248, 0.65),
             0 4px 10px rgba(0, 0, 0, 0.5),
             inset 0 2px 6px rgba(255, 255, 255, 0.8);
+    }
+
+    .liquid-nav-item.center-home.active .center-home-orb i {
+        color: #ffffff;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
     }
 
     .liquid-nav-item.center-home.active .liquid-nav-label {

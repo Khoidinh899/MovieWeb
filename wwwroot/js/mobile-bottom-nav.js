@@ -14,33 +14,24 @@
         var navItems = navContainer.querySelectorAll('.liquid-nav-item');
         if (!dock || !pill || !navItems.length) return;
 
-        var currentPath = window.location.pathname.toLowerCase();
+        var currentPath = window.location.pathname.toLowerCase().trim();
 
         // 1. Xác định tab Active dựa vào URL hiện tại
         var activeItem = null;
 
-        navItems.forEach(function (item) {
-            var target = item.getAttribute('data-nav-target');
-            var href = item.getAttribute('href');
+        // Xóa class active cũ trên tất cả items
+        navItems.forEach(function (el) { el.classList.remove('active'); });
 
-            if (target === 'home' && (currentPath === '/' || currentPath === '/trang-chu' || currentPath === '')) {
-                activeItem = item;
-            } else if (target === 'new' && (currentPath.includes('phim-moi') || currentPath.includes('phim-le') || currentPath.includes('phim-bo'))) {
-                activeItem = item;
-            } else if (target === 'search' && (currentPath.includes('tim-kiem') || currentPath.includes('search'))) {
-                activeItem = item;
-            } else if (target === 'history' && (currentPath.includes('lich-su') || currentPath.includes('yeu-thich') || currentPath.includes('history'))) {
-                activeItem = item;
-            } else if (target === 'profile' && (currentPath.includes('tai-khoan') || currentPath.includes('profile') || currentPath.includes('user'))) {
-                activeItem = item;
-            }
-        });
-
-        // Mặc định nếu không match trang nào, nếu ở trang chủ thì chọn Home
-        if (!activeItem) {
-            if (currentPath === '/' || currentPath === '/trang-chu') {
-                activeItem = navContainer.querySelector('[data-nav-target="home"]');
-            }
+        if (currentPath === '/' || currentPath === '/trang-chu' || currentPath === '/trangchu' || currentPath === '') {
+            activeItem = navContainer.querySelector('[data-nav-target="home"]');
+        } else if (currentPath.includes('phim-bo') || currentPath.includes('/series')) {
+            activeItem = navContainer.querySelector('[data-nav-target="series"]');
+        } else if (currentPath.includes('phim-moi') || currentPath.includes('phim-le') || currentPath.includes('hoat-hinh') || currentPath.includes('/the-loai') || currentPath.includes('/quoc-gia')) {
+            activeItem = navContainer.querySelector('[data-nav-target="new"]');
+        } else if (currentPath.includes('/user/history') || currentPath.includes('/user/favorite') || currentPath.includes('lich-su')) {
+            activeItem = navContainer.querySelector('[data-nav-target="history"]');
+        } else if (currentPath.includes('/user/profile') || currentPath.includes('/user/edit') || currentPath.includes('/user/change-password') || currentPath.includes('/user/payment') || currentPath.includes('tai-khoan')) {
+            activeItem = navContainer.querySelector('[data-nav-target="profile"]');
         }
 
         // 2. Cập nhật vị trí viên thuốc kính lỏng (Liquid Pill)
@@ -68,22 +59,24 @@
             setTimeout(function () {
                 updatePillPosition(activeItem);
             }, 100);
+        } else {
+            pill.classList.remove('active');
         }
 
         // 3. Xử lý sự kiện chạm/click các tab
         navItems.forEach(function (item) {
             item.addEventListener('click', function (e) {
-                // Nếu là nút Profile mà user chưa đăng nhập, kiểm tra modal Auth
                 var target = this.getAttribute('data-nav-target');
                 var isUserLoggedIn = document.body.getAttribute('data-user-logged-in') === 'true';
 
-                if (target === 'profile' && !isUserLoggedIn) {
+                // Nếu là nút Profile hoặc History mà user chưa đăng nhập -> Mở modal Auth
+                if ((target === 'profile' || target === 'history') && !isUserLoggedIn) {
                     e.preventDefault();
                     if (window.bootstrap && document.getElementById('authModal')) {
                         var authModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('authModal'));
                         authModal.show();
                     } else {
-                        window.location.href = '/tai-khoan';
+                        window.location.href = target === 'profile' ? '/user/profile' : '/user/history';
                     }
                     return;
                 }
