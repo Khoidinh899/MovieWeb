@@ -8,3 +8,24 @@ body.user-page .navbar-custom .nav-link:hover {
     color: #ffd700 !important;
 }
 
+/* Đảm bảo Avatar luôn tròn và cố định kích thước, không bị vỡ ảnh gốc */
+.profile-avatar {
+    width: 120px !important;
+    height: 120px !important;
+    max-width: 120px !important;
+    max-height: 120px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    display: inline-block !important;
+}
+
+@media (max-width: 768px) {
+    .profile-avatar {
+        width: 100px !important;
+        height: 100px !important;
+        max-width: 100px !important;
+        max-height: 100px !important;
+    }
+}
+
+

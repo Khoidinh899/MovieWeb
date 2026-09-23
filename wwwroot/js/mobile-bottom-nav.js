@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MOONPHIM - LIQUID GLASS 3D MOBILE BOTTOM NAVIGATION & SPA TRANSITIONS
+   MOONPHIM - LIQUID GLASS 3D MOBILE BOTTOM NAVIGATION & SPA ENGINE
    ========================================================================== */
 
 (function (window, document) {
@@ -17,10 +17,37 @@
             return 'new';
         } else if (path.includes('/user/history') || path.includes('/user/favorite') || path.includes('lich-su')) {
             return 'history';
-        } else if (path.includes('/user/profile') || path.includes('/user/edit') || path.includes('/user/change-password') || path.includes('/user/payment') || path.includes('tai-khoan')) {
+        } else if (path.includes('/user/profile') || path.includes('/user/edit') || path.includes('/user/change-password') || path.includes('/user/payment') || path.includes('/user/notifications') || path.includes('tai-khoan')) {
             return 'profile';
         }
         return null;
+    }
+
+    // Cập nhật vị trí viên thuốc trượt kính lỏng (Liquid Sliding Pill)
+    function updatePillPosition(targetEl) {
+        var navContainer = document.getElementById('mobileBottomNav');
+        if (!navContainer) return;
+
+        var dock = navContainer.querySelector('.liquid-glass-dock');
+        var pill = navContainer.querySelector('.liquid-pill-indicator');
+        if (!dock || !pill) return;
+
+        if (!targetEl) {
+            pill.classList.remove('active');
+            return;
+        }
+
+        var dockRect = dock.getBoundingClientRect();
+        var itemRect = targetEl.getBoundingClientRect();
+
+        if (itemRect.width === 0) return;
+
+        var leftOffset = itemRect.left - dockRect.left;
+        var itemWidth = itemRect.width;
+
+        pill.style.width = itemWidth + 'px';
+        pill.style.transform = 'translateX(' + leftOffset + 'px)';
+        pill.classList.add('active');
     }
 
     function setActiveTab(targetName) {
@@ -28,22 +55,78 @@
         if (!navContainer) return;
 
         var navItems = navContainer.querySelectorAll('.liquid-nav-item');
+        var activeEl = null;
+
         navItems.forEach(function (el) {
             el.classList.remove('active');
         });
 
         if (targetName) {
-            var activeEl = navContainer.querySelector('[data-nav-target="' + targetName + '"]');
+            activeEl = navContainer.querySelector('[data-nav-target="' + targetName + '"]');
             if (activeEl) {
                 activeEl.classList.add('active');
             }
         }
+
+        updatePillPosition(activeEl);
     }
 
     // Tự động đồng bộ Active tab theo URL
     function syncActiveTabByCurrentUrl() {
         var target = getNavTargetForPath(window.location.pathname);
         setActiveTab(target);
+    }
+
+    // Nạp đồng bộ CSS & Script còn thiếu từ trang mới sang DOM hiện tại
+    function syncAssetsFromNewDoc(doc) {
+        // 1. Đồng bộ các thẻ <link rel="stylesheet">
+        var newLinks = doc.querySelectorAll('link[rel="stylesheet"]');
+        newLinks.forEach(function (link) {
+            var href = link.getAttribute('href');
+            if (!href) return;
+            // Chuẩn hóa so sánh URL
+            var exists = Array.prototype.some.call(document.querySelectorAll('link[rel="stylesheet"]'), function (existingLink) {
+                return existingLink.getAttribute('href') === href || existingLink.href === link.href;
+            });
+
+            if (!exists) {
+                var newLinkEl = document.createElement('link');
+                newLinkEl.rel = 'stylesheet';
+                newLinkEl.href = href;
+                document.head.appendChild(newLinkEl);
+            }
+        });
+
+        // 2. Đồng bộ các thẻ <style> nội tuyến nếu có trong head
+        var newStyles = doc.querySelectorAll('head style');
+        newStyles.forEach(function (styleEl) {
+            var cssText = styleEl.textContent.trim();
+            if (!cssText) return;
+            var styleExists = Array.prototype.some.call(document.querySelectorAll('head style'), function (existingStyle) {
+                return existingStyle.textContent.trim() === cssText;
+            });
+            if (!styleExists) {
+                var newStyle = document.createElement('style');
+                newStyle.textContent = cssText;
+                document.head.appendChild(newStyle);
+            }
+        });
+
+        // 3. Nạp các file script đặc thù của trang (như user-history.js, user-favorite.js, profile.js)
+        var newScripts = doc.querySelectorAll('script[src]');
+        newScripts.forEach(function (script) {
+            var src = script.getAttribute('src');
+            if (!src) return;
+            var scriptExists = Array.prototype.some.call(document.querySelectorAll('script[src]'), function (existingScript) {
+                return existingScript.getAttribute('src') === src || existingScript.src === script.src;
+            });
+
+            if (!scriptExists) {
+                var newScriptEl = document.createElement('script');
+                newScriptEl.src = src;
+                document.body.appendChild(newScriptEl);
+            }
+        });
     }
 
     // Khởi tạo SPA Transition cho Mobile Navigation
@@ -57,7 +140,7 @@
             return;
         }
 
-        // 1. Kích hoạt hiệu ứng mờ dần (Fade out)
+        // 1. Kích hoạt hiệu ứng mờ dần (Fade out) & Di chuyển viên thuốc + Orb lập tức
         mainElement.classList.add('page-fading');
         setActiveTab(targetTab);
 
@@ -89,14 +172,13 @@
                 document.title = newTitle.textContent;
             }
 
-            // Đổi body class nếu có (ví dụ home-page)
-            if (doc.body.classList.contains('home-page')) {
-                document.body.classList.add('home-page');
-            } else {
-                document.body.classList.remove('home-page');
-            }
+            // Đồng bộ class body
+            document.body.className = doc.body.className;
 
-            // Đợi CSS transition kết thúc một nhịp ngắn
+            // Đồng bộ CSS & Script của trang mới vào DOM
+            syncAssetsFromNewDoc(doc);
+
+            // Đợi CSS fade-out kết thúc một nhịp ngắn (150ms)
             setTimeout(function () {
                 mainElement.innerHTML = newMain.innerHTML;
                 window.history.pushState({ path: url, targetTab: targetTab }, '', url);
@@ -108,7 +190,7 @@
                 // Fade in lại
                 mainElement.classList.remove('page-fading');
                 isNavigating = false;
-            }, 160);
+            }, 150);
         })
         .catch(function (err) {
             console.warn('SPA Navigation fallback to normal load:', err);
@@ -136,7 +218,7 @@
             initFilterSidebar();
         }
 
-        // 4. Lazy Images & Tooltips
+        // 4. Tooltips & Bootstrap components
         if (window.bootstrap && window.bootstrap.Tooltip) {
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -152,8 +234,8 @@
         var navItems = navContainer.querySelectorAll('.liquid-nav-item');
         if (!navItems.length) return;
 
-        // Đồng bộ tab active ban đầu
-        syncActiveTabByCurrentUrl();
+        // Đồng bộ tab active ban đầu & viên thuốc
+        setTimeout(syncActiveTabByCurrentUrl, 80);
 
         // Xử lý Click / Touch
         navItems.forEach(function (item) {
@@ -197,6 +279,14 @@
                 executeSpaNavigation(e.state.path, e.state.targetTab || getNavTargetForPath(e.state.path));
             } else {
                 window.location.reload();
+            }
+        });
+
+        // Lắng nghe thay đổi kích thước / xoay màn hình để tính lại vị trí viên thuốc
+        window.addEventListener('resize', function () {
+            var activeEl = navContainer.querySelector('.liquid-nav-item.active');
+            if (activeEl) {
+                updatePillPosition(activeEl);
             }
         });
 
