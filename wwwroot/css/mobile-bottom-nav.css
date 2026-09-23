@@ -2,10 +2,19 @@
    MOONPHIM - LIQUID GLASS 3D MOBILE BOTTOM NAVIGATION
    ========================================================================== */
 
-/* 1. KHÓA RUNG LẮC TRƯỢT NGANG TRÊN TOÀN BỘ WEB/APP */
+/* 1. KHÓA RUNG LẮC TRƯỢT NGANG & HIỆU ỨNG SPA CHUYỂN TRANG */
 html, body {
     overscroll-behavior-x: none;
     -webkit-tap-highlight-color: transparent;
+}
+
+main[role="main"] {
+    transition: opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1), transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+main[role="main"].page-fading {
+    opacity: 0;
+    transform: translateY(8px);
 }
 
 /* 2. CHỈ KÍCH HOẠT TRÊN THIẾT BỊ DI ĐỘNG & TABLET (<= 768px) */
@@ -17,17 +26,17 @@ html, body {
 }
 
 @media (max-width: 768px) {
-    /* Đẩy nội dung trang lên trên một khoảng an toàn để không bị che bởi Bottom Nav */
+    /* Đẩy nội dung trang lên trên một khoảng an toàn */
     body {
-        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
     }
 
     /* Đẩy vị trí In-Page Push của Monetag, Chatbot & Toast lên trên thanh điều hướng */
     iframe[style*="fixed"],
     iframe[style*="position: fixed"],
     iframe[style*="position:fixed"],
-    body > div[style*="fixed"]:not(#header):not(.navbar):not(.modal):not(#homeAdModal):not(#mobileBottomNav):not(#iosInstallPrompt):not(#filterSidebar),
-    body > div[style*="position: fixed"]:not(#header):not(.navbar):not(.modal):not(#homeAdModal):not(#mobileBottomNav):not(#iosInstallPrompt):not(#filterSidebar),
+    body > div[style*="fixed"]:not(#header):not(.navbar):not(.modal):not(#homeAdModal):not(#mobileBottomNav):not(#iosInstallPrompt):not(#filterSidebar):not(.moon-dialog-overlay),
+    body > div[style*="position: fixed"]:not(#header):not(.navbar):not(.modal):not(#homeAdModal):not(#mobileBottomNav):not(#iosInstallPrompt):not(#filterSidebar):not(.moon-dialog-overlay),
     [class*="in-page-push"],
     [id*="ipp-container"],
     .chatbot-toggle-btn,
@@ -45,7 +54,7 @@ html, body {
         max-width: 480px;
         height: 64px;
         z-index: 2147483640;
-        pointer-events: none; /* Chỉ cho phép click vào các nút bên trong */
+        pointer-events: none;
         transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
     }
 
@@ -64,50 +73,27 @@ html, body {
         display: flex;
         align-items: center;
         justify-content: space-around;
-        padding: 0 6px;
+        padding: 0 4px;
         border-radius: 36px;
         pointer-events: auto;
 
         /* Hiệu ứng Kính lỏng Liquid Glass đa tầng */
-        background: rgba(15, 23, 42, 0.82);
+        background: rgba(15, 23, 42, 0.85);
         backdrop-filter: blur(28px) saturate(200%);
         -webkit-backdrop-filter: blur(28px) saturate(200%);
         
         /* Viền ánh sáng vi tinh thể (Specular Glow Border) */
         border: 1px solid rgba(255, 255, 255, 0.16);
         box-shadow: 
-            0 12px 32px -4px rgba(0, 0, 0, 0.65),
+            0 14px 36px -4px rgba(0, 0, 0, 0.7),
             0 4px 12px rgba(0, 0, 0, 0.4),
             inset 0 1px 1px 0 rgba(255, 255, 255, 0.3),
             inset 0 -1px 2px 0 rgba(0, 0, 0, 0.4);
     }
 
-    /* 4. VIÊN THUỐC KÍNH LỎNG TRƯỢT ĐÀN HỒI (LIQUID SLIDING PILL) */
-    .liquid-pill-indicator {
-        position: absolute;
-        top: 6px;
-        left: 0;
-        height: calc(100% - 12px);
-        border-radius: 28px;
-        background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(2, 132, 199, 0.08));
-        border: 1px solid rgba(56, 189, 248, 0.35);
-        box-shadow: 
-            0 4px 15px rgba(56, 189, 248, 0.2),
-            inset 0 1px 2px rgba(255, 255, 255, 0.4);
-        pointer-events: none;
-        z-index: 1;
-        transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.35s ease;
-        opacity: 0;
-    }
-
-    .liquid-pill-indicator.active {
-        opacity: 1;
-    }
-
-    /* 5. CÁC NÚT ĐIỀU HƯỚNG (NAV ITEMS) */
+    /* 4. CÁC NÚT ĐIỀU HƯỚNG (NAV ITEMS) */
     .liquid-nav-item {
         position: relative;
-        z-index: 2;
         flex: 1;
         height: 100%;
         display: flex;
@@ -116,107 +102,72 @@ html, body {
         justify-content: center;
         text-decoration: none !important;
         color: #94a3b8;
-        padding: 4px 0;
-        transition: color 0.3s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        padding: 2px 0;
         user-select: none;
         -webkit-user-select: none;
+        transition: color 0.35s ease;
     }
 
     .liquid-nav-item:active {
         transform: scale(0.92);
     }
 
-    .liquid-nav-icon {
-        font-size: 1.28rem;
-        height: 26px;
+    /* 5. QUẢ CẦU KÍNH 3D BIẾN HÌNH (LIQUID ORB) */
+    .liquid-nav-orb {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease, filter 0.3s ease;
+        margin-top: 0;
+        background: transparent;
+        border: 1px solid transparent;
+        color: #94a3b8;
+        font-size: 1.25rem;
+        transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .liquid-nav-orb i {
+        display: inline-block;
+        transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.35s ease, filter 0.35s ease;
     }
 
     .liquid-nav-label {
         font-size: 0.68rem;
         font-weight: 600;
         letter-spacing: 0.2px;
-        margin-top: 2px;
+        margin-top: 3px;
         line-height: 1;
-        transition: color 0.3s ease, transform 0.3s ease;
+        color: #94a3b8;
+        transition: all 0.35s ease;
     }
 
-    /* 6. TRẠNG THÁI ACTIVE CỦA CÁC TAB BÌNH THƯỜNG (PHIM MỚI, PHIM BỘ, XEM TIẾP, CÁ NHÂN) */
-    .liquid-nav-item.active:not(.center-home) {
-        color: #38bdf8;
-    }
-
-    .liquid-nav-item.active:not(.center-home) .liquid-nav-icon {
-        transform: translateY(-4px) scale(1.18);
-        color: #38bdf8;
-        filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.65)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
-    }
-
-    .liquid-nav-item.active:not(.center-home) .liquid-nav-label {
-        color: #f8fafc;
-        transform: translateY(-2px);
-    }
-
-    /* 7. NÚT TRANG CHỦ (TRUNG TÂM - 3D FLOATING ACTION ORB) */
-    .liquid-nav-item.center-home {
-        position: relative;
-        z-index: 3;
-    }
-
-    /* Trạng thái BÌNH THƯỜNG (KHI KHÔNG ACTIVE) của nút Trang Chủ */
-    .center-home-orb {
+    /* 6. KHI BẤT KỲ TAB NÀO ĐƯỢC CHỌN (ACTIVE) -> QUẢ CẦU 3D DI ĐỘNG NỔI LÊN (+1 +2) */
+    .liquid-nav-item.active .liquid-nav-orb {
         width: 48px;
         height: 48px;
-        margin-top: -20px; /* Nhô cao nhẹ khỏi thanh dock */
-        border-radius: 50%;
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
-        border: 1.5px solid rgba(255, 255, 255, 0.18);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 
-            0 6px 16px rgba(0, 0, 0, 0.45),
-            inset 0 1px 2px rgba(255, 255, 255, 0.25);
-        transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
-    }
-
-    .center-home-orb i {
-        font-size: 1.35rem;
-        color: #94a3b8;
-        transition: color 0.3s ease, filter 0.3s ease;
-    }
-
-    .liquid-nav-item.center-home .liquid-nav-label {
-        margin-top: 3px;
-        font-size: 0.65rem;
-        color: #94a3b8;
-    }
-
-    /* Khi nút Trang chủ ĐƯỢC CHỌN (ACTIVE) -> Nổi bật 3D & Xanh dạ quang */
-    .liquid-nav-item.center-home.active .center-home-orb {
-        transform: translateY(-6px) scale(1.12);
+        margin-top: -24px; /* Nhô cao 3D khỏi thanh dock */
         background: linear-gradient(135deg, #38bdf8 0%, #0284c7 50%, #0369a1 100%);
-        border-color: rgba(255, 255, 255, 0.7);
+        border: 2px solid rgba(255, 255, 255, 0.7);
+        color: #ffffff;
         box-shadow: 
             0 12px 28px rgba(56, 189, 248, 0.65),
             0 4px 10px rgba(0, 0, 0, 0.5),
             inset 0 2px 6px rgba(255, 255, 255, 0.8);
+        transform: translateY(-4px) scale(1.08);
     }
 
-    .liquid-nav-item.center-home.active .center-home-orb i {
+    .liquid-nav-item.active .liquid-nav-orb i {
         color: #ffffff;
+        font-size: 1.35rem;
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+        transform: scale(1.05);
     }
 
-    .liquid-nav-item.center-home.active .liquid-nav-label {
+    .liquid-nav-item.active .liquid-nav-label {
         color: #38bdf8;
         font-weight: 700;
-    }
-
-    .liquid-nav-item.center-home:active .center-home-orb {
-        transform: scale(0.92);
+        transform: translateY(-2px);
     }
 }

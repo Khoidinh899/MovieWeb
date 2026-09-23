@@ -38,7 +38,15 @@ function attachRemoveHistoryHandlers() {
                 return;
             }
 
-            if (!confirm('Bạn có chắc muốn xóa phim này khỏi lịch sử xem?')) {
+            const isConfirmed = window.MoonDialog ? await window.MoonDialog.confirm({
+                title: 'Xóa lịch sử xem',
+                message: 'Bạn có chắc muốn xóa phim này khỏi lịch sử xem?',
+                confirmText: 'Xóa ngay',
+                cancelText: 'Hủy',
+                type: 'danger'
+            }) : confirm('Bạn có chắc muốn xóa phim này khỏi lịch sử xem?');
+
+            if (!isConfirmed) {
                 return;
             }
 
@@ -96,7 +104,15 @@ function attachClearAllHandler() {
         clearAllBtn.addEventListener('click', async function (e) {
             e.preventDefault();
 
-            if (!confirm('Bạn có chắc muốn xóa toàn bộ lịch sử xem?')) {
+            const isConfirmed = window.MoonDialog ? await window.MoonDialog.confirm({
+                title: 'Xóa toàn bộ lịch sử',
+                message: 'Bạn có chắc chắn muốn xóa toàn bộ lịch sử xem không?\nHành động này không thể hoàn tác.',
+                confirmText: 'Xóa tất cả',
+                cancelText: 'Hủy',
+                type: 'danger'
+            }) : confirm('Bạn có chắc muốn xóa toàn bộ lịch sử xem?');
+
+            if (!isConfirmed) {
                 return;
             }
 

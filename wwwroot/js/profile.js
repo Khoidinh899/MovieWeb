@@ -463,9 +463,17 @@ function showModalMessage(message, type) {
     }
 }
 
-// Open renew modal (GiVới nguyên)
-function openRenewModal() {
-    if (confirm('Bạn muốn gia hạn xác thực email sinh viên?')) {
+// Open renew modal
+async function openRenewModal() {
+    const isConfirmed = window.MoonDialog ? await window.MoonDialog.confirm({
+        title: 'Gia hạn sinh viên',
+        message: 'Bạn muốn gia hạn xác thực email sinh viên?',
+        confirmText: 'Gia hạn ngay',
+        cancelText: 'Hủy',
+        type: 'primary'
+    }) : confirm('Bạn muốn gia hạn xác thực email sinh viên?');
+
+    if (isConfirmed) {
         openVerificationModal();
     }
 }

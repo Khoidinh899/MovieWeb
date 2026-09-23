@@ -115,7 +115,11 @@ document.addEventListener('DOMContentLoaded', function () {
             // console.log('🎬 Bấm nút "Trailer"');
 
             if (!trailerUrl || trailerUrl.trim() === "") {
-                alert('Phim này chưa có trailer!');
+                if (window.MoonDialog) {
+                    window.MoonDialog.alert({ title: 'Thông báo', message: 'Phim này chưa có trailer!', type: 'info' });
+                } else {
+                    alert('Phim này chưa có trailer!');
+                }
                 return;
             }
 
@@ -139,7 +143,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (!videoId) {
-            alert('Link trailer không hợp lệ!');
+            if (window.MoonDialog) {
+                window.MoonDialog.alert({ title: 'Thông báo', message: 'Link trailer không hợp lệ!', type: 'warning' });
+            } else {
+                alert('Link trailer không hợp lệ!');
+            }
             return;
         }
 
@@ -340,7 +348,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             videoPlayer.play();
         } else {
-            alert('Trình duyệt không hỗ trợ phát video .m3u8!');
+            if (window.MoonDialog) {
+                window.MoonDialog.alert({ title: 'Lỗi phát video', message: 'Trình duyệt không hỗ trợ phát video .m3u8!', type: 'danger' });
+            } else {
+                alert('Trình duyệt không hỗ trợ phát video .m3u8!');
+            }
         }
     }
 
@@ -447,7 +459,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     await attemptToPlayEpisode(nextEpisode.index, nextEpisode.src);
                 } else {
                     // console.log('🎬 Đã hết phim');
-                    alert('Đã hết tập phim!');
+                    if (window.MoonDialog) {
+                        window.MoonDialog.alert({ title: 'Thông báo', message: 'Đã hết tập phim!', type: 'info' });
+                    } else {
+                        alert('Đã hết tập phim!');
+                    }
                 }
             });
 

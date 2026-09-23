@@ -83,9 +83,17 @@
             }, 3000);
         });
 
-        signalRConnection.on("ForceLogout", function (message) {
+        signalRConnection.on("ForceLogout", async function (message) {
             console.warn("Bạn đã bị buộc đăng xuất:", message);
-            alert(message || "Tài khoản của bạn đã bị khóa hoặc thay đổi quyền. Vui lòng đăng nhập lại.");
+            if (window.MoonDialog) {
+                await window.MoonDialog.alert({
+                    title: 'Đăng xuất',
+                    message: message || "Tài khoản của bạn đã bị khóa hoặc thay đổi quyền. Vui lòng đăng nhập lại.",
+                    type: 'danger'
+                });
+            } else {
+                alert(message || "Tài khoản của bạn đã bị khóa hoặc thay đổi quyền. Vui lòng đăng nhập lại.");
+            }
 
             const form = document.createElement('form');
             form.method = 'POST';
@@ -435,8 +443,16 @@
             .catch(error => console.error('❌ Error marking as read:', error));
     }
 
-    function markAllAsRead() {
-        if (!confirm(`Đánh dấu tất cả thông báo '${currentTab}' là đã đọc?`)) return;
+    async function markAllAsRead() {
+        const isConfirmed = window.MoonDialog ? await window.MoonDialog.confirm({
+            title: 'Đánh dấu đã đọc',
+            message: `Đánh dấu tất cả thông báo '${currentTab}' là đã đọc?`,
+            confirmText: 'Đồng ý',
+            cancelText: 'Hủy',
+            type: 'primary'
+        }) : confirm(`Đánh dấu tất cả thông báo '${currentTab}' là đã đọc?`);
+
+        if (!isConfirmed) return;
 
         fetch(`/api/notifications/mark-all-read?type=${currentTab}`, { method: 'POST' })
             .then(response => response.json())
@@ -570,7 +586,15 @@
     };
 
     window.markAllAsReadPage = async function (type) {
-        if (!confirm('Đánh dấu tất cả thông báo đã đọc?')) return;
+        const isConfirmed = window.MoonDialog ? await window.MoonDialog.confirm({
+            title: 'Đánh dấu đã đọc',
+            message: 'Đánh dấu tất cả thông báo đã đọc?',
+            confirmText: 'Đồng ý',
+            cancelText: 'Hủy',
+            type: 'primary'
+        }) : confirm('Đánh dấu tất cả thông báo đã đọc?');
+
+        if (!isConfirmed) return;
 
         try {
             const token = document.getElementById('RequestVerificationToken')?.value;

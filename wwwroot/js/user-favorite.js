@@ -21,12 +21,15 @@ function attachRemoveFavoriteHandlers() {
             const movieId = this.dataset.movieId;
             const movieCard = this.closest('.col-md-4, .col-sm-6');
 
-            if (!movieId) {
-                console.error('❌ Movie ID not found');
-                return;
-            }
+            const isConfirmed = window.MoonDialog ? await window.MoonDialog.confirm({
+                title: 'Xóa phim yêu thích',
+                message: 'Bạn có chắc muốn xóa phim này khỏi danh sách yêu thích?',
+                confirmText: 'Xóa ngay',
+                cancelText: 'Hủy',
+                type: 'danger'
+            }) : confirm('Bạn có chắc muốn xóa phim này khỏi danh sách yêu thích?');
 
-            if (!confirm('Bạn có chắc muốn xóa phim này khỏi danh sách yêu thích?')) {
+            if (!isConfirmed) {
                 return;
             }
 
