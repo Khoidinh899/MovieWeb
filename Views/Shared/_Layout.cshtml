@@ -165,21 +165,9 @@
 
 <script src="~/js/search.js" asp-append-version="true"></script>
 
-    <!-- Monetag In-Page Push & Vignette (Chạy sau khi toàn bộ trang dựng xong qua Idle Callback) -->
+    <!-- Monetag In-Page Push & Vignette (Chạy trên cả Web và App qua Idle Callback) -->
     <script>
-        window.addEventListener('load', function () {
-            // Kiểm tra môi trường App (APK / iOS WebApp / Standalone)
-            var isAppOrWebView = (window.navigator.standalone === true) || 
-                                 window.matchMedia('(display-mode: standalone)').matches || 
-                                 window.matchMedia('(display-mode: fullscreen)').matches ||
-                                 navigator.userAgent.indexOf('MoonPhim') !== -1 ||
-                                 navigator.userAgent.indexOf('wv') !== -1 ||
-                                 (navigator.userAgent.indexOf('Android') !== -1 && navigator.userAgent.indexOf('Version/') !== -1) ||
-                                 (/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/i.test(navigator.userAgent));
-            if (isAppOrWebView) {
-                return; // Không chạy quảng cáo ngoài luồng trong App
-            }
-
+        (function () {
             var loadMonetag = function () {
                 // Nạp In-Page Push (Zone 11708841)
                 var ipp = document.createElement('script');
@@ -194,12 +182,18 @@
                 document.body.appendChild(vig);
             };
 
-            if ('requestIdleCallback' in window) {
-                requestIdleCallback(loadMonetag, { timeout: 1200 });
+            if (document.readyState === 'complete') {
+                setTimeout(loadMonetag, 800);
             } else {
-                setTimeout(loadMonetag, 600);
+                window.addEventListener('load', function () {
+                    if ('requestIdleCallback' in window) {
+                        requestIdleCallback(loadMonetag, { timeout: 1500 });
+                    } else {
+                        setTimeout(loadMonetag, 800);
+                    }
+                });
             }
-        });
+        })();
     </script>
 
     @if (!hasSeenPopunder)

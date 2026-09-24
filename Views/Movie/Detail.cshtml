@@ -629,26 +629,10 @@
                 });
             }
 
-            // Server tab switching listener
-            document.querySelectorAll('.server-tab').forEach(tab => {
-                tab.addEventListener('click', function () {
-                    const server = this.dataset.server;
-                    document.querySelectorAll('.server-tab').forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-
-                    document.querySelectorAll('.episode-group').forEach(group => {
-                        if (group.dataset.server === server) {
-                            group.style.display = 'block';
-                        } else {
-                            group.style.display = 'none';
-                        }
-                    });
-
-                    if (window.watchProgressTracker) {
-                        window.watchProgressTracker.serverName = server;
-                    }
-                });
-            });
+            // Kích hoạt Player & Episode Handler
+            if (typeof window.initVideoPlayerHandler === 'function') {
+                window.initVideoPlayerHandler();
+            }
 
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
