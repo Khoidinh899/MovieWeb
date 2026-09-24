@@ -272,6 +272,7 @@
                     allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope">
             </iframe>
 
+            @* Mock Ad Modal (Đã vô hiệu hóa để dùng 100% Monetag)
             <div id="ad-modal" class="ad-modal-overlay" style="display: none;">
                 <div class="ad-modal-container">
                     <div id="ad-modal-video-content"></div>
@@ -287,6 +288,7 @@
                     </div>
                 </div>
             </div>
+            *@
 
             <button id="nextEpisodeButton" class="next-episode-btn" style="display: none;">
                 Tập tiếp theo <i class="bi bi-chevron-right"></i>
@@ -294,12 +296,14 @@
         </div>
     </div>
 
+    @* Mock Banner Slot (Đã vô hiệu hóa để dùng 100% Monetag)
     <div id="watchpage-banner-slot" class="container" style="margin-top: 20px;">
         @{
             ViewBag.AdPlacement = "WatchPage_Banner";
         }
         @await Html.PartialAsync("Partial/_Advertisement", advertisements)
     </div>
+    *@
 
     @if (shouldShowEpisodeList)
     {

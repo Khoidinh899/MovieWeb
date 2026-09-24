@@ -1,39 +1,33 @@
-// ============================================
-// VIDEO ADS & PLAYBACK HANDLER (VSMOV EMBED & DIRECT HLS)
-// ============================================
+// =========================================================================
+// MOONPHIM - VIDEO PLAYER & EPISODE HANDLER (VSMOV EMBED & DIRECT HLS)
+// 100% Direct Playback, No Mock Ads Latency (Sole Ad Provider: Monetag)
+// =========================================================================
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    // === 1. LẤY CÁC PHẦN TỬ DOM ===
+    // === 1. DOM ELEMENTS ===
     const videoPlayer = document.getElementById('moviePlayer');
     const embedPlayer = document.getElementById('embedPlayer');
     const videoContainer = document.getElementById('videoContainer');
     const nextEpisodeButton = document.getElementById('nextEpisodeButton');
-    const episodeButtons = document.querySelectorAll('.episode-list-item');
     const watchBtn = document.getElementById('watchBtn');
     const trailerBtn = document.getElementById('trailerBtn');
     const heroButtons = document.getElementById('heroButtons');
+    const serverTabs = document.querySelectorAll('.server-tab');
+    const episodeGroups = document.querySelectorAll('.episode-group');
 
-    const adModal = document.getElementById('ad-modal');
-    const adModalContent = document.getElementById('ad-modal-video-content');
-    const adSkipButton = document.getElementById('ad-skip-button');
-    const adCountdownTimer = document.getElementById('ad-countdown-timer');
-    const skipCountdownSpan = document.getElementById('skip-countdown');
-
-    // === 2. LẤY TRẠNG THÁI TỪ BACKEND ===
-    const shouldShowAds = window.shouldShowAds ?? true;
+    // === 2. BACKEND CONFIG ===
     const isSeriesType = window.isSeriesType ?? false;
     const trailerUrl = window.trailerUrl ?? "";
     const movieMainUrl = window.movieMainUrl ?? "";
     const episode1Url = window.episode1Url ?? "";
 
-    // Biến theo dõi
+    // State Variables
     let currentEpisodeIndex = -1;
-    let hasPlayedClimaxAd = false;
     let currentHls = null;
     let allEpisodes = [];
-    let lastTimeUpdate = 0;
 
+    // Helper: Detect Embed/Iframe URLs
     function isEmbedUrl(url) {
         if (!url) return false;
         const lower = url.toLowerCase();
@@ -42,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return !lower.includes('.m3u8');
     }
 
+    // Helper: Build Embed URL with timestamp
     function buildEmbedUrl(url, startTime) {
         if (!url) return '';
         let target = url.trim();
@@ -54,20 +49,21 @@ document.addEventListener('DOMContentLoaded', function () {
         return target;
     }
 
-    // === 3. KHỞI TẠO ===
+    // === 3. INITIALIZATION ===
     function init() {
         buildEpisodeList();
+        attachServerTabListeners();
         attachEpisodeListeners();
         attachWatchButtonListener();
         attachTrailerButtonListener();
         attachKeyboardListeners();
         attachVideoPlayerListeners();
-        loadBannerAds();
     }
 
-    // === 4. BUILD DANH SÁCH TẬP PHIM ===
+    // === 4. BUILD EPISODE LIST ===
     function buildEpisodeList() {
         const tempEpisodes = [];
+        const episodeButtons = document.querySelectorAll('.episode-list-item');
 
         episodeButtons.forEach((btn) => {
             const episodeSrc = btn.getAttribute('data-url');
@@ -92,13 +88,41 @@ document.addEventListener('DOMContentLoaded', function () {
         allEpisodes = tempEpisodes;
     }
 
-    // === 5. GẮN SỰ KIỆN CHO NÚT "XEM PHIM" ===
+    // === 5. SERVER TAB SWITCHING ===
+    function attachServerTabListeners() {
+        serverTabs.forEach(tab => {
+            tab.addEventListener('click', function (e) {
+                e.preventDefault();
+                const serverKey = this.dataset.server;
+
+                serverTabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                episodeGroups.forEach(group => {
+                    if (group.dataset.server === serverKey) {
+                        group.style.display = 'block';
+                    } else {
+                        group.style.display = 'none';
+                    }
+                });
+
+                if (window.watchProgressTracker) {
+                    window.watchProgressTracker.serverName = serverKey;
+                }
+            });
+        });
+    }
+
+    // === 6. WATCH BUTTON (XEM PHIM) ===
     function attachWatchButtonListener() {
         if (!watchBtn) return;
 
-        watchBtn.addEventListener('click', async (e) => {
+        watchBtn.addEventListener('click', function (e) {
             e.preventDefault();
-            const firstEp = document.querySelector('.episode-list-item');
+            // Ưu tiên tập 1 của server đang active
+            const activeGroup = document.querySelector('.episode-group[style*="display: block"]') || document.querySelector('.episode-group');
+            const firstEp = activeGroup ? activeGroup.querySelector('.episode-list-item') : document.querySelector('.episode-list-item');
+            
             if (firstEp && firstEp.dataset.url) {
                 firstEp.click();
                 return;
@@ -107,21 +131,20 @@ document.addEventListener('DOMContentLoaded', function () {
             const source = episode1Url || movieMainUrl || (allEpisodes.length > 0 ? allEpisodes[0].src : null);
             if (source) {
                 if (heroButtons) heroButtons.style.display = 'none';
-                videoContainer.style.display = 'block';
-                await playMovieDirectly(source);
+                loadVideo(source);
             } else {
                 if (typeof showNotification === 'function') {
-                    showNotification("Không tìm thấy nguồn phim!", "warning");
+                    showNotification("Không tìm thấy nguồn phát phim!", "warning");
                 }
             }
         });
     }
 
-    // === 6. GẮN SỰ KIỆN CHO NÚT "TRAILER" ===
+    // === 7. TRAILER BUTTON ===
     function attachTrailerButtonListener() {
         if (!trailerBtn || trailerBtn.disabled) return;
 
-        trailerBtn.addEventListener('click', (e) => {
+        trailerBtn.addEventListener('click', function (e) {
             e.preventDefault();
             if (!trailerUrl || trailerUrl.trim() === "") {
                 if (window.MoonDialog) {
@@ -136,9 +159,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // === 7. PHÁT YOUTUBE TRAILER (EMBED) ===
+    // Play YouTube Trailer
     function playYouTubeTrailer(url) {
-        videoContainer.style.display = 'block';
+        if (videoContainer) videoContainer.style.display = 'block';
 
         let videoId = '';
         if (url.includes('watch?v=')) {
@@ -187,10 +210,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // === 8. GẮN SỰ KIỆN CHO CÁC NÚT TẬP ===
+    // === 8. EPISODE BUTTONS LISTENER (DIRECT & INSTANT) ===
     function attachEpisodeListeners() {
         allEpisodes.forEach(episode => {
-            episode.button.addEventListener('click', async (e) => {
+            episode.button.addEventListener('click', function (e) {
                 e.preventDefault();
 
                 document.querySelectorAll('.episode-list-item').forEach(el => el.classList.remove('active'));
@@ -212,74 +235,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
 
-                await attemptToPlayEpisode(episode.index, episode.src);
+                currentEpisodeIndex = episode.index;
+                if (videoPlayer) videoPlayer.dataset.currentEpisodeIndex = episode.index;
+                if (nextEpisodeButton) nextEpisodeButton.style.display = 'none';
+
+                // Phát trực tiếp ngay lập tức (Không chờ mock ads)
+                loadVideo(episode.src);
             });
         });
     }
 
-    // === 9. HÀM PHÁT PHIM LẺ ===
-    async function playMovieDirectly(src) {
-        if (shouldShowAds) {
-            try {
-                const response = await fetch('/api/ads/get-placements?placements=PreRoll');
-                if (response.ok) {
-                    const ads = await response.json();
-                    if (ads && ads.length > 0) {
-                        await showAdModal(ads[0]);
-                    }
-                }
-            } catch (error) {
-                console.error('❌ Lỗi API quảng cáo:', error);
-            }
-        }
-
-        loadVideo(src);
-    }
-
-    // === 10. HÀM MASTER: KIỂM TRA & PHÁT VIDEO ===
-    async function attemptToPlayEpisode(index, src) {
-        if (videoPlayer) videoPlayer.pause();
-        if (nextEpisodeButton) nextEpisodeButton.style.display = 'none';
-
-        if (!shouldShowAds) {
-            loadAndPlayEpisode(index, src);
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/ads/get-placements?placements=PreRoll');
-            if (response.ok) {
-                const ads = await response.json();
-                if (ads && ads.length > 0) {
-                    if (document.fullscreenElement) {
-                        await document.exitFullscreen();
-                    }
-                    await showAdModal(ads[0]);
-                }
-            }
-        } catch (error) {
-            console.error('❌ Lỗi API quảng cáo:', error);
-        }
-
-        loadAndPlayEpisode(index, src);
-    }
-
-    // === 11. TẢI & PHÁT TẬP PHIM ===
-    function loadAndPlayEpisode(index, src) {
-        currentEpisodeIndex = index;
-        if (videoPlayer) videoPlayer.dataset.currentEpisodeIndex = index;
-        hasPlayedClimaxAd = false;
-        lastTimeUpdate = 0;
-
-        videoContainer.style.display = 'block';
-        updateActiveBadge(index);
-
-        if (nextEpisodeButton) nextEpisodeButton.style.display = 'none';
-
-        loadVideo(src);
-    }
-
-    // === 12. LOAD VIDEO (HỖ TRỢ CẢ EMBED IFRAME VÀ DIRECT HLS) ===
+    // === 9. LOAD & PLAY VIDEO (VSMOV EMBED & DIRECT HLS) ===
     function loadVideo(src, startTime = 0) {
         if (!src || !src.trim()) {
             if (typeof showNotification === 'function') {
@@ -294,10 +260,10 @@ document.addEventListener('DOMContentLoaded', function () {
             window.thoiGianXemTiep = 0;
         }
 
-        videoContainer.style.display = 'block';
+        if (videoContainer) videoContainer.style.display = 'block';
 
         if (isEmbedUrl(src)) {
-            // === CHẾ ĐỘ EMBED (IFRAME) ===
+            // === CHẾ ĐỘ EMBED (IFRAME VSMOV) ===
             if (currentHls) {
                 currentHls.destroy();
                 currentHls = null;
@@ -334,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     currentHls = null;
                 }
 
-                if (Hls.isSupported()) {
+                if (Hls && Hls.isSupported()) {
                     const hls = new Hls({
                         maxBufferLength: 30,
                         maxMaxBufferLength: 60
@@ -359,10 +325,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     videoPlayer.src = src;
                     if (startTime > 0) videoPlayer.currentTime = startTime;
                     videoPlayer.play().catch(() => {});
-                } else {
-                    if (window.MoonDialog) {
-                        window.MoonDialog.alert({ title: 'Lỗi phát video', message: 'Trình duyệt không hỗ trợ phát video định dạng này!', type: 'danger' });
-                    }
                 }
             }
 
@@ -374,107 +336,37 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Expose global method
     window.playVideo = loadVideo;
 
-    // === 13. HIỂN THỊ MODAL QUẢNG CÁO ===
-    function showAdModal(ad) {
-        return new Promise((resolve) => {
-            window.dangXemQuangCao = true;
-
-            if (!adModal || !adModalContent) {
-                window.dangXemQuangCao = false;
-                resolve();
-                return;
-            }
-
-            adModal.style.display = 'flex';
-            adModalContent.innerHTML = '';
-
-            if (ad.adContentUrl && (ad.adContentUrl.endsWith('.mp4') || ad.adContentUrl.endsWith('.webm'))) {
-                const video = document.createElement('video');
-                video.src = ad.adContentUrl;
-                video.autoplay = true;
-                video.muted = true;
-                video.style.width = '100%';
-                video.style.height = '100%';
-                video.style.objectFit = 'contain';
-                adModalContent.appendChild(video);
-            } else if (ad.adContentUrl) {
-                const img = document.createElement('img');
-                img.src = ad.adContentUrl;
-                img.style.width = '100%';
-                img.style.height = '100%';
-                img.style.objectFit = 'contain';
-                adModalContent.appendChild(img);
-            }
-
-            let countdown = 5;
-            if (adSkipButton) {
-                adSkipButton.disabled = true;
-                adSkipButton.innerHTML = `Bỏ qua (<span id="skip-countdown">${countdown}</span>)`;
-            }
-
-            const timer = setInterval(() => {
-                countdown--;
-                if (adCountdownTimer) adCountdownTimer.textContent = countdown;
-
-                const currentSkipSpan = adSkipButton?.querySelector('#skip-countdown');
-                if (currentSkipSpan) currentSkipSpan.textContent = countdown;
-
-                if (countdown <= 0) {
-                    clearInterval(timer);
-                    if (adSkipButton) {
-                        adSkipButton.disabled = false;
-                        adSkipButton.innerHTML = '<i class="fas fa-forward"></i> Bỏ qua';
-                    }
-                }
-            }, 1000);
-
-            if (adSkipButton) {
-                adSkipButton.onclick = () => {
-                    if (countdown <= 0) {
-                        adModal.style.display = 'none';
-                        clearInterval(timer);
-                        window.dangXemQuangCao = false;
-                        resolve();
-                    }
-                };
-            }
-        });
-    }
-
-    // === 14. GẮN LOGIC PLAYER (CHUYỂN TẬP & CLIMAX ADS CHO DIRECT VIDEO) ===
+    // === 10. VIDEO PLAYER EVENT LISTENERS ===
     function attachVideoPlayerListeners() {
         if (isSeriesType && allEpisodes.length > 1) {
             if (videoPlayer) {
-                videoPlayer.addEventListener('ended', async () => {
+                videoPlayer.addEventListener('ended', () => {
                     if (nextEpisodeButton) nextEpisodeButton.disabled = true;
                     const nextEpisode = allEpisodes[currentEpisodeIndex + 1];
 
                     if (nextEpisode) {
-                        updateActiveBadge(nextEpisode.index);
-                        if (nextEpisodeButton) nextEpisodeButton.style.display = 'none';
-                        await attemptToPlayEpisode(nextEpisode.index, nextEpisode.src);
+                        nextEpisode.button.click();
                     }
                 });
             }
 
             if (nextEpisodeButton) {
-                nextEpisodeButton.addEventListener('click', async () => {
+                nextEpisodeButton.addEventListener('click', () => {
                     nextEpisodeButton.disabled = true;
                     const nextEpisode = allEpisodes[currentEpisodeIndex + 1];
 
                     if (nextEpisode) {
-                        updateActiveBadge(nextEpisode.index);
-                        nextEpisodeButton.style.display = 'none';
-                        await attemptToPlayEpisode(nextEpisode.index, nextEpisode.src);
+                        nextEpisode.button.click();
                     }
                 });
             }
         }
 
         if (videoPlayer) {
-            videoPlayer.addEventListener('timeupdate', async () => {
+            videoPlayer.addEventListener('timeupdate', () => {
                 const currentTime = videoPlayer.currentTime;
                 if (!videoPlayer.duration || videoPlayer.paused) return;
 
@@ -487,73 +379,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     }
                 }
-
-                if (shouldShowAds && !hasPlayedClimaxAd) {
-                    const climaxTimeInSeconds = isSeriesType ? 600 : 1200;
-                    const climaxTime = videoPlayer.duration - climaxTimeInSeconds;
-
-                    if (lastTimeUpdate < climaxTime && currentTime >= climaxTime) {
-                        hasPlayedClimaxAd = true;
-
-                        videoPlayer.pause();
-                        if (document.fullscreenElement) await document.exitFullscreen();
-
-                        try {
-                            const response = await fetch('/api/ads/get-placements?placements=ClimaxAd');
-                            if (response.ok) {
-                                const ads = await response.json();
-                                if (ads && ads.length > 0) {
-                                    await showAdModal(ads[0]);
-                                }
-                            }
-                        } catch (error) {
-                            console.error('❌ Lỗi Climax Ad:', error);
-                        }
-
-                        videoPlayer.play().catch(() => {});
-                    }
-                }
-
-                lastTimeUpdate = currentTime;
             });
         }
     }
 
-    // === 15. HÀM CẬP NHẬT BADGE ACTIVE ===
-    function updateActiveBadge(index) {
-        allEpisodes.forEach((ep) => {
-            ep.button.classList.remove('active');
-        });
-
-        if (allEpisodes[index]) {
-            allEpisodes[index].button.classList.add('active');
-            allEpisodes[index].button.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    }
-
-    // === 16. TẢI BANNER QUẢNG CÁO ===
-    async function loadBannerAds() {
-        const watchPageBannerSlot = document.getElementById('watchpage-banner-slot');
-
-        if (watchPageBannerSlot && shouldShowAds) {
-            try {
-                const response = await fetch('/api/ads/get-placements?placements=WatchPage_Banner');
-                if (response.ok) {
-                    const ads = await response.json();
-                    if (ads && ads.length > 0) {
-                        const ad = ads[0];
-                        watchPageBannerSlot.innerHTML = `
-                            <a href="${ad.clickUrl}" target="_blank" rel="noopener noreferrer" title="${ad.adName}">
-                                <img src="${ad.adContentUrl}" alt="${ad.adName}" style="width: 100%; border-radius: 8px;" />
-                            </a>`;
-                        watchPageBannerSlot.style.display = 'block';
-                    }
-                }
-            } catch (e) {}
-        }
-    }
-
-    // === 17. PHÍM TẮT TUA VIDEO ===
+    // === 11. KEYBOARD SHORTCUTS (SEEK ±10s) ===
     function attachKeyboardListeners() {
         document.addEventListener('keydown', (e) => {
             const target = e.target;
@@ -575,6 +405,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // === 18. KHỞI ĐỘNG ===
+    // Run Initialization
     init();
 });
