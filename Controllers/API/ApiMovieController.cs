@@ -16,7 +16,7 @@ namespace MovieWeb.Controllers.API
 
         // Cache settings
         private const int CacheMinutes = 30;
-        private const string ImageDomain = "https://img.ophim.live/uploads/movies/";
+        private const string ImageDomain = "https://vsmov.com/storage/images/";
 
         public ApiMovieController(
             MovieWebDbContext context,

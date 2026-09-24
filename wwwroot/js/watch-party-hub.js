@@ -416,9 +416,9 @@ document.addEventListener('DOMContentLoaded', () => {
             card.style.transition = 'all 0.35s ease-out';
 
             const poster = room.posterUrl 
-                ? (room.posterUrl.startsWith('http') ? room.posterUrl : `https://img.ophim.live/uploads/movies/${room.posterUrl.replace(/^\/+/, '')}`)
+                ? (room.posterUrl.startsWith('http') ? room.posterUrl : `https://vsmov.com/storage/images/${room.posterUrl.replace(/^\/+/, '')}`)
                 : (room.thumbUrl 
-                    ? (room.thumbUrl.startsWith('http') ? room.thumbUrl : `https://img.ophim.live/uploads/movies/${room.thumbUrl.replace(/^\/+/, '')}`)
+                    ? (room.thumbUrl.startsWith('http') ? room.thumbUrl : `https://vsmov.com/storage/images/${room.thumbUrl.replace(/^\/+/, '')}`)
                     : '/images/default-poster.jpg');
 
             const isPrivate = !!room.isPrivate;

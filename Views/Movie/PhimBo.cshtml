@@ -22,7 +22,7 @@
         if (candidate.StartsWith("/")) return candidate;
         if (candidate.IndexOf("uploads", System.StringComparison.OrdinalIgnoreCase) >= 0)
             return candidate.StartsWith("/") ? candidate : "/" + candidate;
-        var fallbackBase = "https://img.ophim.live/uploads/movies/"; 
+        var fallbackBase = "https://vsmov.com/storage/images/"; 
         return fallbackBase + candidate;
     }
 }

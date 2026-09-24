@@ -14,8 +14,8 @@ namespace MovieWeb.Controllers.Api
         private readonly MovieWebDbContext _context;
         private readonly IMemoryCache _cache;
         
-        // Domain ảnh của OPhim
-        private const string ImageDomain = "https://img.ophim.live/uploads/movies/";
+        // Domain ảnh của VSMov
+        private const string ImageDomain = "https://vsmov.com/storage/images/";
 
         public HomeApiController(MovieWebDbContext context, IMemoryCache cache)
         {

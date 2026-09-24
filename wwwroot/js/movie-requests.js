@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         data-slug="${movie.slug}"
                         data-name="${movie.name}"
                         data-year="${movie.year}">
-                    <img src="https://img.ophim.live/uploads/movies/${posterUrl}" 
+                    <img src="https://vsmov.com/storage/images/${posterUrl}" 
                          alt="${movie.name}" 
                          width="50" 
                          class="me-3"
@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Poster
             const posterUrl = moviePoster
-                ? `https://img.ophim.live/uploads/movies/${moviePoster}`
+                ? `https://vsmov.com/storage/images/${moviePoster}`
                 : '/images/default-poster.jpg';
             document.getElementById('syncedMoviePoster').src = posterUrl;
 
@@ -447,7 +447,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (data.success && data.data && data.data.length > 0) {
 
                         // 1. Định nghĩa hằng số ở ngoài vòng lặp (để tối ưu)
-                        const imageBasePath = 'https://img.ophim.live/uploads/movies/';
+                        const imageBasePath = 'https://vsmov.com/storage/images/';
                         // const defaultImage = '/images/default-poster.jpg';
 
                         let resultsHtml = '<ul class="list-group">';

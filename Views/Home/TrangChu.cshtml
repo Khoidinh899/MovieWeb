@@ -28,7 +28,7 @@
         }
         if (!string.IsNullOrEmpty(movie.PosterUrl))
         {
-            return "https://img.ophim.live/uploads/movies/" + movie.PosterUrl.TrimStart('/');
+            return "https://vsmov.com/storage/images/" + movie.PosterUrl.TrimStart('/');
         }
         if (!string.IsNullOrEmpty(movie.ThumbUrl) && movie.ThumbUrl.StartsWith("http"))
         {
@@ -36,7 +36,7 @@
         }
         if (!string.IsNullOrEmpty(movie.ThumbUrl))
         {
-            return "https://img.ophim.live/uploads/movies/" + movie.ThumbUrl.TrimStart('/');
+            return "https://vsmov.com/storage/images/" + movie.ThumbUrl.TrimStart('/');
         }
 
         // ===== SỬA 1: Dùng ảnh fallback local =====

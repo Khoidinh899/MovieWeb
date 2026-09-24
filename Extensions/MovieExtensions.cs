@@ -53,7 +53,7 @@ namespace MovieWeb.Extensions
             return dbMovies.Select(movie => movie.ToApiModel()).ToList();
         }
 
-        public static string GetFullPosterUrl(this ApiMovie movie, string cdnDomain = "https://img.ophim.live/uploads/movies/")
+        public static string GetFullPosterUrl(this ApiMovie movie, string cdnDomain = "https://vsmov.com/storage/images/")
         {
             if (string.IsNullOrEmpty(movie.PosterUrl))
                 return "https://via.placeholder.com/300x450/333333/ffffff?text=" + Uri.EscapeDataString(movie.Name ?? "Movie");
@@ -64,7 +64,7 @@ namespace MovieWeb.Extensions
             return cdnDomain + movie.PosterUrl.TrimStart('/');
         }
 
-        public static string GetFullThumbUrl(this ApiMovie movie, string cdnDomain = "https://img.ophim.live/uploads/movies/")
+        public static string GetFullThumbUrl(this ApiMovie movie, string cdnDomain = "https://vsmov.com/storage/images/")
         {
             if (string.IsNullOrEmpty(movie.ThumbUrl))
                 return movie.GetFullPosterUrl(cdnDomain);

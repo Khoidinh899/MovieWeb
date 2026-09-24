@@ -4,8 +4,8 @@ namespace MovieWeb.Helpers
 {
     public static class ImageHelper
     {
-        // ✅ Domain ảnh mới của Ophim (đang hoạt động)
-        private static readonly string ApiImageBaseUrl = "https://img.ophim.live/uploads/movies/";
+        // ✅ Domain ảnh của VSMov
+        private static readonly string ApiImageBaseUrl = "https://vsmov.com/storage/images/";
 
         public static string GetPoster(string? posterFileName)
         {

@@ -78,42 +78,12 @@ class WatchProgressTracker {
         return this.serverName || null;
     }
 
-    // Lớp phủ tàng hình bắt cú click Play đầu tiên trên Iframe
+    // Tự động kích hoạt Embed Tracking mà không tạo lớp phủ DOM cản trở
     setupIframeClickOverlay(startTime = 0) {
-        const embedPlayer = document.getElementById('embedPlayer');
-        if (!embedPlayer || embedPlayer.style.display === 'none') return;
-
-        const parentWrapper = embedPlayer.parentElement;
-        if (!parentWrapper) return;
-
-        let overlay = document.getElementById('iframeClickOverlay');
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'iframeClickOverlay';
-            overlay.style.cssText = `
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                z-index: 5;
-                background: transparent;
-                cursor: pointer;
-            `;
-            parentWrapper.style.position = 'relative';
-            parentWrapper.appendChild(overlay);
-        }
-
-        overlay.style.display = 'block';
-        this.overlayClicked = false;
-
-        const handleOverlayClick = () => {
-            this.overlayClicked = true;
-            overlay.style.display = 'none';
-            this.startEmbedTracking(startTime);
-        };
-
-        overlay.onclick = handleOverlayClick;
+        this.overlayClicked = true;
+        const existingOverlay = document.getElementById('iframeClickOverlay');
+        if (existingOverlay) existingOverlay.remove();
+        this.startEmbedTracking(startTime);
     }
 
     // Embed Tracking Timer

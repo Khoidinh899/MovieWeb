@@ -71,7 +71,7 @@
     }
     </script>
     <!-- Resource Preconnect & DNS-Prefetch for Fast Asset Loading -->
-    <link rel="preconnect" href="https://img.ophim.live" crossorigin>
+    <link rel="preconnect" href="https://vsmov.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
@@ -204,18 +204,19 @@
 
     @if (!hasSeenPopunder)
     {
-        <!-- Monetag OnClick (Popunder) Ads Script - Chống vòng lặp chuyển hướng & Giới hạn IP/Cookie 24h -->
+        <!-- Monetag OnClick (Popunder) Ads Script - CHỈ CHẠY TRÊN DESKTOP PC/LAPTOP - CHỐNG ẢNH HƯỞNG MOBILE -->
         <script>
             (function () {
-                // 1. Kiểm tra môi trường App (APK / iOS WebApp / Standalone) -> Chặn hoàn toàn quảng cáo popunder
-                var isAppOrWebView = (window.navigator.standalone === true) || 
+                // 1. Kiểm tra nghiêm ngặt Thiết bị di động / Màn hình cảm ứng / App / Tablet
+                var isMobileOrTouch = (window.navigator.standalone === true) || 
                                      window.matchMedia('(display-mode: standalone)').matches || 
                                      window.matchMedia('(display-mode: fullscreen)').matches ||
-                                     navigator.userAgent.indexOf('MoonPhim') !== -1 ||
-                                     navigator.userAgent.indexOf('wv') !== -1 ||
-                                     (navigator.userAgent.indexOf('Android') !== -1 && navigator.userAgent.indexOf('Version/') !== -1) ||
-                                     (/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/i.test(navigator.userAgent));
-                if (isAppOrWebView) {
+                                     window.matchMedia('(pointer: coarse)').matches ||
+                                     (window.innerWidth < 1024) ||
+                                     /(Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|MoonPhim|wv)/i.test(navigator.userAgent);
+                
+                // Nếu là điện thoại / máy tính bảng / app -> Dừng hoàn toàn 100%, không nạp Popunder
+                if (isMobileOrTouch) {
                     return;
                 }
 
@@ -226,7 +227,7 @@
                 var hasCookie = document.cookie.indexOf('moonphim_pop_done=') !== -1;
                 var now = Date.now();
 
-                // 2. Đã bật trong 24h qua (LocalStorage hoặc Cookie) -> Chặn hoàn toàn
+                // 2. Đã bật trong 24h qua (LocalStorage hoặc Cookie) -> Chặn
                 if (hasCookie || (lastShown && (now - parseInt(lastShown, 10)) < COOLDOWN)) {
                     return;
                 }
@@ -248,17 +249,17 @@
                         fetch('/api/ads/record-popunder', { method: 'POST', keepalive: true }).catch(function(){});
                     }
 
-                    // Gỡ toàn bộ sự kiện chạm/click ngay lập tức
+                    // Gỡ toàn bộ sự kiện ngay lập tức
                     window.removeEventListener('click', triggerPopunder);
 
-                    // Nạp script OnClick Monetag (Zone 11708858)
+                    // Nạp script OnClick Monetag (Zone 11708858) dành riêng cho Desktop
                     var s = document.createElement('script');
                     s.dataset.zone = '11708858';
                     s.src = 'https://al5sm.com/tag.min.js';
                     (document.body || document.documentElement).appendChild(s);
                 };
 
-                // Bắt sự kiện click bình thường (không capture) để không chặn sự kiện bấm nút của người dùng
+                // Bắt sự kiện click bình thường
                 window.addEventListener('click', triggerPopunder, { once: true, passive: true });
             })();
         </script>

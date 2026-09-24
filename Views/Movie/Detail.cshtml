@@ -5,9 +5,9 @@
 
     // ⭐ ĐỔI: Ưu tiên PosterUrl (dọc) thay vì ThumbUrl (ngang)
     var bgImage = !string.IsNullOrEmpty(Model.PosterUrl)
-        ? (Model.PosterUrl.StartsWith("http") ? Model.PosterUrl : "https://img.ophim.live/uploads/movies/" + Model.PosterUrl.TrimStart('/'))
+        ? (Model.PosterUrl.StartsWith("http") ? Model.PosterUrl : "https://vsmov.com/storage/images/" + Model.PosterUrl.TrimStart('/'))
         : (!string.IsNullOrEmpty(Model.ThumbUrl) 
-            ? (Model.ThumbUrl.StartsWith("http") ? Model.ThumbUrl : "https://img.ophim.live/uploads/movies/" + Model.ThumbUrl.TrimStart('/'))
+            ? (Model.ThumbUrl.StartsWith("http") ? Model.ThumbUrl : "https://vsmov.com/storage/images/" + Model.ThumbUrl.TrimStart('/'))
             : "/images/default-poster.jpg");
             
     var grouped = ViewBag.GroupedEpisodes as Dictionary<string, List<MovieWeb.Models.Entities.Episode>>;
@@ -35,7 +35,7 @@
     // 2. Chuẩn bị Ảnh (Image)
     var seoImage = (Model.PosterUrl?.StartsWith("http") == true
                    ? Model.PosterUrl
-                   : "https://img.ophim.live/uploads/movies/" + Model.PosterUrl);
+                   : "https://vsmov.com/storage/images/" + Model.PosterUrl);
 
     // 3. Chuẩn bị URL
     var request = Context.Request;
@@ -204,7 +204,7 @@
             <div class="poster-box">
             <img src="@(string.IsNullOrEmpty(Model.PosterUrl) 
                            ? "/images/default-poster.jpg" 
-                           : (Model.PosterUrl.StartsWith("http") ? Model.PosterUrl : $"https://img.ophim.live/uploads/movies/{Model.PosterUrl.TrimStart('/')}"))"
+                           : (Model.PosterUrl.StartsWith("http") ? Model.PosterUrl : $"https://vsmov.com/storage/images/{Model.PosterUrl.TrimStart('/')}"))"
                  alt="@Model.Name"
                  decoding="async"
                  onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
@@ -412,7 +412,7 @@
                         <div class="poster">
                             <img src="@(movie.PosterUrl?.StartsWith("http") == true
                                    ? movie.PosterUrl
-                                   : "https://img.ophim.live/uploads/movies/" + movie.PosterUrl)"
+                                   : "https://vsmov.com/storage/images/" + movie.PosterUrl)"
                                  alt="@movie.Name" />
                             <span class="badge">@movie.Quality</span>
                         </div>

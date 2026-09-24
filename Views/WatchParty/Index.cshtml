@@ -69,9 +69,9 @@
             @foreach (var room in Model.PublicRooms)
             {
                 var poster = !string.IsNullOrEmpty(room.PosterUrl) 
-                    ? (room.PosterUrl.StartsWith("http") ? room.PosterUrl : $"https://img.ophim.live/uploads/movies/{room.PosterUrl.TrimStart('/')}")
+                    ? (room.PosterUrl.StartsWith("http") ? room.PosterUrl : $"https://vsmov.com/storage/images/{room.PosterUrl.TrimStart('/')}")
                     : (!string.IsNullOrEmpty(room.ThumbUrl) 
-                        ? (room.ThumbUrl.StartsWith("http") ? room.ThumbUrl : $"https://img.ophim.live/uploads/movies/{room.ThumbUrl.TrimStart('/')}")
+                        ? (room.ThumbUrl.StartsWith("http") ? room.ThumbUrl : $"https://vsmov.com/storage/images/{room.ThumbUrl.TrimStart('/')}")
                         : "/images/default-poster.jpg");
 
                 <div class="wp-room-card" id="wp-card-@room.RoomCode" data-room-code="@room.RoomCode">
@@ -142,7 +142,7 @@
             @foreach (var room in Model.PrivateRooms)
             {
                 var poster = !string.IsNullOrEmpty(room.PosterUrl) 
-                    ? (room.PosterUrl.StartsWith("http") ? room.PosterUrl : $"https://img.ophim.live/uploads/movies/{room.PosterUrl.TrimStart('/')}")
+                    ? (room.PosterUrl.StartsWith("http") ? room.PosterUrl : $"https://vsmov.com/storage/images/{room.PosterUrl.TrimStart('/')}")
                     : "/images/default-poster.jpg";
 
                 <div class="wp-room-card" id="wp-card-@room.RoomCode" data-room-code="@room.RoomCode">
