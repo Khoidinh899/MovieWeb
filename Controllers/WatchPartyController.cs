@@ -348,19 +348,38 @@ namespace MovieWeb.Controllers
         [HttpGet("watch-party/api/movie-episodes")]
         public async Task<IActionResult> GetMovieEpisodes([FromQuery] int movieId)
         {
-            var episodes = await _context.Episodes
+            var rawEpisodes = await _context.Episodes
                 .Where(e => e.MovieId == movieId)
-                .OrderBy(e => e.EpisodeName)
-                .Select(e => new
-                {
-                    episodeId = e.EpisodeId,
-                    episodeName = e.EpisodeName,
-                    serverName = e.ServerName,
-                    slug = e.Slug
-                })
                 .ToListAsync();
 
-            return Json(new { success = true, data = episodes });
+            var cleanedEpisodes = rawEpisodes
+                .Select(e =>
+                {
+                    string cleanServer = string.IsNullOrWhiteSpace(e.ServerName)
+                        ? "Mặc định"
+                        : Regex.Replace(e.ServerName.Trim(), @"\s+", " ");
+
+                    int num = 1;
+                    var match = Regex.Match(e.EpisodeName ?? "", @"\d+");
+                    if (match.Success && int.TryParse(match.Value, out int parsed))
+                    {
+                        num = parsed;
+                    }
+
+                    return new
+                    {
+                        episodeId = e.EpisodeId,
+                        episodeName = (e.EpisodeName ?? "1").Trim(),
+                        episodeNumber = num,
+                        serverName = cleanServer,
+                        slug = e.Slug ?? ""
+                    };
+                })
+                .OrderBy(e => e.serverName)
+                .ThenBy(e => e.episodeNumber)
+                .ToList();
+
+            return Json(new { success = true, data = cleanedEpisodes });
         }
 
         // ==========================================

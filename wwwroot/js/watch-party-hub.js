@@ -132,21 +132,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function selectMovie(movie) {
-        if (selectedMovieIdInput) selectedMovieIdInput.value = movie.movieId;
-        if (selectedPoster) selectedPoster.src = movie.posterUrl || movie.thumbUrl || '/images/default-poster.jpg';
-        if (selectedTitle) selectedTitle.textContent = movie.name;
+        if (!movie) return;
+        const movieId = movie.movieId || movie.MovieId;
+        const movieName = movie.name || movie.Name || "";
+        const poster = movie.posterUrl || movie.PosterUrl || movie.thumbUrl || movie.ThumbUrl || '/images/default-poster.jpg';
+
+        if (selectedMovieIdInput) selectedMovieIdInput.value = movieId;
+        if (selectedPoster) selectedPoster.src = poster;
+        if (selectedTitle) selectedTitle.textContent = movieName;
         if (selectedMovieInfo) selectedMovieInfo.style.display = 'flex';
         if (movieSearchResults) movieSearchResults.classList.remove('show');
-        if (movieSearchInput) movieSearchInput.value = movie.name;
+        if (movieSearchInput) movieSearchInput.value = movieName;
 
         // Auto generate default room title
         const hostName = window.WP_CURRENT_USER_NAME || "Bạn";
         if (roomTitleInput) {
-            roomTitleInput.value = `Xem phim ${movie.name} cùng ${hostName}`;
+            roomTitleInput.value = `Xem phim ${movieName} cùng ${hostName}`;
         }
 
         // Fetch servers & episodes
-        loadEpisodesForMovie(movie.movieId);
+        loadEpisodesForMovie(movieId);
     }
 
     // When Server dropdown changes -> filter Episode dropdown
@@ -161,17 +166,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!episodeSelect) return;
         episodeSelect.innerHTML = '';
 
-        const filtered = serverName 
-            ? currentMovieEpisodes.filter(e => (e.serverName || 'Mặc định') === serverName)
+        const cleanServer = (serverName || '').trim().toLowerCase();
+        const filtered = cleanServer 
+            ? currentMovieEpisodes.filter(e => (e.serverName || 'Mặc định').trim().toLowerCase() === cleanServer)
             : currentMovieEpisodes;
 
         if (filtered.length > 0) {
-            filtered.forEach(ep => {
+            filtered.forEach((ep, idx) => {
                 const opt = document.createElement('option');
                 opt.value = ep.episodeId;
                 opt.textContent = `Tập ${ep.episodeName}`;
+                if (idx === 0) opt.selected = true;
                 episodeSelect.appendChild(opt);
             });
+            episodeSelect.value = filtered[0].episodeId;
         } else {
             const opt = document.createElement('option');
             opt.value = '';
@@ -181,9 +189,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadEpisodesForMovie(movieId) {
-        if (!serverSelect || !episodeSelect) return;
-        serverSelect.innerHTML = '<option value="">Đang tải...</option>';
-        episodeSelect.innerHTML = '<option value="">Đang tải...</option>';
+        if (!serverSelect || !episodeSelect || !movieId) return;
+        serverSelect.innerHTML = '<option value="">Đang tải Server...</option>';
+        episodeSelect.innerHTML = '<option value="">Đang tải Tập...</option>';
 
         try {
             const res = await fetch(`/watch-party/api/movie-episodes?movieId=${movieId}`);
@@ -193,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentMovieEpisodes = json.data;
 
                 // Lấy danh sách server duy nhất
-                const servers = [...new Set(currentMovieEpisodes.map(e => e.serverName || 'Mặc định'))];
+                const servers = [...new Set(currentMovieEpisodes.map(e => (e.serverName || 'Mặc định').trim()))];
                 serverSelect.innerHTML = '';
                 servers.forEach(s => {
                     const opt = document.createElement('option');
@@ -202,11 +210,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     serverSelect.appendChild(opt);
                 });
 
-                // Chọn server đầu tiên và hiển thị tập tương ứng
-                if (servers.length > 0) {
-                    serverSelect.value = servers[0];
-                    populateEpisodeDropdown(servers[0]);
-                }
+                // Ưu tiên chọn Server Vietsub nếu có, nếu không thì chọn Server đầu tiên
+                let defaultServer = servers.find(s => s.toLowerCase().includes('vietsub')) || servers[0];
+                serverSelect.value = defaultServer;
+                populateEpisodeDropdown(defaultServer);
             } else {
                 currentMovieEpisodes = [];
                 serverSelect.innerHTML = '<option value="Mặc định">Server Mặc định</option>';
