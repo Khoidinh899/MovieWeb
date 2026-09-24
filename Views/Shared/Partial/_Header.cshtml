@@ -75,6 +75,13 @@
                         </a>
                     </li>
 
+                    @* ⭐ TẢI APP ANDROID (APK) *@
+                    <li class="nav-item">
+                        <a class="nav-link d-inline-flex align-items-center gap-1" href="/downloads/MoonPhim.apk" download="MoonPhim.apk" style="color: #38bdf8; font-weight: 500;" title="Tải ứng dụng Android APK">
+                            <i class="bi bi-android2 text-info"></i> Tải App Android
+                        </a>
+                    </li>
+
                     @* ⭐ ADMIN PANEL - Đặt CUỐI CÙNG *@
                     @if (currentUser?.IsAdmin == true)
                     {
@@ -298,6 +305,14 @@
                 <a class="nav-link wp-nav-link text-white fw-bold d-flex align-items-center justify-content-between" href="/watch-party">
                     <span><i class="fa-solid fa-users text-white me-2"></i>Xem Chung</span>
                     <span class="wp-badge-new">NEW</span>
+                </a>
+            </li>
+
+            @* ⭐ TẢI APP ANDROID - MOBILE *@
+            <li class="nav-item">
+                <a class="nav-link text-info d-flex align-items-center justify-content-between" href="/downloads/MoonPhim.apk" download="MoonPhim.apk">
+                    <span><i class="bi bi-android2 me-2"></i>Tải App Android (.APK)</span>
+                    <span class="badge bg-info text-dark font-monospace" style="font-size: 10px;">19.9 MB</span>
                 </a>
             </li>
         </ul>
