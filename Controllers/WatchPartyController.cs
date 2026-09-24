@@ -190,6 +190,7 @@ namespace MovieWeb.Controllers
                 ShareToken = room.ShareToken,
                 IsPrivate = room.IsPrivate,
                 OnlyHostControl = room.OnlyHostControl,
+                AllowDanmaku = session?.AllowDanmaku ?? true,
                 MaxMembers = room.MaxMembers,
                 CurrentTime = session?.CurrentTime ?? room.CurrentTime,
                 IsPlaying = session?.IsPlaying ?? room.IsPlaying,

@@ -89,12 +89,19 @@
                     <button type="button" class="wp-icon-btn active" id="wpBtnToggleDanmaku" title="Bật/Tắt bình luận bay (Phím C)">
                         <i class="fa-solid fa-comment-dots"></i> Danmaku
                     </button>
-                    <label class="wp-color-picker-wrapper" title="Chọn màu chữ bình luận bay (Danmaku)">
-                        <input type="color" id="wpDanmakuColor" class="wp-color-picker-input" value="#ffffff" />
-                        <span class="wp-color-picker-badge" id="wpDanmakuColorBadge">
+                    <div class="wp-color-picker-dropdown" id="wpColorPickerDropdown">
+                        <button type="button" class="wp-color-picker-badge" id="wpDanmakuColorBadge" title="Chọn màu chữ Danmaku (4 màu pastel)">
                             <i class="fa-solid fa-palette"></i>
-                        </span>
-                    </label>
+                        </button>
+                        <input type="hidden" id="wpDanmakuColor" value="#ffffff" />
+                        
+                        <div class="wp-color-palette-popover" id="wpColorPalettePopover">
+                            <span class="wp-color-option active" data-color="#ffffff" style="background-color: #ffffff;" title="Trắng pastel"></span>
+                            <span class="wp-color-option" data-color="#7dd3fc" style="background-color: #7dd3fc;" title="Xanh pastel"></span>
+                            <span class="wp-color-option" data-color="#fca5a5" style="background-color: #fca5a5;" title="Đỏ pastel"></span>
+                            <span class="wp-color-option" data-color="#334155" style="background-color: #334155; border: 1px solid #64748b;" title="Đen pastel"></span>
+                        </div>
+                    </div>
                     <input type="text" id="wpDanmakuInput" class="wp-danmaku-input" placeholder="Gửi bình luận bay lên màn hình (Phím Enter)..." maxlength="100" />
                     <button type="button" class="wp-btn-send" id="wpBtnSendDanmaku" title="Gửi Danmaku">
                         <i class="fa-solid fa-paper-plane"></i>
@@ -195,14 +202,21 @@
             </div>
             <div class="modal-body">
                 <div class="wp-form-group">
-                    <label class="wp-form-label">Quyền điều khiển video</label>
-                    <select class="wp-form-control" id="wpControlSettingSelect" onchange="window.toggleControlSetting(this.value === 'true')">
+                    <label class="wp-form-label"><i class="fa-solid fa-gamepad text-primary me-1"></i> Quyền điều khiển video</label>
+                    <select class="wp-form-control" id="wpControlSettingSelect" onchange="window.saveRoomSettings()">
                         <option value="true" selected="@(Model.OnlyHostControl ? "selected" : null)">Chỉ Chủ phòng (Host)</option>
                         <option value="false" selected="@(!Model.OnlyHostControl ? "selected" : null)">Tất cả thành viên trong phòng</option>
                     </select>
                 </div>
                 <div class="wp-form-group mt-3">
-                    <label class="wp-form-label">Link chia sẻ trực tiếp (Bỏ qua mã PIN):</label>
+                    <label class="wp-form-label"><i class="fa-solid fa-comment-dots text-info me-1"></i> Bình luận bay (Danmaku) trong phòng</label>
+                    <select class="wp-form-control" id="wpDanmakuSettingSelect" onchange="window.saveRoomSettings()">
+                        <option value="true" selected="@(Model.AllowDanmaku ? "selected" : null)">Bật (Cho phép tất cả thành viên gửi bình luận bay)</option>
+                        <option value="false" selected="@(!Model.AllowDanmaku ? "selected" : null)">Tắt (Chỉ cho phép chat trong khung bên phải)</option>
+                    </select>
+                </div>
+                <div class="wp-form-group mt-3">
+                    <label class="wp-form-label"><i class="fa-solid fa-link text-warning me-1"></i> Link chia sẻ trực tiếp (Bỏ qua mã PIN):</label>
                     <input type="text" class="wp-form-control" readonly value="@Model.ShareUrl" onclick="this.select()" />
                 </div>
             </div>
@@ -230,7 +244,8 @@
             hostUserId: @Model.HostUserId,
             currentUserId: @Model.CurrentUserId,
             currentUserName: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CurrentUserName)),
-            onlyHostControl: @Model.OnlyHostControl.ToString().ToLower()
+            onlyHostControl: @Model.OnlyHostControl.ToString().ToLower(),
+            allowDanmaku: @Model.AllowDanmaku.ToString().ToLower()
         };
     </script>
     <script src="~/js/watch-party-room.js" asp-append-version="true"></script>

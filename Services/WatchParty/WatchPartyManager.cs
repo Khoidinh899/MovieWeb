@@ -134,12 +134,13 @@ namespace MovieWeb.Services.WatchParty
             session.LastStateUpdateUtc = DateTime.UtcNow;
         }
 
-        public void UpdateSettings(string roomCode, bool onlyHostControl)
+        public void UpdateSettings(string roomCode, bool onlyHostControl, bool allowDanmaku)
         {
             var session = GetSession(roomCode);
             if (session == null) return;
 
             session.OnlyHostControl = onlyHostControl;
+            session.AllowDanmaku = allowDanmaku;
         }
 
         public void TransferHost(string roomCode, int newHostUserId, string newHostName)

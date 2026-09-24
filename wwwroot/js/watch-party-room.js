@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isHost: config.isHost,
         hostUserId: config.hostUserId,
         onlyHostControl: config.onlyHostControl,
+        allowDanmaku: config.allowDanmaku !== false,
         isPlaying: false,
         currentTime: 0
     };
@@ -38,6 +39,39 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Danmaku Engine
     if (danmakuContainer) {
         danmaku = new DanmakuEngine(danmakuContainer);
+    }
+
+    // ==========================================
+    // 🔔 TOAST NOTIFICATION HELPER (Slide-up)
+    // ==========================================
+    function showToast(message, type = 'info') {
+        let container = document.getElementById('wpToastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'wpToastContainer';
+            container.className = 'wp-toast-container';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `wp-toast toast-${type}`;
+
+        const iconMap = {
+            'success': 'fa-circle-check text-success',
+            'danger': 'fa-circle-exclamation text-danger',
+            'warning': 'fa-triangle-exclamation text-warning',
+            'info': 'fa-circle-info text-info'
+        };
+
+        const icon = iconMap[type] || 'fa-circle-info text-info';
+        toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${escapeHtml(message)}</span>`;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3500);
     }
 
     // ==========================================
@@ -54,8 +88,10 @@ document.addEventListener('DOMContentLoaded', () => {
         roomState.isHost = state.isHost;
         roomState.hostUserId = state.hostUserId;
         roomState.onlyHostControl = state.onlyHostControl;
+        roomState.allowDanmaku = (state.allowDanmaku !== false);
         
         updateHostControlsUI();
+        updateDanmakuUI();
 
         if (state.messages && state.messages.length > 0) {
             messagesContainer.innerHTML = '';
@@ -194,16 +230,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     connection.on("OnSettingsUpdated", (data) => {
         roomState.onlyHostControl = data.onlyHostControl;
-        appendSystemMessage(`Cài đặt phòng: ${data.onlyHostControl ? "Chỉ chủ phòng điều khiển" : "Tất cả thành viên có thể điều khiển"}`);
+        roomState.allowDanmaku = (data.allowDanmaku !== false);
+        
+        updateHostControlsUI();
+        updateDanmakuUI();
+
+        const controlText = data.onlyHostControl ? "Chỉ chủ phòng điều khiển video" : "Mọi người có thể điều khiển video";
+        const danmakuText = (data.allowDanmaku !== false) ? "Đã bật bình luận bay (Danmaku)" : "Đã tắt bình luận bay (Danmaku)";
+        
+        showToast(`${controlText} • ${danmakuText}`, "info");
     });
 
     connection.on("OnRoomClosed", (msg) => {
-        alert(msg);
-        window.location.href = "/watch-party";
+        showToast(msg || "Chủ phòng đã đóng phòng xem chung.", "warning");
+        setTimeout(() => {
+            window.location.href = "/watch-party";
+        }, 1500);
     });
 
     connection.on("OnError", (err) => {
-        alert(err);
+        showToast(err, "danger");
     });
 
     // Start Connection
@@ -251,7 +297,6 @@ document.addEventListener('DOMContentLoaded', () => {
         video.addEventListener('play', () => {
             if (isSyncing) return;
             if (roomState.onlyHostControl && !roomState.isHost) {
-                // Không có quyền
                 return;
             }
             connection.invoke("SyncPlay", config.roomCode, video.currentTime).catch(console.error);
@@ -287,6 +332,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function sendDanmaku() {
+        if (!roomState.allowDanmaku) {
+            showToast("Chủ phòng đã tắt tính năng bình luận bay trong phòng này.", "warning");
+            return;
+        }
         if (!danmakuInput) return;
         const text = danmakuInput.value.trim();
         if (!text) return;
@@ -294,7 +343,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const color = danmakuColor ? danmakuColor.value : '#ffffff';
         const currentTime = video ? video.currentTime : 0;
 
-        connection.invoke("SendDanmaku", config.roomCode, text, color, "scroll", currentTime).catch(console.error);
+        connection.invoke("SendDanmaku", config.roomCode, text, color, "scroll", currentTime).catch(err => {
+            console.error(err);
+            showToast("Không thể gửi bình luận bay", "danger");
+        });
         danmakuInput.value = '';
     }
 
@@ -318,16 +370,40 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const danmakuColorBadge = document.getElementById('wpDanmakuColorBadge');
-    if (danmakuColor && danmakuColorBadge) {
-        const updateColorUI = () => {
-            const val = danmakuColor.value;
-            danmakuColorBadge.style.color = val;
-            danmakuColorBadge.style.boxShadow = `0 0 10px ${val}66`;
-        };
-        danmakuColor.addEventListener('input', updateColorUI);
-        danmakuColor.addEventListener('change', updateColorUI);
-        updateColorUI();
+    // 🎨 4-Pastel Color Palette Selector
+    const colorBadge = document.getElementById('wpDanmakuColorBadge');
+    const colorPopover = document.getElementById('wpColorPalettePopover');
+    const colorOptions = document.querySelectorAll('.wp-color-option');
+
+    if (colorBadge && colorPopover) {
+        colorBadge.addEventListener('click', (e) => {
+            e.stopPropagation();
+            colorPopover.classList.toggle('show');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#wpColorPickerDropdown')) {
+                colorPopover.classList.remove('show');
+            }
+        });
+
+        colorOptions.forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const selectedColor = opt.dataset.color || '#ffffff';
+                if (danmakuColor) danmakuColor.value = selectedColor;
+                
+                colorOptions.forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+
+                colorBadge.style.color = selectedColor;
+                colorBadge.style.boxShadow = `0 0 12px ${selectedColor}88`;
+                colorPopover.classList.remove('show');
+            });
+        });
+
+        const defaultColor = danmakuColor ? danmakuColor.value : '#ffffff';
+        colorBadge.style.color = defaultColor;
     }
 
     if (btnToggleDanmaku && danmaku) {
@@ -351,7 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else if (e.key === 'Enter') {
             e.preventDefault();
-            if (danmakuInput) danmakuInput.focus();
+            if (danmakuInput && !danmakuInput.disabled) danmakuInput.focus();
             else if (chatInput) chatInput.focus();
         }
     });
@@ -418,6 +494,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function updateDanmakuUI() {
+        if (!danmakuInput) return;
+        if (roomState.allowDanmaku) {
+            danmakuInput.disabled = false;
+            danmakuInput.placeholder = "Gửi bình luận bay lên màn hình (Phím Enter)...";
+            if (btnSendDanmaku) btnSendDanmaku.disabled = false;
+        } else {
+            danmakuInput.disabled = true;
+            danmakuInput.placeholder = "Chủ phòng đã tắt tính năng bình luận bay trong phòng.";
+            if (btnSendDanmaku) btnSendDanmaku.disabled = true;
+        }
+    }
+
     function escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');
@@ -430,25 +519,48 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     window.changeEpisode = function (episodeId, episodeNumber, serverName, videoUrl) {
         if (!roomState.isHost) {
-            alert("Chỉ chủ phòng mới có quyền đổi tập phim.");
+            showToast("Chỉ chủ phòng mới có quyền đổi tập phim.", "warning");
             return;
         }
         connection.invoke("ChangeEpisode", config.roomCode, parseInt(episodeId), parseInt(episodeNumber), serverName, videoUrl)
-            .catch(console.error);
+            .catch(err => {
+                console.error(err);
+                showToast("Lỗi khi đổi tập phim", "danger");
+            });
     };
 
     window.transferHostTo = function (targetUserId) {
         if (!confirm("Bạn có chắc chắn muốn chuyển quyền chủ phòng cho thành viên này?")) return;
-        connection.invoke("TransferHost", config.roomCode, parseInt(targetUserId)).catch(console.error);
+        connection.invoke("TransferHost", config.roomCode, parseInt(targetUserId)).catch(err => {
+            console.error(err);
+            showToast("Lỗi khi chuyển quyền chủ phòng", "danger");
+        });
     };
 
     window.closeCurrentRoom = function () {
         if (!confirm("Bạn có chắc chắn muốn kết thúc và đóng phòng xem chung này?")) return;
-        connection.invoke("CloseRoom", config.roomCode).catch(console.error);
+        connection.invoke("CloseRoom", config.roomCode).catch(err => {
+            console.error(err);
+            showToast("Lỗi khi đóng phòng", "danger");
+        });
     };
 
-    window.toggleControlSetting = function (onlyHost) {
-        connection.invoke("UpdateSettings", config.roomCode, onlyHost).catch(console.error);
+    window.saveRoomSettings = function () {
+        if (!roomState.isHost) return;
+        const controlSelect = document.getElementById('wpControlSettingSelect');
+        const danmakuSelect = document.getElementById('wpDanmakuSettingSelect');
+
+        const onlyHost = controlSelect ? (controlSelect.value === 'true') : true;
+        const allowDanmaku = danmakuSelect ? (danmakuSelect.value === 'true') : true;
+
+        connection.invoke("UpdateSettings", config.roomCode, onlyHost, allowDanmaku)
+            .then(() => {
+                showToast("Đã lưu và đồng bộ cài đặt phòng thời gian thực!", "success");
+            })
+            .catch(err => {
+                console.error(err);
+                showToast("Lỗi khi cập nhật cài đặt", "danger");
+            });
     };
 
     // Sidebar tab switching
@@ -470,6 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnCopyShare.addEventListener('click', () => {
             const url = config.shareUrl || window.location.href;
             navigator.clipboard.writeText(url).then(() => {
+                showToast("Đã sao chép link mời phòng xem chung vào bộ nhớ tạm!", "success");
                 btnCopyShare.innerHTML = '<i class="fa-solid fa-check text-success"></i> Đã sao chép link';
                 setTimeout(() => {
                     btnCopyShare.innerHTML = '<i class="fa-solid fa-share-nodes"></i> Chia sẻ phòng';

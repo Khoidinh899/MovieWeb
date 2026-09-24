@@ -22,7 +22,7 @@ namespace MovieWeb.Services.WatchParty
         
         void UpdatePlayback(string roomCode, double currentTime, bool isPlaying);
         void UpdateEpisode(string roomCode, int episodeId, int episodeNumber, string serverName);
-        void UpdateSettings(string roomCode, bool onlyHostControl);
+        void UpdateSettings(string roomCode, bool onlyHostControl, bool allowDanmaku);
         void TransferHost(string roomCode, int newHostUserId, string newHostName);
 
         void AddChatMessage(string roomCode, WatchPartyChatMessageDto message);
@@ -58,6 +58,7 @@ namespace MovieWeb.Services.WatchParty
         public string? PinCode { get; set; }
         public int MaxMembers { get; set; } = 20;
         public bool OnlyHostControl { get; set; } = true;
+        public bool AllowDanmaku { get; set; } = true;
 
         public ConcurrentDictionary<string, WatchPartyMemberSession> Members { get; set; } = new();
         public List<WatchPartyChatMessageDto> Messages { get; set; } = new();

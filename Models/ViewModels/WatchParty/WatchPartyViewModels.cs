@@ -45,6 +45,7 @@ namespace MovieWeb.Models.ViewModels.WatchParty
         public string? ShareToken { get; set; }
         public bool IsPrivate { get; set; }
         public bool OnlyHostControl { get; set; }
+        public bool AllowDanmaku { get; set; } = true;
         public int MaxMembers { get; set; }
         public double CurrentTime { get; set; }
         public bool IsPlaying { get; set; }

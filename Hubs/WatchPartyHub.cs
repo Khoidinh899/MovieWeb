@@ -182,6 +182,7 @@ namespace MovieWeb.Hubs
                 currentTime = session.CurrentTime,
                 isPlaying = session.IsPlaying,
                 onlyHostControl = session.OnlyHostControl,
+                allowDanmaku = session.AllowDanmaku,
                 episodeId = session.EpisodeId,
                 episodeNumber = session.EpisodeNumber,
                 serverName = session.ServerName,
@@ -397,6 +398,12 @@ namespace MovieWeb.Hubs
             var session = _watchPartyManager.GetSession(roomCode);
             if (session == null) return;
 
+            if (!session.AllowDanmaku)
+            {
+                await Clients.Caller.SendAsync("OnError", "Chủ phòng đã tắt tính năng bình luận bay trong phòng này.");
+                return;
+            }
+
             var userName = Context.User?.Identity?.Name ?? "Ẩn danh";
 
             var danmakuDto = new WatchPartyDanmakuDto
@@ -419,7 +426,7 @@ namespace MovieWeb.Hubs
             }
             bool isHost = (session.HostUserId == userId);
 
-            _watchPartyManager.AddChatMessage(roomCode, new WatchPartyChatMessageDto
+            var chatDto = new WatchPartyChatMessageDto
             {
                 UserId = userId,
                 UserName = userName,
@@ -428,15 +435,19 @@ namespace MovieWeb.Hubs
                 IsHost = isHost,
                 IsSystem = false,
                 Timestamp = DateTime.UtcNow
-            });
+            };
 
+            _watchPartyManager.AddChatMessage(roomCode, chatDto);
+
+            // Bắn đồng thời cả Danmaku (bay trên video) và Chat (trong cột tin nhắn)
             await Clients.Group($"Room_{roomCode}").SendAsync("OnReceiveDanmaku", danmakuDto);
+            await Clients.Group($"Room_{roomCode}").SendAsync("OnReceiveChatMessage", chatDto);
         }
 
         // ==========================================
         // 7️⃣ CẬP NHẬT CẤU HÌNH PHÒNG (SETTINGS)
         // ==========================================
-        public async Task UpdateSettings(string roomCode, bool onlyHostControl)
+        public async Task UpdateSettings(string roomCode, bool onlyHostControl, bool allowDanmaku)
         {
             var session = _watchPartyManager.GetSession(roomCode);
             if (session == null) return;
@@ -449,7 +460,7 @@ namespace MovieWeb.Hubs
                 return;
             }
 
-            _watchPartyManager.UpdateSettings(roomCode, onlyHostControl);
+            _watchPartyManager.UpdateSettings(roomCode, onlyHostControl, allowDanmaku);
 
             using (var scope = _scopeFactory.CreateScope())
             {
@@ -465,7 +476,8 @@ namespace MovieWeb.Hubs
 
             await Clients.Group($"Room_{roomCode}").SendAsync("OnSettingsUpdated", new
             {
-                onlyHostControl = onlyHostControl
+                onlyHostControl = onlyHostControl,
+                allowDanmaku = allowDanmaku
             });
         }
 
