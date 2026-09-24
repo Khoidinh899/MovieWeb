@@ -51,10 +51,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedMovieInfo = document.getElementById('wpSelectedMovieInfo');
     const selectedPoster = document.getElementById('wpSelectedPoster');
     const selectedTitle = document.getElementById('wpSelectedTitle');
-    const roomTitleInput = document.getElementById('wpRoomTitleInput');
+    const serverSelect = document.getElementById('wpServerSelect');
     const episodeSelect = document.getElementById('wpEpisodeSelect');
     const isPrivateCheckbox = document.getElementById('wpIsPrivate');
     const pinGroup = document.getElementById('wpPinGroup');
+    let currentMovieEpisodes = [];
 
     if (btnOpenCreate && createModal) {
         btnOpenCreate.addEventListener('click', () => {
@@ -65,8 +66,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnCloseCreate && createModal) {
         btnCloseCreate.addEventListener('click', () => {
             createModal.classList.remove('show');
+            if (movieSearchResults) movieSearchResults.classList.remove('show');
         });
     }
+
+    // Close search results when clicking outside
+    document.addEventListener('click', (e) => {
+        if (movieSearchResults && !e.target.closest('.wp-search-wrapper')) {
+            movieSearchResults.classList.remove('show');
+        }
+    });
 
     if (isPrivateCheckbox && pinGroup) {
         isPrivateCheckbox.addEventListener('change', () => {
@@ -98,8 +107,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             const poster = m.posterUrl || m.thumbUrl || '/images/default-poster.jpg';
                             item.innerHTML = `
                                 <img src="${poster}" onerror="this.src='/images/default-poster.jpg';" />
-                                <div>
-                                    <div style="font-weight: 600; color: #fff;">${m.name}</div>
+                                <div style="min-width:0; flex-grow:1;">
+                                    <div style="font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${m.name}</div>
                                     <div style="font-size: 0.78rem; color: #94a3b8;">${m.originalName || ''} (${m.year || 'N/A'})</div>
                                 </div>
                             `;
@@ -132,33 +141,80 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Auto generate default room title
         const hostName = window.WP_CURRENT_USER_NAME || "Bạn";
-        if (roomTitleInput && (!roomTitleInput.value || roomTitleInput.value.includes("Xem phim"))) {
+        if (roomTitleInput) {
             roomTitleInput.value = `Xem phim ${movie.name} cùng ${hostName}`;
         }
 
-        // Fetch episodes
+        // Fetch servers & episodes
         loadEpisodesForMovie(movie.movieId);
     }
 
-    async function loadEpisodesForMovie(movieId) {
+    // When Server dropdown changes -> filter Episode dropdown
+    if (serverSelect) {
+        serverSelect.addEventListener('change', () => {
+            const selectedServer = serverSelect.value;
+            populateEpisodeDropdown(selectedServer);
+        });
+    }
+
+    function populateEpisodeDropdown(serverName) {
         if (!episodeSelect) return;
-        episodeSelect.innerHTML = '<option value="">Đang tải danh sách tập...</option>';
+        episodeSelect.innerHTML = '';
+
+        const filtered = serverName 
+            ? currentMovieEpisodes.filter(e => (e.serverName || 'Mặc định') === serverName)
+            : currentMovieEpisodes;
+
+        if (filtered.length > 0) {
+            filtered.forEach(ep => {
+                const opt = document.createElement('option');
+                opt.value = ep.episodeId;
+                opt.textContent = `Tập ${ep.episodeName}`;
+                episodeSelect.appendChild(opt);
+            });
+        } else {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'Tập 1 (Mặc định)';
+            episodeSelect.appendChild(opt);
+        }
+    }
+
+    async function loadEpisodesForMovie(movieId) {
+        if (!serverSelect || !episodeSelect) return;
+        serverSelect.innerHTML = '<option value="">Đang tải...</option>';
+        episodeSelect.innerHTML = '<option value="">Đang tải...</option>';
+
         try {
             const res = await fetch(`/watch-party/api/movie-episodes?movieId=${movieId}`);
             const json = await res.json();
+            
             if (json.success && json.data && json.data.length > 0) {
-                episodeSelect.innerHTML = '';
-                json.data.forEach(ep => {
+                currentMovieEpisodes = json.data;
+
+                // Lấy danh sách server duy nhất
+                const servers = [...new Set(currentMovieEpisodes.map(e => e.serverName || 'Mặc định'))];
+                serverSelect.innerHTML = '';
+                servers.forEach(s => {
                     const opt = document.createElement('option');
-                    opt.value = ep.episodeId;
-                    opt.textContent = `Tập ${ep.episodeName} (${ep.serverName || 'Mặc định'})`;
-                    episodeSelect.appendChild(opt);
+                    opt.value = s;
+                    opt.textContent = s;
+                    serverSelect.appendChild(opt);
                 });
+
+                // Chọn server đầu tiên và hiển thị tập tương ứng
+                if (servers.length > 0) {
+                    serverSelect.value = servers[0];
+                    populateEpisodeDropdown(servers[0]);
+                }
             } else {
+                currentMovieEpisodes = [];
+                serverSelect.innerHTML = '<option value="Mặc định">Server Mặc định</option>';
                 episodeSelect.innerHTML = '<option value="">Tập 1 (Mặc định)</option>';
             }
         } catch (err) {
             console.error("Lỗi tải tập phim:", err);
+            serverSelect.innerHTML = '<option value="Mặc định">Server Mặc định</option>';
             episodeSelect.innerHTML = '<option value="">Tập 1 (Mặc định)</option>';
         }
     }

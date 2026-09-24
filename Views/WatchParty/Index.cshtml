@@ -202,27 +202,35 @@
 
             <div class="wp-modal-body">
                 <!-- Chọn phim -->
-                <div class="wp-form-group">
+                <div class="wp-form-group wp-search-wrapper">
                     <label class="wp-form-label"><i class="fa-solid fa-magnifying-glass me-1"></i> Tìm và chọn phim <span class="text-danger">*</span></label>
                     <input type="text" id="wpMovieSearch" class="wp-form-control" placeholder="Nhập tên phim bạn muốn xem cùng..." autocomplete="off" />
                     <div class="wp-movie-search-results" id="wpMovieSearchResults"></div>
                 </div>
 
                 <!-- Phim đã chọn hiển thị preview -->
-                <div id="wpSelectedMovieInfo" style="display: none; align-items: center; gap: 0.75rem; background: rgba(99, 102, 241, 0.15); padding: 0.75rem; border-radius: 10px; margin-bottom: 1.25rem; border: 1px solid rgba(99, 102, 241, 0.3);">
-                    <img id="wpSelectedPoster" src="" style="width: 45px; height: 60px; object-fit: cover; border-radius: 6px;" />
-                    <div>
-                        <div id="selectedMovieLabel" style="font-size: 0.8rem; color: #93c5fd;">Phim đã chọn:</div>
-                        <div id="wpSelectedTitle" style="font-weight: 700; color: #ffffff;"></div>
+                <div id="wpSelectedMovieInfo" style="display: none; align-items: center; gap: 0.75rem; background: rgba(99, 102, 241, 0.15); padding: 0.6rem 0.75rem; border-radius: 8px; margin-bottom: 0.85rem; border: 1px solid rgba(99, 102, 241, 0.3);">
+                    <img id="wpSelectedPoster" src="" style="width: 40px; height: 52px; object-fit: cover; border-radius: 4px;" />
+                    <div style="min-width: 0; flex-grow: 1;">
+                        <div id="selectedMovieLabel" style="font-size: 0.75rem; color: #93c5fd;">Phim đã chọn:</div>
+                        <div id="wpSelectedTitle" style="font-weight: 700; color: #ffffff; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
                     </div>
                 </div>
 
-                <!-- Chọn Tập phim -->
-                <div class="wp-form-group">
-                    <label class="wp-form-label"><i class="fa-solid fa-layer-group me-1"></i> Chọn tập phim</label>
-                    <select name="EpisodeId" id="wpEpisodeSelect" class="wp-form-control">
-                        <option value="">-- Vui lòng chọn phim trước --</option>
-                    </select>
+                <!-- Chọn Server và Tập phim -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="wp-form-group">
+                        <label class="wp-form-label"><i class="fa-solid fa-server me-1"></i> Chọn Server</label>
+                        <select name="ServerName" id="wpServerSelect" class="wp-form-control">
+                            <option value="">-- Chọn Server --</option>
+                        </select>
+                    </div>
+                    <div class="wp-form-group">
+                        <label class="wp-form-label"><i class="fa-solid fa-layer-group me-1"></i> Chọn tập phim</label>
+                        <select name="EpisodeId" id="wpEpisodeSelect" class="wp-form-control">
+                            <option value="">-- Chọn tập --</option>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Tên phòng -->

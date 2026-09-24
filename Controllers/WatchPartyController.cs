@@ -255,6 +255,16 @@ namespace MovieWeb.Controllers
                 ? movie.Episodes.FirstOrDefault(e => e.EpisodeId == input.EpisodeId.Value)
                 : movie.Episodes.FirstOrDefault();
 
+            int epNumber = 1;
+            if (selectedEpisode != null)
+            {
+                var match = Regex.Match(selectedEpisode.EpisodeName, @"\d+");
+                if (match.Success && int.TryParse(match.Value, out int n))
+                {
+                    epNumber = n;
+                }
+            }
+
             var room = new WatchPartyRoom
             {
                 Id = Guid.NewGuid(),
@@ -266,8 +276,8 @@ namespace MovieWeb.Controllers
                 MovieId = movie.MovieId,
                 MovieSlug = movie.Slug,
                 EpisodeId = selectedEpisode?.EpisodeId,
-                EpisodeNumber = input.EpisodeNumber ?? 1,
-                ServerName = input.ServerName ?? selectedEpisode?.ServerName,
+                EpisodeNumber = epNumber,
+                ServerName = !string.IsNullOrWhiteSpace(input.ServerName) ? input.ServerName.Trim() : (selectedEpisode?.ServerName ?? "Mặc định"),
                 HostUserId = currentUser.Id,
                 CurrentTime = 0,
                 IsPlaying = false,
