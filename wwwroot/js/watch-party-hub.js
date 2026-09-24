@@ -230,9 +230,65 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. Private Room PIN Prompt Modal
     const pinModal = document.getElementById('wpPinPromptModal');
     const pinInput = document.getElementById('wpPinInput');
+    const createPinInput = document.getElementById('wpCreatePinInput');
     const btnSubmitPin = document.getElementById('wpBtnSubmitPin');
     const btnCancelPin = document.getElementById('wpBtnCancelPin');
     let targetRoomCode = null;
+
+    // Chỉ cho phép nhập số cho PIN (Tạo phòng & Vào phòng)
+    if (createPinInput) {
+        createPinInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+        });
+    }
+
+    if (pinInput) {
+        pinInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+        });
+        pinInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (btnSubmitPin) btnSubmitPin.click();
+            }
+        });
+    }
+
+    // Form validation khi tạo phòng
+    const createForm = document.querySelector('#wpCreateRoomModal form');
+    if (createForm) {
+        createForm.addEventListener('submit', (e) => {
+            if (!selectedMovieIdInput || !selectedMovieIdInput.value) {
+                e.preventDefault();
+                if (window.MoonDialog) {
+                    window.MoonDialog.alert({
+                        title: 'Chưa chọn phim',
+                        message: 'Vui lòng tìm và chọn một bộ phim bạn muốn xem cùng trước khi tạo phòng!',
+                        type: 'warning',
+                        iconClass: 'bi-film'
+                    });
+                }
+                return;
+            }
+
+            if (isPrivateCheckbox && isPrivateCheckbox.checked) {
+                const pin = createPinInput ? createPinInput.value.trim() : '';
+                if (!/^\d{6}$/.test(pin)) {
+                    e.preventDefault();
+                    if (window.MoonDialog) {
+                        window.MoonDialog.alert({
+                            title: 'Mã PIN không hợp lệ',
+                            message: 'Vui lòng nhập đúng 6 chữ số cho mã PIN phòng riêng tư (VD: 123456).',
+                            type: 'warning',
+                            iconClass: 'bi-key-fill'
+                        });
+                    }
+                    if (createPinInput) createPinInput.focus();
+                    return;
+                }
+            }
+        });
+    }
 
     window.promptPrivateRoom = function (roomCode) {
         targetRoomCode = roomCode;
@@ -253,7 +309,30 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!targetRoomCode) return;
             const pin = pinInput ? pinInput.value.trim() : '';
             if (!pin) {
-                alert("Vui lòng nhập mã PIN phòng.");
+                if (window.MoonDialog) {
+                    window.MoonDialog.alert({
+                        title: 'Chưa nhập mã PIN',
+                        message: 'Vui lòng nhập mã PIN gồm đúng 6 chữ số để tham gia phòng.',
+                        type: 'warning',
+                        iconClass: 'bi-key-fill'
+                    });
+                } else {
+                    alert("Vui lòng nhập mã PIN phòng.");
+                }
+                return;
+            }
+
+            if (!/^\d{6}$/.test(pin)) {
+                if (window.MoonDialog) {
+                    window.MoonDialog.alert({
+                        title: 'Mã PIN không đúng định dạng',
+                        message: 'Mã PIN phòng phải bao gồm đúng 6 chữ số (VD: 123456).',
+                        type: 'warning',
+                        iconClass: 'bi-exclamation-triangle-fill'
+                    });
+                } else {
+                    alert("Mã PIN phải gồm đúng 6 chữ số.");
+                }
                 return;
             }
 
@@ -267,11 +346,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (json.success && json.valid) {
                     window.location.href = `/watch-party/${targetRoomCode}`;
                 } else {
-                    alert(json.message || "Mã PIN không chính xác!");
+                    if (window.MoonDialog) {
+                        window.MoonDialog.alert({
+                            title: 'Mã PIN không chính xác',
+                            message: json.message || "Mã PIN không chính xác. Vui lòng thử lại!",
+                            type: 'danger',
+                            iconClass: 'bi-shield-x'
+                        });
+                    } else {
+                        alert(json.message || "Mã PIN không chính xác!");
+                    }
                 }
             } catch (err) {
                 console.error("Lỗi xác thực PIN:", err);
-                alert("Không thể kết nối đến máy chủ.");
+                if (window.MoonDialog) {
+                    window.MoonDialog.alert({
+                        title: 'Lỗi kết nối',
+                        message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại đường truyền!',
+                        type: 'danger',
+                        iconClass: 'bi-wifi-off'
+                    });
+                } else {
+                    alert("Không thể kết nối đến máy chủ.");
+                }
             }
         });
     }

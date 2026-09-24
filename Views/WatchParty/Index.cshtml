@@ -270,8 +270,9 @@
 
                 <!-- Mã PIN (nếu riêng tư) -->
                 <div class="wp-form-group" id="wpPinGroup" style="display: none;">
-                    <label class="wp-form-label"><i class="fa-solid fa-key me-1"></i> Mã PIN phòng (4 - 8 ký tự)</label>
-                    <input type="text" name="PinCode" class="wp-form-control" placeholder="VD: 1234" maxlength="20" />
+                    <label class="wp-form-label"><i class="fa-solid fa-key me-1"></i> Mã PIN phòng (Cố định đúng 6 số) <span class="text-danger">*</span></label>
+                    <input type="text" name="PinCode" id="wpCreatePinInput" class="wp-form-control" placeholder="Nhập đúng 6 chữ số (VD: 123456)" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off" />
+                    <small style="display: block; margin-top: 4px; color: #94a3b8; font-size: 0.8rem;">Mã PIN gồm đúng 6 chữ số giúp bảo vệ phòng xem chung của bạn.</small>
                 </div>
             </div>
 
@@ -296,7 +297,8 @@
                 Phòng này được đặt mật mã bảo vệ bởi chủ phòng. Vui lòng nhập mã PIN để tham gia:
             </p>
             <div class="wp-form-group">
-                <input type="password" id="wpPinInput" class="wp-form-control" placeholder="Nhập mã PIN..." maxlength="20" style="text-align: center; font-size: 1.2rem; letter-spacing: 4px;" />
+                <input type="password" id="wpPinInput" class="wp-form-control" placeholder="••••••" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off" style="text-align: center; font-size: 1.6rem; letter-spacing: 8px; font-weight: bold;" />
+                <small style="display: block; text-align: center; margin-top: 6px; color: #94a3b8; font-size: 0.8rem;">Nhập mã PIN 6 số do chủ phòng cung cấp</small>
             </div>
         </div>
         <div class="wp-modal-footer">
@@ -312,4 +314,19 @@
         window.WP_CURRENT_USER_NAME = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(currentUser ?? ""));
     </script>
     <script src="~/js/watch-party-hub.js" asp-append-version="true"></script>
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                if (window.MoonDialog) {
+                    window.MoonDialog.alert({
+                        title: 'Thông báo',
+                        message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ErrorMessage"].ToString())),
+                        type: 'danger',
+                        iconClass: 'bi-exclamation-octagon-fill'
+                    });
+                }
+            });
+        </script>
+    }
 }

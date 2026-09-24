@@ -266,6 +266,16 @@ namespace MovieWeb.Controllers
                 }
             }
 
+            if (input.IsPrivate)
+            {
+                var pin = input.PinCode?.Trim() ?? "";
+                if (string.IsNullOrWhiteSpace(pin) || !Regex.IsMatch(pin, @"^\d{6}$"))
+                {
+                    TempData["ErrorMessage"] = "Mã PIN phòng riêng tư phải bao gồm đúng 6 chữ số (VD: 123456).";
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+
             var room = new WatchPartyRoom
             {
                 Id = Guid.NewGuid(),
@@ -401,8 +411,14 @@ namespace MovieWeb.Controllers
             if (!room.IsPrivate)
                 return Json(new { success = true, valid = true });
 
-            bool isValid = string.Equals(room.PinCode, request.Pin?.Trim(), StringComparison.Ordinal);
-            return Json(new { success = true, valid = isValid, message = isValid ? "Mã PIN hợp lệ" : "Mã PIN không chính xác." });
+            var enteredPin = request.Pin?.Trim() ?? "";
+            if (enteredPin.Length != 6 || !Regex.IsMatch(enteredPin, @"^\d{6}$"))
+            {
+                return Json(new { success = false, valid = false, message = "Mã PIN phòng phải gồm đúng 6 chữ số." });
+            }
+
+            bool isValid = string.Equals(room.PinCode, enteredPin, StringComparison.Ordinal);
+            return Json(new { success = true, valid = isValid, message = isValid ? "Mã PIN hợp lệ." : "Mã PIN không chính xác. Vui lòng kiểm tra lại!" });
         }
 
         private string GenerateUniqueRoomCode()

@@ -90,7 +90,8 @@ namespace MovieWeb.Models.ViewModels.WatchParty
 
         public bool IsPrivate { get; set; }
 
-        [StringLength(20, ErrorMessage = "Mã PIN tối đa 20 ký tự")]
+        [RegularExpression(@"^\d{6}$", ErrorMessage = "Mã PIN phòng phải bao gồm đúng 6 chữ số")]
+        [StringLength(6, MinimumLength = 6, ErrorMessage = "Mã PIN phòng phải bao gồm đúng 6 chữ số")]
         public string? PinCode { get; set; }
 
         [Range(2, 100, ErrorMessage = "Số lượng thành viên từ 2 đến 100")]
