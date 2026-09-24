@@ -1,0 +1,232 @@
+@model MovieWeb.Models.ViewModels.WatchParty.WatchPartyRoomViewModel
+@{
+    ViewData["Title"] = $"Xem Chung: {Model.Title} - MoonPhim";
+    var isSeries = Model.Movie.Type?.ToLower() == "series" || Model.Movie.Type?.ToLower() == "hoathinh";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/watch-party.css" asp-append-version="true" />
+}
+
+<div class="watch-party-room-wrapper">
+    <!-- 1. Top Room Header Bar -->
+    <div class="wp-room-topbar">
+        <div class="wp-topbar-left">
+            <a href="/watch-party" class="wp-icon-btn" title="Quay lại sảnh xem chung">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div class="wp-topbar-title-box">
+                <h1>
+                    <span>@Model.Title</span>
+                    @if (Model.IsPrivate)
+                    {
+                        <span class="wp-badge wp-badge-private"><i class="fa-solid fa-lock"></i> Riêng tư</span>
+                    }
+                    else
+                    {
+                        <span class="wp-badge wp-badge-public"><i class="fa-solid fa-globe"></i> Công khai</span>
+                    }
+                </h1>
+                <p class="wp-topbar-subtitle">
+                    <i class="fa-solid fa-film text-info me-1"></i> @Model.Movie.Name
+                    @(Model.CurrentEpisodeNumber.HasValue ? $" • Tập {Model.CurrentEpisodeNumber.Value}" : "")
+                    • Host: <strong class="text-warning">@Model.HostName</strong>
+                </p>
+            </div>
+        </div>
+
+        <div class="wp-topbar-right">
+            <div class="wp-stat-chip">
+                <i class="fa-solid fa-users text-info"></i>
+                <span id="wpMemberCount">1</span>/@Model.MaxMembers
+            </div>
+
+            <!-- Nút Sao Chép Link Trực Tiếp (Direct Share) -->
+            <button type="button" class="wp-icon-btn primary" id="wpBtnCopyShare" title="Sao chép link mời bạn bè">
+                <i class="fa-solid fa-share-nodes"></i> Chia sẻ phòng
+            </button>
+
+            <!-- Menu Quản Trị Dành Cho Host -->
+            @if (Model.IsCurrentUserHost)
+            {
+                <button type="button" class="wp-icon-btn wp-host-only" id="wpBtnHostSettings" data-bs-toggle="modal" data-bs-target="#wpHostSettingsModal" title="Cài đặt phòng">
+                    <i class="fa-solid fa-gear"></i> Cài đặt
+                </button>
+                <button type="button" class="wp-icon-btn danger wp-host-only" onclick="window.closeCurrentRoom()" title="Đóng phòng xem chung">
+                    <i class="fa-solid fa-power-off"></i> Đóng phòng
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- 2. Host Disconnect 120s Grace Period Alert Banner -->
+    <div class="wp-grace-banner" id="wpGraceBanner">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>Chủ phòng tạm ngắt kết nối. Đang chờ kết nối lại:</span>
+        <span class="wp-grace-countdown" id="wpGraceCountdown">120s</span>
+    </div>
+
+    <!-- 3. Main Stage: Video Player (Left) + Chat / Episodes (Right) -->
+    <div class="wp-main-stage">
+        <!-- Left: Video Player Stage -->
+        <div class="wp-player-stage">
+            <div class="wp-video-container" id="wpVideoContainer">
+                <video id="wpVideoPlayer"
+                       class="wp-video-element"
+                       controls
+                       playsinline
+                       webkit-playsinline
+                       preload="auto">
+                </video>
+
+                <!-- Danmaku Bullet Comments Layer -->
+                <div id="wpDanmakuContainer" class="wp-danmaku-stage"></div>
+            </div>
+
+            <!-- Bottom Floating Danmaku Input Bar -->
+            <div class="wp-player-controls-bar">
+                <div class="wp-danmaku-bar">
+                    <button type="button" class="wp-icon-btn active" id="wpBtnToggleDanmaku" title="Bật/Tắt bình luận bay (Phím C)">
+                        <i class="fa-solid fa-comment-dots"></i> Danmaku
+                    </button>
+                    <input type="color" id="wpDanmakuColor" class="wp-color-picker-btn" value="#ffffff" title="Chọn màu chữ bình luận" />
+                    <input type="text" id="wpDanmakuInput" class="wp-danmaku-input" placeholder="Gửi bình luận bay lên màn hình (Phím Enter)..." maxlength="100" />
+                    <button type="button" class="wp-btn-send" id="wpBtnSendDanmaku" title="Gửi Danmaku">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+
+                <div class="d-none d-md-flex align-items-center gap-2 text-muted" style="font-size: 0.8rem;">
+                    <span><kbd style="background: rgba(255,255,255,0.1); color:#fff;">C</kbd> Bật/Tắt Danmaku</span>
+                    <span><kbd style="background: rgba(255,255,255,0.1); color:#fff;">Enter</kbd> Chat</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Sidebar (Chat, Members, Episodes) -->
+        <div class="wp-sidebar">
+            <div class="wp-sidebar-tabs">
+                <button type="button" class="wp-sidebar-tab active" data-target="tab-chat">
+                    <i class="fa-solid fa-comments"></i> Trò chuyện
+                </button>
+                <button type="button" class="wp-sidebar-tab" data-target="tab-members">
+                    <i class="fa-solid fa-users"></i> Thành viên
+                </button>
+                <button type="button" class="wp-sidebar-tab" data-target="tab-episodes">
+                    <i class="fa-solid fa-list-ol"></i> Tập phim
+                </button>
+            </div>
+
+            <!-- Tab 1: Chat Messages -->
+            <div class="wp-tab-content" id="tab-chat" style="display: flex; flex-direction: column; flex-grow: 1; height: 100%; min-height: 0;">
+                <div class="wp-messages-container" id="wpMessagesContainer">
+                    <div class="wp-system-message">
+                        Chào mừng bạn đến với phòng xem chung! Hãy cùng trò chuyện vui vẻ nhé.
+                    </div>
+                </div>
+
+                <div class="wp-chat-input-bar">
+                    <input type="text" id="wpChatInput" class="wp-chat-input" placeholder="Nhập tin nhắn..." maxlength="300" />
+                    <button type="button" class="wp-btn-send" id="wpBtnSendChat">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab 2: Members List -->
+            <div class="wp-tab-content wp-members-panel" id="tab-members" style="display: none; flex-direction: column; flex-grow: 1;">
+                <div id="wpMembersList" style="display: flex; flex-direction: column; gap: 0.6rem;">
+                    <!-- Dynamically populated by JS -->
+                </div>
+            </div>
+
+            <!-- Tab 3: Episodes List -->
+            <div class="wp-tab-content wp-episodes-panel" id="tab-episodes" style="display: none; flex-direction: column; flex-grow: 1;">
+                @if (Model.GroupedEpisodes.Any())
+                {
+                    @foreach (var group in Model.GroupedEpisodes)
+                    {
+                        var serverKey = group.Key;
+                        var serverTitle = Model.ServerDisplayNames.ContainsKey(serverKey) ? Model.ServerDisplayNames[serverKey] : serverKey;
+
+                        <div style="margin-bottom: 1.25rem;">
+                            <div style="font-size: 0.85rem; font-weight: 700; color: #93c5fd; margin-bottom: 0.4rem;">
+                                <i class="fa-solid fa-server me-1"></i> @serverTitle
+                            </div>
+                            <div class="wp-ep-grid">
+                                @foreach (var ep in group.Value.OrderBy(e => int.TryParse(System.Text.RegularExpressions.Regex.Match(e.EpisodeName, @"\d+").Value, out int n) ? n : 0))
+                                {
+                                    bool isCurrent = (ep.EpisodeId == Model.CurrentEpisodeId);
+                                    <a href="javascript:void(0)"
+                                       class="wp-ep-item @(isCurrent ? "active" : "")"
+                                       data-episode-id="@ep.EpisodeId"
+                                       data-episode-name="@ep.EpisodeName"
+                                       onclick="window.changeEpisode(@ep.EpisodeId, '@ep.EpisodeName', '@serverTitle', '@ep.LinkM3u8')">
+                                        Tập @ep.EpisodeName
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div style="text-align: center; color: var(--wp-text-muted); padding: 2rem 1rem;">
+                        Phim này không có danh sách tập riêng lẻ.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Host Settings -->
+<div class="modal fade" id="wpHostSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--wp-bg-surface); border: 1px solid var(--wp-border); color: #fff; border-radius: 16px;">
+            <div class="modal-header" style="border-bottom: 1px solid var(--wp-border);">
+                <h5 class="modal-title"><i class="fa-solid fa-sliders text-warning me-2"></i> Cài Đặt Phòng Xem Chung</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="wp-form-group">
+                    <label class="wp-form-label">Quyền điều khiển video</label>
+                    <select class="wp-form-control" id="wpControlSettingSelect" onchange="window.toggleControlSetting(this.value === 'true')">
+                        <option value="true" selected="@(Model.OnlyHostControl ? "selected" : null)">Chỉ Chủ phòng (Host)</option>
+                        <option value="false" selected="@(!Model.OnlyHostControl ? "selected" : null)">Tất cả thành viên trong phòng</option>
+                    </select>
+                </div>
+                <div class="wp-form-group mt-3">
+                    <label class="wp-form-label">Link chia sẻ trực tiếp (Bỏ qua mã PIN):</label>
+                    <input type="text" class="wp-form-control" readonly value="@Model.ShareUrl" onclick="this.select()" />
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid var(--wp-border);">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- SignalR Client Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <!-- HLS.js Video Streaming -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+    <!-- Danmaku Engine & Room Client -->
+    <script src="~/js/danmaku.js" asp-append-version="true"></script>
+    <script>
+        window.WP_CONFIG = {
+            roomCode: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RoomCode)),
+            shareToken: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ShareToken ?? "")),
+            shareUrl: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ShareUrl)),
+            videoUrl: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.VideoStreamUrl ?? "")),
+            isHost: @Model.IsCurrentUserHost.ToString().ToLower(),
+            hostUserId: @Model.HostUserId,
+            currentUserId: @Model.CurrentUserId,
+            currentUserName: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CurrentUserName)),
+            onlyHostControl: @Model.OnlyHostControl.ToString().ToLower()
+        };
+    </script>
+    <script src="~/js/watch-party-room.js" asp-append-version="true"></script>
+}

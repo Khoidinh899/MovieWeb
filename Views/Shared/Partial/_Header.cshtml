@@ -67,7 +67,14 @@
                         </div>
                     </li>
 
-                    @* ⭐ ADMIN PANEL - Đặt SAU Quốc Gia *@
+                    @* ⭐ XEM CHUNG (WATCH PARTY) *@
+                    <li class="nav-item">
+                        <a class="nav-link" href="/watch-party" style="color: #93c5fd; font-weight: 600;">
+                            <i class="fa-solid fa-users-viewfinder me-1 text-warning"></i> Xem Chung
+                        </a>
+                    </li>
+
+                    @* ⭐ ADMIN PANEL - Đặt CUỐI CÙNG *@
                     @if (currentUser?.IsAdmin == true)
                     {
                         <li class="nav-item">
@@ -283,6 +290,13 @@
                         @* JavaScript sẽ inject vào đây *@
                     </div>
                 </div>
+            </li>
+
+            @* ⭐ XEM CHUNG - MOBILE *@
+            <li class="nav-item">
+                <a class="nav-link text-info fw-bold" href="/watch-party">
+                    <i class="fa-solid fa-users-viewfinder me-2 text-warning"></i>Xem Chung
+                </a>
             </li>
         </ul>
 

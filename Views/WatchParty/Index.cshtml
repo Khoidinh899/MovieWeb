@@ -1,0 +1,307 @@
+@model MovieWeb.Models.ViewModels.WatchParty.WatchPartyHubViewModel
+@{
+    ViewData["Title"] = "Xem Chung Phim - Watch Party Trực Tuyến | MoonPhim";
+    var currentUser = Model.CurrentUserFullName;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/watch-party.css" asp-append-version="true" />
+}
+
+<div class="watch-party-hub container">
+    <!-- Hero Section -->
+    <div class="wp-hero">
+        <h1 class="wp-hero-title">🍿 Phòng Xem Chung Real-time</h1>
+        <p class="wp-hero-subtitle">
+            Cùng bạn bè thưởng thức những bộ phim bom tấn đỉnh cao, đồng bộ video từng giây và trò chuyện thả ga với hiệu ứng bình luận bay độc đáo.
+        </p>
+
+        <div class="wp-hero-stats">
+            <div class="wp-stat-chip live">
+                <i class="fa-solid fa-circle"></i>
+                <span><strong>@Model.TotalActiveRooms</strong> phòng đang phát</span>
+            </div>
+            <div class="wp-stat-chip">
+                <i class="fa-solid fa-users"></i>
+                <span><strong>@Model.TotalWatchingUsers</strong> người đang xem</span>
+            </div>
+        </div>
+
+        <div>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <button type="button" class="wp-btn-create" id="wpBtnOpenCreate">
+                    <i class="fa-solid fa-plus"></i> Tạo Phòng Xem Chung
+                </button>
+            }
+            else
+            {
+                <a href="/Auth/Login?returnUrl=/watch-party" class="wp-btn-create">
+                    <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập để tạo phòng
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Navigation & Filter Bar -->
+    <div class="wp-nav-container">
+        <div class="wp-tabs">
+            <button type="button" class="wp-tab-btn active" data-tab="public">
+                <i class="fa-solid fa-globe"></i> Công Khai
+                <span class="wp-tab-badge">@Model.PublicRooms.Count</span>
+            </button>
+            <button type="button" class="wp-tab-btn" data-tab="private">
+                <i class="fa-solid fa-lock"></i> Riêng Tư
+                <span class="wp-tab-badge">@Model.PrivateRooms.Count</span>
+            </button>
+        </div>
+
+        <div class="wp-search-box">
+            <i class="fa-solid fa-magnifying-glass wp-search-icon"></i>
+            <input type="text" id="wpSearchInput" class="wp-search-input" placeholder="Tìm tên phòng, phim, host..." />
+        </div>
+    </div>
+
+    <!-- Public Rooms Grid -->
+    <div class="wp-grid" id="tab-public-rooms">
+        @if (Model.PublicRooms.Any())
+        {
+            @foreach (var room in Model.PublicRooms)
+            {
+                var poster = !string.IsNullOrEmpty(room.PosterUrl) 
+                    ? (room.PosterUrl.StartsWith("http") ? room.PosterUrl : $"https://img.ophim.live/uploads/movies/{room.PosterUrl.TrimStart('/')}")
+                    : (!string.IsNullOrEmpty(room.ThumbUrl) 
+                        ? (room.ThumbUrl.StartsWith("http") ? room.ThumbUrl : $"https://img.ophim.live/uploads/movies/{room.ThumbUrl.TrimStart('/')}")
+                        : "/images/default-poster.jpg");
+
+                <div class="wp-room-card">
+                    <div class="wp-room-poster" style="background-image: url('@poster');">
+                        <div class="wp-room-poster-overlay"></div>
+                        <div class="wp-room-badges">
+                            <span class="wp-badge wp-badge-live">
+                                <i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> Trực tiếp
+                            </span>
+                            <span class="wp-badge wp-badge-public">
+                                <i class="fa-solid fa-globe"></i> Công khai
+                            </span>
+                        </div>
+                        <span class="wp-room-code-tag">#@room.RoomCode</span>
+                    </div>
+
+                    <div class="wp-room-body">
+                        <h3 class="wp-room-title" title="@room.Title">@room.Title</h3>
+                        <div class="wp-room-movie-name">
+                            <i class="fa-solid fa-film"></i>
+                            <span>@room.MovieTitle (Tập @room.EpisodeNumber)</span>
+                        </div>
+
+                        <div class="wp-room-host-meta">
+                            <div class="wp-host-info">
+                                <img src="@(room.HostAvatar ?? "/images/default-avatar.png")" class="wp-host-avatar" onerror="this.src='/images/default-avatar.png';" />
+                                <span class="wp-host-name">@room.HostName</span>
+                            </div>
+                            <div class="wp-member-count">
+                                <i class="fa-solid fa-users"></i>
+                                <span>@room.CurrentMembersCount / @room.MaxMembers</span>
+                            </div>
+                        </div>
+
+                        <a href="/watch-party/@room.RoomCode" class="wp-btn-join">
+                            <i class="fa-solid fa-play"></i> Vào Phòng Xem Ngay
+                        </a>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="wp-empty-state">
+                <div class="wp-empty-icon"><i class="fa-solid fa-tv"></i></div>
+                <h3 class="wp-empty-title">Chưa có phòng công khai nào</h3>
+                <p class="wp-empty-desc">Hãy là người đầu tiên tạo phòng xem chung và mời bạn bè cùng tham gia ngay!</p>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <button type="button" class="wp-btn-create" onclick="document.getElementById('wpBtnOpenCreate').click()">
+                        <i class="fa-solid fa-plus"></i> Tạo Phòng Ngay
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Private Rooms Grid -->
+    <div class="wp-grid" id="tab-private-rooms" style="display: none;">
+        @if (Model.PrivateRooms.Any())
+        {
+            @foreach (var room in Model.PrivateRooms)
+            {
+                var poster = !string.IsNullOrEmpty(room.PosterUrl) 
+                    ? (room.PosterUrl.StartsWith("http") ? room.PosterUrl : $"https://img.ophim.live/uploads/movies/{room.PosterUrl.TrimStart('/')}")
+                    : "/images/default-poster.jpg";
+
+                <div class="wp-room-card">
+                    <div class="wp-room-poster" style="background-image: url('@poster');">
+                        <div class="wp-room-poster-overlay"></div>
+                        <div class="wp-room-badges">
+                            <span class="wp-badge wp-badge-live">
+                                <i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> Trực tiếp
+                            </span>
+                            <span class="wp-badge wp-badge-private">
+                                <i class="fa-solid fa-lock"></i> Cần PIN
+                            </span>
+                        </div>
+                        <span class="wp-room-code-tag">#@room.RoomCode</span>
+                    </div>
+
+                    <div class="wp-room-body">
+                        <h3 class="wp-room-title" title="@room.Title">@room.Title</h3>
+                        <div class="wp-room-movie-name">
+                            <i class="fa-solid fa-film"></i>
+                            <span>@room.MovieTitle (Tập @room.EpisodeNumber)</span>
+                        </div>
+
+                        <div class="wp-room-host-meta">
+                            <div class="wp-host-info">
+                                <img src="@(room.HostAvatar ?? "/images/default-avatar.png")" class="wp-host-avatar" onerror="this.src='/images/default-avatar.png';" />
+                                <span class="wp-host-name">@room.HostName</span>
+                            </div>
+                            <div class="wp-member-count">
+                                <i class="fa-solid fa-users"></i>
+                                <span>@room.CurrentMembersCount / @room.MaxMembers</span>
+                            </div>
+                        </div>
+
+                        <button type="button" class="wp-btn-join" onclick="window.promptPrivateRoom('@room.RoomCode')">
+                            <i class="fa-solid fa-key"></i> Nhập Mã PIN Để Vào
+                        </button>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="wp-empty-state">
+                <div class="wp-empty-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                <h3 class="wp-empty-title">Chưa có phòng riêng tư nào</h3>
+                <p class="wp-empty-desc">Tạo phòng riêng tư với mã PIN để thưởng thức phim trọn vẹn cùng nhóm bạn thân thiết.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal: Tạo Phòng Xem Chung -->
+<div class="wp-modal-backdrop" id="wpCreateRoomModal">
+    <div class="wp-modal">
+        <div class="wp-modal-header">
+            <h3 class="wp-modal-title"><i class="fa-solid fa-film text-danger"></i> Tạo Phòng Xem Chung</h3>
+            <button type="button" class="wp-modal-close" id="wpBtnCloseCreate">&times;</button>
+        </div>
+        <form action="/watch-party/create" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="MovieId" id="wpSelectedMovieId" required />
+
+            <div class="wp-modal-body">
+                <!-- Chọn phim -->
+                <div class="wp-form-group">
+                    <label class="wp-form-label"><i class="fa-solid fa-magnifying-glass me-1"></i> Tìm và chọn phim <span class="text-danger">*</span></label>
+                    <input type="text" id="wpMovieSearch" class="wp-form-control" placeholder="Nhập tên phim bạn muốn xem cùng..." autocomplete="off" />
+                    <div class="wp-movie-search-results" id="wpMovieSearchResults"></div>
+                </div>
+
+                <!-- Phim đã chọn hiển thị preview -->
+                <div id="wpSelectedMovieInfo" style="display: none; align-items: center; gap: 0.75rem; background: rgba(99, 102, 241, 0.15); padding: 0.75rem; border-radius: 10px; margin-bottom: 1.25rem; border: 1px solid rgba(99, 102, 241, 0.3);">
+                    <img id="wpSelectedPoster" src="" style="width: 45px; height: 60px; object-fit: cover; border-radius: 6px;" />
+                    <div>
+                        <div id="selectedMovieLabel" style="font-size: 0.8rem; color: #93c5fd;">Phim đã chọn:</div>
+                        <div id="wpSelectedTitle" style="font-weight: 700; color: #ffffff;"></div>
+                    </div>
+                </div>
+
+                <!-- Chọn Tập phim -->
+                <div class="wp-form-group">
+                    <label class="wp-form-label"><i class="fa-solid fa-layer-group me-1"></i> Chọn tập phim</label>
+                    <select name="EpisodeId" id="wpEpisodeSelect" class="wp-form-control">
+                        <option value="">-- Vui lòng chọn phim trước --</option>
+                    </select>
+                </div>
+
+                <!-- Tên phòng -->
+                <div class="wp-form-group">
+                    <label class="wp-form-label"><i class="fa-solid fa-pen me-1"></i> Tên phòng xem chung</label>
+                    <input type="text" name="Title" id="wpRoomTitleInput" class="wp-form-control" placeholder="VD: Xem phim cùng Nhật Khôi" required />
+                </div>
+
+                <!-- Cấu hình quyền & Riêng tư -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="wp-form-group">
+                        <label class="wp-form-label"><i class="fa-solid fa-users me-1"></i> Số người tối đa</label>
+                        <select name="MaxMembers" class="wp-form-control">
+                            <option value="10">10 thành viên</option>
+                            <option value="20" selected>20 thành viên</option>
+                            <option value="50">50 thành viên</option>
+                            <option value="100">100 thành viên</option>
+                        </select>
+                    </div>
+
+                    <div class="wp-form-group">
+                        <label class="wp-form-label"><i class="fa-solid fa-sliders me-1"></i> Quyền điều khiển</label>
+                        <select name="OnlyHostControl" class="wp-form-control">
+                            <option value="true" selected>Chỉ Chủ phòng (Host)</option>
+                            <option value="false">Tất cả thành viên</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Checkbox Riêng tư -->
+                <div class="wp-form-group" style="display: flex; align-items: center; gap: 0.6rem; margin-top: 0.5rem;">
+                    <input type="checkbox" name="IsPrivate" value="true" id="wpIsPrivate" style="width: 18px; height: 18px; cursor: pointer;" />
+                    <label for="wpIsPrivate" style="cursor: pointer; font-size: 0.9rem; color: #ffffff; margin: 0;">
+                        Đặt phòng riêng tư (Cần mã PIN khi vào từ trang chủ)
+                    </label>
+                </div>
+
+                <!-- Mã PIN (nếu riêng tư) -->
+                <div class="wp-form-group" id="wpPinGroup" style="display: none;">
+                    <label class="wp-form-label"><i class="fa-solid fa-key me-1"></i> Mã PIN phòng (4 - 8 ký tự)</label>
+                    <input type="text" name="PinCode" class="wp-form-control" placeholder="VD: 1234" maxlength="20" />
+                </div>
+            </div>
+
+            <div class="wp-modal-footer">
+                <button type="submit" class="wp-btn-create">
+                    <i class="fa-solid fa-check"></i> Xác Nhận Tạo Phòng
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Nhập PIN vào phòng riêng tư -->
+<div class="wp-modal-backdrop" id="wpPinPromptModal">
+    <div class="wp-modal" style="max-width: 400px;">
+        <div class="wp-modal-header">
+            <h3 class="wp-modal-title"><i class="fa-solid fa-lock text-warning"></i> Phòng Riêng Tư</h3>
+            <button type="button" class="wp-modal-close" id="wpBtnCancelPin">&times;</button>
+        </div>
+        <div class="wp-modal-body">
+            <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 1rem;">
+                Phòng này được đặt mật mã bảo vệ bởi chủ phòng. Vui lòng nhập mã PIN để tham gia:
+            </p>
+            <div class="wp-form-group">
+                <input type="password" id="wpPinInput" class="wp-form-control" placeholder="Nhập mã PIN..." maxlength="20" style="text-align: center; font-size: 1.2rem; letter-spacing: 4px;" />
+            </div>
+        </div>
+        <div class="wp-modal-footer">
+            <button type="button" class="wp-btn-create" id="wpBtnSubmitPin" style="width: 100%; justify-content: center;">
+                <i class="fa-solid fa-door-open"></i> Vào Phòng
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.WP_CURRENT_USER_NAME = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(currentUser ?? ""));
+    </script>
+    <script src="~/js/watch-party-hub.js" asp-append-version="true"></script>
+}

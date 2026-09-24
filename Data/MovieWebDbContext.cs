@@ -45,6 +45,10 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
     public virtual DbSet<Advertisement> Advertisements { get; set; }
     public virtual DbSet<CopyrightReport> CopyrightReports { get; set; }
 
+    // ===== WATCH PARTY TABLES =====
+    public virtual DbSet<WatchPartyRoom> WatchPartyRooms { get; set; }
+    public virtual DbSet<WatchPartyMember> WatchPartyMembers { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -520,6 +524,78 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
 
             entity.HasIndex(e => e.Placement, "IX_Advertisements_Placement");
             entity.HasIndex(e => e.IsActive, "IX_Advertisements_IsActive");
+        });
+
+        // ===== WATCH PARTY ROOMS =====
+        modelBuilder.Entity<WatchPartyRoom>(entity =>
+        {
+            entity.ToTable("WatchPartyRooms");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.RoomCode).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ShareToken).HasMaxLength(64);
+            entity.Property(e => e.MovieSlug).HasMaxLength(255);
+            entity.Property(e => e.ServerName).HasMaxLength(50);
+            entity.Property(e => e.PinCode).HasMaxLength(20);
+            entity.Property(e => e.MaxMembers).HasDefaultValue(20);
+            entity.Property(e => e.OnlyHostControl).HasDefaultValue(true);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsPrivate).HasDefaultValue(false);
+            entity.Property(e => e.IsPlaying).HasDefaultValue(false);
+            entity.Property(e => e.CurrentTime).HasDefaultValue(0);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
+
+            entity.HasIndex(e => e.RoomCode, "IX_WatchPartyRooms_RoomCode").IsUnique();
+            entity.HasIndex(e => e.ShareToken, "IX_WatchPartyRooms_ShareToken").IsUnique();
+            entity.HasIndex(e => e.HostUserId, "IX_WatchPartyRooms_HostUserId");
+            entity.HasIndex(e => e.MovieId, "IX_WatchPartyRooms_MovieId");
+            entity.HasIndex(e => e.IsActive, "IX_WatchPartyRooms_IsActive");
+            entity.HasIndex(e => e.IsPrivate, "IX_WatchPartyRooms_IsPrivate");
+
+            entity.HasOne(d => d.Movie)
+                .WithMany()
+                .HasForeignKey(d => d.MovieId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.HostUser)
+                .WithMany()
+                .HasForeignKey(d => d.HostUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.Episode)
+                .WithMany()
+                .HasForeignKey(d => d.EpisodeId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ===== WATCH PARTY MEMBERS =====
+        modelBuilder.Entity<WatchPartyMember>(entity =>
+        {
+            entity.ToTable("WatchPartyMembers");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.UserName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.AvatarUrl).HasMaxLength(500);
+            entity.Property(e => e.ConnectionId).HasMaxLength(100);
+            entity.Property(e => e.IsHost).HasDefaultValue(false);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.JoinedAt).HasDefaultValueSql("now()");
+
+            entity.HasIndex(e => e.RoomId, "IX_WatchPartyMembers_RoomId");
+            entity.HasIndex(e => e.UserId, "IX_WatchPartyMembers_UserId");
+            entity.HasIndex(e => e.ConnectionId, "IX_WatchPartyMembers_ConnectionId");
+
+            entity.HasOne(d => d.Room)
+                .WithMany(p => p.Members)
+                .HasForeignKey(d => d.RoomId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
         
         OnModelCreatingPartial(modelBuilder);

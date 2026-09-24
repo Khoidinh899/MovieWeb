@@ -11,6 +11,7 @@ using System.Text;
 using MovieWeb.Models;
 using DotNetEnv;
 using MovieWeb.Hubs;
+using MovieWeb.Services.WatchParty;
 using Microsoft.AspNetCore.SignalR;
 using StripeLib = Stripe;
 using Hangfire;
@@ -114,7 +115,8 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Events.OnRedirectToLogin = context =>
     {
         if (context.Request.Path.StartsWithSegments("/api") || 
-            context.Request.Path.StartsWithSegments("/notificationHub"))
+            context.Request.Path.StartsWithSegments("/notificationHub") ||
+            context.Request.Path.StartsWithSegments("/watchPartyHub"))
         {
             context.Response.StatusCode = 401;
             return Task.CompletedTask;
@@ -126,7 +128,8 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Events.OnRedirectToAccessDenied = context =>
     {
         if (context.Request.Path.StartsWithSegments("/api") || 
-            context.Request.Path.StartsWithSegments("/notificationHub"))
+            context.Request.Path.StartsWithSegments("/notificationHub") ||
+            context.Request.Path.StartsWithSegments("/watchPartyHub"))
         {
             context.Response.StatusCode = 403;
             return Task.CompletedTask;
@@ -277,6 +280,7 @@ builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 builder.Services.AddHttpClient<IGeminiService, GeminiService>();
 builder.Services.AddHttpClient<ITurnstileService, TurnstileService>();
+builder.Services.AddSingleton<IWatchPartyManager, WatchPartyManager>();
 builder.Services.AddScoped<IMovieRequestService, MovieRequestService>();
 
 builder.Services.AddAntiforgery(options =>
@@ -443,6 +447,7 @@ app.UseMiddleware<UserStatusMiddleware>();
 
 // ===== MAP HUBS & ENDPOINTS =====
 app.MapHub<NotificationHub>("/notificationHub");
+app.MapHub<WatchPartyHub>("/watchPartyHub");
 
 // ===== HANGFIRE DASHBOARD =====
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
