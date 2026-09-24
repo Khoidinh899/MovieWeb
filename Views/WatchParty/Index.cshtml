@@ -36,9 +36,9 @@
             }
             else
             {
-                <a href="/Auth/Login?returnUrl=/watch-party" class="wp-btn-create">
+                <button type="button" class="wp-btn-create" data-bs-toggle="modal" data-bs-target="#authModal">
                     <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập để tạo phòng
-                </a>
+                </button>
             }
         </div>
     </div>
@@ -125,6 +125,12 @@
                         <i class="fa-solid fa-plus"></i> Tạo Phòng Ngay
                     </button>
                 }
+                else
+                {
+                    <button type="button" class="wp-btn-create" data-bs-toggle="modal" data-bs-target="#authModal">
+                        <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập để tạo phòng
+                    </button>
+                }
             </div>
         }
     </div>
@@ -184,6 +190,18 @@
                 <div class="wp-empty-icon"><i class="fa-solid fa-shield-halved"></i></div>
                 <h3 class="wp-empty-title">Chưa có phòng riêng tư nào</h3>
                 <p class="wp-empty-desc">Tạo phòng riêng tư với mã PIN để thưởng thức phim trọn vẹn cùng nhóm bạn thân thiết.</p>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <button type="button" class="wp-btn-create" onclick="document.getElementById('wpBtnOpenCreate').click()">
+                        <i class="fa-solid fa-plus"></i> Tạo Phòng Ngay
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="wp-btn-create" data-bs-toggle="modal" data-bs-target="#authModal">
+                        <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập để tạo phòng
+                    </button>
+                }
             </div>
         }
     </div>
