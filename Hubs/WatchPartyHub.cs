@@ -13,7 +13,6 @@ using MovieWeb.Services.WatchParty;
 
 namespace MovieWeb.Hubs
 {
-    [Authorize]
     public class WatchPartyHub : Hub
     {
         private readonly IWatchPartyManager _watchPartyManager;
@@ -28,6 +27,19 @@ namespace MovieWeb.Hubs
             _watchPartyManager = watchPartyManager;
             _scopeFactory = scopeFactory;
             _logger = logger;
+        }
+
+        // ==========================================
+        // 🌐 THAM GIA / RỜI SẢNH XEM CHUNG (LOBBY REALTIME)
+        // ==========================================
+        public async Task JoinLobby()
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, "WatchPartyLobby");
+        }
+
+        public async Task LeaveLobby()
+        {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, "WatchPartyLobby");
         }
 
         // ==========================================
@@ -201,6 +213,19 @@ namespace MovieWeb.Hubs
                 members = membersList
             });
 
+            // Cập nhật Sảnh (Lobby) số lượng thành viên realtime
+            try
+            {
+                await Clients.Group("WatchPartyLobby").SendAsync("OnLobbyRoomUpdated", new
+                {
+                    roomCode = roomCode,
+                    currentMembersCount = session.Members.Count,
+                    maxMembers = session.MaxMembers,
+                    isPlaying = session.IsPlaying
+                });
+            }
+            catch { }
+
             _logger.LogInformation("SignalR: User {UserName} joined WatchParty room {RoomCode}", userName, roomCode);
         }
 
@@ -225,6 +250,21 @@ namespace MovieWeb.Hubs
                     userName = member.UserName,
                     memberCount = memberCount
                 });
+
+                if (session != null)
+                {
+                    try
+                    {
+                        await Clients.Group("WatchPartyLobby").SendAsync("OnLobbyRoomUpdated", new
+                        {
+                            roomCode = roomCode,
+                            currentMembersCount = memberCount,
+                            maxMembers = session.MaxMembers,
+                            isPlaying = session.IsPlaying
+                        });
+                    }
+                    catch { }
+                }
             }
         }
 
@@ -557,6 +597,13 @@ namespace MovieWeb.Hubs
             await Clients.Group($"Room_{roomCode}").SendAsync("OnRoomClosed", "Chủ phòng đã kết thúc phiên xem chung.");
 
             _watchPartyManager.RemoveSession(roomCode);
+
+            // Cập nhật Sảnh (Lobby) xóa phòng realtime
+            try
+            {
+                await Clients.Group("WatchPartyLobby").SendAsync("OnLobbyRoomClosed", roomCode);
+            }
+            catch { }
         }
 
         // ==========================================
@@ -627,18 +674,61 @@ namespace MovieWeb.Hubs
 
                             _watchPartyManager.RemoveSession(expiredRoomCode);
                             await hubContext.Clients.Group($"Room_{expiredRoomCode}").SendAsync("OnRoomClosed", "Phòng đã tự động đóng do không còn thành viên.");
+                            await hubContext.Clients.Group("WatchPartyLobby").SendAsync("OnLobbyRoomClosed", expiredRoomCode);
                         }
                     });
                 }
                 else
                 {
                     // Thành viên thường rời phòng
+                    var memberCount = session?.Members.Count ?? 0;
                     await Clients.Group($"Room_{roomCode}").SendAsync("OnUserLeft", new
                     {
                         userId = member.UserId,
                         userName = member.UserName,
-                        memberCount = session?.Members.Count ?? 0
+                        memberCount = memberCount
                     });
+
+                    if (session != null)
+                    {
+                        try
+                        {
+                            await Clients.Group("WatchPartyLobby").SendAsync("OnLobbyRoomUpdated", new
+                            {
+                                roomCode = roomCode,
+                                currentMembersCount = memberCount,
+                                maxMembers = session.MaxMembers,
+                                isPlaying = session.IsPlaying
+                            });
+                        }
+                        catch { }
+
+                        // Nếu phòng không còn ai và không có bộ đếm ân hạn nào đang chạy
+                        if (memberCount == 0 && session.HostGraceExpiresAtUtc == null)
+                        {
+                            _watchPartyManager.StartHostGracePeriod(roomCode, 120, async (emptyRoomCode) =>
+                            {
+                                var hubContext = _scopeFactory.CreateScope().ServiceProvider.GetRequiredService<IHubContext<WatchPartyHub>>();
+                                var currentEmptySession = _watchPartyManager.GetSession(emptyRoomCode);
+                                if (currentEmptySession == null || currentEmptySession.Members.Count == 0)
+                                {
+                                    using var scope = _scopeFactory.CreateScope();
+                                    var db = scope.ServiceProvider.GetRequiredService<MovieWebDbContext>();
+                                    var room = await db.WatchPartyRooms.FirstOrDefaultAsync(r => r.RoomCode == emptyRoomCode);
+                                    if (room != null)
+                                    {
+                                        room.IsActive = false;
+                                        room.EndedAt = DateTime.UtcNow;
+                                        room.UpdatedAt = DateTime.UtcNow;
+                                        await db.SaveChangesAsync();
+                                    }
+
+                                    _watchPartyManager.RemoveSession(emptyRoomCode);
+                                    await hubContext.Clients.Group("WatchPartyLobby").SendAsync("OnLobbyRoomClosed", emptyRoomCode);
+                                }
+                            });
+                        }
+                    }
                 }
             }
 

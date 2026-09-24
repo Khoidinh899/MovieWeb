@@ -372,4 +372,187 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // 5. SignalR Realtime Lobby Synchronization
+    if (window.signalR) {
+        const lobbyConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/watchPartyHub")
+            .withAutomaticReconnect([0, 2000, 5000, 10000, 20000])
+            .configureLogging(signalR.LogLevel.Warning)
+            .build();
+
+        function updateLobbyStats() {
+            const publicCards = document.querySelectorAll('#tab-public-rooms .wp-room-card');
+            const privateCards = document.querySelectorAll('#tab-private-rooms .wp-room-card');
+            const totalRooms = publicCards.length + privateCards.length;
+
+            const publicBadge = document.getElementById('wpPublicBadge');
+            const privateBadge = document.getElementById('wpPrivateBadge');
+            const totalActiveRoomsEl = document.getElementById('wpTotalActiveRooms');
+            const totalWatchingUsersEl = document.getElementById('wpTotalWatchingUsers');
+
+            if (publicBadge) publicBadge.textContent = publicCards.length;
+            if (privateBadge) privateBadge.textContent = privateCards.length;
+            if (totalActiveRoomsEl) totalActiveRoomsEl.textContent = totalRooms;
+
+            let totalUsers = 0;
+            document.querySelectorAll('.wp-card-member-count').forEach(el => {
+                const text = el.textContent || '';
+                const match = text.match(/^(\d+)/);
+                if (match) {
+                    totalUsers += parseInt(match[1], 10) || 0;
+                }
+            });
+            if (totalWatchingUsersEl) totalWatchingUsersEl.textContent = totalUsers;
+        }
+
+        function createRoomCardElement(room) {
+            const card = document.createElement('div');
+            card.className = 'wp-room-card';
+            card.id = `wp-card-${room.roomCode}`;
+            card.dataset.roomCode = room.roomCode;
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(15px)';
+            card.style.transition = 'all 0.35s ease-out';
+
+            const poster = room.posterUrl 
+                ? (room.posterUrl.startsWith('http') ? room.posterUrl : `https://img.ophim.live/uploads/movies/${room.posterUrl.replace(/^\/+/, '')}`)
+                : (room.thumbUrl 
+                    ? (room.thumbUrl.startsWith('http') ? room.thumbUrl : `https://img.ophim.live/uploads/movies/${room.thumbUrl.replace(/^\/+/, '')}`)
+                    : '/images/default-poster.jpg');
+
+            const isPrivate = !!room.isPrivate;
+            const badgeType = isPrivate 
+                ? '<span class="wp-badge wp-badge-private"><i class="fa-solid fa-lock"></i> Cần PIN</span>'
+                : '<span class="wp-badge wp-badge-public"><i class="fa-solid fa-globe"></i> Công khai</span>';
+
+            const actionBtn = isPrivate
+                ? `<button type="button" class="wp-btn-join" onclick="window.promptPrivateRoom('${room.roomCode}')">
+                       <i class="fa-solid fa-key"></i> Nhập Mã PIN Để Vào
+                   </button>`
+                : `<a href="/watch-party/${room.roomCode}" class="wp-btn-join">
+                       <i class="fa-solid fa-play"></i> Vào Phòng Xem Ngay
+                   </a>`;
+
+            card.innerHTML = `
+                <div class="wp-room-poster" style="background-image: url('${poster}');">
+                    <div class="wp-room-poster-overlay"></div>
+                    <div class="wp-room-badges">
+                        <span class="wp-badge wp-badge-live">
+                            <i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> Trực tiếp
+                        </span>
+                        ${badgeType}
+                    </div>
+                    <span class="wp-room-code-tag">#${room.roomCode}</span>
+                </div>
+
+                <div class="wp-room-body">
+                    <h3 class="wp-room-title" title="${escapeHtml(room.title)}">${escapeHtml(room.title)}</h3>
+                    <div class="wp-room-movie-name">
+                        <i class="fa-solid fa-film"></i>
+                        <span>${escapeHtml(room.movieTitle)} (Tập ${room.episodeNumber || 1})</span>
+                    </div>
+
+                    <div class="wp-room-host-meta">
+                        <div class="wp-host-info">
+                            <img src="${room.hostAvatar || '/images/nouser.png'}" class="wp-host-avatar" onerror="this.src='/images/nouser.png';" />
+                            <span class="wp-host-name">${escapeHtml(room.hostName)}</span>
+                        </div>
+                        <div class="wp-member-count">
+                            <i class="fa-solid fa-users"></i>
+                            <span class="wp-card-member-count" id="wp-member-count-${room.roomCode}">${room.currentMembersCount || 1} / ${room.maxMembers || 20}</span>
+                        </div>
+                    </div>
+
+                    ${actionBtn}
+                </div>
+            `;
+            return card;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        lobbyConnection.on("OnLobbyRoomCreated", (room) => {
+            if (!room || !room.roomCode) return;
+            if (document.getElementById(`wp-card-${room.roomCode}`)) return;
+
+            const targetGrid = room.isPrivate ? tabPrivate : tabPublic;
+            if (!targetGrid) return;
+
+            // Xóa empty state nếu có
+            const emptyEl = targetGrid.querySelector('.wp-empty-state');
+            if (emptyEl) emptyEl.remove();
+
+            const card = createRoomCardElement(room);
+            targetGrid.prepend(card);
+
+            requestAnimationFrame(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            });
+
+            updateLobbyStats();
+        });
+
+        lobbyConnection.on("OnLobbyRoomClosed", (roomCode) => {
+            if (!roomCode) return;
+            const card = document.getElementById(`wp-card-${roomCode}`);
+            if (card) {
+                const parentGrid = card.parentElement;
+                card.style.transition = 'all 0.35s ease-in';
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.9) translateY(-10px)';
+
+                setTimeout(() => {
+                    card.remove();
+                    updateLobbyStats();
+
+                    if (parentGrid && parentGrid.querySelectorAll('.wp-room-card').length === 0) {
+                        const isPrivateGrid = (parentGrid.id === 'tab-private-rooms');
+                        const emptyHtml = isPrivateGrid
+                            ? `<div class="wp-empty-state" id="wpEmptyPrivate">
+                                   <div class="wp-empty-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                                   <h3 class="wp-empty-title">Chưa có phòng riêng tư nào</h3>
+                                   <p class="wp-empty-desc">Tạo phòng riêng tư với mã PIN để thưởng thức phim trọn vẹn cùng nhóm bạn thân thiết.</p>
+                               </div>`
+                            : `<div class="wp-empty-state" id="wpEmptyPublic">
+                                   <div class="wp-empty-icon"><i class="fa-solid fa-tv"></i></div>
+                                   <h3 class="wp-empty-title">Chưa có phòng công khai nào</h3>
+                                   <p class="wp-empty-desc">Hãy là người đầu tiên tạo phòng xem chung và mời bạn bè cùng tham gia ngay!</p>
+                                   <button type="button" class="wp-btn-create" onclick="document.getElementById('wpBtnOpenCreate')?.click()">
+                                       <i class="fa-solid fa-plus"></i> Tạo Phòng Ngay
+                                   </button>
+                               </div>`;
+                        parentGrid.innerHTML = emptyHtml;
+                    }
+                }, 350);
+            }
+        });
+
+        lobbyConnection.on("OnLobbyRoomUpdated", (data) => {
+            if (!data || !data.roomCode) return;
+            const memberCountEl = document.getElementById(`wp-member-count-${data.roomCode}`);
+            if (memberCountEl) {
+                memberCountEl.textContent = `${data.currentMembersCount} / ${data.maxMembers}`;
+            }
+            updateLobbyStats();
+        });
+
+        async function startLobbySignalR() {
+            try {
+                await lobbyConnection.start();
+                await lobbyConnection.invoke("JoinLobby");
+            } catch (err) {
+                console.warn("Lobby SignalR Connection Error (sẽ thử lại sau):", err);
+                setTimeout(startLobbySignalR, 4000);
+            }
+        }
+
+        startLobbySignalR();
+    }
 });

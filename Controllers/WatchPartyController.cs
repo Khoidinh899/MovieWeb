@@ -8,8 +8,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MovieWeb.Data;
+using MovieWeb.Hubs;
 using MovieWeb.Models.Entities;
 using MovieWeb.Models.ViewModels.WatchParty;
 using MovieWeb.Services.Interfaces;
@@ -23,17 +25,20 @@ namespace MovieWeb.Controllers
         private readonly IWatchPartyManager _watchPartyManager;
         private readonly UserManager<User> _userManager;
         private readonly IAuthService _authService;
+        private readonly IHubContext<WatchPartyHub> _hubContext;
 
         public WatchPartyController(
             MovieWebDbContext context,
             IWatchPartyManager watchPartyManager,
             UserManager<User> userManager,
-            IAuthService authService)
+            IAuthService authService,
+            IHubContext<WatchPartyHub> hubContext)
         {
             _context = context;
             _watchPartyManager = watchPartyManager;
             _userManager = userManager;
             _authService = authService;
+            _hubContext = hubContext;
         }
 
         // ==========================================
@@ -312,6 +317,39 @@ namespace MovieWeb.Controllers
                 currentUser.Avatar, room.IsPrivate, room.PinCode,
                 room.MaxMembers, room.OnlyHostControl
             );
+
+            // Bắn sự kiện Realtime cập nhật Sảnh Xem Chung (Lobby)
+            try
+            {
+                var roomCardDto = new WatchPartyRoomCardDto
+                {
+                    Id = room.Id,
+                    RoomCode = room.RoomCode,
+                    Title = room.Title,
+                    ShareToken = room.ShareToken,
+                    MovieId = room.MovieId,
+                    MovieTitle = movie.Name,
+                    MovieSlug = movie.Slug,
+                    PosterUrl = movie.PosterUrl,
+                    ThumbUrl = movie.ThumbUrl,
+                    EpisodeNumber = room.EpisodeNumber ?? 1,
+                    ServerName = room.ServerName,
+                    HostUserId = room.HostUserId,
+                    HostName = currentUser.FullName ?? currentUser.UserName ?? "Chủ phòng",
+                    HostAvatar = currentUser.Avatar,
+                    IsPlaying = false,
+                    IsPrivate = room.IsPrivate,
+                    MaxMembers = room.MaxMembers,
+                    CurrentMembersCount = 1,
+                    CreatedAt = room.CreatedAt
+                };
+
+                await _hubContext.Clients.Group("WatchPartyLobby").SendAsync("OnLobbyRoomCreated", roomCardDto);
+            }
+            catch (Exception)
+            {
+                // Ignore background hub broadcast error
+            }
 
             return RedirectToAction(nameof(Room), new { roomCode = room.RoomCode });
         }

@@ -19,11 +19,11 @@
         <div class="wp-hero-stats">
             <div class="wp-stat-chip live">
                 <i class="fa-solid fa-circle"></i>
-                <span><strong>@Model.TotalActiveRooms</strong> phòng đang phát</span>
+                <span><strong id="wpTotalActiveRooms">@Model.TotalActiveRooms</strong> phòng đang phát</span>
             </div>
             <div class="wp-stat-chip">
                 <i class="fa-solid fa-users"></i>
-                <span><strong>@Model.TotalWatchingUsers</strong> người đang xem</span>
+                <span><strong id="wpTotalWatchingUsers">@Model.TotalWatchingUsers</strong> người đang xem</span>
             </div>
         </div>
 
@@ -48,11 +48,11 @@
         <div class="wp-tabs">
             <button type="button" class="wp-tab-btn active" data-tab="public">
                 <i class="fa-solid fa-globe"></i> Công Khai
-                <span class="wp-tab-badge">@Model.PublicRooms.Count</span>
+                <span class="wp-tab-badge" id="wpPublicBadge">@Model.PublicRooms.Count</span>
             </button>
             <button type="button" class="wp-tab-btn" data-tab="private">
                 <i class="fa-solid fa-lock"></i> Riêng Tư
-                <span class="wp-tab-badge">@Model.PrivateRooms.Count</span>
+                <span class="wp-tab-badge" id="wpPrivateBadge">@Model.PrivateRooms.Count</span>
             </button>
         </div>
 
@@ -74,7 +74,7 @@
                         ? (room.ThumbUrl.StartsWith("http") ? room.ThumbUrl : $"https://img.ophim.live/uploads/movies/{room.ThumbUrl.TrimStart('/')}")
                         : "/images/default-poster.jpg");
 
-                <div class="wp-room-card">
+                <div class="wp-room-card" id="wp-card-@room.RoomCode" data-room-code="@room.RoomCode">
                     <div class="wp-room-poster" style="background-image: url('@poster');">
                         <div class="wp-room-poster-overlay"></div>
                         <div class="wp-room-badges">
@@ -102,7 +102,7 @@
                             </div>
                             <div class="wp-member-count">
                                 <i class="fa-solid fa-users"></i>
-                                <span>@room.CurrentMembersCount / @room.MaxMembers</span>
+                                <span class="wp-card-member-count" id="wp-member-count-@room.RoomCode">@room.CurrentMembersCount / @room.MaxMembers</span>
                             </div>
                         </div>
 
@@ -115,7 +115,7 @@
         }
         else
         {
-            <div class="wp-empty-state">
+            <div class="wp-empty-state" id="wpEmptyPublic">
                 <div class="wp-empty-icon"><i class="fa-solid fa-tv"></i></div>
                 <h3 class="wp-empty-title">Chưa có phòng công khai nào</h3>
                 <p class="wp-empty-desc">Hãy là người đầu tiên tạo phòng xem chung và mời bạn bè cùng tham gia ngay!</p>
@@ -139,7 +139,7 @@
                     ? (room.PosterUrl.StartsWith("http") ? room.PosterUrl : $"https://img.ophim.live/uploads/movies/{room.PosterUrl.TrimStart('/')}")
                     : "/images/default-poster.jpg";
 
-                <div class="wp-room-card">
+                <div class="wp-room-card" id="wp-card-@room.RoomCode" data-room-code="@room.RoomCode">
                     <div class="wp-room-poster" style="background-image: url('@poster');">
                         <div class="wp-room-poster-overlay"></div>
                         <div class="wp-room-badges">
@@ -167,7 +167,7 @@
                             </div>
                             <div class="wp-member-count">
                                 <i class="fa-solid fa-users"></i>
-                                <span>@room.CurrentMembersCount / @room.MaxMembers</span>
+                                <span class="wp-card-member-count" id="wp-member-count-@room.RoomCode">@room.CurrentMembersCount / @room.MaxMembers</span>
                             </div>
                         </div>
 
@@ -180,7 +180,7 @@
         }
         else
         {
-            <div class="wp-empty-state">
+            <div class="wp-empty-state" id="wpEmptyPrivate">
                 <div class="wp-empty-icon"><i class="fa-solid fa-shield-halved"></i></div>
                 <h3 class="wp-empty-title">Chưa có phòng riêng tư nào</h3>
                 <p class="wp-empty-desc">Tạo phòng riêng tư với mã PIN để thưởng thức phim trọn vẹn cùng nhóm bạn thân thiết.</p>
@@ -310,6 +310,8 @@
 </div>
 
 @section Scripts {
+    <!-- SignalR Client Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
     <script>
         window.WP_CURRENT_USER_NAME = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(currentUser ?? ""));
     </script>
