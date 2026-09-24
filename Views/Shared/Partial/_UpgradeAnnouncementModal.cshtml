@@ -1,6 +1,12 @@
 @* Partial View: _UpgradeAnnouncementModal.cshtml - Thông báo sự kiện Nâng Cấp MoonPhim 2.0 Đêm 24/09/2026 *@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @inject MovieWeb.Services.Interfaces.IAuthService _authService
 @{
+    var showUpgradeModal = Configuration.GetValue<bool>("FeatureFlags:ShowUpgradeAnnouncementModal", false);
+    if (!showUpgradeModal)
+    {
+        return;
+    }
     var currentUser = await _authService.GetCurrentUserAsync();
     var isAuthenticated = currentUser != null || (User.Identity?.IsAuthenticated == true);
 }

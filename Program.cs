@@ -425,9 +425,14 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-app.UseStaticFiles(); 
+var staticFileProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+staticFileProvider.Mappings[".apk"] = "application/vnd.android.package-archive";
+staticFileProvider.Mappings[".webmanifest"] = "application/manifest+json";
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = staticFileProvider
+}); 
 
 // ===== STRIPE WEBHOOK RAW BODY MIDDLEWARE =====
 app.Use(async (context, next) =>
