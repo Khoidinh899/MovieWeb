@@ -168,6 +168,18 @@
     <!-- Monetag In-Page Push & Vignette (Chạy sau khi toàn bộ trang dựng xong qua Idle Callback) -->
     <script>
         window.addEventListener('load', function () {
+            // Kiểm tra môi trường App (APK / iOS WebApp / Standalone)
+            var isAppOrWebView = (window.navigator.standalone === true) || 
+                                 window.matchMedia('(display-mode: standalone)').matches || 
+                                 window.matchMedia('(display-mode: fullscreen)').matches ||
+                                 navigator.userAgent.indexOf('MoonPhim') !== -1 ||
+                                 navigator.userAgent.indexOf('wv') !== -1 ||
+                                 (navigator.userAgent.indexOf('Android') !== -1 && navigator.userAgent.indexOf('Version/') !== -1) ||
+                                 (/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/i.test(navigator.userAgent));
+            if (isAppOrWebView) {
+                return; // Không chạy quảng cáo ngoài luồng trong App
+            }
+
             var loadMonetag = function () {
                 // Nạp In-Page Push (Zone 11708841)
                 var ipp = document.createElement('script');
@@ -195,11 +207,15 @@
         <!-- Monetag OnClick (Popunder) Ads Script - Chống vòng lặp chuyển hướng & Giới hạn IP/Cookie 24h -->
         <script>
             (function () {
-                // 1. Nếu mở từ App HomeScreen (Standalone PWA / iOS WebApp) -> Chặn hoàn toàn quảng cáo popunder
-                var isStandalone = window.navigator.standalone === true || 
-                                   window.matchMedia('(display-mode: standalone)').matches || 
-                                   window.matchMedia('(display-mode: fullscreen)').matches;
-                if (isStandalone) {
+                // 1. Kiểm tra môi trường App (APK / iOS WebApp / Standalone) -> Chặn hoàn toàn quảng cáo popunder
+                var isAppOrWebView = (window.navigator.standalone === true) || 
+                                     window.matchMedia('(display-mode: standalone)').matches || 
+                                     window.matchMedia('(display-mode: fullscreen)').matches ||
+                                     navigator.userAgent.indexOf('MoonPhim') !== -1 ||
+                                     navigator.userAgent.indexOf('wv') !== -1 ||
+                                     (navigator.userAgent.indexOf('Android') !== -1 && navigator.userAgent.indexOf('Version/') !== -1) ||
+                                     (/(iPhone|iPod|iPad).*AppleWebKit(?!.*Safari)/i.test(navigator.userAgent));
+                if (isAppOrWebView) {
                     return;
                 }
 
@@ -233,8 +249,7 @@
                     }
 
                     // Gỡ toàn bộ sự kiện chạm/click ngay lập tức
-                    window.removeEventListener('click', triggerPopunder, { capture: true, passive: true });
-                    window.removeEventListener('touchend', triggerPopunder, { capture: true, passive: true });
+                    window.removeEventListener('click', triggerPopunder);
 
                     // Nạp script OnClick Monetag (Zone 11708858)
                     var s = document.createElement('script');
@@ -243,9 +258,8 @@
                     (document.body || document.documentElement).appendChild(s);
                 };
 
-                // Bắt sự kiện click hoặc nhả ngón tay ở chế độ passive để không chặn scrolling trên mobile
-                window.addEventListener('click', triggerPopunder, { capture: true, passive: true });
-                window.addEventListener('touchend', triggerPopunder, { capture: true, passive: true });
+                // Bắt sự kiện click bình thường (không capture) để không chặn sự kiện bấm nút của người dùng
+                window.addEventListener('click', triggerPopunder, { once: true, passive: true });
             })();
         </script>
     }
