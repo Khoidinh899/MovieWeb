@@ -71,6 +71,13 @@
       "description": "Khám phá phim mới hot",
       "url": "/trang-chu",
       "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Xóa Phím Tắt",
+      "short_name": "Xóa Phím Tắt",
+      "description": "Hướng dẫn và đặt lại phím tắt màn hình chính",
+      "url": "/trang-chu?action=remove-shortcut",
+      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
     }
   ]
 }
