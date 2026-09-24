@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedMovieInfo = document.getElementById('wpSelectedMovieInfo');
     const selectedPoster = document.getElementById('wpSelectedPoster');
     const selectedTitle = document.getElementById('wpSelectedTitle');
+    const roomTitleInput = document.getElementById('wpRoomTitleInput');
     const serverSelect = document.getElementById('wpServerSelect');
     const episodeSelect = document.getElementById('wpEpisodeSelect');
     const isPrivateCheckbox = document.getElementById('wpIsPrivate');
