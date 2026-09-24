@@ -89,6 +89,34 @@
                 <div id="wpDanmakuContainer" class="wp-danmaku-stage"></div>
             </div>
 
+            <!-- Room Control Dock (Realtime Timeline & Iframe Playback Sync) -->
+            <div class="wp-room-controls-dock">
+                <div class="wp-ctrl-left">
+                    <button type="button" class="wp-ctrl-btn-primary" id="wpBtnPlayPause" onclick="window.togglePlayPause()" title="Phát / Tạm dừng toàn phòng">
+                        <i class="fa-solid fa-play" id="wpBtnPlayPauseIcon"></i>
+                    </button>
+                    <div class="wp-quick-seek-group">
+                        <button type="button" class="wp-ctrl-pill" onclick="window.quickSeek(-60)" title="Lùi 1 phút">-1m</button>
+                        <button type="button" class="wp-ctrl-pill" onclick="window.quickSeek(-10)" title="Lùi 10s">-10s</button>
+                        <button type="button" class="wp-ctrl-pill" onclick="window.quickSeek(10)" title="Tiến 10s">+10s</button>
+                        <button type="button" class="wp-ctrl-pill" onclick="window.quickSeek(60)" title="Tiến 1 phút">+1m</button>
+                    </div>
+                </div>
+
+                <div class="wp-timeline-container">
+                    <input type="range" id="wpTimelineSlider" class="wp-timeline-slider" min="0" max="7200" value="0" step="1" oninput="window.onTimelineInput(this)" onchange="window.onTimelineChange(this)" />
+                    <div class="wp-timeline-time">
+                        <span id="wpCurrentTimeText">00:00</span> / <span id="wpTotalDurationText">--:--</span>
+                    </div>
+                </div>
+
+                <div class="wp-ctrl-right">
+                    <button type="button" class="wp-ctrl-sync-btn" id="wpBtnSyncWithHost" onclick="window.syncWithHost()" title="Kéo video về đúng phân đoạn phòng đang chiếu">
+                        <i class="fa-solid fa-rotate"></i> Đồng bộ Host
+                    </button>
+                </div>
+            </div>
+
             <!-- Bottom Floating Danmaku Input Bar -->
             <div class="wp-player-controls-bar">
                 <div class="wp-danmaku-bar">

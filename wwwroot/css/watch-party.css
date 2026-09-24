@@ -629,6 +629,151 @@
     text-align: center;
 }
 
+/* -------------------------------------------------------------
+   Room Control Dock (Realtime Timeline & Iframe Playback Sync)
+   ------------------------------------------------------------- */
+.wp-room-controls-dock {
+    background: #0d1224;
+    border-top: 1px solid var(--wp-border);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 0.6rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    z-index: 35;
+}
+
+.wp-ctrl-left {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.wp-ctrl-btn-primary {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e50914 0%, #b91c1c 100%);
+    border: none;
+    color: #ffffff;
+    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
+    transition: all 0.2s ease;
+}
+
+.wp-ctrl-btn-primary:hover {
+    transform: scale(1.08);
+    background: linear-gradient(135deg, #f40612 0%, #dc2626 100%);
+}
+
+.wp-quick-seek-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.wp-ctrl-pill {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    border-radius: 6px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.wp-ctrl-pill:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.wp-timeline-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-grow: 1;
+    min-width: 200px;
+}
+
+.wp-timeline-slider {
+    flex-grow: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.wp-timeline-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #e50914;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(229, 9, 20, 0.8);
+    transition: transform 0.1s;
+}
+
+.wp-timeline-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.25);
+}
+
+.wp-timeline-time {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #94a3b8;
+    white-space: nowrap;
+}
+
+.wp-timeline-time span:first-child {
+    color: #f8fafc;
+}
+
+.wp-ctrl-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.wp-ctrl-sync-btn {
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.5);
+    color: #38bdf8;
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.wp-ctrl-sync-btn:hover {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: #38bdf8;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+}
+
 /* Host Floating Controller / Control Overlay */
 .wp-player-controls-bar {
     background: rgba(15, 23, 42, 0.95);

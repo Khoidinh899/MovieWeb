@@ -31,6 +31,8 @@ namespace MovieWeb.Services.WatchParty
         void StartHostGracePeriod(string roomCode, int seconds, Func<string, Task> onExpiredCallback);
         bool CancelHostGracePeriod(string roomCode);
 
+        double GetCalculatedCurrentTime(string roomCode);
+
         void RemoveSession(string roomCode);
     }
 

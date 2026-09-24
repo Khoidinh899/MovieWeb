@@ -23,11 +23,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const graceBanner = document.getElementById('wpGraceBanner');
     const graceCountdownEl = document.getElementById('wpGraceCountdown');
 
+    // Dock Controls Elements
+    const btnPlayPause = document.getElementById('wpBtnPlayPause');
+    const btnPlayPauseIcon = document.getElementById('wpBtnPlayPauseIcon');
+    const timelineSlider = document.getElementById('wpTimelineSlider');
+    const currentTimeText = document.getElementById('wpCurrentTimeText');
+    const totalDurationText = document.getElementById('wpTotalDurationText');
+
     // State Flags
-    let isSyncing = false;
     let currentHls = null;
     let danmaku = null;
     let graceTimer = null;
+    let currentVideoUrl = config.videoUrl || '';
+    let isDraggingTimeline = false;
+
     let roomState = {
         isHost: config.isHost,
         hostUserId: config.hostUserId,
@@ -43,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 🔔 TOAST NOTIFICATION HELPER (Slide-up)
+    // 🔔 TOAST NOTIFICATION HELPER
     // ==========================================
     function showToast(message, type = 'info') {
         let container = document.getElementById('wpToastContainer');
@@ -76,6 +85,92 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
+    // ⏱️ TIME FORMATTER & UI HELPERS
+    // ==========================================
+    function formatTime(seconds) {
+        if (isNaN(seconds) || seconds < 0) return '00:00';
+        const s = Math.floor(seconds);
+        const hrs = Math.floor(s / 3600);
+        const mins = Math.floor((s % 3600) / 60);
+        const secs = s % 60;
+        const pad = (n) => (n < 10 ? '0' + n : n);
+        if (hrs > 0) {
+            return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+        }
+        return `${pad(mins)}:${pad(secs)}`;
+    }
+
+    function updatePlayPauseButtonUI() {
+        if (!btnPlayPauseIcon) return;
+        if (roomState.isPlaying) {
+            btnPlayPauseIcon.className = 'fa-solid fa-pause';
+            if (btnPlayPause) btnPlayPause.title = 'Tạm dừng toàn phòng';
+        } else {
+            btnPlayPauseIcon.className = 'fa-solid fa-play';
+            if (btnPlayPause) btnPlayPause.title = 'Phát phim toàn phòng';
+        }
+    }
+
+    function updateTimelineUI() {
+        if (timelineSlider && !isDraggingTimeline) {
+            timelineSlider.value = Math.floor(roomState.currentTime);
+        }
+        if (currentTimeText) {
+            currentTimeText.textContent = formatTime(roomState.currentTime);
+        }
+    }
+
+    // 1-second interval ticker for timeline slider & time display
+    setInterval(() => {
+        if (roomState.isPlaying) {
+            roomState.currentTime += 1;
+            updateTimelineUI();
+        }
+    }, 1000);
+
+    // ==========================================
+    // 🎬 VIDEO & IFRAME EMBED LOADER
+    // ==========================================
+    function buildEmbedUrl(url, startTime) {
+        if (!url) return '';
+        let target = url.trim();
+        // Remove old timestamp query or hash
+        target = target.replace(/[?&]t=\d+/g, '').replace(/#t=\d+/g, '');
+        const startSec = Math.floor(startTime || 0);
+        if (startSec > 0) {
+            const sep = target.includes('?') ? '&' : '?';
+            target = `${target}${sep}t=${startSec}#t=${startSec}`;
+        }
+        return target;
+    }
+
+    function loadVideo(url, startTime = 0, autoPlay = false) {
+        if (!url || !url.trim()) return;
+        currentVideoUrl = url.trim();
+
+        if (currentHls) {
+            currentHls.destroy();
+            currentHls = null;
+        }
+        if (video) {
+            video.pause();
+            video.removeAttribute('src');
+            video.style.display = 'none';
+        }
+        if (embedPlayer) {
+            embedPlayer.style.display = 'block';
+            const finalUrl = buildEmbedUrl(currentVideoUrl, startTime);
+            if (embedPlayer.src !== finalUrl) {
+                embedPlayer.src = finalUrl;
+            }
+        }
+
+        roomState.currentTime = startTime || 0;
+        updateTimelineUI();
+        updatePlayPauseButtonUI();
+    }
+
+    // ==========================================
     // 1️⃣ SIGNALR CONNECTION
     // ==========================================
     const connection = new signalR.HubConnectionBuilder()
@@ -90,9 +185,13 @@ document.addEventListener('DOMContentLoaded', () => {
         roomState.hostUserId = state.hostUserId;
         roomState.onlyHostControl = state.onlyHostControl;
         roomState.allowDanmaku = (state.allowDanmaku !== false);
+        roomState.isPlaying = state.isPlaying;
+        roomState.currentTime = state.currentTime || 0;
         
         updateHostControlsUI();
         updateDanmakuUI();
+        updatePlayPauseButtonUI();
+        updateTimelineUI();
 
         if (state.messages && state.messages.length > 0) {
             messagesContainer.innerHTML = '';
@@ -103,85 +202,71 @@ document.addEventListener('DOMContentLoaded', () => {
             updateMemberList(state.members);
         }
 
-        // Khởi tạo Video Player
+        // Khởi tạo Video Iframe Embed với currentTime được server tính toán trực tiếp cho người vào sau
         if (config.videoUrl) {
-            loadVideo(config.videoUrl, state.currentTime, state.isPlaying);
+            loadVideo(config.videoUrl, roomState.currentTime, roomState.isPlaying);
         }
     });
 
     connection.on("OnSyncPlay", (data) => {
-        if (!video) return;
-        isSyncing = true;
-        removeAutoplayPrompt();
-        
-        if (Math.abs(video.currentTime - data.currentTime) > 1.5) {
-            video.currentTime = data.currentTime;
-        }
-
-        const playPromise = video.play();
-        if (playPromise !== undefined) {
-            playPromise.then(() => {
-                setTimeout(() => { isSyncing = false; }, 300);
-            }).catch((err) => {
-                console.warn("[WatchParty] Autoplay prevented by browser:", err);
-                isSyncing = false;
-                showAutoplayPrompt(data.currentTime);
-            });
-        } else {
-            setTimeout(() => { isSyncing = false; }, 300);
-        }
+        roomState.isPlaying = true;
+        roomState.currentTime = data.currentTime;
+        updatePlayPauseButtonUI();
+        updateTimelineUI();
 
         if (danmaku) {
             danmaku.emit(`${data.senderName} đã tiếp tục phát`, '#60a5fa', 'top');
         }
+        showToast(`${data.senderName} đã tiếp tục phát`, 'info');
     });
 
     connection.on("OnSyncPause", (data) => {
-        if (!video) return;
-        isSyncing = true;
-        removeAutoplayPrompt();
-
-        if (Math.abs(video.currentTime - data.currentTime) > 1.5) {
-            video.currentTime = data.currentTime;
-        }
-
-        video.pause();
-        setTimeout(() => { isSyncing = false; }, 300);
+        roomState.isPlaying = false;
+        roomState.currentTime = data.currentTime;
+        updatePlayPauseButtonUI();
+        updateTimelineUI();
 
         if (danmaku) {
             danmaku.emit(`${data.senderName} đã tạm dừng`, '#fca5a5', 'top');
         }
+        showToast(`${data.senderName} đã tạm dừng`, 'info');
     });
 
     connection.on("OnSyncSeek", (data) => {
-        if (!video) return;
-        isSyncing = true;
-        video.currentTime = data.currentTime;
-        setTimeout(() => { isSyncing = false; }, 300);
+        roomState.currentTime = data.currentTime;
+        updateTimelineUI();
 
+        // Cập nhật lại Iframe nhúng về mốc tua mới
+        if (currentVideoUrl && embedPlayer) {
+            const finalUrl = buildEmbedUrl(currentVideoUrl, data.currentTime);
+            embedPlayer.src = finalUrl;
+        }
+
+        const timeStr = formatTime(data.currentTime);
         if (danmaku) {
-            const minutes = Math.floor(data.currentTime / 60);
-            const seconds = Math.floor(data.currentTime % 60);
-            const timeStr = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
             danmaku.emit(`${data.senderName} đã tua đến ${timeStr}`, '#fbbf24', 'top');
         }
+        showToast(`${data.senderName} đã tua đến ${timeStr}`, 'info');
     });
 
     connection.on("OnSyncHeartbeat", (data) => {
-        if (!video || roomState.isHost) return;
-        if (data.isPlaying && !video.paused) {
-            if (Math.abs(video.currentTime - data.currentTime) > 3) {
-                console.log(`[WatchParty] Aligning drift (${video.currentTime.toFixed(1)}s -> ${data.currentTime.toFixed(1)}s)`);
-                isSyncing = true;
-                video.currentTime = data.currentTime;
-                setTimeout(() => { isSyncing = false; }, 300);
-            }
+        if (roomState.isHost) return;
+        roomState.isPlaying = data.isPlaying;
+        updatePlayPauseButtonUI();
+        if (Math.abs(roomState.currentTime - data.currentTime) > 5) {
+            roomState.currentTime = data.currentTime;
+            updateTimelineUI();
         }
     });
 
     connection.on("OnEpisodeChanged", (data) => {
         appendSystemMessage(`Chủ phòng đã chuyển sang Tập ${data.episodeNumber} (${data.serverName})`);
-        removeAutoplayPrompt();
+        currentVideoUrl = data.videoUrl;
+        roomState.currentTime = 0;
+        roomState.isPlaying = true;
+        updatePlayPauseButtonUI();
+        updateTimelineUI();
+
         if (data.videoUrl) {
             loadVideo(data.videoUrl, 0, true);
         }
@@ -280,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             setTimeout(() => {
                 window.location.href = "/watch-party";
-            }, 3000);
+            }, 2500);
         } else {
             setTimeout(() => {
                 window.location.href = "/watch-party";
@@ -305,126 +390,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     startConnection();
 
-    function isEmbedUrl(url) {
-        if (!url) return false;
-        const lower = url.toLowerCase();
-        if (lower.includes('.m3u8')) return false;
-        if (lower.includes('/video/') || lower.includes('/embed/') || lower.includes('streamvsmov') || lower.includes('vsmov') || lower.includes('player.phimapi.com') || lower.includes('youtube.com') || lower.includes('youtu.be')) return true;
-        return !lower.includes('.m3u8');
-    }
-
-    // ==========================================
-    // 2️⃣ VIDEO PLAYER CONTROLS & SYNC
-    // ==========================================
-    function loadVideo(url, startTime = 0, autoPlay = false) {
-        if (!url || !url.trim()) return;
-        url = url.trim();
-
-        if (isEmbedUrl(url)) {
-            if (currentHls) {
-                currentHls.destroy();
-                currentHls = null;
-            }
-            if (video) {
-                video.pause();
-                video.removeAttribute('src');
-                video.style.display = 'none';
-            }
-            if (embedPlayer) {
-                embedPlayer.style.display = 'block';
-                let targetUrl = url;
-                if (startTime > 0) {
-                    if (targetUrl.includes('#t=')) {
-                        targetUrl = targetUrl.replace(/#t=\d+/, `#t=${startTime}`);
-                    } else if (targetUrl.includes('?')) {
-                        targetUrl = `${targetUrl}&t=${startTime}#t=${startTime}`;
-                    } else {
-                        targetUrl = `${targetUrl}?t=${startTime}#t=${startTime}`;
-                    }
-                }
-                if (embedPlayer.src !== targetUrl) {
-                    embedPlayer.src = targetUrl;
-                }
-            }
-            return;
-        }
-
-        // Direct Video / HLS M3U8 Mode
-        if (embedPlayer) {
-            embedPlayer.src = '';
-            embedPlayer.style.display = 'none';
-        }
-        if (video) {
-            video.style.display = 'block';
-        }
-
-        if (currentHls) {
-            currentHls.destroy();
-            currentHls = null;
-        }
-
-        if (url.includes('.m3u8') && window.Hls && Hls.isSupported()) {
-            const hls = new Hls({ enableWorker: true });
-            hls.loadSource(url);
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                if (startTime > 0) video.currentTime = startTime;
-                if (autoPlay) video.play().catch(() => {});
-            });
-            hls.on(Hls.Events.ERROR, (event, data) => {
-                if (data.fatal) {
-                    switch (data.type) {
-                        case Hls.ErrorTypes.NETWORK_ERROR:
-                            console.warn("HLS Network Error, attempting recovery...", data);
-                            hls.startLoad();
-                            break;
-                        case Hls.ErrorTypes.MEDIA_ERROR:
-                            console.warn("HLS Media Error, attempting recovery...", data);
-                            hls.recoverMediaError();
-                            break;
-                        default:
-                            hls.destroy();
-                            break;
-                    }
-                }
-            });
-            currentHls = hls;
-        } else if (video && (video.canPlayType('application/vnd.apple.mpegurl') || !url.includes('.m3u8'))) {
-            video.src = url;
-            if (startTime > 0) video.currentTime = startTime;
-            if (autoPlay) video.play().catch(() => {});
-        }
-    }
-
-    // Autoplay Prompt Helper
-    function showAutoplayPrompt(targetTime) {
-        let promptEl = document.getElementById('wpAutoplayPrompt');
-        if (!promptEl) {
-            promptEl = document.createElement('button');
-            promptEl.id = 'wpAutoplayPrompt';
-            promptEl.className = 'wp-autoplay-prompt';
-            promptEl.innerHTML = '<i class="fa-solid fa-play"></i><span>Chủ phòng đang phát phim • Nhấp để đồng bộ ngay</span>';
-            promptEl.onclick = () => {
-                if (video) {
-                    if (targetTime !== undefined && targetTime > 0) video.currentTime = targetTime;
-                    video.play().catch(console.error);
-                }
-                removeAutoplayPrompt();
-            };
-            const container = document.getElementById('wpVideoContainer');
-            if (container) container.appendChild(promptEl);
-        }
-    }
-
-    function removeAutoplayPrompt() {
-        const promptEl = document.getElementById('wpAutoplayPrompt');
-        if (promptEl) promptEl.remove();
-    }
-
     // Host Periodic Playback Heartbeat (every 5 seconds while playing)
     setInterval(() => {
-        if (roomState.isHost && video && !video.paused && connection.state === signalR.HubConnectionState.Connected) {
-            connection.invoke("SyncHeartbeat", config.roomCode, video.currentTime).catch(() => {});
+        if (roomState.isHost && roomState.isPlaying && connection.state === signalR.HubConnectionState.Connected) {
+            connection.invoke("SyncHeartbeat", config.roomCode, roomState.currentTime).catch(() => {});
         }
     }, 5000);
 
@@ -433,36 +402,61 @@ document.addEventListener('DOMContentLoaded', () => {
         loadVideo(config.videoUrl, 0, false);
     }
 
-    // Video Event Listeners (Emit Sync)
-    if (video) {
-        video.addEventListener('play', () => {
-            removeAutoplayPrompt();
-            if (isSyncing) return;
-            if (roomState.onlyHostControl && !roomState.isHost) {
-                showToast("Chỉ chủ phòng mới có quyền điều khiển phát video.", "warning");
-                return;
-            }
-            connection.invoke("SyncPlay", config.roomCode, video.currentTime).catch(console.error);
-        });
+    // ==========================================
+    // 2️⃣ DOCK CONTROLS (PLAY/PAUSE/SEEK/SYNC)
+    // ==========================================
+    window.togglePlayPause = function () {
+        if (roomState.onlyHostControl && !roomState.isHost) {
+            showToast("Chỉ chủ phòng mới có quyền điều khiển phát video.", "warning");
+            return;
+        }
+        if (roomState.isPlaying) {
+            connection.invoke("SyncPause", config.roomCode, roomState.currentTime).catch(console.error);
+        } else {
+            connection.invoke("SyncPlay", config.roomCode, roomState.currentTime).catch(console.error);
+        }
+    };
 
-        video.addEventListener('pause', () => {
-            if (isSyncing) return;
-            if (roomState.onlyHostControl && !roomState.isHost) {
-                showToast("Chỉ chủ phòng mới có quyền tạm dừng video.", "warning");
-                return;
-            }
-            connection.invoke("SyncPause", config.roomCode, video.currentTime).catch(console.error);
-        });
+    window.quickSeek = function (deltaSeconds) {
+        if (roomState.onlyHostControl && !roomState.isHost) {
+            showToast("Chỉ chủ phòng mới có quyền tua video.", "warning");
+            return;
+        }
+        const newTime = Math.max(0, roomState.currentTime + deltaSeconds);
+        roomState.currentTime = newTime;
+        updateTimelineUI();
+        connection.invoke("SyncSeek", config.roomCode, newTime).catch(console.error);
+    };
 
-        video.addEventListener('seeked', () => {
-            if (isSyncing) return;
-            if (roomState.onlyHostControl && !roomState.isHost) {
-                showToast("Chỉ chủ phòng mới có quyền tua video.", "warning");
-                return;
-            }
-            connection.invoke("SyncSeek", config.roomCode, video.currentTime).catch(console.error);
-        });
-    }
+    window.onTimelineInput = function (slider) {
+        isDraggingTimeline = true;
+        if (currentTimeText) {
+            currentTimeText.textContent = formatTime(slider.value);
+        }
+    };
+
+    window.onTimelineChange = function (slider) {
+        isDraggingTimeline = false;
+        if (roomState.onlyHostControl && !roomState.isHost) {
+            showToast("Chỉ chủ phòng mới có quyền tua video.", "warning");
+            slider.value = Math.floor(roomState.currentTime);
+            if (currentTimeText) currentTimeText.textContent = formatTime(roomState.currentTime);
+            return;
+        }
+        const newTime = Math.max(0, parseFloat(slider.value) || 0);
+        roomState.currentTime = newTime;
+        updateTimelineUI();
+        connection.invoke("SyncSeek", config.roomCode, newTime).catch(console.error);
+    };
+
+    window.syncWithHost = function () {
+        if (!currentVideoUrl) return;
+        loadVideo(currentVideoUrl, roomState.currentTime, roomState.isPlaying);
+        showToast(`Đã đồng bộ video ở mốc ${formatTime(roomState.currentTime)}!`, "success");
+        if (danmaku) {
+            danmaku.emit(`🔄 Đã đồng bộ video với phòng (${formatTime(roomState.currentTime)})`, '#60a5fa', 'top');
+        }
+    };
 
     // ==========================================
     // 3️⃣ CHAT & DANMAKU SENDING
@@ -486,7 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!text) return;
 
         const color = danmakuColor ? danmakuColor.value : '#ffffff';
-        const currentTime = video ? video.currentTime : 0;
+        const currentTime = roomState.currentTime || 0;
 
         connection.invoke("SendDanmaku", config.roomCode, text, color, "scroll", currentTime).catch(err => {
             console.error(err);

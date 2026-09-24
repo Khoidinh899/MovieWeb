@@ -184,6 +184,8 @@ namespace MovieWeb.Hubs
 
             var recentMessages = _watchPartyManager.GetRecentMessages(roomCode);
 
+            var calculatedTime = _watchPartyManager.GetCalculatedCurrentTime(roomCode);
+
             await Clients.Caller.SendAsync("OnInitialState", new
             {
                 roomCode = session.RoomCode,
@@ -191,7 +193,7 @@ namespace MovieWeb.Hubs
                 isHost = isHost,
                 hostUserId = session.HostUserId,
                 hostName = session.HostName,
-                currentTime = session.CurrentTime,
+                currentTime = calculatedTime,
                 isPlaying = session.IsPlaying,
                 onlyHostControl = session.OnlyHostControl,
                 allowDanmaku = session.AllowDanmaku,
@@ -605,6 +607,7 @@ namespace MovieWeb.Hubs
         // ==========================================
         public async Task CloseRoom(string roomCode)
         {
+            roomCode = roomCode?.Trim().ToUpperInvariant() ?? "";
             var session = _watchPartyManager.GetSession(roomCode);
             if (session == null) return;
 
@@ -619,7 +622,7 @@ namespace MovieWeb.Hubs
             using (var scope = _scopeFactory.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<MovieWebDbContext>();
-                var room = await db.WatchPartyRooms.FirstOrDefaultAsync(r => r.RoomCode == roomCode);
+                var room = await db.WatchPartyRooms.FirstOrDefaultAsync(r => r.RoomCode.ToUpper() == roomCode);
                 if (room != null)
                 {
                     room.IsActive = false;

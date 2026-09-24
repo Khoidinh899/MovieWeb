@@ -121,6 +121,23 @@ namespace MovieWeb.Services.WatchParty
             session.LastStateUpdateUtc = DateTime.UtcNow;
         }
 
+        public double GetCalculatedCurrentTime(string roomCode)
+        {
+            var session = GetSession(roomCode);
+            if (session == null) return 0;
+
+            if (session.IsPlaying)
+            {
+                double elapsed = (DateTime.UtcNow - session.LastStateUpdateUtc).TotalSeconds;
+                if (elapsed > 0 && elapsed < 86400)
+                {
+                    return session.CurrentTime + elapsed;
+                }
+            }
+
+            return session.CurrentTime;
+        }
+
         public void UpdateEpisode(string roomCode, int episodeId, int episodeNumber, string serverName)
         {
             var session = GetSession(roomCode);
