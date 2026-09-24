@@ -7,6 +7,7 @@ using System.Collections.Generic; // Cần cho List
 using System.Linq; // Cần cho Contains
 using System.Threading.Tasks; // Cần cho async
 using MovieWeb.Services.Interfaces;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace MovieWeb.Controllers.API
 {
@@ -58,6 +59,42 @@ namespace MovieWeb.Controllers.API
                 Console.WriteLine($"Lỗi API GetAdsForPlacements: {ex.Message}");
                 // Trả về lỗi server
                 return StatusCode(500, new { message = "Lỗi máy chủ nội bộ." });
+            }
+        }
+
+        /// <summary>
+        /// Ghi nhận IP đã xem quảng cáo OnClick (Popunder) để chặn trong 24h
+        /// </summary>
+        [HttpPost("record-popunder")]
+        [HttpGet("record-popunder")]
+        public IActionResult RecordPopunder([FromServices] Microsoft.Extensions.Caching.Memory.IMemoryCache memoryCache)
+        {
+            try
+            {
+                var clientIp = Request.Headers["X-Forwarded-For"].FirstOrDefault() 
+                               ?? HttpContext.Connection.RemoteIpAddress?.ToString() 
+                               ?? "unknown";
+                if (clientIp.Contains(","))
+                {
+                    clientIp = clientIp.Split(',')[0].Trim();
+                }
+
+                var ipCacheKey = $"monetag_pop_{clientIp}";
+                memoryCache.Set(ipCacheKey, true, TimeSpan.FromHours(24));
+
+                Response.Cookies.Append("moonphim_pop_done", "1", new Microsoft.AspNetCore.Http.CookieOptions
+                {
+                    MaxAge = TimeSpan.FromHours(24),
+                    Path = "/",
+                    SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax,
+                    HttpOnly = false
+                });
+
+                return Ok(new { success = true, ip = clientIp });
+            }
+            catch
+            {
+                return Ok(new { success = false });
             }
         }
     }

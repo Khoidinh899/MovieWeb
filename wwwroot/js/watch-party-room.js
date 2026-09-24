@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Elements
     const video = document.getElementById('wpVideoPlayer');
+    const embedPlayer = document.getElementById('wpEmbedPlayer');
     const danmakuContainer = document.getElementById('wpDanmakuContainer');
     const chatInput = document.getElementById('wpChatInput');
     const btnSendChat = document.getElementById('wpBtnSendChat');
@@ -280,11 +281,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
     startConnection();
 
+    function isEmbedUrl(url) {
+        if (!url) return false;
+        const lower = url.toLowerCase();
+        if (lower.includes('.m3u8')) return false;
+        if (lower.includes('/video/') || lower.includes('/embed/') || lower.includes('streamvsmov') || lower.includes('vsmov') || lower.includes('player.phimapi.com') || lower.includes('youtube.com') || lower.includes('youtu.be')) return true;
+        return !lower.includes('.m3u8');
+    }
+
     // ==========================================
     // 2️⃣ VIDEO PLAYER CONTROLS & SYNC
     // ==========================================
     function loadVideo(url, startTime = 0, autoPlay = false) {
-        if (!video || !url) return;
+        if (!url || !url.trim()) return;
+        url = url.trim();
+
+        if (isEmbedUrl(url)) {
+            if (currentHls) {
+                currentHls.destroy();
+                currentHls = null;
+            }
+            if (video) {
+                video.pause();
+                video.removeAttribute('src');
+                video.style.display = 'none';
+            }
+            if (embedPlayer) {
+                embedPlayer.style.display = 'block';
+                let targetUrl = url;
+                if (startTime > 0) {
+                    if (targetUrl.includes('#t=')) {
+                        targetUrl = targetUrl.replace(/#t=\d+/, `#t=${startTime}`);
+                    } else if (targetUrl.includes('?')) {
+                        targetUrl = `${targetUrl}&t=${startTime}#t=${startTime}`;
+                    } else {
+                        targetUrl = `${targetUrl}?t=${startTime}#t=${startTime}`;
+                    }
+                }
+                if (embedPlayer.src !== targetUrl) {
+                    embedPlayer.src = targetUrl;
+                }
+            }
+            return;
+        }
+
+        // Direct Video / HLS M3U8 Mode
+        if (embedPlayer) {
+            embedPlayer.src = '';
+            embedPlayer.style.display = 'none';
+        }
+        if (video) {
+            video.style.display = 'block';
+        }
 
         if (currentHls) {
             currentHls.destroy();
@@ -299,12 +347,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (startTime > 0) video.currentTime = startTime;
                 if (autoPlay) video.play().catch(() => {});
             });
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) {
+                    switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            console.warn("HLS Network Error, attempting recovery...", data);
+                            hls.startLoad();
+                            break;
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            console.warn("HLS Media Error, attempting recovery...", data);
+                            hls.recoverMediaError();
+                            break;
+                        default:
+                            hls.destroy();
+                            break;
+                    }
+                }
+            });
             currentHls = hls;
-        } else if (video.canPlayType('application/vnd.apple.mpegurl') || !url.includes('.m3u8')) {
+        } else if (video && (video.canPlayType('application/vnd.apple.mpegurl') || !url.includes('.m3u8'))) {
             video.src = url;
             if (startTime > 0) video.currentTime = startTime;
             if (autoPlay) video.play().catch(() => {});
         }
+    }
+
+    // Eagerly initialize video on DOM Load so player does not appear blank
+    if (config.videoUrl) {
+        loadVideo(config.videoUrl, 0, false);
     }
 
     // Video Event Listeners (Emit Sync)

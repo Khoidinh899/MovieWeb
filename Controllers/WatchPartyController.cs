@@ -171,12 +171,14 @@ namespace MovieWeb.Controllers
             {
                 currentEp = allEpisodes.FirstOrDefault(e => e.EpisodeId == room.EpisodeId.Value);
             }
-            if (currentEp == null)
+            if (currentEp == null || string.IsNullOrWhiteSpace(currentEp.LinkM3u8))
             {
-                currentEp = allEpisodes.FirstOrDefault();
+                currentEp = allEpisodes.FirstOrDefault(e => !string.IsNullOrWhiteSpace(e.LinkM3u8)) ?? allEpisodes.FirstOrDefault();
             }
 
-            string? videoUrl = currentEp?.LinkM3u8 ?? room.Movie.TrailerUrl;
+            string? videoUrl = !string.IsNullOrWhiteSpace(currentEp?.LinkM3u8) 
+                ? currentEp.LinkM3u8 
+                : (!string.IsNullOrWhiteSpace(room.Movie.TrailerUrl) ? room.Movie.TrailerUrl : "");
 
             // Direct share link
             var request = HttpContext.Request;

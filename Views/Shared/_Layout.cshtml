@@ -1,9 +1,21 @@
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
+@inject Microsoft.Extensions.Caching.Memory.IMemoryCache MemoryCache
 @{
     // ===== ✅ BẮT ĐẦU KHỐI CHUẨN BỊ BIẾN SEO MẶC ĐỊNH =====
     var request = Context.Request;
     var baseUrl = $"{request.Scheme}://{request.Host}";
     var defaultSeoImage = $"{baseUrl}/images/iconmoon.png";
+
+    // ===== IP RATE LIMITING CHO QUẢNG CÁO ONCLICK (24H) =====
+    var clientIp = Context.Request.Headers["X-Forwarded-For"].FirstOrDefault() 
+                   ?? Context.Connection.RemoteIpAddress?.ToString() 
+                   ?? "unknown";
+    if (clientIp.Contains(",")) {
+        clientIp = clientIp.Split(',')[0].Trim();
+    }
+    var ipCacheKey = $"monetag_pop_{clientIp}";
+    var hasSeenPopunder = MemoryCache.TryGetValue(ipCacheKey, out _) 
+                          || Context.Request.Cookies.ContainsKey("moonphim_pop_done");
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -178,45 +190,65 @@
         });
     </script>
 
-    <!-- Monetag OnClick (Popunder) Ads Script - Chống vòng lặp chuyển hướng Mobile & Giới hạn 24h -->
-    <script>
-        (function () {
-            var STORAGE_KEY = 'moonphim_pop_done';
-            var COOLDOWN = 24 * 60 * 60 * 1000; // 24 tiếng
+    @if (!hasSeenPopunder)
+    {
+        <!-- Monetag OnClick (Popunder) Ads Script - Chống vòng lặp chuyển hướng & Giới hạn IP/Cookie 24h -->
+        <script>
+            (function () {
+                // 1. Nếu mở từ App HomeScreen (Standalone PWA / iOS WebApp) -> Chặn hoàn toàn quảng cáo popunder
+                var isStandalone = window.navigator.standalone === true || 
+                                   window.matchMedia('(display-mode: standalone)').matches || 
+                                   window.matchMedia('(display-mode: fullscreen)').matches;
+                if (isStandalone) {
+                    return;
+                }
 
-            var lastShown = localStorage.getItem(STORAGE_KEY);
-            var now = Date.now();
+                var STORAGE_KEY = 'moonphim_pop_done';
+                var COOLDOWN = 24 * 60 * 60 * 1000; // 24 tiếng
 
-            // 1. Đã bật trong 24h qua -> Chặn hoàn toàn
-            if (lastShown && (now - parseInt(lastShown, 10)) < COOLDOWN) {
-                return;
-            }
+                var lastShown = localStorage.getItem(STORAGE_KEY);
+                var hasCookie = document.cookie.indexOf('moonphim_pop_done=') !== -1;
+                var now = Date.now();
 
-            var isFired = false;
+                // 2. Đã bật trong 24h qua (LocalStorage hoặc Cookie) -> Chặn hoàn toàn
+                if (hasCookie || (lastShown && (now - parseInt(lastShown, 10)) < COOLDOWN)) {
+                    return;
+                }
 
-            var triggerPopunder = function () {
-                if (isFired) return;
-                isFired = true;
+                var isFired = false;
 
-                // Ghi nhận ngay mốc thời gian để không lặp lại
-                localStorage.setItem(STORAGE_KEY, Date.now().toString());
+                var triggerPopunder = function () {
+                    if (isFired) return;
+                    isFired = true;
 
-                // Gỡ toàn bộ sự kiện chạm/click ngay lập tức
-                window.removeEventListener('click', triggerPopunder, { capture: true, passive: true });
-                window.removeEventListener('touchend', triggerPopunder, { capture: true, passive: true });
+                    // Ghi nhận ngay mốc thời gian LocalStorage + Cookie 24h
+                    localStorage.setItem(STORAGE_KEY, Date.now().toString());
+                    document.cookie = "moonphim_pop_done=1; max-age=86400; path=/; samesite=lax";
 
-                // Nạp script OnClick Monetag (Zone 11708858)
-                var s = document.createElement('script');
-                s.dataset.zone = '11708858';
-                s.src = 'https://al5sm.com/tag.min.js';
-                (document.body || document.documentElement).appendChild(s);
-            };
+                    // Gửi ghi nhận IP lên server (MemoryCache 24h)
+                    if (navigator.sendBeacon) {
+                        navigator.sendBeacon('/api/ads/record-popunder');
+                    } else {
+                        fetch('/api/ads/record-popunder', { method: 'POST', keepalive: true }).catch(function(){});
+                    }
 
-            // Bắt sự kiện click hoặc nhả ngón tay ở chế độ passive để không chặn scrolling trên mobile
-            window.addEventListener('click', triggerPopunder, { capture: true, passive: true });
-            window.addEventListener('touchend', triggerPopunder, { capture: true, passive: true });
-        })();
-    </script>
+                    // Gỡ toàn bộ sự kiện chạm/click ngay lập tức
+                    window.removeEventListener('click', triggerPopunder, { capture: true, passive: true });
+                    window.removeEventListener('touchend', triggerPopunder, { capture: true, passive: true });
+
+                    // Nạp script OnClick Monetag (Zone 11708858)
+                    var s = document.createElement('script');
+                    s.dataset.zone = '11708858';
+                    s.src = 'https://al5sm.com/tag.min.js';
+                    (document.body || document.documentElement).appendChild(s);
+                };
+
+                // Bắt sự kiện click hoặc nhả ngón tay ở chế độ passive để không chặn scrolling trên mobile
+                window.addEventListener('click', triggerPopunder, { capture: true, passive: true });
+                window.addEventListener('touchend', triggerPopunder, { capture: true, passive: true });
+            })();
+        </script>
+    }
 </body>
 
 </html>

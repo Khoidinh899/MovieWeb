@@ -40,7 +40,8 @@ main[role="main"].page-fading {
     [class*="in-page-push"],
     [id*="ipp-container"],
     .chatbot-toggle-btn,
-    .toast-container {
+    .toast-container,
+    #scrollTopBtn {
         bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
     }
 
