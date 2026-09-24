@@ -647,7 +647,7 @@
     align-items: center;
     gap: 0.5rem;
     flex-grow: 1;
-    max-width: 500px;
+    max-width: 100%;
 }
 
 .wp-danmaku-input {
@@ -1305,7 +1305,7 @@ select.wp-form-control option {
     position: fixed;
     bottom: 25px;
     right: 25px;
-    z-index: 999999;
+    z-index: 2147483647;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -1323,7 +1323,7 @@ select.wp-form-control option {
     display: flex;
     align-items: center;
     gap: 0.65rem;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.75);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.85);
     pointer-events: auto;
     animation: wpToastSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     transition: opacity 0.25s, transform 0.25s;
@@ -1341,6 +1341,24 @@ select.wp-form-control option {
 }
 .wp-toast.toast-info {
     border-left: 4px solid #3b82f6;
+}
+
+@media (max-width: 768px) {
+    .wp-toast-container {
+        bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        width: calc(100% - 32px) !important;
+        max-width: 420px !important;
+        align-items: center !important;
+    }
+    .wp-toast {
+        width: 100% !important;
+        justify-content: center !important;
+        text-align: center !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(99, 102, 241, 0.4) !important;
+    }
 }
 
 @keyframes wpToastSlideUp {
