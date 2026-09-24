@@ -27,6 +27,17 @@ namespace MovieWeb.Services
                 : "free";
             identity.AddClaim(new Claim("SubscriptionType", subscriptionType));
 
+            if (!string.IsNullOrEmpty(user.Avatar))
+            {
+                identity.AddClaim(new Claim("Avatar", user.Avatar));
+            }
+
+            var fullName = user.FullName;
+            if (!string.IsNullOrWhiteSpace(fullName))
+            {
+                identity.AddClaim(new Claim("FullName", fullName));
+            }
+
             return identity;
         }
     }

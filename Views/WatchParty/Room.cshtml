@@ -89,7 +89,12 @@
                     <button type="button" class="wp-icon-btn active" id="wpBtnToggleDanmaku" title="Bật/Tắt bình luận bay (Phím C)">
                         <i class="fa-solid fa-comment-dots"></i> Danmaku
                     </button>
-                    <input type="color" id="wpDanmakuColor" class="wp-color-picker-btn" value="#ffffff" title="Chọn màu chữ bình luận" />
+                    <label class="wp-color-picker-wrapper" title="Chọn màu chữ bình luận bay (Danmaku)">
+                        <input type="color" id="wpDanmakuColor" class="wp-color-picker-input" value="#ffffff" />
+                        <span class="wp-color-picker-badge" id="wpDanmakuColorBadge">
+                            <i class="fa-solid fa-palette"></i>
+                        </span>
+                    </label>
                     <input type="text" id="wpDanmakuInput" class="wp-danmaku-input" placeholder="Gửi bình luận bay lên màn hình (Phím Enter)..." maxlength="100" />
                     <button type="button" class="wp-btn-send" id="wpBtnSendDanmaku" title="Gửi Danmaku">
                         <i class="fa-solid fa-paper-plane"></i>

@@ -54,6 +54,16 @@ namespace MovieWeb.Hubs
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<MovieWebDbContext>();
 
+            if (string.IsNullOrWhiteSpace(avatarUrl))
+            {
+                var dbUser = await db.Users.FindAsync(userId);
+                avatarUrl = dbUser?.Avatar;
+            }
+            if (string.IsNullOrWhiteSpace(avatarUrl))
+            {
+                avatarUrl = "/images/nouser.png";
+            }
+
             var roomEntity = await db.WatchPartyRooms
                 .Include(r => r.Movie)
                 .Include(r => r.HostUser)
@@ -354,6 +364,11 @@ namespace MovieWeb.Hubs
             int.TryParse(userIdStr, out int userId);
             var userName = Context.User?.Identity?.Name ?? $"Thành viên #{userId}";
             var avatarUrl = Context.User?.FindFirst("Avatar")?.Value;
+            if (string.IsNullOrWhiteSpace(avatarUrl))
+            {
+                var member = session.Members.Values.FirstOrDefault(m => m.UserId == userId);
+                avatarUrl = member?.AvatarUrl ?? "/images/nouser.png";
+            }
             bool isHost = (session.HostUserId == userId);
 
             var chatDto = new WatchPartyChatMessageDto
@@ -397,6 +412,11 @@ namespace MovieWeb.Hubs
             var userIdStr = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             int.TryParse(userIdStr, out int userId);
             var avatarUrl = Context.User?.FindFirst("Avatar")?.Value;
+            if (string.IsNullOrWhiteSpace(avatarUrl))
+            {
+                var member = session.Members.Values.FirstOrDefault(m => m.UserId == userId);
+                avatarUrl = member?.AvatarUrl ?? "/images/nouser.png";
+            }
             bool isHost = (session.HostUserId == userId);
 
             _watchPartyManager.AddChatMessage(roomCode, new WatchPartyChatMessageDto

@@ -318,6 +318,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const danmakuColorBadge = document.getElementById('wpDanmakuColorBadge');
+    if (danmakuColor && danmakuColorBadge) {
+        const updateColorUI = () => {
+            const val = danmakuColor.value;
+            danmakuColorBadge.style.color = val;
+            danmakuColorBadge.style.boxShadow = `0 0 10px ${val}66`;
+        };
+        danmakuColor.addEventListener('input', updateColorUI);
+        danmakuColor.addEventListener('change', updateColorUI);
+        updateColorUI();
+    }
+
     if (btnToggleDanmaku && danmaku) {
         btnToggleDanmaku.addEventListener('click', () => {
             const isEnabled = danmaku.toggle();
@@ -350,11 +362,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const div = document.createElement('div');
         div.className = 'wp-message-item';
 
-        const avatar = msg.avatarUrl || '/images/default-avatar.png';
+        const avatar = msg.avatarUrl || '/images/nouser.png';
         const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
         div.innerHTML = `
-            <img src="${avatar}" class="wp-message-avatar" onerror="this.src='/images/default-avatar.png';" alt="Avatar" />
+            <img src="${avatar}" class="wp-message-avatar" onerror="this.src='/images/nouser.png';" alt="Avatar" />
             <div class="wp-message-content">
                 <div class="wp-message-header">
                     <span class="wp-sender-name ${msg.isHost ? 'host' : ''}">${escapeHtml(msg.userName)}</span>
@@ -387,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
             card.id = `member-card-${m.userId}`;
             card.innerHTML = `
                 <div class="wp-member-meta">
-                    <img src="${m.avatarUrl || '/images/default-avatar.png'}" class="wp-member-avatar" onerror="this.src='/images/default-avatar.png';" />
+                    <img src="${m.avatarUrl || '/images/nouser.png'}" class="wp-member-avatar" onerror="this.src='/images/nouser.png';" />
                     <div>
                         <span class="wp-member-name">${escapeHtml(m.userName)}</span>
                         ${m.isHost ? ' <span class="wp-host-badge">Host</span>' : ''}

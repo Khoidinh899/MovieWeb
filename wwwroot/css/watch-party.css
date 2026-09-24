@@ -663,14 +663,47 @@
     background: rgba(255, 255, 255, 0.12);
 }
 
-.wp-color-picker-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    border: 1px solid var(--wp-border);
+.wp-color-picker-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    background: #ffffff;
+    margin: 0;
+    user-select: none;
+}
+
+.wp-color-picker-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
     padding: 0;
+    border: none;
+    z-index: 2;
+}
+
+.wp-color-picker-badge {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--wp-border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.wp-color-picker-wrapper:hover .wp-color-picker-badge {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: #6366f1;
+    transform: scale(1.05);
 }
 
 /* Sidebar Chat & Tabs Area */
