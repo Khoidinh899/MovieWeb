@@ -554,9 +554,9 @@ namespace MovieWeb.Hubs
                 }
             }
 
-            _watchPartyManager.RemoveSession(roomCode);
-
             await Clients.Group($"Room_{roomCode}").SendAsync("OnRoomClosed", "Chủ phòng đã kết thúc phiên xem chung.");
+
+            _watchPartyManager.RemoveSession(roomCode);
         }
 
         // ==========================================

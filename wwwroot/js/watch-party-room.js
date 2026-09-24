@@ -241,11 +241,26 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(`${controlText} • ${danmakuText}`, "info");
     });
 
-    connection.on("OnRoomClosed", (msg) => {
-        showToast(msg || "Chủ phòng đã đóng phòng xem chung.", "warning");
-        setTimeout(() => {
-            window.location.href = "/watch-party";
-        }, 1500);
+    connection.on("OnRoomClosed", async (msg) => {
+        showToast(msg || "Chủ phòng đã kết thúc phiên xem chung.", "warning");
+        if (window.MoonDialog) {
+            window.MoonDialog.alert({
+                title: 'Phòng đã kết thúc',
+                message: msg || 'Chủ phòng đã kết thúc phiên xem chung. Đang chuyển về sảnh xem chung...',
+                type: 'warning',
+                iconClass: 'bi-door-closed-fill',
+                btnText: 'Về sảnh ngay'
+            }).then(() => {
+                window.location.href = "/watch-party";
+            });
+            setTimeout(() => {
+                window.location.href = "/watch-party";
+            }, 3000);
+        } else {
+            setTimeout(() => {
+                window.location.href = "/watch-party";
+            }, 1500);
+        }
     });
 
     connection.on("OnError", (err) => {
@@ -529,19 +544,40 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     };
 
-    window.transferHostTo = function (targetUserId) {
-        if (!confirm("Bạn có chắc chắn muốn chuyển quyền chủ phòng cho thành viên này?")) return;
+    window.transferHostTo = async function (targetUserId) {
+        const isConfirmed = window.MoonDialog ? await window.MoonDialog.confirm({
+            title: 'Chuyển quyền chủ phòng',
+            message: 'Bạn có chắc chắn muốn chuyển quyền chủ phòng cho thành viên này không?',
+            confirmText: 'Chuyển quyền',
+            cancelText: 'Hủy',
+            type: 'warning',
+            iconClass: 'bi-person-gear'
+        }) : confirm("Bạn có chắc chắn muốn chuyển quyền chủ phòng cho thành viên này?");
+
+        if (!isConfirmed) return;
+
         connection.invoke("TransferHost", config.roomCode, parseInt(targetUserId)).catch(err => {
             console.error(err);
             showToast("Lỗi khi chuyển quyền chủ phòng", "danger");
         });
     };
 
-    window.closeCurrentRoom = function () {
-        if (!confirm("Bạn có chắc chắn muốn kết thúc và đóng phòng xem chung này?")) return;
+    window.closeCurrentRoom = async function () {
+        const isConfirmed = window.MoonDialog ? await window.MoonDialog.confirm({
+            title: 'Đóng phòng xem chung',
+            message: 'Bạn có chắc chắn muốn kết thúc và đóng phòng xem chung này?\nTất cả thành viên sẽ rời khỏi phòng.',
+            confirmText: 'Đóng phòng',
+            cancelText: 'Hủy',
+            type: 'danger',
+            iconClass: 'bi-power'
+        }) : confirm("Bạn có chắc chắn muốn kết thúc và đóng phòng xem chung này?");
+
+        if (!isConfirmed) return;
+
+        showToast("Đang đóng phòng xem chung...", "info");
         connection.invoke("CloseRoom", config.roomCode).catch(err => {
             console.error(err);
-            showToast("Lỗi khi đóng phòng", "danger");
+            showToast("Lỗi khi đóng phòng: " + err, "danger");
         });
     };
 
