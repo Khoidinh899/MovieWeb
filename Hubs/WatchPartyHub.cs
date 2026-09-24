@@ -269,10 +269,11 @@ namespace MovieWeb.Hubs
         }
 
         // ==========================================
-        // 3️⃣ ĐỒNG BỘ PLAYBACK (PLAY / PAUSE / SEEK)
+        // 3️⃣ ĐỒNG BỘ PLAYBACK (PLAY / PAUSE / SEEK / HEARTBEAT)
         // ==========================================
         public async Task SyncPlay(string roomCode, double currentTime)
         {
+            roomCode = roomCode?.Trim().ToUpperInvariant() ?? "";
             var session = _watchPartyManager.GetSession(roomCode);
             if (session == null) return;
 
@@ -298,6 +299,7 @@ namespace MovieWeb.Hubs
 
         public async Task SyncPause(string roomCode, double currentTime)
         {
+            roomCode = roomCode?.Trim().ToUpperInvariant() ?? "";
             var session = _watchPartyManager.GetSession(roomCode);
             if (session == null) return;
 
@@ -323,6 +325,7 @@ namespace MovieWeb.Hubs
 
         public async Task SyncSeek(string roomCode, double currentTime)
         {
+            roomCode = roomCode?.Trim().ToUpperInvariant() ?? "";
             var session = _watchPartyManager.GetSession(roomCode);
             if (session == null) return;
 
@@ -346,11 +349,33 @@ namespace MovieWeb.Hubs
             });
         }
 
+        public async Task SyncHeartbeat(string roomCode, double currentTime)
+        {
+            roomCode = roomCode?.Trim().ToUpperInvariant() ?? "";
+            var session = _watchPartyManager.GetSession(roomCode);
+            if (session == null) return;
+
+            var userIdStr = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            int.TryParse(userIdStr, out int userId);
+            bool isHost = (session.HostUserId == userId);
+
+            if (isHost)
+            {
+                _watchPartyManager.UpdatePlayback(roomCode, currentTime, session.IsPlaying);
+                await Clients.OthersInGroup($"Room_{roomCode}").SendAsync("OnSyncHeartbeat", new
+                {
+                    currentTime = currentTime,
+                    isPlaying = session.IsPlaying
+                });
+            }
+        }
+
         // ==========================================
         // 4️⃣ ĐỔI TẬP PHIM (CHANGE EPISODE)
         // ==========================================
         public async Task ChangeEpisode(string roomCode, int episodeId, int episodeNumber, string serverName, string videoUrl)
         {
+            roomCode = roomCode?.Trim().ToUpperInvariant() ?? "";
             var session = _watchPartyManager.GetSession(roomCode);
             if (session == null) return;
 
@@ -364,12 +389,22 @@ namespace MovieWeb.Hubs
                 return;
             }
 
+            // Nếu videoUrl rỗng hoặc thiếu, truy vấn từ database
+            if (string.IsNullOrWhiteSpace(videoUrl))
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<MovieWebDbContext>();
+                var ep = await db.Episodes.FindAsync(episodeId);
+                videoUrl = ep?.LinkM3u8 ?? "";
+            }
+
             _watchPartyManager.UpdateEpisode(roomCode, episodeId, episodeNumber, serverName);
+            _watchPartyManager.UpdatePlayback(roomCode, 0, true);
 
             using (var scope = _scopeFactory.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<MovieWebDbContext>();
-                var room = await db.WatchPartyRooms.FirstOrDefaultAsync(r => r.RoomCode == roomCode);
+                var room = await db.WatchPartyRooms.FirstOrDefaultAsync(r => r.RoomCode.ToUpper() == roomCode);
                 if (room != null)
                 {
                     room.EpisodeId = episodeId;

@@ -112,16 +112,24 @@ document.addEventListener('DOMContentLoaded', () => {
     connection.on("OnSyncPlay", (data) => {
         if (!video) return;
         isSyncing = true;
+        removeAutoplayPrompt();
         
-        if (Math.abs(video.currentTime - data.currentTime) > 2) {
+        if (Math.abs(video.currentTime - data.currentTime) > 1.5) {
             video.currentTime = data.currentTime;
         }
 
-        video.play().then(() => {
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                setTimeout(() => { isSyncing = false; }, 300);
+            }).catch((err) => {
+                console.warn("[WatchParty] Autoplay prevented by browser:", err);
+                isSyncing = false;
+                showAutoplayPrompt(data.currentTime);
+            });
+        } else {
             setTimeout(() => { isSyncing = false; }, 300);
-        }).catch(() => {
-            isSyncing = false;
-        });
+        }
 
         if (danmaku) {
             danmaku.emit(`${data.senderName} đã tiếp tục phát`, '#60a5fa', 'top');
@@ -131,8 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
     connection.on("OnSyncPause", (data) => {
         if (!video) return;
         isSyncing = true;
+        removeAutoplayPrompt();
 
-        if (Math.abs(video.currentTime - data.currentTime) > 2) {
+        if (Math.abs(video.currentTime - data.currentTime) > 1.5) {
             video.currentTime = data.currentTime;
         }
 
@@ -158,8 +167,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    connection.on("OnSyncHeartbeat", (data) => {
+        if (!video || roomState.isHost) return;
+        if (data.isPlaying && !video.paused) {
+            if (Math.abs(video.currentTime - data.currentTime) > 3) {
+                console.log(`[WatchParty] Aligning drift (${video.currentTime.toFixed(1)}s -> ${data.currentTime.toFixed(1)}s)`);
+                isSyncing = true;
+                video.currentTime = data.currentTime;
+                setTimeout(() => { isSyncing = false; }, 300);
+            }
+        }
+    });
+
     connection.on("OnEpisodeChanged", (data) => {
         appendSystemMessage(`Chủ phòng đã chuyển sang Tập ${data.episodeNumber} (${data.serverName})`);
+        removeAutoplayPrompt();
         if (data.videoUrl) {
             loadVideo(data.videoUrl, 0, true);
         }
@@ -168,6 +190,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.wp-ep-item').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.episodeId == data.episodeId);
         });
+
+        showToast(`Đã chuyển sang Tập ${data.episodeNumber}`, "success");
     });
 
     connection.on("OnReceiveChatMessage", (msg) => {
@@ -372,6 +396,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Autoplay Prompt Helper
+    function showAutoplayPrompt(targetTime) {
+        let promptEl = document.getElementById('wpAutoplayPrompt');
+        if (!promptEl) {
+            promptEl = document.createElement('button');
+            promptEl.id = 'wpAutoplayPrompt';
+            promptEl.className = 'wp-autoplay-prompt';
+            promptEl.innerHTML = '<i class="fa-solid fa-play"></i><span>Chủ phòng đang phát phim • Nhấp để đồng bộ ngay</span>';
+            promptEl.onclick = () => {
+                if (video) {
+                    if (targetTime !== undefined && targetTime > 0) video.currentTime = targetTime;
+                    video.play().catch(console.error);
+                }
+                removeAutoplayPrompt();
+            };
+            const container = document.getElementById('wpVideoContainer');
+            if (container) container.appendChild(promptEl);
+        }
+    }
+
+    function removeAutoplayPrompt() {
+        const promptEl = document.getElementById('wpAutoplayPrompt');
+        if (promptEl) promptEl.remove();
+    }
+
+    // Host Periodic Playback Heartbeat (every 5 seconds while playing)
+    setInterval(() => {
+        if (roomState.isHost && video && !video.paused && connection.state === signalR.HubConnectionState.Connected) {
+            connection.invoke("SyncHeartbeat", config.roomCode, video.currentTime).catch(() => {});
+        }
+    }, 5000);
+
     // Eagerly initialize video on DOM Load so player does not appear blank
     if (config.videoUrl) {
         loadVideo(config.videoUrl, 0, false);
@@ -380,8 +436,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Video Event Listeners (Emit Sync)
     if (video) {
         video.addEventListener('play', () => {
+            removeAutoplayPrompt();
             if (isSyncing) return;
             if (roomState.onlyHostControl && !roomState.isHost) {
+                showToast("Chỉ chủ phòng mới có quyền điều khiển phát video.", "warning");
                 return;
             }
             connection.invoke("SyncPlay", config.roomCode, video.currentTime).catch(console.error);
@@ -390,6 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
         video.addEventListener('pause', () => {
             if (isSyncing) return;
             if (roomState.onlyHostControl && !roomState.isHost) {
+                showToast("Chỉ chủ phòng mới có quyền tạm dừng video.", "warning");
                 return;
             }
             connection.invoke("SyncPause", config.roomCode, video.currentTime).catch(console.error);
@@ -398,6 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
         video.addEventListener('seeked', () => {
             if (isSyncing) return;
             if (roomState.onlyHostControl && !roomState.isHost) {
+                showToast("Chỉ chủ phòng mới có quyền tua video.", "warning");
                 return;
             }
             connection.invoke("SyncSeek", config.roomCode, video.currentTime).catch(console.error);
@@ -602,15 +662,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 4️⃣ HOST ACTIONS (GLOBAL WINDOW METHODS)
     // ==========================================
+    window.onEpisodeClick = function (el) {
+        if (!el) return;
+        const epId = el.dataset.episodeId;
+        const epName = el.dataset.episodeName;
+        const serverTitle = el.dataset.serverTitle;
+        const linkM3u8 = el.dataset.linkM3u8 || '';
+        window.changeEpisode(epId, epName, serverTitle, linkM3u8);
+    };
+
     window.changeEpisode = function (episodeId, episodeNumber, serverName, videoUrl) {
         if (!roomState.isHost) {
             showToast("Chỉ chủ phòng mới có quyền đổi tập phim.", "warning");
             return;
         }
-        connection.invoke("ChangeEpisode", config.roomCode, parseInt(episodeId), parseInt(episodeNumber), serverName, videoUrl)
+
+        const match = (episodeNumber || '').toString().match(/\d+/);
+        const epNum = match ? parseInt(match[0]) : (parseInt(episodeNumber) || 1);
+        const epId = parseInt(episodeId) || 0;
+
+        showToast(`Đang chuyển sang Tập ${episodeNumber}...`, "info");
+        connection.invoke("ChangeEpisode", config.roomCode, epId, epNum, serverName || '', videoUrl || '')
             .catch(err => {
-                console.error(err);
-                showToast("Lỗi khi đổi tập phim", "danger");
+                console.error("ChangeEpisode error:", err);
+                showToast("Lỗi khi đổi tập phim: " + (err.message || err), "danger");
             });
     };
 

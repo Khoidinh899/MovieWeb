@@ -1408,3 +1408,36 @@ select.wp-form-control option {
         transform: translateY(0) scale(1);
     }
 }
+
+/* Autoplay Sync Prompt Button */
+.wp-autoplay-prompt {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #e50914 0%, #b91c1c 100%);
+    color: #ffffff;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    padding: 0.85rem 1.6rem;
+    border-radius: 9999px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    box-shadow: 0 10px 30px rgba(229, 9, 20, 0.6), 0 0 20px rgba(229, 9, 20, 0.4);
+    cursor: pointer;
+    z-index: 50;
+    animation: pulseAutoplayPrompt 1.8s infinite;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.wp-autoplay-prompt:hover {
+    transform: translate(-50%, -50%) scale(1.06);
+    background: linear-gradient(135deg, #f40612 0%, #dc2626 100%);
+}
+
+@keyframes pulseAutoplayPrompt {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.05); }
+}
