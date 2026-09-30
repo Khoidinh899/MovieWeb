@@ -122,23 +122,23 @@ namespace MovieWeb.Controllers
                 }
                 viewModel.HoatHinhMovies = hoatHinhMovies;
 
-                // ===== PHIM SẮP CHIẾU (Upcoming - Chỉ có trailer, chưa có tập phim và chưa có link xem) =====
-                var cacheKeyUpcoming = "upcoming_movies_entities";
-                if (!_cache.TryGetValue(cacheKeyUpcoming, out List<Movie> upcomingMovies))
+                // ===== TOP 10 PHIM TRENDING TRÊN MOONPHIM (Lượt xem nhiều nhất) =====
+                var cacheKeyTrending = "top10_trending_movies_entities";
+                if (!_cache.TryGetValue(cacheKeyTrending, out List<Movie> trendingMovies))
                 {
-                    upcomingMovies = await _context.Movies
+                    trendingMovies = await _context.Movies
+                        .Include(m => m.Categories)
                         .Include(m => m.Episodes)
-                        .Where(m => m.IsActive == true 
-                                 && !m.Episodes.Any() 
-                                 && string.IsNullOrEmpty(m.TrailerUrl) 
-                                 && !string.IsNullOrEmpty(m.Trailer))
-                        .OrderByDescending(m => m.UpdatedAt ?? m.CreatedAt)
-                        .Take(12)
+                        .Where(m => m.IsActive == true && (m.Episodes.Any() || !string.IsNullOrEmpty(m.TrailerUrl)))
+                        .OrderByDescending(m => m.ViewCount ?? 0)
+                        .ThenByDescending(m => m.UpdatedAt ?? m.CreatedAt)
+                        .Take(10)
                         .ToListAsync();
 
-                    _cache.Set(cacheKeyUpcoming, upcomingMovies, TimeSpan.FromMinutes(15));
+                    _cache.Set(cacheKeyTrending, trendingMovies, TimeSpan.FromMinutes(10));
                 }
-                viewModel.UpcomingMovies = upcomingMovies;
+                viewModel.TrendingMovies = trendingMovies;
+                viewModel.UpcomingMovies = trendingMovies; // Fallback
 
                 bool shouldShowAds = true;
                 var currentUser = await _authService.GetCurrentUserAsync(); // Lấy user hiện tại

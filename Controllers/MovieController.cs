@@ -952,6 +952,88 @@ namespace MovieWeb.Controllers
         }
 
         // ============================================================
+        // 🔥 TRANG PHIM TRENDING TRÊN MOONPHIM (TOP LƯỢT XEM GIẢM DẦN)
+        // ============================================================
+        [Route("phim-trending")]
+        [Route("the-loai/phim-trending")]
+        public async Task<IActionResult> Trending([FromQuery] MovieFilterViewModel filters)
+        {
+            var countries = await _context.Countries.ToListAsync();
+            var categories = await _context.Categories.ToListAsync();
+
+            var query = _context.Movies
+                .Include(m => m.Countries)
+                .Include(m => m.Categories)
+                .Where(m => (m.IsActive ?? false) && (m.Episodes.Any() || !string.IsNullOrEmpty(m.TrailerUrl)));
+
+            if (!string.IsNullOrWhiteSpace(filters.Type))
+            {
+                query = query.Where(m => m.Type == filters.Type);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filters.Countries))
+            {
+                var countryList = filters.Countries.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+                if (countryList.Any())
+                {
+                    query = query.Where(m => m.Countries.Any(c => countryList.Contains(c.Slug)));
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(filters.Categories))
+            {
+                var categoryList = filters.Categories.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+                if (categoryList.Any())
+                {
+                    query = query.Where(m => categoryList.All(catSlug => m.Categories.Any(c => c.Slug == catSlug)));
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(filters.Years))
+            {
+                var yearList = new List<int>();
+                foreach (var yearStr in filters.Years.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    if (int.TryParse(yearStr, out int year))
+                    {
+                        yearList.Add(year);
+                    }
+                }
+                if (yearList.Any())
+                {
+                    query = query.Where(m => m.Year.HasValue && yearList.Contains(m.Year.Value));
+                }
+            }
+
+            // Luôn sắp xếp theo Lượt xem nhiều nhất giảm dần (Trending)
+            query = query.OrderByDescending(m => m.ViewCount ?? 0)
+                         .ThenByDescending(m => m.UpdatedAt ?? m.CreatedAt);
+
+            int page = filters.Page > 0 ? filters.Page : 1;
+            int pageSize = filters.PageSize > 0 ? filters.PageSize : 24;
+            int totalMovies = await query.CountAsync();
+            int totalPages = (int)Math.Ceiling((double)totalMovies / pageSize);
+
+            var movies = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            ViewBag.CategoryName = "Bảng Xếp Hạng Phim Trending Trên MoonPhim";
+            ViewBag.Countries = countries;
+            ViewBag.Categories = categories;
+            ViewBag.CategorySlug = "phim-trending";
+            ViewBag.Filters = filters;
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalMovies = totalMovies;
+            ViewData["Title"] = "Phim Trending - Bảng Xếp Hạng Xem Nhiều Nhất | MoonPhim";
+            ViewBag.SeoDescription = "Khám phá danh sách Phim Trending hot nhất, nhiều lượt xem nhất trên MoonPhim. Xem phim Full HD Vietsub thuyết minh mượt mà tốc độ cao.";
+
+            return View("Trending", movies);
+        }
+
+        // ============================================================
         // 🧠 API GỢI Ý TÌM KIẾM NHANH (SỬA LẠI CHO ĐÚNG)
         // ============================================================
         [HttpGet("api/goi-y-tim-kiem")]

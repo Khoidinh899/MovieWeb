@@ -1,0 +1,276 @@
+@model List<MovieWeb.Models.Entities.Movie>
+@using MovieWeb.Models.ViewModels
+@{
+    Layout = "_Layout";
+    var categoryName = ViewBag.CategoryName as string ?? "Bảng Xếp Hạng Phim Trending Trên MoonPhim";
+    var filters = ViewBag.Filters as MovieFilterViewModel ?? new MovieFilterViewModel();
+    int currentPage = ViewBag.CurrentPage != null ? (int)ViewBag.CurrentPage : 1;
+    int pageSize = ViewBag.PageSize != null ? (int)ViewBag.PageSize : 24;
+    int startRank = (currentPage - 1) * pageSize;
+}
+@if (!string.IsNullOrEmpty(ViewBag.SeoDescription as string))
+{
+    <meta name="description" content="@ViewBag.SeoDescription" />
+}
+@functions {
+    private string GetPosterUrl(MovieWeb.Models.Entities.Movie m)
+    {
+        var candidate = !string.IsNullOrEmpty(m.ThumbUrl) ? m.ThumbUrl : m.PosterUrl;
+        if (string.IsNullOrEmpty(candidate))
+            return Url.Content("~/images/no-image.jpg");
+        candidate = candidate.Trim();
+        if (candidate.StartsWith("http") || candidate.StartsWith("//")) return candidate;
+        if (candidate.StartsWith("/")) return candidate;
+        if (candidate.IndexOf("uploads", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            return candidate.StartsWith("/") ? candidate : "/" + candidate;
+        var fallbackBase = "https://vsmov.com/storage/images/"; 
+        return fallbackBase + candidate;
+    }
+
+    private string FormatViews(int? views)
+    {
+        int v = views ?? 0;
+        if (v >= 1000000)
+            return (v / 1000000.0).ToString("0.#") + "M";
+        if (v >= 1000)
+            return (v / 1000.0).ToString("0.#") + "K";
+        return v.ToString();
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/filter-sidebar.css" asp-append-version="true" />
+    <style>
+        .trending-header-banner {
+            background: linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(239, 68, 68, 0.15) 50%, rgba(15, 23, 42, 0.9) 100%);
+            border: 1px solid rgba(250, 204, 21, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(250, 204, 21, 0.15);
+        }
+
+        .trending-title-neon {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, #facc15 50%, #f97316 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
+        }
+
+        .trending-card {
+            background: #111827;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        .trending-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(250, 204, 21, 0.5);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.7), 0 0 15px rgba(250, 204, 21, 0.3);
+        }
+
+        .trending-rank-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            font-weight: 900;
+            font-size: 1rem;
+            padding: 4px 10px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+        }
+
+        .rank-top-1 {
+            background: linear-gradient(135deg, #facc15 0%, #ca8a04 100%);
+            color: #000;
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.6);
+        }
+
+        .rank-top-2 {
+            background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+            color: #000;
+            box-shadow: 0 0 12px rgba(226, 232, 240, 0.5);
+        }
+
+        .rank-top-3 {
+            background: linear-gradient(135deg, #fb923c 0%, #c2410c 100%);
+            color: #fff;
+            box-shadow: 0 0 12px rgba(251, 146, 60, 0.5);
+        }
+
+        .rank-other {
+            background: rgba(15, 23, 42, 0.85);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+        }
+
+        .trending-view-count {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            color: #facc15;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(250, 204, 21, 0.3);
+        }
+
+        .trending-poster-wrap {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px 12px 0 0;
+            aspect-ratio: 2/3;
+        }
+
+        .trending-poster-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+
+        .trending-card:hover .trending-poster-wrap img {
+            transform: scale(1.05);
+        }
+    </style>
+}
+
+<section class="container-fluid px-3 px-md-5 py-4">
+    <!-- Trending Header Banner -->
+    <div class="trending-header-banner d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-danger text-white px-2 py-1"><i class="bi bi-fire"></i> HOT RANKING</span>
+                <span class="text-white-50 small">Cập nhật liên tục theo lượt xem thực tế</span>
+            </div>
+            <h1 class="trending-title-neon mb-0">
+                <i class="bi bi-graph-up-arrow me-2"></i> @categoryName
+            </h1>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-white-50">Tổng cộng:</span>
+            <span class="badge bg-warning text-dark fs-6 fw-bold">@(ViewBag.TotalMovies ?? Model.Count) Phim</span>
+        </div>
+    </div>
+
+    @* ===== RENDER BỘ LỌC ===== *@
+    @await Html.PartialAsync("_FilterSidebar", filters)
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-secondary text-center mt-4">
+            Không tìm thấy phim nào phù hợp với bộ lọc hiện tại.
+        </div>
+    }
+    else
+    {
+        <div class="row g-3 g-md-4">
+            @for (int i = 0; i < Model.Count; i++)
+            {
+                var movie = Model[i];
+                var imgUrl = GetPosterUrl(movie);
+                int rank = startRank + i + 1;
+                string rankClass = rank == 1 ? "rank-top-1" : rank == 2 ? "rank-top-2" : rank == 3 ? "rank-top-3" : "rank-other";
+
+                <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                    <div class="trending-card h-100 d-flex flex-column">
+                        <a href="/phim/@movie.Slug" class="text-decoration-none text-white d-flex flex-column h-100">
+                            <div class="trending-poster-wrap">
+                                <!-- Huy hiệu thứ hạng Rank -->
+                                <span class="trending-rank-badge @rankClass">
+                                    @if (rank <= 3)
+                                    {
+                                        <i class="bi bi-trophy-fill"></i>
+                                    }
+                                    #@rank
+                                </span>
+
+                                <!-- Huy hiệu lượt xem -->
+                                <span class="trending-view-count">
+                                    <i class="bi bi-eye-fill me-1"></i>@FormatViews(movie.ViewCount)
+                                </span>
+
+                                <img src="@imgUrl" alt="@movie.Name" loading="lazy" decoding="async" onerror="this.src='@Url.Content("~/images/no-image.jpg")'" />
+                            </div>
+                            <div class="p-2 p-md-3 d-flex flex-column flex-grow-1 justify-content-between">
+                                <h6 class="text-truncate mb-1 fw-bold" title="@movie.Name">@movie.Name</h6>
+                                <div class="d-flex justify-content-between align-items-center text-white-50 small">
+                                    <span>@(movie.Year?.ToString() ?? "N/A")</span>
+                                    <span class="badge bg-secondary">@(movie.Quality ?? "HD")</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* ===== PHÂN TRANG ===== *@
+        @if (ViewBag.TotalPages > 1)
+        {
+            <nav class="mt-5">
+                <ul class="pagination justify-content-center flex-wrap">
+                    @{
+                        var currentFilters = new Dictionary<string, string>();
+                        if (!string.IsNullOrEmpty(filters.Type)) currentFilters["Type"] = filters.Type;
+                        if (!string.IsNullOrEmpty(filters.Countries)) currentFilters["Countries"] = filters.Countries;
+                        if (!string.IsNullOrEmpty(filters.Categories)) currentFilters["Categories"] = filters.Categories;
+                        if (!string.IsNullOrEmpty(filters.Years)) currentFilters["Years"] = filters.Years;
+                        if (!string.IsNullOrEmpty(filters.Language)) currentFilters["Language"] = filters.Language;
+
+                        string GetUrl(int p)
+                        {
+                            var queryParams = string.Join("&", currentFilters.Select(kvp => $"{kvp.Key}={System.Net.WebUtility.UrlEncode(kvp.Value)}"));
+                            return $"?Page={p}" + (string.IsNullOrEmpty(queryParams) ? "" : "&" + queryParams);
+                        }
+
+                        int totalPages = (int)ViewBag.TotalPages;
+                        int range = 2;
+                    }
+
+                    @if (currentPage > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@GetUrl(currentPage - 1)">&laquo;</a>
+                        </li>
+                    }
+
+                    @for (int p = 1; p <= totalPages; p++)
+                    {
+                        if (p == 1 || p == totalPages || (p >= currentPage - range && p <= currentPage + range))
+                        {
+                            <li class="page-item @(p == currentPage ? "active" : "")">
+                                <a class="page-link" href="@GetUrl(p)">@p</a>
+                            </li>
+                        }
+                        else if (p == currentPage - range - 1 || p == currentPage + range + 1)
+                        {
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        }
+                    }
+
+                    @if (currentPage < totalPages)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@GetUrl(currentPage + 1)">&raquo;</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    }
+</section>

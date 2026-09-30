@@ -366,47 +366,91 @@
             </div>
         </section>
 
-        @if (Model.UpcomingMovies != null && Model.UpcomingMovies.Any())
+        @if (Model.TrendingMovies != null && Model.TrendingMovies.Any())
         {
-            <section class="mb-5">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="section-title">
-                        <i class="fab fa-youtube text-danger"></i> Phim Sắp Chiếu
-                    </h2>
+            <section class="top10-neon-section mb-5 position-relative">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="fire-icon-pulse">
+                            <i class="bi bi-fire text-danger fs-3"></i>
+                        </div>
+                        <h2 class="section-title text-neon-gold mb-0">
+                            TOP 10 PHIM TRENDING TRÊN MOONPHIM
+                        </h2>
+                    </div>
+                    <a href="/phim-trending" class="btn-view-all-trending">
+                        <span>Xem tất cả</span>
+                        <i class="bi bi-arrow-right-short fs-5"></i>
+                    </a>
                 </div>
 
-                <div class="row">
-                    @foreach (var movie in Model.UpcomingMovies.Take(12))
-                    {
-                        <div class="col-lg-3 col-md-4 col-sm-6 col-6 mb-4">
-                            <div class="movie-card">
-                                <div class="movie-poster">
-                                    <a href="/phim/@movie.Slug">
-                                        @{
-                                            var posterUrlUp = GetMoviePosterUrl(movie);
-                                        }
-                                        <img src="@posterUrlUp" alt="@movie.Name" class="img-fluid rounded" loading="lazy" decoding="async"
-                                             onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
+                <!-- Slider Container with Left / Right Navigation -->
+                <div class="top10-slider-wrapper position-relative">
+                    <button type="button" class="top10-nav-btn top10-prev" id="top10PrevBtn" aria-label="Lướt sang trái">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    
+                    <div class="top10-track d-flex gap-3 gap-md-4 py-2" id="top10Track">
+                        @for (int i = 0; i < Model.TrendingMovies.Count && i < 10; i++)
+                        {
+                            var movie = Model.TrendingMovies[i];
+                            var posterUrl = GetMoviePosterUrl(movie);
+                            int rank = i + 1;
+                            string rankStrokeClass = rank == 1 ? "rank-neon-gold" : rank == 2 ? "rank-neon-silver" : rank == 3 ? "rank-neon-bronze" : "rank-neon-blue";
 
-                                        <div class="movie-overlay">
-                                            <div class="play-button">
-                                                <i class="fas fa-play"></i>
+                            <div class="top10-item">
+                                <a href="/phim/@movie.Slug" class="top10-link text-decoration-none">
+                                    <div class="top10-card position-relative">
+                                        <!-- Số thứ hạng Neon 3D khổng lồ -->
+                                        <div class="top10-rank-number @rankStrokeClass">
+                                            @rank
+                                        </div>
+
+                                        <!-- Khung Poster Dọc -->
+                                        <div class="top10-poster-box">
+                                            <img src="@posterUrl" alt="@movie.Name" class="top10-img" loading="lazy" decoding="async"
+                                                 onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
+                                            
+                                            <!-- Badge lượt xem thực tế -->
+                                            <div class="top10-views-badge">
+                                                <i class="bi bi-eye-fill me-1"></i>@(movie.ViewCount ?? 0)
+                                            </div>
+
+                                            <!-- Quality Badge -->
+                                            @if (!string.IsNullOrEmpty(movie.Quality))
+                                            {
+                                                <div class="top10-quality-badge">
+                                                    @movie.Quality
+                                                </div>
+                                            }
+
+                                            <!-- Play Button Overlay -->
+                                            <div class="top10-overlay">
+                                                <div class="top10-play-btn">
+                                                    <i class="fas fa-play"></i>
+                                                </div>
                                             </div>
                                         </div>
-                                    </a>
-                                </div>
-                                <div class="movie-info mt-2">
-                                    <h6 class="movie-title">
-                                        <a href="/phim/@movie.Slug" class="text-decoration-none">@movie.Name</a>
-                                    </h6>
-                                    <div class="movie-meta">
-                                        <small class="text-muted">@movie.Year</small>
-                                        <span class="badge badge-danger ml-2">Sắp Chiếu</span>
+
+                                        <!-- Movie Info -->
+                                        <div class="top10-info mt-2">
+                                            <h6 class="top10-title text-truncate mb-0" title="@movie.Name">
+                                                @movie.Name
+                                            </h6>
+                                            <div class="d-flex justify-content-between align-items-center text-white-50 small mt-1">
+                                                <span>@(movie.Year?.ToString() ?? "2026")</span>
+                                                <span class="text-warning fw-bold"><i class="bi bi-fire"></i> Top #@rank</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                </a>
                             </div>
-                        </div>
-                    }
+                        }
+                    </div>
+
+                    <button type="button" class="top10-nav-btn top10-next" id="top10NextBtn" aria-label="Lướt sang phải">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
                 </div>
             </section>
         }
@@ -427,6 +471,297 @@
         <meta property="og:site_name" content="MoonPhim" />
 
     @* --- KẾT THÚC KHỐI SEO --- *@
+
+    <style>
+        /* ========================================================
+           TOP 10 NEON BILLBOARD STYLES (MOONPHIM BRANDING)
+           ======================================================== */
+        .top10-neon-section {
+            position: relative;
+            padding: 10px 0 20px 0;
+        }
+
+        .text-neon-gold {
+            font-size: 1.45rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, #facc15 50%, #f97316 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 25px rgba(250, 204, 21, 0.3);
+        }
+
+        .fire-icon-pulse {
+            animation: firePulse 1.8s infinite alternate;
+        }
+
+        @@keyframes firePulse {
+            0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.6)); }
+            100% { transform: scale(1.2); filter: drop-shadow(0 0 15px rgba(250, 204, 21, 0.9)); }
+        }
+
+        .btn-view-all-trending {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #facc15;
+            font-weight: 700;
+            font-size: 0.92rem;
+            text-decoration: none;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: rgba(250, 204, 21, 0.1);
+            border: 1px solid rgba(250, 204, 21, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .btn-view-all-trending:hover {
+            background: linear-gradient(135deg, #facc15 0%, #f97316 100%);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4);
+            transform: translateX(3px);
+        }
+
+        .top10-slider-wrapper {
+            position: relative;
+        }
+
+        .top10-track {
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding-bottom: 12px;
+        }
+
+        .top10-track::-webkit-scrollbar {
+            display: none;
+        }
+
+        .top10-item {
+            flex: 0 0 calc(18% - 12px);
+            min-width: 175px;
+            max-width: 220px;
+            scroll-snap-align: start;
+        }
+
+        @@media (max-width: 992px) {
+            .top10-item {
+                flex: 0 0 calc(30% - 10px);
+                min-width: 155px;
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .top10-item {
+                flex: 0 0 calc(46% - 8px);
+                min-width: 140px;
+            }
+            .text-neon-gold {
+                font-size: 1.15rem;
+            }
+        }
+
+        .top10-card {
+            position: relative;
+            padding-left: 28px;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .top10-card:hover {
+            transform: translateY(-8px);
+        }
+
+        .top10-rank-number {
+            position: absolute;
+            left: -12px;
+            bottom: 35px;
+            z-index: 5;
+            font-size: 4.8rem;
+            font-weight: 900;
+            line-height: 1;
+            font-family: 'Impact', 'Arial Black', sans-serif;
+            user-select: none;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .top10-card:hover .top10-rank-number {
+            transform: scale(1.1) translateX(-4px);
+        }
+
+        .rank-neon-gold {
+            color: #050b14;
+            -webkit-text-stroke: 2.5px #facc15;
+            text-shadow: 0 0 15px rgba(250, 204, 21, 0.8), 0 0 30px rgba(234, 179, 8, 0.5);
+        }
+
+        .rank-neon-silver {
+            color: #050b14;
+            -webkit-text-stroke: 2.5px #e2e8f0;
+            text-shadow: 0 0 15px rgba(226, 232, 240, 0.8), 0 0 25px rgba(148, 163, 184, 0.5);
+        }
+
+        .rank-neon-bronze {
+            color: #050b14;
+            -webkit-text-stroke: 2.5px #fb923c;
+            text-shadow: 0 0 15px rgba(251, 146, 60, 0.8), 0 0 25px rgba(234, 88, 12, 0.5);
+        }
+
+        .rank-neon-blue {
+            color: #050b14;
+            -webkit-text-stroke: 2px #38bdf8;
+            text-shadow: 0 0 12px rgba(56, 189, 248, 0.7);
+        }
+
+        .top10-poster-box {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 2/3;
+            background: #111827;
+            border: 1.5px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .top10-card:hover .top10-poster-box {
+            border-color: rgba(250, 204, 21, 0.8);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 20px rgba(250, 204, 21, 0.35);
+        }
+
+        .top10-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+
+        .top10-card:hover .top10-img {
+            transform: scale(1.06);
+        }
+
+        .top10-views-badge {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            z-index: 6;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            color: #facc15;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 6px;
+            border: 1px solid rgba(250, 204, 21, 0.3);
+        }
+
+        .top10-quality-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 6;
+            background: rgba(239, 68, 68, 0.85);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .top10-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .top10-card:hover .top10-overlay {
+            opacity: 1;
+        }
+
+        .top10-play-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #facc15 0%, #f97316 100%);
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            box-shadow: 0 0 20px rgba(250, 204, 21, 0.8);
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+
+        .top10-card:hover .top10-play-btn {
+            transform: scale(1);
+        }
+
+        .top10-title {
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.92rem;
+            transition: color 0.2s ease;
+        }
+
+        .top10-card:hover .top10-title {
+            color: #facc15;
+        }
+
+        .top10-nav-btn {
+            position: absolute;
+            top: 42%;
+            transform: translateY(-50%);
+            z-index: 20;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(250, 204, 21, 0.4);
+            color: #facc15;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
+            transition: all 0.25s ease;
+        }
+
+        .top10-nav-btn:hover {
+            background: #facc15;
+            color: #000;
+            transform: translateY(-50%) scale(1.15);
+            box-shadow: 0 0 20px rgba(250, 204, 21, 0.8);
+        }
+
+        .top10-prev {
+            left: -15px;
+        }
+
+        .top10-next {
+            right: -15px;
+        }
+
+        @@media (max-width: 768px) {
+            .top10-nav-btn {
+                display: none !important;
+            }
+            .top10-card {
+                padding-left: 20px;
+            }
+            .top10-rank-number {
+                font-size: 3.6rem;
+                left: -8px;
+            }
+        }
+    </style>
 }
 
 @section Scripts {
@@ -516,6 +851,21 @@
 
                 // Chạy hàm chính!
                 fetchPopupAd();
+
+                // ===== TOP 10 TRENDING SLIDER SCRIPT =====
+                const track = document.getElementById('top10Track');
+                const prevBtn = document.getElementById('top10PrevBtn');
+                const nextBtn = document.getElementById('top10NextBtn');
+
+                if (track && prevBtn && nextBtn) {
+                    const scrollAmount = 350;
+                    prevBtn.addEventListener('click', function () {
+                        track.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+                    });
+                    nextBtn.addEventListener('click', function () {
+                        track.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                    });
+                }
             });
         </script>
 }
