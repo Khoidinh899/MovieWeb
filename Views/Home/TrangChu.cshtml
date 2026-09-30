@@ -390,8 +390,8 @@
                 <!-- Curved Elip Carousel & Infinite Drag Container -->
                 <div class="top10-slider-wrapper position-relative" id="top10Wrapper">
                     <div class="top10-track d-flex" id="top10Track">
-                        @* Render 3 chu kỳ lặp (Cycle 0, 1, 2) để tạo hiệu ứng Infinite Loop vô tận cực mượt *@
-                        @for (int cycle = 0; cycle < 3; cycle++)
+                        @* Render 4 chu kỳ lặp (Cycle 0, 1, 2, 3) để chuyển đổi 10 -> 1 -> 2 mượt mà 100% không giật *@
+                        @for (int cycle = 0; cycle < 4; cycle++)
                         {
                             for (int i = 0; i < top10List.Count; i++)
                             {
@@ -811,23 +811,22 @@
                     let scrollLeft = 0;
                     let isDragging = false;
                     let dragDistance = 0;
+                    let cycleWidth = 0;
+                    let isAdjusting = false;
 
-                    // Tính độ rộng 1 chu kỳ 10 phim (cycle)
-                    function getSingleCycleWidth() {
-                        const cycleItems = track.querySelectorAll('.top10-item[data-cycle="0"]');
-                        if (cycleItems.length === 0) return 0;
-                        let w = 0;
-                        cycleItems.forEach(item => {
-                            w += item.offsetWidth + (window.innerWidth <= 576 ? 14 : (window.innerWidth <= 992 ? 16 : 24));
-                        });
-                        return w;
+                    // Đo khoảng cách chính xác tuyệt đối giữa 2 chu kỳ (item 0 và item 10)
+                    function measureCycleWidth() {
+                        const items = track.querySelectorAll('.top10-item');
+                        if (items.length >= 11) {
+                            cycleWidth = items[10].offsetLeft - items[0].offsetLeft;
+                        }
                     }
 
-                    // Cuộn về chu kỳ giữa (Cycle 1) khi khởi tạo
+                    // Cuộn về giữa (Cycle 1 / Cycle 2)
                     function initInitialScroll() {
-                        const singleW = getSingleCycleWidth();
-                        if (singleW > 0) {
-                            track.scrollLeft = singleW;
+                        measureCycleWidth();
+                        if (cycleWidth > 0) {
+                            track.scrollLeft = cycleWidth * 1.5;
                         }
                         updateCurvedElip();
                     }
@@ -857,14 +856,17 @@
                         });
                     }
 
-                    // Sự kiện cuộn vô tận (Infinite Loop Boundary Check)
+                    // Sự kiện cuộn vô tận (Không bị giật ở 10 -> 1 -> 2 vì điểm reset nằm ở giữa Cycle)
                     track.addEventListener('scroll', function () {
-                        const singleW = getSingleCycleWidth();
-                        if (singleW > 0) {
-                            if (track.scrollLeft >= singleW * 2) {
-                                track.scrollLeft -= singleW;
-                            } else if (track.scrollLeft <= 10) {
-                                track.scrollLeft += singleW;
+                        if (!isAdjusting && cycleWidth > 0) {
+                            if (track.scrollLeft >= cycleWidth * 2.5) {
+                                isAdjusting = true;
+                                track.scrollLeft -= cycleWidth;
+                                isAdjusting = false;
+                            } else if (track.scrollLeft <= cycleWidth * 0.5) {
+                                isAdjusting = true;
+                                track.scrollLeft += cycleWidth;
+                                isAdjusting = false;
                             }
                         }
                         requestAnimationFrame(updateCurvedElip);
@@ -911,7 +913,10 @@
 
                     // Khởi tạo vị trí ban đầu
                     setTimeout(initInitialScroll, 100);
-                    window.addEventListener('resize', updateCurvedElip);
+                    window.addEventListener('resize', () => {
+                        measureCycleWidth();
+                        updateCurvedElip();
+                    });
                 }
             });
         </script>
