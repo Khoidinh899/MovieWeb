@@ -36,14 +36,18 @@ body {
 .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
-html, body {
-    height: 100%;
+html {
+    margin: 0;
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+}
+
+body {
     margin: 0;
     overflow-x: hidden !important;
     width: 100%;
-    max-width: 100vw;
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE and Edge */
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
 }
 
 /* Ẩn thanh cuộn cho toàn bộ các trình duyệt WebKit (Chrome, Safari, Edge) */

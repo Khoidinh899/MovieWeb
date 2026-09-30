@@ -42,6 +42,16 @@
         // ===== SỬA 1: Dùng ảnh fallback local =====
         return "/images/default-poster.jpg";
     }
+
+    public string FormatViews(int? views)
+    {
+        int v = views ?? 0;
+        if (v >= 1000000)
+            return (v / 1000000.0).ToString("0.#") + "M";
+        if (v >= 1000)
+            return (v / 1000.0).ToString("0.#") + "K";
+        return v.ToString();
+    }
 }
 
 <div style="width: 100%; padding: 0;">
@@ -368,89 +378,102 @@
 
         @if (Model.TrendingMovies != null && Model.TrendingMovies.Any())
         {
+            var top10List = Model.TrendingMovies.Take(10).ToList();
             <section class="top10-neon-section mb-5 position-relative">
-                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="fire-icon-pulse">
-                            <i class="bi bi-fire text-danger fs-3"></i>
-                        </div>
-                        <h2 class="section-title text-neon-gold mb-0">
-                            TOP 10 PHIM TRENDING TRÊN MOONPHIM
-                        </h2>
-                    </div>
-                    <a href="/phim-trending" class="btn-view-all-trending">
-                        <span>Xem tất cả</span>
-                        <i class="bi bi-arrow-right-short fs-5"></i>
-                    </a>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="section-title">
+                        <i class="fas fa-fire text-danger"></i> Phim Trending
+                    </h2>
+                    <a href="/phim-trending" class="btn btn-outline-primary">Xem tất cả</a>
                 </div>
 
-                <!-- Slider Container with Left / Right Navigation -->
-                <div class="top10-slider-wrapper position-relative">
-                    <button type="button" class="top10-nav-btn top10-prev" id="top10PrevBtn" aria-label="Lướt sang trái">
-                        <i class="bi bi-chevron-left"></i>
-                    </button>
-                    
-                    <div class="top10-track d-flex gap-3 gap-md-4 py-2" id="top10Track">
-                        @for (int i = 0; i < Model.TrendingMovies.Count && i < 10; i++)
+                <!-- Curved Elip Carousel & Infinite Drag Container -->
+                <div class="top10-slider-wrapper position-relative" id="top10Wrapper">
+                    <div class="top10-track d-flex" id="top10Track">
+                        @* Render 3 chu kỳ lặp (Cycle 0, 1, 2) để tạo hiệu ứng Infinite Loop vô tận cực mượt *@
+                        @for (int cycle = 0; cycle < 3; cycle++)
                         {
-                            var movie = Model.TrendingMovies[i];
-                            var posterUrl = GetMoviePosterUrl(movie);
-                            int rank = i + 1;
-                            string rankStrokeClass = rank == 1 ? "rank-neon-gold" : rank == 2 ? "rank-neon-silver" : rank == 3 ? "rank-neon-bronze" : "rank-neon-blue";
+                            for (int i = 0; i < top10List.Count; i++)
+                            {
+                                var movie = top10List[i];
+                                var posterUrl = GetMoviePosterUrl(movie);
+                                int rank = i + 1;
+                                string rankStrokeClass = rank == 1 ? "rank-neon-gold" : rank == 2 ? "rank-neon-silver" : rank == 3 ? "rank-neon-bronze" : "rank-neon-blue";
+                                
+                                var isSeries = movie.Type == "series" || (!string.IsNullOrEmpty(movie.EpisodeTotal) && movie.EpisodeTotal != "1");
+                                string statusBadge = "";
+                                if (!isSeries)
+                                {
+                                    statusBadge = !string.IsNullOrEmpty(movie.Time) ? movie.Time : "Full";
+                                }
+                                else
+                                {
+                                    var epCurrent = movie.EpisodeCurrent ?? "";
+                                    if (epCurrent.Contains("Hoàn tất", StringComparison.OrdinalIgnoreCase) || 
+                                        epCurrent.Contains("Hoàn Tất", StringComparison.OrdinalIgnoreCase) || 
+                                        epCurrent.Contains("Full", StringComparison.OrdinalIgnoreCase) ||
+                                        epCurrent.Contains("/", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        statusBadge = epCurrent;
+                                    }
+                                    else
+                                    {
+                                        var totalStr = !string.IsNullOrEmpty(movie.EpisodeTotal) ? $"/{movie.EpisodeTotal}" : "";
+                                        statusBadge = string.IsNullOrEmpty(epCurrent) ? (totalStr.TrimStart('/')) : (epCurrent + totalStr);
+                                        if (string.IsNullOrEmpty(statusBadge)) statusBadge = "Đang cập nhật";
+                                    }
+                                }
 
-                            <div class="top10-item">
-                                <a href="/phim/@movie.Slug" class="top10-link text-decoration-none">
-                                    <div class="top10-card position-relative">
-                                        <!-- Số thứ hạng Neon 3D khổng lồ -->
-                                        <div class="top10-rank-number @rankStrokeClass">
-                                            @rank
-                                        </div>
-
-                                        <!-- Khung Poster Dọc -->
-                                        <div class="top10-poster-box">
-                                            <img src="@posterUrl" alt="@movie.Name" class="top10-img" loading="lazy" decoding="async"
-                                                 onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
-                                            
-                                            <!-- Badge lượt xem thực tế -->
-                                            <div class="top10-views-badge">
-                                                <i class="bi bi-eye-fill me-1"></i>@(movie.ViewCount ?? 0)
+                                <div class="top10-item" data-cycle="@cycle" data-index="@i">
+                                    <a href="/phim/@movie.Slug" class="top10-link text-decoration-none">
+                                        <div class="top10-card">
+                                            <!-- Số thứ hạng Neon 3D khổng lồ (Không bị cắt mép) -->
+                                            <div class="top10-rank-number @rankStrokeClass">
+                                                @rank
                                             </div>
 
-                                            <!-- Quality Badge -->
-                                            @if (!string.IsNullOrEmpty(movie.Quality))
-                                            {
-                                                <div class="top10-quality-badge">
-                                                    @movie.Quality
+                                            <!-- Khung Poster Dọc -->
+                                            <div class="top10-poster-box">
+                                                <img src="@posterUrl" alt="@movie.Name" class="top10-img" loading="lazy" decoding="async"
+                                                     onerror="this.onerror=null; this.src='/images/default-poster.jpg';">
+                                                
+                                                <!-- Badge lượt xem ở góc trên bên trái -->
+                                                <div class="top10-views-badge">
+                                                    <i class="bi bi-eye-fill me-1"></i>@FormatViews(movie.ViewCount)
                                                 </div>
-                                            }
 
-                                            <!-- Play Button Overlay -->
-                                            <div class="top10-overlay">
-                                                <div class="top10-play-btn">
-                                                    <i class="fas fa-play"></i>
+                                                <!-- Quality Badge ở góc trên bên phải đối xứng -->
+                                                @if (!string.IsNullOrEmpty(movie.Quality))
+                                                {
+                                                    <div class="top10-quality-badge">
+                                                        @movie.Quality
+                                                    </div>
+                                                }
+
+                                                <!-- Play Button Overlay -->
+                                                <div class="top10-overlay">
+                                                    <div class="top10-play-btn">
+                                                        <i class="fas fa-play"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Movie Info -->
+                                            <div class="top10-info mt-2">
+                                                <h6 class="top10-title text-truncate mb-1" title="@movie.Name">
+                                                    @movie.Name
+                                                </h6>
+                                                <div class="d-flex justify-content-between align-items-center text-white-50 small">
+                                                    <span>@(movie.Year?.ToString() ?? "2026")</span>
+                                                    <span class="badge bg-secondary text-white">@statusBadge</span>
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <!-- Movie Info -->
-                                        <div class="top10-info mt-2">
-                                            <h6 class="top10-title text-truncate mb-0" title="@movie.Name">
-                                                @movie.Name
-                                            </h6>
-                                            <div class="d-flex justify-content-between align-items-center text-white-50 small mt-1">
-                                                <span>@(movie.Year?.ToString() ?? "2026")</span>
-                                                <span class="text-warning fw-bold"><i class="bi bi-fire"></i> Top #@rank</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
+                                    </a>
+                                </div>
+                            }
                         }
                     </div>
-
-                    <button type="button" class="top10-nav-btn top10-next" id="top10NextBtn" aria-label="Lướt sang phải">
-                        <i class="bi bi-chevron-right"></i>
-                    </button>
                 </div>
             </section>
         }
@@ -474,109 +497,90 @@
 
     <style>
         /* ========================================================
-           TOP 10 NEON BILLBOARD STYLES (MOONPHIM BRANDING)
+           TOP 10 TRENDING ELIP & INFINITE CAROUSEL STYLES
            ======================================================== */
         .top10-neon-section {
             position: relative;
-            padding: 10px 0 20px 0;
-        }
-
-        .text-neon-gold {
-            font-size: 1.45rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #ffffff 0%, #facc15 50%, #f97316 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 0.5px;
-            text-shadow: 0 0 25px rgba(250, 204, 21, 0.3);
-        }
-
-        .fire-icon-pulse {
-            animation: firePulse 1.8s infinite alternate;
-        }
-
-        @@keyframes firePulse {
-            0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.6)); }
-            100% { transform: scale(1.2); filter: drop-shadow(0 0 15px rgba(250, 204, 21, 0.9)); }
-        }
-
-        .btn-view-all-trending {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            color: #facc15;
-            font-weight: 700;
-            font-size: 0.92rem;
-            text-decoration: none;
-            padding: 6px 14px;
-            border-radius: 20px;
-            background: rgba(250, 204, 21, 0.1);
-            border: 1px solid rgba(250, 204, 21, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        .btn-view-all-trending:hover {
-            background: linear-gradient(135deg, #facc15 0%, #f97316 100%);
-            color: #000;
-            box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4);
-            transform: translateX(3px);
+            padding: 5px 0 25px 0;
+            overflow: visible;
         }
 
         .top10-slider-wrapper {
             position: relative;
+            perspective: 1200px;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: grab;
+            cursor: -webkit-grab;
+            padding: 10px 0;
+        }
+
+        .top10-slider-wrapper.is-dragging {
+            cursor: grabbing;
+            cursor: -webkit-grabbing;
         }
 
         .top10-track {
+            display: flex;
+            gap: 24px;
             overflow-x: auto;
-            scroll-behavior: smooth;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            padding-bottom: 12px;
+            scroll-behavior: auto;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+            padding: 20px 25px 30px 25px;
+            align-items: center;
         }
 
         .top10-track::-webkit-scrollbar {
-            display: none;
+            display: none !important;
         }
 
         .top10-item {
-            flex: 0 0 calc(18% - 12px);
-            min-width: 175px;
-            max-width: 220px;
-            scroll-snap-align: start;
+            flex: 0 0 210px;
+            max-width: 225px;
+            scroll-snap-align: center;
+            will-change: transform, opacity;
+            transition: transform 0.25s ease, opacity 0.25s ease;
         }
 
         @@media (max-width: 992px) {
             .top10-item {
-                flex: 0 0 calc(30% - 10px);
-                min-width: 155px;
+                flex: 0 0 38vw;
+                min-width: 175px;
+                max-width: 220px;
+            }
+            .top10-track {
+                gap: 16px;
+                padding: 15px 15px 25px 20px;
             }
         }
 
         @@media (max-width: 576px) {
             .top10-item {
-                flex: 0 0 calc(46% - 8px);
-                min-width: 140px;
+                flex: 0 0 68vw;
+                min-width: 215px;
+                max-width: 270px;
             }
-            .text-neon-gold {
-                font-size: 1.15rem;
+            .top10-track {
+                gap: 14px;
+                padding: 10px 10px 20px 16px;
             }
         }
 
         .top10-card {
             position: relative;
-            padding-left: 28px;
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            padding-left: 20px;
+            transform-origin: center center;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .top10-card:hover {
-            transform: translateY(-8px);
-        }
-
+        /* Số thứ hạng Neon 3D khổng lồ (Không bị cắt mép) */
         .top10-rank-number {
             position: absolute;
-            left: -12px;
-            bottom: 35px;
-            z-index: 5;
+            left: -4px;
+            bottom: 30px;
+            z-index: 7;
             font-size: 4.8rem;
             font-weight: 900;
             line-height: 1;
@@ -586,32 +590,36 @@
             transition: all 0.3s ease;
         }
 
-        .top10-card:hover .top10-rank-number {
-            transform: scale(1.1) translateX(-4px);
+        @@media (max-width: 576px) {
+            .top10-rank-number {
+                font-size: 4rem;
+                left: -2px;
+                bottom: 26px;
+            }
         }
 
         .rank-neon-gold {
             color: #050b14;
             -webkit-text-stroke: 2.5px #facc15;
-            text-shadow: 0 0 15px rgba(250, 204, 21, 0.8), 0 0 30px rgba(234, 179, 8, 0.5);
+            text-shadow: 0 0 15px rgba(250, 204, 21, 0.85), 0 0 30px rgba(234, 179, 8, 0.55);
         }
 
         .rank-neon-silver {
             color: #050b14;
             -webkit-text-stroke: 2.5px #e2e8f0;
-            text-shadow: 0 0 15px rgba(226, 232, 240, 0.8), 0 0 25px rgba(148, 163, 184, 0.5);
+            text-shadow: 0 0 15px rgba(226, 232, 240, 0.85), 0 0 25px rgba(148, 163, 184, 0.55);
         }
 
         .rank-neon-bronze {
             color: #050b14;
             -webkit-text-stroke: 2.5px #fb923c;
-            text-shadow: 0 0 15px rgba(251, 146, 60, 0.8), 0 0 25px rgba(234, 88, 12, 0.5);
+            text-shadow: 0 0 15px rgba(251, 146, 60, 0.85), 0 0 25px rgba(234, 88, 12, 0.55);
         }
 
         .rank-neon-blue {
             color: #050b14;
             -webkit-text-stroke: 2px #38bdf8;
-            text-shadow: 0 0 12px rgba(56, 189, 248, 0.7);
+            text-shadow: 0 0 12px rgba(56, 189, 248, 0.75);
         }
 
         .top10-poster-box {
@@ -625,7 +633,7 @@
             transition: all 0.3s ease;
         }
 
-        .top10-card:hover .top10-poster-box {
+        .top10-item:hover .top10-poster-box {
             border-color: rgba(250, 204, 21, 0.8);
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 20px rgba(250, 204, 21, 0.35);
         }
@@ -635,16 +643,18 @@
             height: 100%;
             object-fit: cover;
             transition: transform 0.4s ease;
+            pointer-events: none;
         }
 
-        .top10-card:hover .top10-img {
-            transform: scale(1.06);
+        .top10-item:hover .top10-img {
+            transform: scale(1.05);
         }
 
+        /* Lượt xem góc trên bên trái */
         .top10-views-badge {
             position: absolute;
-            bottom: 8px;
-            right: 8px;
+            top: 8px;
+            left: 8px;
             z-index: 6;
             background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(4px);
@@ -656,6 +666,7 @@
             border: 1px solid rgba(250, 204, 21, 0.3);
         }
 
+        /* Quality badge góc trên bên phải đối xứng */
         .top10-quality-badge {
             position: absolute;
             top: 8px;
@@ -680,7 +691,7 @@
             transition: opacity 0.3s ease;
         }
 
-        .top10-card:hover .top10-overlay {
+        .top10-item:hover .top10-overlay {
             opacity: 1;
         }
 
@@ -699,7 +710,7 @@
             transition: transform 0.3s ease;
         }
 
-        .top10-card:hover .top10-play-btn {
+        .top10-item:hover .top10-play-btn {
             transform: scale(1);
         }
 
@@ -710,56 +721,8 @@
             transition: color 0.2s ease;
         }
 
-        .top10-card:hover .top10-title {
+        .top10-item:hover .top10-title {
             color: #facc15;
-        }
-
-        .top10-nav-btn {
-            position: absolute;
-            top: 42%;
-            transform: translateY(-50%);
-            z-index: 20;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid rgba(250, 204, 21, 0.4);
-            color: #facc15;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
-            transition: all 0.25s ease;
-        }
-
-        .top10-nav-btn:hover {
-            background: #facc15;
-            color: #000;
-            transform: translateY(-50%) scale(1.15);
-            box-shadow: 0 0 20px rgba(250, 204, 21, 0.8);
-        }
-
-        .top10-prev {
-            left: -15px;
-        }
-
-        .top10-next {
-            right: -15px;
-        }
-
-        @@media (max-width: 768px) {
-            .top10-nav-btn {
-                display: none !important;
-            }
-            .top10-card {
-                padding-left: 20px;
-            }
-            .top10-rank-number {
-                font-size: 3.6rem;
-                left: -8px;
-            }
         }
     </style>
 }
@@ -788,7 +751,6 @@
                         if (banners && banners.length > 0) {
                             const banner = banners[0];
 
-                            // 3. Tạo HTML cho Modal
                             const modalHtml = createAdModalHtml(banner);
 
                             document.body.insertAdjacentHTML('beforeend', modalHtml);
@@ -808,9 +770,7 @@
                     }
                 }
 
-                // Hàm trợ giúp: Tạo chuỗi HTML cho Bootstrap 5 Modal
                 function createAdModalHtml(banner) {
-
                     let closeButtonCss = `
                     position: absolute; 
                     top: -15px; 
@@ -823,48 +783,135 @@
                     height: 30px;
                     padding: 0;
                 `;
-
-                    // =============================================
-                    // 📢 SỬA LỖI Ở ĐÂY
-                    // Đã đổi "banner.imageUrl" thành "banner.adContentUrl"
-                    // Và "banner.clickUrl" (đã đúng từ trước)
-                    // =============================================
                     return `
                 <div class="modal fade" id="homeAdModal" tabindex="-1" aria-hidden="true">
                   <div class="modal-dialog modal-dialog-centered modal-lg">
                     <div class="modal-content" style="background-color: transparent; border: none;">
-                  
                       <div class="modal-body" style="padding: 0; position: relative;">
-                    
                         <button type="button" class="btn-close" data-bs-dismiss="modal" 
                                 aria-label="Close" style="${closeButtonCss}"></button>
-
                         <a href="${banner.clickUrl}" target="_blank" rel="noopener noreferrer">
                             <img src="${banner.adContentUrl}" class="img-fluid rounded" alt="${banner.adName}">
                         </a>
                       </div>
-
                     </div>
                   </div>
                 </div>`;
                 }
 
-                // Chạy hàm chính!
                 fetchPopupAd();
 
-                // ===== TOP 10 TRENDING SLIDER SCRIPT =====
+                // ===== TOP 10 TRENDING ELIP & INFINITE DRAG CAROUSEL =====
+                const wrapper = document.getElementById('top10Wrapper');
                 const track = document.getElementById('top10Track');
-                const prevBtn = document.getElementById('top10PrevBtn');
-                const nextBtn = document.getElementById('top10NextBtn');
 
-                if (track && prevBtn && nextBtn) {
-                    const scrollAmount = 350;
-                    prevBtn.addEventListener('click', function () {
-                        track.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+                if (track && wrapper) {
+                    let isDown = false;
+                    let startX = 0;
+                    let scrollLeft = 0;
+                    let isDragging = false;
+                    let dragDistance = 0;
+
+                    // Tính độ rộng 1 chu kỳ 10 phim (cycle)
+                    function getSingleCycleWidth() {
+                        const cycleItems = track.querySelectorAll('.top10-item[data-cycle="0"]');
+                        if (cycleItems.length === 0) return 0;
+                        let w = 0;
+                        cycleItems.forEach(item => {
+                            w += item.offsetWidth + (window.innerWidth <= 576 ? 14 : (window.innerWidth <= 992 ? 16 : 24));
+                        });
+                        return w;
+                    }
+
+                    // Cuộn về chu kỳ giữa (Cycle 1) khi khởi tạo
+                    function initInitialScroll() {
+                        const singleW = getSingleCycleWidth();
+                        if (singleW > 0) {
+                            track.scrollLeft = singleW;
+                        }
+                        updateCurvedElip();
+                    }
+
+                    // Hiệu ứng Elip / 3D Curve cho các thẻ
+                    function updateCurvedElip() {
+                        const trackRect = track.getBoundingClientRect();
+                        const trackCenter = trackRect.left + trackRect.width / 2;
+                        const items = track.querySelectorAll('.top10-item');
+
+                        items.forEach(item => {
+                            const itemRect = item.getBoundingClientRect();
+                            const itemCenter = itemRect.left + itemRect.width / 2;
+                            const normalizedDist = (itemCenter - trackCenter) / (trackRect.width / 2);
+                            const absDist = Math.min(Math.abs(normalizedDist), 2);
+
+                            const scale = Math.max(0.88, 1.04 - absDist * 0.12);
+                            const opacity = Math.max(0.72, 1 - absDist * 0.22);
+                            const rotateY = normalizedDist * -8;
+                            const translateY = absDist * absDist * 6;
+
+                            const card = item.querySelector('.top10-card');
+                            if (card) {
+                                card.style.transform = `perspective(900px) translateY(${translateY}px) rotateY(${rotateY}deg) scale(${scale})`;
+                                card.style.opacity = opacity;
+                            }
+                        });
+                    }
+
+                    // Sự kiện cuộn vô tận (Infinite Loop Boundary Check)
+                    track.addEventListener('scroll', function () {
+                        const singleW = getSingleCycleWidth();
+                        if (singleW > 0) {
+                            if (track.scrollLeft >= singleW * 2) {
+                                track.scrollLeft -= singleW;
+                            } else if (track.scrollLeft <= 10) {
+                                track.scrollLeft += singleW;
+                            }
+                        }
+                        requestAnimationFrame(updateCurvedElip);
+                    }, { passive: true });
+
+                    // Chuột kéo (Mouse Drag to scroll trên Desktop)
+                    wrapper.addEventListener('mousedown', function (e) {
+                        isDown = true;
+                        isDragging = false;
+                        dragDistance = 0;
+                        startX = e.pageX - track.offsetLeft;
+                        scrollLeft = track.scrollLeft;
+                        wrapper.classList.add('is-dragging');
                     });
-                    nextBtn.addEventListener('click', function () {
-                        track.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+
+                    window.addEventListener('mouseup', function () {
+                        if (!isDown) return;
+                        isDown = false;
+                        wrapper.classList.remove('is-dragging');
+                        setTimeout(() => { isDragging = false; dragDistance = 0; }, 50);
                     });
+
+                    wrapper.addEventListener('mousemove', function (e) {
+                        if (!isDown) return;
+                        e.preventDefault();
+                        const x = e.pageX - track.offsetLeft;
+                        const walk = (x - startX) * 1.35;
+                        track.scrollLeft = scrollLeft - walk;
+                        dragDistance = Math.abs(x - startX);
+                        if (dragDistance > 6) {
+                            isDragging = true;
+                        }
+                    });
+
+                    // Chặn mở link nếu người dùng đang thực hiện động tác rê chuột
+                    track.querySelectorAll('.top10-link').forEach(link => {
+                        link.addEventListener('click', function (e) {
+                            if (isDragging || dragDistance > 6) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }
+                        });
+                    });
+
+                    // Khởi tạo vị trí ban đầu
+                    setTimeout(initInitialScroll, 100);
+                    window.addEventListener('resize', updateCurvedElip);
                 }
             });
         </script>

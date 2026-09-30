@@ -47,7 +47,7 @@
         let ticking = false;
 
         function handleScroll() {
-            const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollPosition = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
             
             if (!ticking) {
                 window.requestAnimationFrame(() => {
