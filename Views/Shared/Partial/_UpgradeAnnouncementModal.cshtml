@@ -1,8 +1,9 @@
-@* Partial View: _UpgradeAnnouncementModal.cshtml - Thông báo Tết Trung Thu & Thông Tin Kỹ Thuật *@
+@* Partial View: _UpgradeAnnouncementModal.cshtml - Hệ thống Popup Thông báo & Cổng chờ Dashboard *@
 @inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @inject MovieWeb.Services.Interfaces.IAuthService _authService
 @{
-    var showUpgradeModal = Configuration.GetValue<bool>("FeatureFlags:ShowUpgradeAnnouncementModal", true);
+    // Cổng chờ tích hợp quản trị thông báo từ Admin Dashboard qua FeatureFlags:ShowUpgradeAnnouncementModal
+    var showUpgradeModal = Configuration.GetValue<bool>("FeatureFlags:ShowUpgradeAnnouncementModal", false);
     if (!showUpgradeModal)
     {
         return;
