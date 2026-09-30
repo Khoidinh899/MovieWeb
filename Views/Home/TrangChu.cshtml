@@ -507,41 +507,43 @@
 
         .top10-slider-wrapper {
             position: relative;
-            perspective: 1200px;
             overflow: hidden;
             user-select: none;
             -webkit-user-select: none;
-            cursor: grab;
-            cursor: -webkit-grab;
             padding: 10px 0;
-        }
-
-        .top10-slider-wrapper.is-dragging {
-            cursor: grabbing;
-            cursor: -webkit-grabbing;
         }
 
         .top10-track {
             display: flex;
-            gap: 24px;
+            gap: 20px;
             overflow-x: auto;
             scroll-behavior: auto;
             scrollbar-width: none !important;
             -ms-overflow-style: none !important;
-            padding: 20px 25px 30px 25px;
+            padding: 15px 25px 25px 25px;
             align-items: center;
+            cursor: grab;
+            cursor: -webkit-grab;
+            -webkit-overflow-scrolling: touch;
         }
 
         .top10-track::-webkit-scrollbar {
             display: none !important;
         }
 
+        .top10-track.is-dragging {
+            cursor: grabbing;
+            cursor: -webkit-grabbing;
+        }
+
+        .top10-track.is-dragging .top10-link {
+            pointer-events: none !important;
+        }
+
         .top10-item {
             flex: 0 0 210px;
-            max-width: 225px;
+            max-width: 220px;
             scroll-snap-align: center;
-            will-change: transform, opacity;
-            transition: transform 0.25s ease, opacity 0.25s ease;
         }
 
         @@media (max-width: 992px) {
@@ -557,22 +559,27 @@
         }
 
         @@media (max-width: 576px) {
-            .top10-item {
-                flex: 0 0 68vw;
-                min-width: 215px;
-                max-width: 270px;
-            }
             .top10-track {
+                scroll-snap-type: x mandatory;
                 gap: 14px;
-                padding: 10px 10px 20px 16px;
+                padding: 10px 14px 20px 16px;
+            }
+            .top10-item {
+                flex: 0 0 70vw;
+                min-width: 220px;
+                max-width: 270px;
+                scroll-snap-align: center;
             }
         }
 
         .top10-card {
             position: relative;
             padding-left: 20px;
-            transform-origin: center center;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.25s ease;
+        }
+
+        .top10-card:hover {
+            transform: translateY(-6px);
         }
 
         /* Số thứ hạng Neon 3D khổng lồ (Không bị cắt mép) */
@@ -801,16 +808,14 @@
 
                 fetchPopupAd();
 
-                // ===== TOP 10 TRENDING ELIP & INFINITE DRAG CAROUSEL =====
-                const wrapper = document.getElementById('top10Wrapper');
+                // ===== TOP 10 TRENDING ELIP & INFINITE DRAG CAROUSEL (60FPS ULTRA SMOOTH) =====
                 const track = document.getElementById('top10Track');
 
-                if (track && wrapper) {
+                if (track) {
                     let isDown = false;
                     let startX = 0;
-                    let scrollLeft = 0;
-                    let isDragging = false;
-                    let dragDistance = 0;
+                    let scrollStart = 0;
+                    let hasMoved = false;
                     let cycleWidth = 0;
                     let isAdjusting = false;
 
@@ -828,35 +833,9 @@
                         if (cycleWidth > 0) {
                             track.scrollLeft = cycleWidth * 1.5;
                         }
-                        updateCurvedElip();
                     }
 
-                    // Hiệu ứng Elip / 3D Curve cho các thẻ
-                    function updateCurvedElip() {
-                        const trackRect = track.getBoundingClientRect();
-                        const trackCenter = trackRect.left + trackRect.width / 2;
-                        const items = track.querySelectorAll('.top10-item');
-
-                        items.forEach(item => {
-                            const itemRect = item.getBoundingClientRect();
-                            const itemCenter = itemRect.left + itemRect.width / 2;
-                            const normalizedDist = (itemCenter - trackCenter) / (trackRect.width / 2);
-                            const absDist = Math.min(Math.abs(normalizedDist), 2);
-
-                            const scale = Math.max(0.88, 1.04 - absDist * 0.12);
-                            const opacity = Math.max(0.72, 1 - absDist * 0.22);
-                            const rotateY = normalizedDist * -8;
-                            const translateY = absDist * absDist * 6;
-
-                            const card = item.querySelector('.top10-card');
-                            if (card) {
-                                card.style.transform = `perspective(900px) translateY(${translateY}px) rotateY(${rotateY}deg) scale(${scale})`;
-                                card.style.opacity = opacity;
-                            }
-                        });
-                    }
-
-                    // Sự kiện cuộn vô tận (Không bị giật ở 10 -> 1 -> 2 vì điểm reset nằm ở giữa Cycle)
+                    // Sự kiện cuộn vô tận mượt mà
                     track.addEventListener('scroll', function () {
                         if (!isAdjusting && cycleWidth > 0) {
                             if (track.scrollLeft >= cycleWidth * 2.5) {
@@ -869,54 +848,50 @@
                                 isAdjusting = false;
                             }
                         }
-                        requestAnimationFrame(updateCurvedElip);
                     }, { passive: true });
 
                     // Chuột kéo (Mouse Drag to scroll trên Desktop)
-                    wrapper.addEventListener('mousedown', function (e) {
+                    track.addEventListener('mousedown', function (e) {
                         isDown = true;
-                        isDragging = false;
-                        dragDistance = 0;
-                        startX = e.pageX - track.offsetLeft;
-                        scrollLeft = track.scrollLeft;
-                        wrapper.classList.add('is-dragging');
+                        hasMoved = false;
+                        startX = e.pageX;
+                        scrollStart = track.scrollLeft;
                     });
 
                     window.addEventListener('mouseup', function () {
                         if (!isDown) return;
                         isDown = false;
-                        wrapper.classList.remove('is-dragging');
-                        setTimeout(() => { isDragging = false; dragDistance = 0; }, 50);
-                    });
-
-                    wrapper.addEventListener('mousemove', function (e) {
-                        if (!isDown) return;
-                        e.preventDefault();
-                        const x = e.pageX - track.offsetLeft;
-                        const walk = (x - startX) * 1.35;
-                        track.scrollLeft = scrollLeft - walk;
-                        dragDistance = Math.abs(x - startX);
-                        if (dragDistance > 6) {
-                            isDragging = true;
+                        track.classList.remove('is-dragging');
+                        if (hasMoved) {
+                            setTimeout(() => { hasMoved = false; }, 200);
                         }
                     });
 
-                    // Chặn mở link nếu người dùng đang thực hiện động tác rê chuột
+                    track.addEventListener('mousemove', function (e) {
+                        if (!isDown) return;
+                        const delta = e.pageX - startX;
+                        if (Math.abs(delta) > 5) {
+                            hasMoved = true;
+                            track.classList.add('is-dragging');
+                            e.preventDefault();
+                            track.scrollLeft = scrollStart - (delta * 1.25);
+                        }
+                    });
+
+                    // Chặn mở link nếu người dùng đang thực hiện động tác kéo chuột
                     track.querySelectorAll('.top10-link').forEach(link => {
                         link.addEventListener('click', function (e) {
-                            if (isDragging || dragDistance > 6) {
+                            if (hasMoved) {
                                 e.preventDefault();
                                 e.stopPropagation();
+                                return false;
                             }
-                        });
+                        }, true); // useCapture = true to reliably catch drag vs click
                     });
 
                     // Khởi tạo vị trí ban đầu
-                    setTimeout(initInitialScroll, 100);
-                    window.addEventListener('resize', () => {
-                        measureCycleWidth();
-                        updateCurvedElip();
-                    });
+                    setTimeout(initInitialScroll, 80);
+                    window.addEventListener('resize', measureCycleWidth);
                 }
             });
         </script>
