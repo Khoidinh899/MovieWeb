@@ -145,23 +145,12 @@
     @await RenderSectionAsync("Scripts", required: false)
     
     @if (User.Identity.IsAuthenticated)
-{
-    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
-    <script src="~/js/notification.js" asp-append-version="true"></script>
-
-    var roleId = User.FindFirst("RoleId")?.Value;
-    var subscriptionType = User.FindFirst("SubscriptionType")?.Value?.ToLower();
-    
-    bool canUseChatbot = roleId == "1" || 
-                        subscriptionType == "premium" || 
-                        subscriptionType == "student";
-
-    if (canUseChatbot)
     {
+        <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+        <script src="~/js/notification.js" asp-append-version="true"></script>
         @await Html.PartialAsync("Partial/_Chatbot")
         <script src="~/js/chatbot.js" asp-append-version="true"></script>
     }
-}
 
 <script src="~/js/search.js" asp-append-version="true"></script>
 

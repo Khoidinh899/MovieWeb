@@ -4,24 +4,33 @@
 
 /* FAB (nút tròn Mooner) */
 #chatbotFloatingBtn.chatbot-fab {
-  position: fixed;
-  bottom: 80px;
-  right: 20px;
-  width: 60px;
-  height: 60px;
-  z-index: 1060;
-  display: flex;
+  position: fixed !important;
+  bottom: 95px !important;
+  right: 25px !important;
+  width: 58px;
+  height: 58px;
+  z-index: 10000 !important;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid rgba(255,255,255,0.6);
-  box-shadow: 0 8px 30px rgba(1,44,66,0.18);
+  box-shadow: 0 8px 30px rgba(1,44,66,0.25);
   background: radial-gradient(circle at 30% 30%, #FFD85C 0%, #FFCA28 45%, #FBC02D 100%);
   transition: transform .18s ease, box-shadow .18s ease;
 }
 #chatbotFloatingBtn img { width:35px; height:35px; border-radius:50%; }
 #chatbotFloatingBtn:hover { transform: scale(1.06); box-shadow: 0 12px 36px rgba(1,44,66,0.25); }
+
+@media (max-width: 768px) {
+  #chatbotFloatingBtn.chatbot-fab {
+    bottom: 135px !important;
+    right: 20px !important;
+    width: 50px;
+    height: 50px;
+  }
+}
 
 /* Tooltip */
 #chatbotFloatingBtn .chatbot-tooltip {
