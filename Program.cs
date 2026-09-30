@@ -282,6 +282,7 @@ builder.Services.AddHttpClient<IGeminiService, GeminiService>();
 builder.Services.AddHttpClient<ITurnstileService, TurnstileService>();
 builder.Services.AddSingleton<IWatchPartyManager, WatchPartyManager>();
 builder.Services.AddScoped<IMovieRequestService, MovieRequestService>();
+builder.Services.AddSingleton<IAnnouncementService, AnnouncementService>();
 
 builder.Services.AddAntiforgery(options =>
 {

@@ -1,10 +1,8 @@
-@* Partial View: _UpgradeAnnouncementModal.cshtml - Hệ thống Popup Thông báo & Cổng chờ Dashboard *@
-@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
-@inject MovieWeb.Services.Interfaces.IAuthService _authService
+@* Partial View: _UpgradeAnnouncementModal.cshtml - Hệ thống Popup Thông báo Động từ Dashboard *@
+@inject MovieWeb.Services.Interfaces.IAnnouncementService AnnouncementService
 @{
-    // Cổng chờ tích hợp quản trị thông báo từ Admin Dashboard qua FeatureFlags:ShowUpgradeAnnouncementModal
-    var showUpgradeModal = Configuration.GetValue<bool>("FeatureFlags:ShowUpgradeAnnouncementModal", false);
-    if (!showUpgradeModal)
+    var settings = await AnnouncementService.GetSettingsAsync();
+    if (settings == null || !settings.IsEnabled)
     {
         return;
     }
@@ -19,48 +17,64 @@
             </button>
             
             <div class="modal-body p-3 p-md-4">
-                <!-- Header Banner Trung Thu -->
-                <div class="text-center mb-3">
-                    <div class="midautumn-badge-glow mb-1">
-                        <span class="badge-tag">🏮 CHÚC MỪNG TẾT TRUNG THU ĐOÀN VIÊN 🏮</span>
+                <!-- Header Banner -->
+                @if (!string.IsNullOrWhiteSpace(settings.BadgeText) || !string.IsNullOrWhiteSpace(settings.Title))
+                {
+                    <div class="text-center mb-3">
+                        @if (!string.IsNullOrWhiteSpace(settings.BadgeText))
+                        {
+                            <div class="midautumn-badge-glow mb-1">
+                                <span class="badge-tag">@settings.BadgeText</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(settings.Title))
+                        {
+                            <h3 class="midautumn-modal-title" id="upgradeAnnouncementModalLabel">
+                                @settings.Title
+                            </h3>
+                        }
                     </div>
-                    <h3 class="midautumn-modal-title" id="upgradeAnnouncementModalLabel">
-                        🌕 MOONPHIM KÍNH CHÚC QUÝ KHÁN GIẢ 🌕
-                    </h3>
-                </div>
+                }
 
-                <!-- Lời chúc Trung Thu -->
-                <div class="midautumn-card-box mb-3">
-                    <p class="mb-0 text-gold-glow">
-                        🥮 Nhân dịp Tết Trung Thu (Rằm tháng 8), <strong>MoonPhim</strong> thân ái gửi tới bạn cùng gia đình lời chúc một mùa trăng rằm thật ấm áp, vui vẻ, trọn vẹn yêu thương và ngập tràn hạnh phúc bên những người thân yêu! 💖
-                    </p>
-                </div>
+                <!-- Lời chúc / Thông điệp chính -->
+                @if (!string.IsNullOrWhiteSpace(settings.MainMessageHtml))
+                {
+                    <div class="midautumn-card-box mb-3">
+                        @Html.Raw(settings.MainMessageHtml)
+                    </div>
+                }
 
-                <!-- Thư xin lỗi & Thông báo kỹ thuật -->
-                <div class="midautumn-notice-box mb-3">
-                    <div class="notice-header mb-2">
-                        <i class="bi bi-megaphone-fill text-warning me-2"></i>
-                        <strong class="text-white">THÔNG BÁO VỀ SỰ CỐ KỸ THUẬT & TÍNH NĂNG XEM CHUNG</strong>
+                <!-- Khối Thông Báo Kỹ Thuật / Chi Tiết -->
+                @if (!string.IsNullOrWhiteSpace(settings.NoticeHeaderHtml) || !string.IsNullOrWhiteSpace(settings.NoticeBodyHtml))
+                {
+                    <div class="midautumn-notice-box mb-3">
+                        @if (!string.IsNullOrWhiteSpace(settings.NoticeHeaderHtml))
+                        {
+                            <div class="notice-header mb-2">
+                                @Html.Raw(settings.NoticeHeaderHtml)
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(settings.NoticeBodyHtml))
+                        {
+                            @Html.Raw(settings.NoticeBodyHtml)
+                        }
                     </div>
-                    <div class="notice-item">
-                        <i class="bi bi-patch-exclamation-fill text-warning me-2"></i>
-                        <div>
-                            <strong>Lời xin lỗi sự cố đêm 24/09:</strong> Ban Quản Trị thành thật gửi lời xin lỗi chân thành tới các bạn vì sự cố gián đoạn phát video đêm qua. Đội ngũ đã xử lý triệt để, hệ thống hiện đã hoạt động mượt mà trở lại 100%.
-                        </div>
-                    </div>
-                    <div class="notice-item mt-2">
-                        <i class="bi bi-gear-wide-connected text-info me-2"></i>
-                        <div>
-                            <strong>Tạm hoãn tính năng "Xem Chung":</strong> Nhằm tối ưu trải nghiệm đồng bộ và độ ổn định cao nhất, tính năng Xem Chung sẽ được tạm hoãn để nâng cấp sâu hơn trước khi chính thức mở lại.
-                        </div>
-                    </div>
-                </div>
+                }
 
                 <!-- Nút Hành Động -->
                 <div class="mt-3">
-                    <button type="button" class="btn btn-midautumn-primary w-100 py-2 py-md-3" onclick="closeMidAutumnModal()">
-                        <i class="bi bi-play-circle-fill me-2"></i> KHÁM PHÁ & XEM PHIM NGAY
-                    </button>
+                    @if (!string.IsNullOrWhiteSpace(settings.ButtonUrl))
+                    {
+                        <a href="@settings.ButtonUrl" class="btn btn-midautumn-primary w-100 py-2 py-md-3 text-center text-decoration-none d-block" onclick="closeMidAutumnModal()">
+                            @settings.ButtonText
+                        </a>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-midautumn-primary w-100 py-2 py-md-3" onclick="closeMidAutumnModal()">
+                            @settings.ButtonText
+                        </button>
+                    }
                 </div>
             </div>
         </div>
@@ -69,7 +83,7 @@
 
 <style>
 /* ===================================================
-   MODAL TRUNG THU & THÔNG BÁO KỸ THUẬT - MOONPHIM GOLD THEME
+   MODAL POPUP THÔNG BÁO - MOONPHIM THEME
    =================================================== */
 #upgradeAnnouncementModal {
     z-index: 1065 !important;
@@ -155,9 +169,6 @@
     border-radius: 12px;
     line-height: 1.5;
     font-size: 0.9rem;
-}
-
-.text-gold-glow {
     color: #fef08a;
 }
 
@@ -247,11 +258,12 @@
 
 <script>
     (function () {
-        // Khóa lưu trạng thái hiển thị 1 LẦN DUY NHẤT
-        const STORAGE_KEY = 'moonphim_mid_autumn_2026_seen';
+        const STORAGE_KEY = 'moonphim_announcement_seen_@(settings.StorageKeyVersion)';
+        const SHOW_ONCE = @(settings.ShowOncePerUser ? "true" : "false");
 
         // Đánh dấu đã xem (cả LocalStorage lẫn Cookie 1 năm)
         function markAsSeen() {
+            if (!SHOW_ONCE) return;
             try {
                 localStorage.setItem(STORAGE_KEY, '1');
                 document.cookie = STORAGE_KEY + "=1; max-age=31536000; path=/; samesite=lax";
@@ -259,6 +271,7 @@
         }
 
         function hasSeen() {
+            if (!SHOW_ONCE) return false;
             try {
                 if (localStorage.getItem(STORAGE_KEY) === '1') return true;
                 if (document.cookie.indexOf(STORAGE_KEY + '=1') !== -1) return true;
@@ -284,13 +297,11 @@
             }
         };
 
-        // Tự động kiểm tra và chỉ hiển thị ĐÚNG 1 LẦN DUY NHẤT
         function checkAndShowModal() {
             if (hasSeen()) {
-                return; // Đã xem rồi -> Chặn hoàn toàn, không hiển thị lại
+                return;
             }
 
-            // Ghi nhận ngay để không hiển thị lại ở các tab/lần sau
             markAsSeen();
 
             setTimeout(function () {

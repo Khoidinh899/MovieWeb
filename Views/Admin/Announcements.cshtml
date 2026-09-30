@@ -1,0 +1,566 @@
+@model MovieWeb.Models.DTOs.AnnouncementSettingsDto
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản Lý Popup Thông Báo";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header & Navigation -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="@Url.Action("Dashboard", "Admin")" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Quản Lý Popup Thông Báo</li>
+                </ol>
+            </nav>
+            <h2 class="mb-0 fw-bold">
+                <i class="bi bi-megaphone-fill text-warning me-2"></i> Cấu Hình Popup Thông Báo Hệ Thống
+            </h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Dashboard", "Admin")" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Quay Lại Dashboard
+            </a>
+            <button type="button" class="btn btn-warning text-dark fw-bold" onclick="document.getElementById('announcementForm').submit();">
+                <i class="bi bi-floppy-fill me-1"></i> Lưu & Áp Dụng Ngay
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+        <!-- CỘT TRÁI: FORM CẤU HÌNH & SOẠN THẢO NỘI DUNG -->
+        <div class="col-12 col-xl-6">
+            <form id="announcementForm" asp-action="Announcements" asp-controller="Admin" method="post">
+                @Html.AntiForgeryToken()
+
+                <!-- CARD 1: CÔNG TẮC HOẠT ĐỘNG & TẦM HIỂN THỊ -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fs-6 fw-bold">
+                            <i class="bi bi-toggle-on text-warning me-2"></i> 1. Trạng Thái Hoạt Động
+                        </h5>
+                        <span class="badge @(Model.IsEnabled ? "bg-success" : "bg-secondary")" id="statusBadge">
+                            @(Model.IsEnabled ? "Đang Bật" : "Đang Tắt")
+                        </span>
+                    </div>
+                    <div class="card-body bg-light">
+                        <div class="form-check form-switch fs-5 mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="IsEnabled" name="IsEnabled" value="true" @(Model.IsEnabled ? "checked" : "") onchange="updateLivePreview()">
+                            <label class="form-check-label fw-bold" for="IsEnabled">
+                                BẬT hiển thị Popup thông báo cho toàn bộ người dùng website
+                            </label>
+                        </div>
+
+                        <hr class="my-3 text-muted">
+
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="ShowOncePerUser" name="ShowOncePerUser" value="true" @(Model.ShowOncePerUser ? "checked" : "")>
+                            <label class="form-check-label" for="ShowOncePerUser">
+                                <strong>Chỉ hiển thị 1 lần duy nhất</strong> cho mỗi khách truy cập (dùng Cookie + LocalStorage)
+                            </label>
+                        </div>
+                        <small class="text-muted d-block mb-3">
+                            Khuyên dùng để tránh làm phiền trải nghiệm xem phim của người dùng.
+                        </small>
+
+                        <div class="d-flex align-items-center justify-content-between p-2 rounded bg-white border">
+                            <div>
+                                <small class="text-muted d-block">Mã phiên thông báo hiện tại:</small>
+                                <span class="badge bg-secondary font-monospace" id="currentVersionTag">@Model.StorageKeyVersion</span>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" id="bumpVersion" name="bumpVersion" value="true">
+                                <label class="form-check-label small fw-bold text-primary" for="bumpVersion" title="Đánh dấu đây là chiến dịch mới để toàn bộ người dùng (kể cả người đã bấm đóng trước đây) đều sẽ thấy lại thông báo này">
+                                    <i class="bi bi-arrow-repeat"></i> Gửi thông báo mới (Reset cho mọi người)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD 2: TÙY CHỈNH NỘI DUNG VỚI THANH CÔNG CỤ ĐỊNH DẠNG -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fs-6 fw-bold">
+                            <i class="bi bi-pencil-square text-warning me-2"></i> 2. Nội Dung & Tùy Chỉnh Màu Sắc / Cỡ Chữ
+                        </h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-warning dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-magic me-1"></i> Mẫu Soạn Sẵn
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="applyTemplate('midautumn')">🥮 Mẫu Tết Trung Thu</a></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="applyTemplate('maintenance')">🔧 Mẫu Bảo Trì Hệ Thống</a></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="applyTemplate('newfeatures')">✨ Mẫu Tính Năng Mới</a></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="applyTemplate('apology')">🙏 Mẫu Xin Lỗi Sự Cố Kỹ Thuật</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        
+                        <!-- Thanh công cụ định dạng chung (Floating Rich Toolbar) -->
+                        <div class="rich-toolbar p-2 mb-3 rounded bg-dark border border-secondary text-white d-flex flex-wrap align-items-center gap-2">
+                            <!-- In đậm, In nghiêng, Gạch chân -->
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-secondary" onclick="formatDoc('bold')" title="In đậm (Bold)"><i class="bi bi-type-bold"></i></button>
+                                <button type="button" class="btn btn-secondary" onclick="formatDoc('italic')" title="In nghiêng (Italic)"><i class="bi bi-type-italic"></i></button>
+                                <button type="button" class="btn btn-secondary" onclick="formatDoc('underline')" title="Gạch chân (Underline)"><i class="bi bi-type-underline"></i></button>
+                            </div>
+
+                            <!-- Cỡ chữ -->
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" title="Cỡ chữ">
+                                    <i class="bi bi-fonts me-1"></i> Cỡ chữ
+                                </button>
+                                <ul class="dropdown-menu shadow">
+                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="applyFontSize('12px')">Nhỏ (12px - Ghi chú)</a></li>
+                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="applyFontSize('14px')">Vừa (14px - Chuẩn)</a></li>
+                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="applyFontSize('16px')">Lớn (16px - Nhấn mạnh)</a></li>
+                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="applyFontSize('18px')">Rất lớn (18px)</a></li>
+                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="applyFontSize('22px')">Tiêu đề (22px)</a></li>
+                                </ul>
+                            </div>
+
+                            <div class="vr bg-secondary my-1"></div>
+
+                            <!-- Bảng màu có sẵn (Presets) -->
+                            <span class="small opacity-75 text-nowrap">Màu nhanh:</span>
+                            <div class="d-flex align-items-center gap-1">
+                                <button type="button" class="color-dot" style="background:#fef08a" onclick="applyColor('#fef08a')" title="Vàng Gold Glow"></button>
+                                <button type="button" class="color-dot" style="background:#facc15" onclick="applyColor('#facc15')" title="Vàng Hoàng Gia"></button>
+                                <button type="button" class="color-dot" style="background:#f87171" onclick="applyColor:#f87171" title="Đỏ Tết/Cảnh báo"></button>
+                                <button type="button" class="color-dot" style="background:#4ade80" onclick="applyColor('#4ade80')" title="Xanh Lá Mạ"></button>
+                                <button type="button" class="color-dot" style="background:#38bdf8" onclick="applyColor('#38bdf8')" title="Xanh Dương Sáng"></button>
+                                <button type="button" class="color-dot" style="background:#c084fc" onclick="applyColor('#c084fc')" title="Tím Neon"></button>
+                                <button type="button" class="color-dot" style="background:#ffffff" onclick="applyColor('#ffffff')" title="Trắng Sáng"></button>
+                                <button type="button" class="color-dot" style="background:#94a3b8" onclick="applyColor('#94a3b8')" title="Xám Khói"></button>
+                            </div>
+
+                            <div class="vr bg-secondary my-1"></div>
+
+                            <!-- BẢNG MÀU TÙY CHỌN TỰ DO (Custom Color Picker + Hex Input) -->
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="small opacity-75 text-nowrap" title="Bảng màu tùy chọn tự do">Màu tự do:</span>
+                                <input type="color" id="customColorPicker" class="form-control form-control-color p-0 border-0" style="width: 28px; height: 28px; cursor: pointer;" value="#ffb703" onchange="document.getElementById('customHexCode').value = this.value; applyColor(this.value);" title="Click mở bảng màu tự do 16 triệu màu">
+                                <input type="text" id="customHexCode" class="form-control form-control-sm text-center font-monospace" style="width: 80px; height: 28px; font-size: 0.78rem;" value="#ffb703" placeholder="#Hex" onchange="document.getElementById('customColorPicker').value = this.value; applyColor(this.value);">
+                                <button type="button" class="btn btn-sm btn-outline-warning py-0 px-2" style="height: 28px; font-size: 0.75rem;" onclick="applyColor(document.getElementById('customHexCode').value)" title="Áp dụng mã màu này cho đoạn bôi đen">
+                                    Đổi màu
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 1. Huy Hiệu / Badge -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">1. Huy hiệu đầu thông báo (Badge Tag):</label>
+                            <input type="text" class="form-control" id="BadgeText" name="BadgeText" value="@Model.BadgeText" oninput="updateLivePreview()" placeholder="VD: 🏮 CHÚC MỪNG TẾT TRUNG THU ĐOÀN VIÊN 🏮">
+                        </div>
+
+                        <!-- 2. Tiêu Đề Chính -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">2. Tiêu đề Popup (Title):</label>
+                            <input type="text" class="form-control fw-bold" id="Title" name="Title" value="@Model.Title" oninput="updateLivePreview()" placeholder="VD: 🌕 MOONPHIM KÍNH CHÚC QUÝ KHÁN GIẢ 🌕">
+                        </div>
+
+                        <!-- 3. Lời Chúc / Thông Điệp Chính (Contenteditable Rich Editor) -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-bold mb-0">3. Thông điệp / Lời chúc chính:</label>
+                                <small class="text-muted">Bôi đen chữ để đổi màu / cỡ chữ / in đậm</small>
+                            </div>
+                            <div class="rich-editor-box form-control p-3" id="mainMessageEditor" contenteditable="true" oninput="syncEditorToInput('mainMessageEditor', 'MainMessageHtml')">
+                                @Html.Raw(Model.MainMessageHtml)
+                            </div>
+                            <input type="hidden" id="MainMessageHtml" name="MainMessageHtml" value="@Model.MainMessageHtml">
+                        </div>
+
+                        <!-- 4. Tiêu đề Khối Chi Tiết Kỹ Thuật / Nâng Cấp -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-bold mb-0">4. Tiêu đề khối thông báo chi tiết:</label>
+                                <small class="text-muted">Có thể dùng icon HTML hoặc chữ</small>
+                            </div>
+                            <div class="rich-editor-box form-control p-2" id="noticeHeaderEditor" contenteditable="true" oninput="syncEditorToInput('noticeHeaderEditor', 'NoticeHeaderHtml')">
+                                @Html.Raw(Model.NoticeHeaderHtml)
+                            </div>
+                            <input type="hidden" id="NoticeHeaderHtml" name="NoticeHeaderHtml" value="@Model.NoticeHeaderHtml">
+                        </div>
+
+                        <!-- 5. Nội dung Khối Chi Tiết Kỹ Thuật -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-bold mb-0">5. Nội dung các dòng thông báo kỹ thuật / Cập nhật:</label>
+                                <small class="text-muted">Định dạng từng dòng theo ý muốn</small>
+                            </div>
+                            <div class="rich-editor-box form-control p-3" id="noticeBodyEditor" contenteditable="true" oninput="syncEditorToInput('noticeBodyEditor', 'NoticeBodyHtml')" style="min-height: 120px;">
+                                @Html.Raw(Model.NoticeBodyHtml)
+                            </div>
+                            <input type="hidden" id="NoticeBodyHtml" name="NoticeBodyHtml" value="@Model.NoticeBodyHtml">
+                        </div>
+
+                        <!-- 6. Nút Hành Động (CTA Button) -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold">6. Chữ trên nút đóng / xem tiếp:</label>
+                                <input type="text" class="form-control" id="ButtonText" name="ButtonText" value="@Model.ButtonText" oninput="updateLivePreview()" placeholder="VD: 🍿 KHÁM PHÁ & XEM PHIM NGAY">
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold">Link chuyển hướng (Nếu có):</label>
+                                <input type="text" class="form-control" id="ButtonUrl" name="ButtonUrl" value="@Model.ButtonUrl" oninput="updateLivePreview()" placeholder="Để trống nếu chỉ đóng popup">
+                            </div>
+                        </div>
+
+                        <!-- Nút Lưu -->
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-warning py-3 text-dark fw-bold fs-5 shadow">
+                                <i class="bi bi-floppy2-fill me-2"></i> LƯU & CẬP NHẬT POPUP NGAY
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- CỘT PHẢI: XEM TRƯỚC TRỰC QUAN (LIVE PREVIEW CHUẨN 100%) -->
+        <div class="col-12 col-xl-6">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 20px; z-index: 10;">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fs-6 fw-bold">
+                        <i class="bi bi-eye-fill text-info me-2"></i> Xem Trước Trực Quan (Live Preview)
+                    </h5>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-light active" id="btnPreviewDesktop" onclick="setPreviewMode('desktop')">
+                            <i class="bi bi-display me-1"></i> Máy tính
+                        </button>
+                        <button type="button" class="btn btn-outline-light" id="btnPreviewMobile" onclick="setPreviewMode('mobile')">
+                            <i class="bi bi-phone me-1"></i> Điện thoại
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-3 p-md-4 preview-wrapper bg-darker text-center d-flex justify-content-center align-items-center" style="min-height: 520px; background: #050b14;">
+                    
+                    <!-- Khung Mockup Popup -->
+                    <div id="previewContainer" class="preview-desktop-mode w-100" style="max-width: 580px;">
+                        <div class="preview-modal-box p-3 p-md-4 text-start position-relative">
+                            <!-- Nút đóng góc phải -->
+                            <button type="button" class="preview-modal-close" title="Đóng mẫu">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+
+                            <!-- Badge Header -->
+                            <div class="text-center mb-3">
+                                <div class="preview-badge-glow mb-1">
+                                    <span class="badge-tag" id="previewBadge">@Model.BadgeText</span>
+                                </div>
+                                <h3 class="preview-modal-title" id="previewTitle">
+                                    @Model.Title
+                                </h3>
+                            </div>
+
+                            <!-- Lời chúc chính -->
+                            <div class="preview-card-box mb-3" id="previewMainMessage">
+                                @Html.Raw(Model.MainMessageHtml)
+                            </div>
+
+                            <!-- Khối Thông Báo Kỹ Thuật -->
+                            <div class="preview-notice-box mb-3">
+                                <div class="notice-header mb-2" id="previewNoticeHeader">
+                                    @Html.Raw(Model.NoticeHeaderHtml)
+                                </div>
+                                <div id="previewNoticeBody">
+                                    @Html.Raw(Model.NoticeBodyHtml)
+                                </div>
+                            </div>
+
+                            <!-- Nút Hành Động -->
+                            <div class="mt-3">
+                                <button type="button" class="btn btn-preview-primary w-100 py-2 py-md-3" id="previewButton">
+                                    @Model.ButtonText
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="card-footer bg-dark text-white-50 small py-2 d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-lightning-charge-fill text-warning"></i> Cập nhật tức thì khi gõ chữ / chọn màu</span>
+                    <span>Cập nhật lần cuối: @Model.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ========================================================
+   STYLES CHO ADMIN ANNOUNCEMENT & RICH TEXT EDITOR
+   ======================================================== */
+.rich-editor-box {
+    background-color: #0f172a;
+    color: #f1f5f9;
+    border: 1.5px solid #334155;
+    border-radius: 8px;
+    min-height: 80px;
+    max-height: 280px;
+    overflow-y: auto;
+    line-height: 1.6;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.rich-editor-box:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 0.25rem rgba(245, 158, 11, 0.25);
+    background-color: #0f172a;
+    color: #f1f5f9;
+}
+
+.color-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.color-dot:hover {
+    transform: scale(1.3);
+}
+
+/* Mockup Preview Box Styles */
+.preview-modal-box {
+    background: linear-gradient(145deg, #091224 0%, #0f1c3f 60%, #17112d 100%);
+    border: 1.5px solid rgba(250, 204, 21, 0.45);
+    border-radius: 18px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 35px rgba(250, 204, 21, 0.25);
+    color: #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.preview-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 30;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    color: #ffffff;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.preview-badge-glow .badge-tag {
+    display: inline-block;
+    padding: 4px 14px;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.6);
+    border-radius: 30px;
+    color: #fca5a5;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.preview-modal-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(135deg, #ffffff 0%, #facc15 50%, #fb923c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0;
+}
+
+.preview-card-box {
+    padding: 12px 14px;
+    background: rgba(250, 204, 21, 0.08);
+    border: 1px solid rgba(250, 204, 21, 0.3);
+    border-radius: 12px;
+    line-height: 1.5;
+    font-size: 0.88rem;
+    color: #fef08a;
+}
+
+.preview-notice-box {
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    font-size: 0.85rem;
+    line-height: 1.45;
+}
+
+.btn-preview-primary {
+    background: linear-gradient(135deg, #eab308 0%, #ca8a04 50%, #ea580c 100%);
+    border: none;
+    color: #0f172a;
+    font-weight: 800;
+    font-size: 0.92rem;
+    letter-spacing: 0.5px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(234, 179, 8, 0.4);
+}
+
+.preview-mobile-mode {
+    max-width: 360px !important;
+}
+
+.preview-mobile-mode .preview-modal-title {
+    font-size: 1.05rem;
+}
+
+.preview-mobile-mode .preview-card-box,
+.preview-mobile-mode .preview-notice-box {
+    font-size: 0.8rem;
+    padding: 8px 10px;
+}
+</style>
+
+<script>
+    // === RICH TEXT FORMATTING COMMANDS ===
+    function formatDoc(cmd, value = null) {
+        document.execCommand(cmd, false, value);
+        syncAllEditors();
+    }
+
+    function applyColor(color) {
+        if (!color) return;
+        document.execCommand('foreColor', false, color);
+        syncAllEditors();
+    }
+
+    function applyFontSize(size) {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        const span = document.createElement("span");
+        span.style.fontSize = size;
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+        syncAllEditors();
+    }
+
+    function syncEditorToInput(editorId, inputId) {
+        const editor = document.getElementById(editorId);
+        const input = document.getElementById(inputId);
+        if (editor && input) {
+            input.value = editor.innerHTML;
+        }
+        updateLivePreview();
+    }
+
+    function syncAllEditors() {
+        syncEditorToInput('mainMessageEditor', 'MainMessageHtml');
+        syncEditorToInput('noticeHeaderEditor', 'NoticeHeaderHtml');
+        syncEditorToInput('noticeBodyEditor', 'NoticeBodyHtml');
+    }
+
+    // === LIVE PREVIEW SYNC ===
+    function updateLivePreview() {
+        const isEnabled = document.getElementById('IsEnabled').checked;
+        const statusBadge = document.getElementById('statusBadge');
+        if (statusBadge) {
+            statusBadge.className = isEnabled ? 'badge bg-success' : 'badge bg-secondary';
+            statusBadge.textContent = isEnabled ? 'Đang Bật' : 'Đang Tắt';
+        }
+
+        const badgeText = document.getElementById('BadgeText').value || '';
+        document.getElementById('previewBadge').textContent = badgeText;
+
+        const titleText = document.getElementById('Title').value || '';
+        document.getElementById('previewTitle').textContent = titleText;
+
+        document.getElementById('previewMainMessage').innerHTML = document.getElementById('mainMessageEditor').innerHTML;
+        document.getElementById('previewNoticeHeader').innerHTML = document.getElementById('noticeHeaderEditor').innerHTML;
+        document.getElementById('previewNoticeBody').innerHTML = document.getElementById('noticeBodyEditor').innerHTML;
+
+        const buttonText = document.getElementById('ButtonText').value || 'ĐÓNG';
+        document.getElementById('previewButton').textContent = buttonText;
+    }
+
+    function setPreviewMode(mode) {
+        const container = document.getElementById('previewContainer');
+        const btnDesktop = document.getElementById('btnPreviewDesktop');
+        const btnMobile = document.getElementById('btnPreviewMobile');
+
+        if (mode === 'mobile') {
+            container.classList.remove('preview-desktop-mode');
+            container.classList.add('preview-mobile-mode');
+            btnMobile.classList.add('active');
+            btnDesktop.classList.remove('active');
+        } else {
+            container.classList.remove('preview-mobile-mode');
+            container.classList.add('preview-desktop-mode');
+            btnDesktop.classList.add('active');
+            btnMobile.classList.remove('active');
+        }
+    }
+
+    // === MẪU SOẠN SẴN (PRESETS TEMPLATES) ===
+    function applyTemplate(type) {
+        if (!confirm('Bạn có chắc muốn áp dụng mẫu này? Nội dung hiện tại trong các ô soạn thảo sẽ được thay thế.')) {
+            return;
+        }
+
+        if (type === 'midautumn') {
+            document.getElementById('BadgeText').value = '🏮 CHÚC MỪNG TẾT TRUNG THU ĐOÀN VIÊN 🏮';
+            document.getElementById('Title').value = '🌕 MOONPHIM KÍNH CHÚC QUÝ KHÁN GIẢ 🌕';
+            document.getElementById('mainMessageEditor').innerHTML = '🥮 Nhân dịp Tết Trung Thu (Rằm tháng 8), <strong>MoonPhim</strong> thân ái gửi tới bạn cùng gia đình lời chúc một mùa trăng rằm thật ấm áp, vui vẻ, trọn vẹn yêu thương và ngập tràn hạnh phúc bên những người thân yêu! 💖';
+            document.getElementById('noticeHeaderEditor').innerHTML = '<i class="bi bi-megaphone-fill text-warning me-2"></i><strong class="text-white">THÔNG BÁO VỀ SỰ CỐ KỸ THUẬT & TÍNH NĂNG XEM CHUNG</strong>';
+            document.getElementById('noticeBodyEditor').innerHTML = '<div class="notice-item mb-2"><i class="bi bi-patch-exclamation-fill text-warning me-2"></i><div><strong>Lời xin lỗi sự cố đêm 24/09:</strong> Ban Quản Trị thành thật gửi lời xin lỗi chân thành tới các bạn vì sự cố gián đoạn phát video đêm qua. Đội ngũ đã xử lý triệt để, hệ thống hiện đã hoạt động mượt mà trở lại 100%.</div></div><div class="notice-item"><i class="bi bi-gear-wide-connected text-info me-2"></i><div><strong>Tạm hoãn tính năng "Xem Chung":</strong> Nhằm tối ưu trải nghiệm đồng bộ và độ ổn định cao nhất, tính năng Xem Chung sẽ được tạm hoãn để nâng cấp sâu hơn trước khi chính thức mở lại.</div></div>';
+            document.getElementById('ButtonText').value = '🍿 KHÁM PHÁ & XEM PHIM NGAY';
+        } else if (type === 'maintenance') {
+            document.getElementById('BadgeText').value = '🔧 THÔNG BÁO BẢO TRÌ & NÂNG CẤP HỆ THỐNG 🔧';
+            document.getElementById('Title').value = '🚀 NÂNG CẤP MÁY CHỦ TỐC ĐỘ CAO 🚀';
+            document.getElementById('mainMessageEditor').innerHTML = '✨ Nhằm phục vụ quý khán giả xem phim mượt mà và không bị gián đoạn, <strong>MoonPhim</strong> sẽ tiến hành nâng cấp hạ tầng máy chủ.';
+            document.getElementById('noticeHeaderEditor').innerHTML = '<i class="bi bi-clock-history text-info me-2"></i><strong class="text-white">LỊCH TRÌNH VÀ THÔNG TIN NÂNG CẤP</strong>';
+            document.getElementById('noticeBodyEditor').innerHTML = '<div><i class="bi bi-check-circle-fill text-success me-2"></i><strong>Thời gian dự kiến:</strong> Từ 02:00 đến 04:00 rạng sáng.</div><div class="mt-2"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Sau bảo trì, tốc độ load phim và chất lượng Full HD / 4K sẽ tăng gấp đôi!</div>';
+            document.getElementById('ButtonText').value = 'ĐÃ HIỂU & TIẾP TỤC';
+        } else if (type === 'newfeatures') {
+            document.getElementById('BadgeText').value = '✨ TÍNH NĂNG MỚI RA MẮT ✨';
+            document.getElementById('Title').value = '🎬 TRẢI NGHIỆM XEM PHIM HOÀN TOÀN MỚI 🎬';
+            document.getElementById('mainMessageEditor').innerHTML = '🎉 <strong>MoonPhim</strong> vừa cập nhật giao diện mới cùng hàng loạt tính năng đỉnh cao phục vụ cộng đồng mê phim!';
+            document.getElementById('noticeHeaderEditor').innerHTML = '<i class="bi bi-stars text-warning me-2"></i><strong class="text-white">CÁC ĐIỂM NỔI BẬT VỪA CẬP NHẬT</strong>';
+            document.getElementById('noticeBodyEditor').innerHTML = '<div><i class="bi bi-play-circle-fill text-danger me-2"></i>Trình phát Video Player siêu mượt, hỗ trợ cử chỉ vuốt tua trên điện thoại.</div><div class="mt-2"><i class="bi bi-phone-fill text-primary me-2"></i>Ứng dụng App Android & iOS đã có mặt, cài đặt chỉ trong 1 chạm!</div>';
+            document.getElementById('ButtonText').value = 'TRẢI NGHIỆM NGAY';
+        } else if (type === 'apology') {
+            document.getElementById('BadgeText').value = '📢 THÔNG BÁO TỪ BAN QUẢN TRỊ 📢';
+            document.getElementById('Title').value = '🙏 THƯ XIN LỖI VÀ THÔNG BÁO KHẮC PHỤC SỰ CỐ 🙏';
+            document.getElementById('mainMessageEditor').innerHTML = 'Ban Quản Trị <strong>MoonPhim</strong> chân thành gửi lời xin lỗi sâu sắc tới toàn thể quý khán giả vì sự cố kỹ thuật vừa qua khiến trải nghiệm xem phim của các bạn bị gián đoạn.';
+            document.getElementById('noticeHeaderEditor').innerHTML = '<i class="bi bi-shield-check text-success me-2"></i><strong class="text-white">TIẾN ĐỘ XỬ LÝ & BẢO ĐẢM DỊCH VỤ</strong>';
+            document.getElementById('noticeBodyEditor').innerHTML = '<div><i class="bi bi-check-all text-success me-2"></i>Toàn bộ máy chủ và luồng phát video đã được tối ưu và khắc phục triệt để.</div><div class="mt-2"><i class="bi bi-gift-fill text-warning me-2"></i>Chúc các bạn có những giây phút thư giãn tuyệt vời nhất cùng MoonPhim!</div>';
+            document.getElementById('ButtonText').value = '🍿 XEM PHIM NGAY';
+        }
+
+        syncAllEditors();
+    }
+
+    // Khởi tạo Live Preview khi tải trang
+    document.addEventListener('DOMContentLoaded', function () {
+        updateLivePreview();
+    });
+</script>

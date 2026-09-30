@@ -31,6 +31,7 @@ namespace MovieWeb.Controllers
         private readonly IVSMovService _vsMovService;
         private readonly IMovieSyncService _movieSyncService;
         private readonly IEmailService _emailService;
+        private readonly IAnnouncementService _announcementService;
 
         // === CONSTRUCTOR CHÍNH (DÙNG CHUNG CHO TẤT CẢ FILE) ===
         public AdminController(
@@ -44,7 +45,8 @@ namespace MovieWeb.Controllers
             IHubContext<NotificationHub> notificationHubContext,
             IVSMovService vsMovService,
             IMovieSyncService movieSyncService,
-            IEmailService emailService
+            IEmailService emailService,
+            IAnnouncementService announcementService
         )
         {
             _userManager = userManager;
@@ -58,6 +60,7 @@ namespace MovieWeb.Controllers
             _vsMovService = vsMovService;
             _movieSyncService = movieSyncService;
             _emailService = emailService;
+            _announcementService = announcementService;
         }
 
         // === CÁC HÀM HELPER DÙNG CHUNG ===
@@ -165,6 +168,7 @@ namespace MovieWeb.Controllers
                 };
 
                 ViewBag.Stats = stats;
+                ViewBag.AnnouncementSettings = await _announcementService.GetSettingsAsync();
                 return View("Dashboard");
             }
             catch (Exception ex)

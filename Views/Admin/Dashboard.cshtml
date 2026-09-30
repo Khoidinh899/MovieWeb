@@ -219,23 +219,55 @@
         </div>
 
         <div class="col-6 col-md-4">
-    <div class="card border-0 shadow-sm h-100">
-        <div class="card-header bg-warning text-dark">
-            <h5 class="mb-0">
-                <i class="bi bi-badge-ad-fill"></i> Quản Lý Quảng Cáo
-            </h5>
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-badge-ad-fill"></i> Quản Lý Quảng Cáo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        Thêm, sửa, xóa các quảng cáo giả lập.
+                    </p>
+                    <a href="@Url.Action("Advertisements", "Admin")" class="btn btn-warning text-dark w-100">
+                        <i class="bi bi-arrow-right-circle"></i> Xem Chi Tiết
+                    </a>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <p class="text-muted mb-3">
-                Thêm, sửa, xóa các quảng cáo giả lập.
-            </p>
-            <a href="@Url.Action("Advertisements", "Admin")" class="btn btn-warning text-dark w-100">
-                <i class="bi bi-arrow-right-circle"></i> Xem Chi Tiết
-            </a>
+
+        @{
+            var announcement = ViewBag.AnnouncementSettings as MovieWeb.Models.DTOs.AnnouncementSettingsDto;
+            bool isAnnouncementActive = announcement?.IsEnabled ?? false;
+        }
+        <div class="col-6 col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header text-white d-flex justify-content-between align-items-center"
+                    style="background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);">
+                    <h5 class="mb-0 fs-6 fs-md-5">
+                        <i class="bi bi-megaphone-fill me-1"></i> Quản Lý Thông Báo Popup
+                    </h5>
+                    @if (isAnnouncementActive)
+                    {
+                        <span class="badge bg-success text-white px-2 py-1"><i class="bi bi-broadcast me-1"></i>Đang Bật</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-dark text-white-50 px-2 py-1"><i class="bi bi-pause-circle me-1"></i>Đang Ẩn</span>
+                    }
+                </div>
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <p class="text-muted mb-3">
+                        Tùy chỉnh nội dung popup sự kiện, lời chúc, thông báo kỹ thuật và định dạng màu chữ, cỡ chữ.
+                    </p>
+                    <a href="@Url.Action("Announcements", "Admin")" class="btn w-100 text-white mt-auto"
+                        style="background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); font-weight: 600;">
+                        <i class="bi bi-sliders me-1"></i> Cấu Hình & Xem Chi Tiết
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
-</div>
-        </div>
     @if (stats.UnconfirmedEmails > 0)
     {
         <div class="alert alert-warning mt-4 shadow-sm border-0" role="alert">
