@@ -61,6 +61,14 @@ Console.WriteLine($"🔑 Turnstile SiteKey: {builder.Configuration["Turnstile:Si
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
 // ===== SERVICE CONFIGURATION =====
+// ✅ Cấu hình HSTS 2 năm (Chuẩn bảo mật SSL/TLS A+)
+builder.Services.AddHsts(options =>
+{
+    options.Preload = true;
+    options.IncludeSubDomains = true;
+    options.MaxAge = TimeSpan.FromDays(730); // 2 năm
+});
+
 // ✅ Đăng ký Global Exception Filter
 builder.Services.AddControllersWithViews(options =>
 {
