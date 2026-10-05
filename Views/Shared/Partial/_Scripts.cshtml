@@ -18,7 +18,6 @@
     function init() {
         @* console.log("✅ DOM Ready. Initializing features..."); *@
         initNavbarAndScroll();
-        initMobileSearch();
         initMobileMenu();
         initNotifications();
     }
@@ -112,69 +111,7 @@
         }
     }
 
-    // ===== MOBILE SEARCH =====
-    function initMobileSearch() {
-        const mobileSearchBtn = document.getElementById('mobileSearchBtn');
-        const mobileSearchOverlay = document.getElementById('mobileSearchOverlay');
-        const mobileSearchClose = document.getElementById('mobileSearchClose');
-        const mobileSearchInput = document.getElementById('mobileSearchInput');
-        
-        if (!mobileSearchBtn || !mobileSearchOverlay) {
-            @* console.log("⚠️ Mobile search elements not found."); *@
-            return;
-        }
-        
-        @* console.log("✅ Initializing mobile search..."); *@
-        
-        function closeMobileSearch() {
-            mobileSearchOverlay.classList.remove('active');
-            document.body.classList.remove('search-overlay-active');
-            @* console.log("🔍 Mobile search closed"); *@
-        }
-        
-        mobileSearchBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            mobileSearchOverlay.classList.add('active');
-            document.body.classList.add('search-overlay-active');
-            @* console.log("🔍 Mobile search opened"); *@
-            setTimeout(() => {
-                if (mobileSearchInput) mobileSearchInput.focus();
-            }, 300);
-        });
-        
-        if (mobileSearchClose) {
-            mobileSearchClose.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                closeMobileSearch();
-            });
-        }
-        
-        mobileSearchOverlay.addEventListener('click', function(e) {
-            if (e.target === mobileSearchOverlay) {
-                closeMobileSearch();
-            }
-        });
-        
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && mobileSearchOverlay.classList.contains('active')) {
-                closeMobileSearch();
-            }
-        });
-        
-        const suggestionTags = document.querySelectorAll('.suggestion-tag');
-        suggestionTags.forEach(tag => {
-            tag.addEventListener('click', function() {
-                if (mobileSearchInput) {
-                    mobileSearchInput.value = this.textContent;
-                    mobileSearchInput.focus();
-                }
-            });
-        });
-        
-        @* console.log("✅ Mobile search initialized successfully!"); *@
-    }
+
 
     // ===== MOBILE MENU (OFFCANVAS) =====
     function initMobileMenu() {

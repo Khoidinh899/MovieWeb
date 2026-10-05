@@ -1055,12 +1055,13 @@ namespace MovieWeb.Controllers
                 {
                     name = m.Name,
                     slug = m.Slug,
+                    year = m.Year,
                     image =
                         !string.IsNullOrEmpty(m.PosterUrl) && m.PosterUrl.StartsWith("http") ? m.PosterUrl :
-                        !string.IsNullOrEmpty(m.PosterUrl) ? "https://img.ophim.live/uploads/movies/" + m.PosterUrl.TrimStart('/') :
+                        !string.IsNullOrEmpty(m.PosterUrl) ? "https://vsmov.com/storage/images/" + m.PosterUrl.TrimStart('/') :
                         !string.IsNullOrEmpty(m.ThumbUrl) && m.ThumbUrl.StartsWith("http") ? m.ThumbUrl :
-                        !string.IsNullOrEmpty(m.ThumbUrl) ? "https://img.ophim.live/uploads/movies/" + m.ThumbUrl.TrimStart('/') :
-                        "https://via.placeholder.com/300x450/444444/ffffff?text=" + Uri.EscapeDataString(m.Name ?? "No Image")
+                        !string.IsNullOrEmpty(m.ThumbUrl) ? "https://vsmov.com/storage/images/" + m.ThumbUrl.TrimStart('/') :
+                        "/images/default-poster.jpg"
                 })
                 .Take(10)
                 .ToListAsync();

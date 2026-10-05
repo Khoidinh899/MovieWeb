@@ -240,19 +240,20 @@
 
 <div id="mobileSearchOverlay" class="mobile-search-overlay">
     <div class="mobile-search-container">
-        <button class="mobile-search-close" id="mobileSearchClose" type="button" aria-label="Đóng">
-            <i class="fas fa-times"></i>
-        </button>
-
-        <form action="/tim-kiem" method="get" class="mobile-search-form">
-            <div class="mobile-search-input-wrapper">
-                <input type="search" name="keyword" placeholder="Tìm kiếm phim, diễn viên..." id="mobileSearchInput"
-                    autocomplete="off" aria-label="Tìm kiếm phim">
-                <button type="submit" class="mobile-search-submit" aria-label="Tìm kiếm">
-                    <i class="fas fa-search"></i>
-                </button>
-            </div>
-        </form>
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <form action="/tim-kiem" method="get" class="mobile-search-form m-0 flex-grow-1">
+                <div class="mobile-search-input-wrapper">
+                    <input type="search" name="keyword" placeholder="Tìm kiếm phim, diễn viên..." id="mobileSearchInput"
+                        autocomplete="off" aria-label="Tìm kiếm phim">
+                    <button type="submit" class="mobile-search-submit" aria-label="Tìm kiếm">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+            <button class="mobile-search-close" id="mobileSearchClose" type="button" aria-label="Đóng tìm kiếm">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
 
         <div id="mobileSearchResults" class="mobile-search-results"></div>
     </div>

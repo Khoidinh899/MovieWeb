@@ -101,104 +101,121 @@ document.addEventListener('DOMContentLoaded', function () {
         }, { passive: false });
     }
     
-    // ========== MOBILE SEARCH (LIKE ROPHIM) ==========
+    // ========== MOBILE SEARCH (ROBUST & PRODUCTION READY) ==========
     const mobileSearchBtn = document.getElementById('mobileSearchBtn');
     const mobileSearchOverlay = document.getElementById('mobileSearchOverlay');
     const mobileSearchClose = document.getElementById('mobileSearchClose');
     const mobileSearchInput = document.getElementById('mobileSearchInput');
     const mobileSearchResults = document.getElementById('mobileSearchResults');
     
-    if (mobileSearchBtn && mobileSearchOverlay) {
-        
-        // Mở mobile search
-        mobileSearchBtn.addEventListener('click', () => {
+    if (mobileSearchOverlay) {
+        const openMobileSearch = () => {
             mobileSearchOverlay.classList.add('active');
             document.body.classList.add('mobile-search-active');
             
-            // Focus vào input sau khi mở
             setTimeout(() => {
-                mobileSearchInput.focus();
-            }, 300);
-        });
-        
-        // Đóng mobile search
+                if (mobileSearchInput) {
+                    mobileSearchInput.focus();
+                }
+            }, 100);
+        };
+
         const closeMobileSearch = () => {
             mobileSearchOverlay.classList.remove('active');
             document.body.classList.remove('mobile-search-active');
-            mobileSearchInput.value = '';
-            mobileSearchResults.innerHTML = '';
+            if (mobileSearchInput) {
+                mobileSearchInput.value = '';
+            }
+            if (mobileSearchResults) {
+                mobileSearchResults.innerHTML = '';
+            }
         };
+
+        if (mobileSearchBtn) {
+            mobileSearchBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openMobileSearch();
+            });
+        }
         
-        mobileSearchClose.addEventListener('click', closeMobileSearch);
+        if (mobileSearchClose) {
+            mobileSearchClose.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeMobileSearch();
+            });
+        }
         
-        // Đóng khi click vào overlay (không phải container)
-        mobileSearchOverlay.addEventListener('click', (e) => {
-            if (e.target === mobileSearchOverlay) {
+        // Đóng khi ấn Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && mobileSearchOverlay.classList.contains('active')) {
                 closeMobileSearch();
             }
         });
         
         // Xử lý tìm kiếm mobile
         let mobileTimer;
-        mobileSearchInput.addEventListener('input', function () {
-            clearTimeout(mobileTimer);
-            const q = this.value.trim();
+        if (mobileSearchInput && mobileSearchResults) {
+            mobileSearchInput.addEventListener('input', function () {
+                clearTimeout(mobileTimer);
+                const q = this.value.trim();
 
-            if (q.length < 2) {
-                mobileSearchResults.innerHTML = '';
-                return;
-            }
+                if (q.length < 2) {
+                    mobileSearchResults.innerHTML = '';
+                    return;
+                }
 
-            mobileTimer = setTimeout(async () => {
-                try {
-                    const res = await fetch(`/api/goi-y-tim-kiem?keyword=${encodeURIComponent(q)}`);
-                    const data = await res.json();
+                mobileTimer = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`/api/goi-y-tim-kiem?keyword=${encodeURIComponent(q)}`);
+                        if (!res.ok) throw new Error('Network response not ok');
+                        const data = await res.json();
 
-                    if (!data || data.length === 0) {
+                        if (!data || data.length === 0) {
+                            mobileSearchResults.innerHTML = `
+                                <div class="mobile-search-empty">
+                                    <i class="fas fa-search"></i>
+                                    <p>Không tìm thấy kết quả phù hợp</p>
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        mobileSearchResults.innerHTML = data.map(item => {
+                            const name = (item.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                            const slug = encodeURIComponent(item.slug || '');
+                            const img = item.image || '/images/default-poster.jpg';
+                            const year = item.year || '';
+                            
+                            return `
+                                <a href="/phim/${slug}" class="mobile-suggestion-item">
+                                    <img src="${img}" onerror="this.onerror=null;this.src='/images/default-poster.jpg'" alt="${name}">
+                                    <div class="movie-info">
+                                        <div class="movie-title">${name}</div>
+                                        ${year ? `<div class="movie-year">${year}</div>` : ''}
+                                    </div>
+                                </a>
+                            `;
+                        }).join('');
+                        
+                        mobileSearchResults.scrollTop = 0;
+                        
+                    } catch (err) {
+                        console.error('Mobile search error:', err);
                         mobileSearchResults.innerHTML = `
                             <div class="mobile-search-empty">
-                                <i class="fas fa-search"></i>
-                                <p>Không tìm thấy kết quả phù hợp</p>
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>Đã có lỗi xảy ra. Vui lòng thử lại.</p>
                             </div>
                         `;
-                        return;
                     }
-
-                    mobileSearchResults.innerHTML = data.map(item => {
-                        const name = (item.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                        const slug = encodeURIComponent(item.slug || '');
-                        const img = item.image || '/images/no-image.jpg';
-                        const year = item.year || '';
-                        
-                        return `
-                            <a href="/phim/${slug}" class="mobile-suggestion-item">
-                                <img src="${img}" onerror="this.src='/images/no-image.jpg'" alt="${name}">
-                                <div class="movie-info">
-                                    <div class="movie-title">${name}</div>
-                                    ${year ? `<div class="movie-year">${year}</div>` : ''}
-                                </div>
-                            </a>
-                        `;
-                    }).join('');
-                    
-                    // Scroll về đầu
-                    mobileSearchResults.scrollTop = 0;
-                    
-                } catch (err) {
-                    console.error('Mobile search error:', err);
-                    mobileSearchResults.innerHTML = `
-                        <div class="mobile-search-empty">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <p>Đã có lỗi xảy ra. Vui lòng thử lại.</p>
-                        </div>
-                    `;
-                }
-            }, 250);
-        });
-        
-        // Ngăn scroll trang khi scroll results
-        mobileSearchResults.addEventListener('touchmove', (e) => {
-            e.stopPropagation();
-        }, { passive: true });
+                }, 220);
+            });
+            
+            mobileSearchResults.addEventListener('touchmove', (e) => {
+                e.stopPropagation();
+            }, { passive: true });
+        }
     }
 });
