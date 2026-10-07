@@ -239,23 +239,8 @@
     
     .filter-sidebar.show {
         display: block;
-        max-height: 75vh;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
-    }
-
-    /* Thanh cuộn trên Mobile */
-    .filter-sidebar::-webkit-scrollbar {
-        width: 5px;
-    }
-    .filter-sidebar::-webkit-scrollbar-track {
-        background: #141824;
-        border-radius: 4px;
-    }
-    .filter-sidebar::-webkit-scrollbar-thumb {
-        background: #e94560;
-        border-radius: 4px;
+        max-height: none !important;
+        overflow: visible !important;
     }
 
     .fe-row {
@@ -276,12 +261,13 @@
     }
     .fe-buttons {
         flex-direction: column;
-        gap: 10px;
-        padding-bottom: 15px;
+        gap: 12px;
+        padding-bottom: 20px;
     }
     .fe-buttons .btn {
         max-width: 100%;
         width: 100%;
+        min-height: 44px;
     }
     .year-input-container {
         width: 100%;

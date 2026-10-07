@@ -412,46 +412,47 @@ namespace MovieWeb.Controllers
             }
         }
         [Route("the-loai/phim-moi-cap-nhat")]
-        public async Task<IActionResult> PhimMoiCapNhat(
-            [FromQuery] string? Countries,
-            [FromQuery] string? Categories,
-            [FromQuery] string? Years,
-            [FromQuery] string? Language,
-            [FromQuery] string? SortBy,
-            [FromQuery] int Page = 1)
+        public async Task<IActionResult> PhimMoiCapNhat([FromQuery] MovieFilterViewModel filters)
         {
-            const int pageSize = 24;
+            int pageSize = filters.PageSize > 0 ? filters.PageSize : 24;
+            int page = filters.Page > 0 ? filters.Page : 1;
 
             var query = _context.Movies
-                .Include(m => m.Countries)  // ✅ Thêm Include
-                .Include(m => m.Categories) // ✅ Thêm Include
-                .Where(m => m.IsActive == true && (m.Episodes.Any() || !string.IsNullOrEmpty(m.TrailerUrl)));
+                .Include(m => m.Countries)
+                .Include(m => m.Categories)
+                .Where(m => (m.IsActive ?? false) && (m.Episodes.Any() || !string.IsNullOrEmpty(m.TrailerUrl)));
 
-            // ✅ SỬA: Lọc theo Collection<Country>
-            if (!string.IsNullOrEmpty(Countries))
+            // 1. Lọc theo Loại phim (Type)
+            if (!string.IsNullOrWhiteSpace(filters.Type))
             {
-                var countryList = Countries.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+                query = query.Where(m => m.Type == filters.Type);
+            }
+
+            // 2. Lọc theo Quốc gia (CHỌN NHIỀU - OR)
+            if (!string.IsNullOrEmpty(filters.Countries))
+            {
+                var countryList = filters.Countries.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
                 if (countryList.Any())
                 {
                     query = query.Where(m => m.Countries.Any(c => countryList.Contains(c.Slug)));
                 }
             }
 
-            // ✅ SỬA: Lọc theo Collection<Category>
-            if (!string.IsNullOrEmpty(Categories))
+            // 3. Lọc theo Thể loại (CHỌN NHIỀU - AND)
+            if (!string.IsNullOrEmpty(filters.Categories))
             {
-                var categoryList = Categories.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+                var categoryList = filters.Categories.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
                 if (categoryList.Any())
                 {
                     query = query.Where(m => categoryList.All(catSlug => m.Categories.Any(c => c.Slug == catSlug)));
                 }
             }
 
-            // ✅ SỬA: Year là int?, không phải string
-            if (!string.IsNullOrEmpty(Years))
+            // 4. Lọc theo Năm sản xuất (CHỌN NHIỀU - OR)
+            if (!string.IsNullOrEmpty(filters.Years))
             {
                 var yearList = new List<int>();
-                foreach (var yearStr in Years.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                foreach (var yearStr in filters.Years.Split(',', StringSplitOptions.RemoveEmptyEntries))
                 {
                     if (int.TryParse(yearStr, out int year))
                     {
@@ -464,85 +465,87 @@ namespace MovieWeb.Controllers
                 }
             }
 
-            if (!string.IsNullOrEmpty(Language))
+            // 5. Lọc theo Phiên bản (Language)
+            if (!string.IsNullOrEmpty(filters.Language))
             {
-                query = query.Where(m => m.Language == Language);
+                query = query.Where(m => m.Language == filters.Language);
             }
 
-            // Sắp xếp theo Năm rồi đến UpdatedAt (mới nhất lên đầu)
-            query = SortBy switch
+            // 6. Sắp xếp
+            query = (filters.SortBy?.ToLower()) switch
             {
-                "view" => query.OrderByDescending(m => m.ViewCount),
-                "year" => query.OrderByDescending(m => m.Year),
-                _ => query.OrderByDescending(m => m.Year).ThenByDescending(m => m.UpdatedAt)
+                "newest" => query.OrderByDescending(m => m.Year).ThenByDescending(m => m.CreatedAt),
+                "rating" => query.OrderByDescending(m => m.Rating ?? 0),
+                "views" or "view" => query.OrderByDescending(m => m.ViewCount ?? 0),
+                _ => query.OrderByDescending(m => m.Year).ThenByDescending(m => m.UpdatedAt ?? m.CreatedAt)
             };
 
             var totalMovies = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(totalMovies / (double)pageSize);
 
             var movies = await query
-                .Skip((Page - 1) * pageSize)
+                .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            ViewBag.CategoryName = "Phim Mới Cập Nhật";
-            ViewBag.CurrentPage = Page;
-            ViewBag.TotalPages = totalPages;
-            ViewBag.SeoDescription = "Phim mới cập nhật liên tục, xem phim online miễn phí chất lượng cao.";
+            // ✅ Lấy danh sách Countries & Categories cho Bộ lọc
+            var countries = await _context.Countries
+                .Where(c => c.IsActive == true)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
 
-            ViewBag.Filters = new MovieFilterViewModel
-            {
-                Countries = Countries,
-                Categories = Categories,
-                Years = Years,
-                Language = Language,
-                SortBy = SortBy
-            };
+            var categories = await _context.Categories
+                .Where(c => c.IsActive == true)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+
+            ViewBag.CategoryName = "Phim Mới Cập Nhật";
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.Countries = countries;
+            ViewBag.Categories = categories;
+            ViewBag.Filters = filters;
+            ViewBag.SeoDescription = "Phim mới cập nhật liên tục, xem phim online miễn phí chất lượng cao.";
 
             return View(movies);
         }
 
         [Route("the-loai/hoat-hinh")]
-        public async Task<IActionResult> HoatHinh(
-            [FromQuery] string? Countries,
-            [FromQuery] string? Categories,
-            [FromQuery] string? Years,
-            [FromQuery] string? Language,
-            [FromQuery] string? SortBy,
-            [FromQuery] int Page = 1)
+        public async Task<IActionResult> HoatHinh([FromQuery] MovieFilterViewModel filters)
         {
-            const int pageSize = 24;
+            int pageSize = filters.PageSize > 0 ? filters.PageSize : 24;
+            int page = filters.Page > 0 ? filters.Page : 1;
 
             var query = _context.Movies
-                .Include(m => m.Countries)  // ✅ Thêm Include
-                .Include(m => m.Categories) // ✅ Thêm Include
-                .Where(m => m.IsActive == true && m.Type == "hoathinh" && (m.Episodes.Any() || !string.IsNullOrEmpty(m.TrailerUrl)));
+                .Include(m => m.Countries)
+                .Include(m => m.Categories)
+                .Where(m => (m.IsActive ?? false) && m.Type == "hoathinh" && (m.Episodes.Any() || !string.IsNullOrEmpty(m.TrailerUrl)));
 
-            // ✅ SỬA: Lọc theo Collection<Country>
-            if (!string.IsNullOrEmpty(Countries))
+            // 1. Lọc theo Quốc gia (CHỌN NHIỀU - OR)
+            if (!string.IsNullOrEmpty(filters.Countries))
             {
-                var countryList = Countries.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+                var countryList = filters.Countries.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
                 if (countryList.Any())
                 {
                     query = query.Where(m => m.Countries.Any(c => countryList.Contains(c.Slug)));
                 }
             }
 
-            // ✅ SỬA: Lọc theo Collection<Category>
-            if (!string.IsNullOrEmpty(Categories))
+            // 2. Lọc theo Thể loại (CHỌN NHIỀU - AND)
+            if (!string.IsNullOrEmpty(filters.Categories))
             {
-                var categoryList = Categories.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+                var categoryList = filters.Categories.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
                 if (categoryList.Any())
                 {
                     query = query.Where(m => categoryList.All(catSlug => m.Categories.Any(c => c.Slug == catSlug)));
                 }
             }
 
-            // ✅ SỬA: Year là int?, không phải string
-            if (!string.IsNullOrEmpty(Years))
+            // 3. Lọc theo Năm sản xuất (CHỌN NHIỀU - OR)
+            if (!string.IsNullOrEmpty(filters.Years))
             {
                 var yearList = new List<int>();
-                foreach (var yearStr in Years.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                foreach (var yearStr in filters.Years.Split(',', StringSplitOptions.RemoveEmptyEntries))
                 {
                     if (int.TryParse(yearStr, out int year))
                     {
@@ -555,40 +558,49 @@ namespace MovieWeb.Controllers
                 }
             }
 
-            if (!string.IsNullOrEmpty(Language))
+            // 4. Lọc theo Phiên bản (Language)
+            if (!string.IsNullOrEmpty(filters.Language))
             {
-                query = query.Where(m => m.Language == Language);
+                query = query.Where(m => m.Language == filters.Language);
             }
 
-            // Sắp xếp
-            query = SortBy switch
+            // 5. Sắp xếp
+            query = (filters.SortBy?.ToLower()) switch
             {
-                "view" => query.OrderByDescending(m => m.ViewCount),
-                "year" => query.OrderByDescending(m => m.Year),
-                _ => query.OrderByDescending(m => m.Year).ThenByDescending(m => m.UpdatedAt)
+                "newest" => query.OrderByDescending(m => m.Year).ThenByDescending(m => m.CreatedAt),
+                "rating" => query.OrderByDescending(m => m.Rating ?? 0),
+                "views" or "view" => query.OrderByDescending(m => m.ViewCount ?? 0),
+                _ => query.OrderByDescending(m => m.Year).ThenByDescending(m => m.UpdatedAt ?? m.CreatedAt)
             };
 
             var totalMovies = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(totalMovies / (double)pageSize);
 
             var movies = await query
-                .Skip((Page - 1) * pageSize)
+                .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            ViewBag.CategoryName = "Phim Hoạt Hình";
-            ViewBag.CurrentPage = Page;
-            ViewBag.TotalPages = totalPages;
-            ViewBag.SeoDescription = "Xem phim hoạt hình, anime, cartoon online miễn phí.";
+            // ✅ Lấy danh sách Countries & Categories cho Bộ lọc
+            var countries = await _context.Countries
+                .Where(c => c.IsActive == true)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
 
-            ViewBag.Filters = new MovieFilterViewModel
-            {
-                Countries = Countries,
-                Categories = Categories,
-                Years = Years,
-                Language = Language,
-                SortBy = SortBy
-            };
+            var categories = await _context.Categories
+                .Where(c => c.IsActive == true)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+
+            filters.Type = "hoathinh";
+
+            ViewBag.CategoryName = "Phim Hoạt Hình";
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.Countries = countries;
+            ViewBag.Categories = categories;
+            ViewBag.Filters = filters;
+            ViewBag.SeoDescription = "Xem phim hoạt hình, anime, cartoon online miễn phí.";
 
             return View(movies);
         }
