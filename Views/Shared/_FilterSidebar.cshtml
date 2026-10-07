@@ -289,23 +289,28 @@
             siblings[0].classList.add('active');
         }
     }
-    // ===== HÀM MỚI: Cập nhật form action dựa vào Type =====
+    // ===== Cập nhật form action linh hoạt =====
     function updateFormAction() {
         const form = document.getElementById('filterForm');
+        if (!form) return;
         const typeInput = form.querySelector('input[name="Type"]');
         const typeValue = typeInput ? typeInput.value : '';
+        const currentPath = window.location.pathname;
 
-        // ⭐ SỬA LẠI: Đúng với route trong Controller
-        let action = '/tim-kiem'; // Mặc định submit về tìm kiếm
-
-        if (typeValue === 'single') {
-            action = '/the-loai/phim-le';  // ✅ Đúng route
-        } else if (typeValue === 'series') {
-            action = '/the-loai/phim-bo';  // ✅ Đúng route
+        // Nếu người dùng chọn chuyển loại phim rõ ràng khi đang ở trang tìm kiếm hoặc trang chủ
+        let action = currentPath;
+        if (!currentPath || currentPath === '/' || currentPath === '/trang-chu') {
+            if (typeValue === 'single') {
+                action = '/the-loai/phim-le';
+            } else if (typeValue === 'series') {
+                action = '/the-loai/phim-bo';
+            } else if (typeValue === 'hoathinh') {
+                action = '/the-loai/hoat-hinh';
+            } else {
+                action = '/tim-kiem';
+            }
         }
-
         form.action = action;
-        console.log('✅ Form sẽ submit về:', action);
     }
 
     // Gọi hàm khi trang load
