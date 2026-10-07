@@ -38,12 +38,16 @@ body {
 }
 html {
     margin: 0;
+    background-color: #0a0e27 !important;
+    color: #e0e0e0;
     scrollbar-width: none !important; /* Firefox */
     -ms-overflow-style: none !important; /* IE and Edge */
 }
 
 body {
     margin: 0;
+    background-color: #0a0e27 !important;
+    color: #e0e0e0;
     overflow-x: hidden !important;
     width: 100%;
     scrollbar-width: none !important;

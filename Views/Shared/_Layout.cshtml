@@ -37,20 +37,16 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8229451063311920"
             crossorigin="anonymous"></script>
 
-    <!-- In-Page Push Position Fix (Đã loại trừ khung thông báo Noti, Chatbot, Toast để không bị kéo xuống dưới) -->
+    <!-- In-Page Push Position Fix (Định vị an toàn cho quảng cáo đẩy lên trên thanh nav mobile, không ảnh hưởng web) -->
     <style>
-        iframe[style*="fixed"],
-        iframe[style*="position: fixed"],
-        iframe[style*="position:fixed"],
-        body > div[style*="fixed"]:not(#header):not(.navbar):not(.modal):not(#homeAdModal):not(#mobileBottomNav):not(#iosInstallPrompt):not(#mobileSearchOverlay):not(.mobile-search-overlay):not([class*="noti"]):not([id*="noti"]):not([class*="notification"]):not([id*="notification"]):not([class*="toast"]):not([id*="toast"]):not([class*="chatbot"]):not([id*="chatbot"]),
-        body > div[style*="position: fixed"]:not(#header):not(.navbar):not(.modal):not(#homeAdModal):not(#mobileBottomNav):not(#iosInstallPrompt):not(#mobileSearchOverlay):not(.mobile-search-overlay):not([class*="noti"]):not([id*="noti"]):not([class*="notification"]):not([id*="notification"]):not([class*="toast"]):not([id*="toast"]):not([class*="chatbot"]):not([id*="chatbot"]),
         [class*="in-page-push"],
-        [id*="ipp-container"] {
+        [id*="ipp-container"],
+        .monetag-ipp {
             top: auto !important;
-            bottom: 85px !important;
-            right: 20px !important;
+            bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
+            right: 16px !important;
             left: auto !important;
-            z-index: 2147483647 !important;
+            z-index: 2147483640 !important;
         }
     </style>
     <title>@ViewData["Title"] - MoonPhim | Xem Phim Online Miễn Phí | Moon Phim Vietsub HD</title>

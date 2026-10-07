@@ -32,13 +32,9 @@ main[role="main"].page-fading {
     }
 
     /* Đẩy vị trí In-Page Push của Monetag, Chatbot & Toast lên trên thanh điều hướng */
-    iframe[style*="fixed"],
-    iframe[style*="position: fixed"],
-    iframe[style*="position:fixed"],
-    body > div[style*="fixed"]:not(#header):not(.navbar):not(.modal):not(#homeAdModal):not(#mobileBottomNav):not(#iosInstallPrompt):not(#filterSidebar):not(.moon-dialog-overlay):not(#mobileSearchOverlay):not(.mobile-search-overlay),
-    body > div[style*="position: fixed"]:not(#header):not(.navbar):not(.modal):not(#homeAdModal):not(#mobileBottomNav):not(#iosInstallPrompt):not(#filterSidebar):not(.moon-dialog-overlay):not(#mobileSearchOverlay):not(.mobile-search-overlay),
     [class*="in-page-push"],
     [id*="ipp-container"],
+    .monetag-ipp,
     .chatbot-toggle-btn,
     .toast-container,
     #scrollTopBtn {
