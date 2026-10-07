@@ -87,6 +87,7 @@
     gap: 0.6rem;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid var(--wp-border);
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     padding: 0.5rem 1rem;
     border-radius: 9999px;
@@ -225,6 +226,7 @@
     border: 1px solid var(--wp-border);
     border-radius: 16px;
     overflow: hidden;
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
@@ -296,6 +298,7 @@
     right: 0.75rem;
     background: rgba(0, 0, 0, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.2);
+    -webkit-backdrop-filter: blur(6px);
     backdrop-filter: blur(6px);
     font-size: 0.75rem;
     font-weight: 700;
@@ -456,6 +459,7 @@
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 0.75rem;
+    -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.1);
     z-index: 100;
@@ -615,6 +619,7 @@
     will-change: transform;
     pointer-events: none;
     user-select: none;
+    -webkit-user-select: none;
 }
 
 .wp-danmaku-item.top-fixed {
@@ -689,6 +694,7 @@
     cursor: pointer;
     transition: all 0.15s ease;
     user-select: none;
+    -webkit-user-select: none;
 }
 
 .wp-ctrl-pill:hover {
@@ -1155,6 +1161,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.85);
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     display: none;
     align-items: center;

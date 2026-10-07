@@ -20,6 +20,12 @@ body {
     min-height: 100vh;
 }
 
+@supports (-webkit-touch-callout: none) {
+    body {
+        background-attachment: scroll !important;
+    }
+}
+
 /* Subtle background pattern */
 body::before {
     content: '';
@@ -424,15 +430,6 @@ body::before {
     border-radius: 12px;
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
     border: none;
-}
-
-/* Responsive cho sidebar */
-@media (max-width: 991px) {
-    .filter-sidebar {
-        position: sticky;
-        top: 20px;
-        margin-bottom: 20px;
-    }
 }
 
 /* Animation cho movie cards */

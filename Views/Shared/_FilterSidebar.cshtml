@@ -165,11 +165,13 @@
         const toggleBtn = document.getElementById('filterToggleBtn');
         const chevron = document.getElementById('filterChevron');
 
-        if (sidebar) sidebar.classList.toggle('show');
-        if (toggleBtn) toggleBtn.classList.toggle('active');
-
-        if (chevron && sidebar) {
-            chevron.style.transform = sidebar.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0deg)';
+        if (sidebar) {
+            const isOpen = sidebar.classList.toggle('show');
+            if (toggleBtn) toggleBtn.classList.toggle('active', isOpen);
+            if (chevron) {
+                chevron.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+                chevron.style.webkitTransform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
         }
     };
 
