@@ -31,10 +31,7 @@ main[role="main"].page-fading {
         padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
     }
 
-    /* Đẩy vị trí In-Page Push của Monetag, Chatbot & Toast lên trên thanh điều hướng */
-    [class*="in-page-push"],
-    [id*="ipp-container"],
-    .monetag-ipp,
+    /* Đẩy vị trí Chatbot & Toast lên trên thanh điều hướng */
     .chatbot-toggle-btn,
     .toast-container,
     #scrollTopBtn {

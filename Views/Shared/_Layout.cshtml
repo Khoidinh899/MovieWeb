@@ -37,18 +37,7 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8229451063311920"
             crossorigin="anonymous"></script>
 
-    <!-- In-Page Push Position Fix (Định vị an toàn cho quảng cáo đẩy lên trên thanh nav mobile, không ảnh hưởng web) -->
-    <style>
-        [class*="in-page-push"],
-        [id*="ipp-container"],
-        .monetag-ipp {
-            top: auto !important;
-            bottom: calc(85px + env(safe-area-inset-bottom, 0px)) !important;
-            right: 16px !important;
-            left: auto !important;
-            z-index: 2147483640 !important;
-        }
-    </style>
+
     <title>@ViewData["Title"] - MoonPhim | Xem Phim Online Miễn Phí | Moon Phim Vietsub HD</title>
 
     <!-- Schema.org WebSite & Brand Organization Markup (MoonPhim / Moon Phim) -->
@@ -150,16 +139,10 @@
 
 <script src="~/js/search.js" asp-append-version="true"></script>
 
-    <!-- Monetag In-Page Push & Vignette (Chạy trên cả Web và App qua Idle Callback) -->
+    <!-- Monetag Vignette (Chạy trên cả Web và App qua Idle Callback) -->
     <script>
         (function () {
             var loadMonetag = function () {
-                // Nạp In-Page Push (Zone 11708841)
-                var ipp = document.createElement('script');
-                ipp.dataset.zone = '11708841';
-                ipp.src = 'https://nap5k.com/tag.min.js';
-                document.body.appendChild(ipp);
-
                 // Nạp Vignette (Zone 11708850)
                 var vig = document.createElement('script');
                 vig.dataset.zone = '11708850';
@@ -183,30 +166,17 @@
 
     @if (!hasSeenPopunder)
     {
-        <!-- Monetag OnClick (Popunder) Ads Script - CHỈ CHẠY TRÊN DESKTOP PC/LAPTOP - CHỐNG ẢNH HƯỞNG MOBILE -->
+        <!-- Monetag OnClick (Popunder) Ads Script - Chạy trên cả Mobile & Desktop - Tần suất: 2 tiếng / lần -->
         <script>
             (function () {
-                // 1. Kiểm tra nghiêm ngặt Thiết bị di động / Màn hình cảm ứng / App / Tablet
-                var isMobileOrTouch = (window.navigator.standalone === true) || 
-                                     window.matchMedia('(display-mode: standalone)').matches || 
-                                     window.matchMedia('(display-mode: fullscreen)').matches ||
-                                     window.matchMedia('(pointer: coarse)').matches ||
-                                     (window.innerWidth < 1024) ||
-                                     /(Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|MoonPhim|wv)/i.test(navigator.userAgent);
-                
-                // Nếu là điện thoại / máy tính bảng / app -> Dừng hoàn toàn 100%, không nạp Popunder
-                if (isMobileOrTouch) {
-                    return;
-                }
-
                 var STORAGE_KEY = 'moonphim_pop_done';
-                var COOLDOWN = 24 * 60 * 60 * 1000; // 24 tiếng
+                var COOLDOWN = 2 * 60 * 60 * 1000; // 2 tiếng (7200s)
 
                 var lastShown = localStorage.getItem(STORAGE_KEY);
                 var hasCookie = document.cookie.indexOf('moonphim_pop_done=') !== -1;
                 var now = Date.now();
 
-                // 2. Đã bật trong 24h qua (LocalStorage hoặc Cookie) -> Chặn
+                // Đã bật trong 2h qua (LocalStorage hoặc Cookie) -> Chặn
                 if (hasCookie || (lastShown && (now - parseInt(lastShown, 10)) < COOLDOWN)) {
                     return;
                 }
@@ -217,11 +187,11 @@
                     if (isFired) return;
                     isFired = true;
 
-                    // Ghi nhận ngay mốc thời gian LocalStorage + Cookie 24h
+                    // Ghi nhận ngay mốc thời gian LocalStorage + Cookie 2h (7200s)
                     localStorage.setItem(STORAGE_KEY, Date.now().toString());
-                    document.cookie = "moonphim_pop_done=1; max-age=86400; path=/; samesite=lax";
+                    document.cookie = "moonphim_pop_done=1; max-age=7200; path=/; samesite=lax";
 
-                    // Gửi ghi nhận IP lên server (MemoryCache 24h)
+                    // Gửi ghi nhận IP lên server (MemoryCache 2h)
                     if (navigator.sendBeacon) {
                         navigator.sendBeacon('/api/ads/record-popunder');
                     } else {
@@ -231,14 +201,14 @@
                     // Gỡ toàn bộ sự kiện ngay lập tức
                     window.removeEventListener('click', triggerPopunder);
 
-                    // Nạp script OnClick Monetag (Zone 11708858) dành riêng cho Desktop
+                    // Nạp script OnClick Monetag (Zone 11708858)
                     var s = document.createElement('script');
                     s.dataset.zone = '11708858';
                     s.src = 'https://al5sm.com/tag.min.js';
                     (document.body || document.documentElement).appendChild(s);
                 };
 
-                // Bắt sự kiện click bình thường
+                // Bắt sự kiện click bình thường trên cả mobile & desktop
                 window.addEventListener('click', triggerPopunder, { once: true, passive: true });
             })();
         </script>

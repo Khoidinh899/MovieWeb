@@ -80,11 +80,11 @@ namespace MovieWeb.Controllers.API
                 }
 
                 var ipCacheKey = $"monetag_pop_{clientIp}";
-                memoryCache.Set(ipCacheKey, true, TimeSpan.FromHours(24));
+                memoryCache.Set(ipCacheKey, true, TimeSpan.FromHours(2));
 
                 Response.Cookies.Append("moonphim_pop_done", "1", new Microsoft.AspNetCore.Http.CookieOptions
                 {
-                    MaxAge = TimeSpan.FromHours(24),
+                    MaxAge = TimeSpan.FromHours(2),
                     Path = "/",
                     SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax,
                     HttpOnly = false
