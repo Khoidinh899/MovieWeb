@@ -22,3 +22,4 @@ Properties/PublishProfiles/
 # Bỏ qua các file tài liệu nội bộ (.md), trừ README.md
 *.md
 !README.md
+!CLAUDE.md
