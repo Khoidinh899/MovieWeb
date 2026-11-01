@@ -34,6 +34,7 @@ services:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      Deployment__SkipBootstrap: "true"
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB:-moonphim};Username=${POSTGRES_USER:-moonphim};Password=${POSTGRES_PASSWORD}"
       JwtSettings__SecretKey: ${JWT_SECRET_KEY}
       JwtSettings__Issuer: MoonPhim
@@ -65,6 +66,7 @@ services:
       Turnstile__SecretKey: ${TURNSTILE_SECRET_KEY}
     volumes:
       - ./firebase-service-account.json:/app/firebase-service-account.json:ro
+      - /home/ubuntu/moonphim-releases/seo-20261014T180608Z/keys:/root/.aspnet/DataProtection-Keys
     networks:
       - moonphim_net
     expose:
@@ -94,6 +96,7 @@ services:
   # Certbot (SSL Let's Encrypt)
   # ================================
   certbot:
+    restart: unless-stopped
     image: certbot/certbot:latest
     container_name: moonphim_certbot
     volumes:
