@@ -1,0 +1,50 @@
+MoonPhim - Server sync runbook (2026-11-01)
+==========================================
+
+Goal: make ~/moonphim on EC2 a clean git checkout again and let docker compose
+(service "app") serve production, with the SAME code that runs today
+(branch prod/snapshot-20261018), so deploy.yml works safely afterwards.
+
+Commits (branch ops/server-sync):
+  eeda825  server compose/nginx recorded exactly as live (checkout = no change on disk)
+  16dfcee  target config: compose app gets live flags + mem 768m; nginx -> app:5000
+
+Phase 1 - Backup (writes only into a new folder)
+  B=~/moonphim-releases/server-sync-20261101; mkdir -m 700 $B
+  tar czf $B/moonphim-tree.tgz -C ~ --exclude=moonphim/bin --exclude=moonphim/obj moonphim
+  git -C ~/moonphim diff > $B/tracked.patch; git -C ~/moonphim status --short > $B/status.txt
+  cp -a ~/moonphim/nginx/conf.d $B/nginx-conf.d
+  docker inspect admin_users_20261018 > $B/admin_users.inspect.json   (contains env: mode 600)
+  docker exec moonphim_db pg_dump -Fc ... > $B/db.dump  (+ pg_restore --list check)
+
+Phase 2 - Git on server -> ops/server-sync (no runtime change)
+  git push origin ops/server-sync   (from local; private repo; non-main = no deploy)
+  server: git fetch origin ops/server-sync
+  move untracked files that the branch now tracks into $B/untracked/
+    (Helpers/CatalogWriteLock.cs, SeoMetadata.cs, VSMovSource.cs,
+     wwwroot/js/moonphim-monetag-*.js, nginx/conf.d/moonphim-ads-loader.inc)
+  git stash push -m server-hand-edits-20261101   (tracked edits; kept for audit)
+  git checkout -B main eeda825
+  verify: every file == prod snapshot content; docker exec moonphim_nginx nginx -t
+  Untouched: .env, .env.production, firebase-service-account.json, other untracked scripts.
+
+Phase 3 - Cutover to compose app (zero-downtime via nginx reload)
+  git checkout -B main 16dfcee
+  docker compose build app            (same Dockerfile deploy.yml uses)
+  docker compose up -d --no-deps app  (moonphim_app starts next to admin_users_20261018;
+                                       SkipBootstrap=true => no migration/Stripe reset;
+                                       same DataProtection keys => sessions stay valid)
+  test inside network: wget http://app:5000/ /trang-chu /phim/... /sitemap.xml  => 200
+  docker exec moonphim_nginx nginx -t && docker exec moonphim_nginx nginx -s reload
+  public smoke: 200 + AdSense/monetag/zones/canonical/og same as before
+  docker stop admin_users_20261018    (stopped, NOT removed - rollback)
+
+Rollback (any phase)
+  nginx: git -C ~/moonphim checkout eeda825 -- nginx/conf.d/moonphim.conf; nginx -t; nginx -s reload
+  docker start admin_users_20261018; docker compose stop app
+  full: restore $B/moonphim-tree.tgz; git stash pop
+
+Phase 4 - Owner only
+  Fast-forward main to 16dfcee and push. deploy.yml then: git pull (no-op),
+  compose build --no-cache app, up -d app (recreate, ~10-30 s blip). Do it at low traffic.
+  After this, push-to-main deploys work normally again.
