@@ -29,12 +29,16 @@ services:
       dockerfile: Dockerfile
     container_name: moonphim_app
     restart: unless-stopped
+    mem_limit: 768m
+    memswap_limit: 1536m
     depends_on:
       db:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       Deployment__SkipBootstrap: "true"
+      BackgroundJobs__Enabled: "true"
+      CatalogMerge__LegacyWritersPaused: "true"
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB:-moonphim};Username=${POSTGRES_USER:-moonphim};Password=${POSTGRES_PASSWORD}"
       JwtSettings__SecretKey: ${JWT_SECRET_KEY}
       JwtSettings__Issuer: MoonPhim
