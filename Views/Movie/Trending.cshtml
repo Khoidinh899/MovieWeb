@@ -17,7 +17,7 @@
     {
         var candidate = !string.IsNullOrEmpty(m.ThumbUrl) ? m.ThumbUrl : m.PosterUrl;
         if (string.IsNullOrEmpty(candidate))
-            return Url.Content("~/images/no-image.jpg");
+            return Url.Content("~/images/default-poster.jpg");
         candidate = candidate.Trim();
         if (candidate.StartsWith("http") || candidate.StartsWith("//")) return candidate;
         if (candidate.StartsWith("/")) return candidate;
@@ -227,7 +227,7 @@
                                     <i class="bi bi-eye-fill me-1"></i>@FormatViews(movie.ViewCount)
                                 </span>
 
-                                <img src="@imgUrl" alt="@movie.Name" loading="lazy" decoding="async" onerror="this.src='@Url.Content("~/images/no-image.jpg")'" />
+                                <img src="@imgUrl" alt="@movie.Name" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='@Url.Content("~/images/default-poster.jpg")'" />
                             </div>
                             <div class="p-2 p-md-3 d-flex flex-column flex-grow-1 justify-content-between">
                                 <h6 class="text-truncate mb-1 fw-bold" title="@movie.Name">@movie.Name</h6>

@@ -50,7 +50,8 @@ namespace MovieWeb.Controllers
 
             try
             {
-                var query = _context.Users.Include(u => u.Role).AsQueryable();
+                pageSize = pageSize is 10 or 20 or 50 or 100 ? pageSize : 20;
+                var query = _context.Users.AsNoTracking().Include(u => u.Role).AsQueryable();
 
                 // Filter subscriptionType
                 if (!string.IsNullOrEmpty(subscriptionType))
@@ -85,9 +86,12 @@ namespace MovieWeb.Controllers
                 }
 
                 var totalUsers = await query.CountAsync();
+                var totalPages = Math.Max(1, (int)Math.Ceiling(totalUsers / (double)pageSize));
+                page = Math.Clamp(page, 1, totalPages);
 
                 var userList = await query
                     .OrderByDescending(u => u.CreatedAt)
+                    .ThenByDescending(u => u.Id)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
@@ -101,7 +105,7 @@ namespace MovieWeb.Controllers
                         && u.SubscriptionEndDate.HasValue
                         && u.SubscriptionEndDate.Value > DateTime.Now);
 
-                ViewBag.TotalPages = (int)Math.Ceiling((double)totalUsers / pageSize);
+                ViewBag.TotalPages = totalPages;
                 ViewBag.CurrentPage = page;
                 ViewBag.PageSize = pageSize;
                 ViewBag.TotalUsers = totalUsers;

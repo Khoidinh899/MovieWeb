@@ -9,10 +9,7 @@
     var filters = ViewBag.Filters as MovieFilterViewModel ?? new MovieFilterViewModel();
 }
 
-@if (!string.IsNullOrEmpty(ViewBag.SeoDescription as string))
-{
-    <meta name="description" content="@ViewBag.SeoDescription" />
-}
+
 
 @functions {
     // 💡 (Bạn hãy copy hàm GetPosterUrl của bạn (từ file Search.cshtml) vào đây)
@@ -22,7 +19,7 @@
         var candidate = !string.IsNullOrEmpty(m.ThumbUrl) ? m.ThumbUrl : m.PosterUrl;
 
         if (string.IsNullOrEmpty(candidate))
-            return Url.Content("~/images/no-image.jpg");
+            return Url.Content("~/images/default-poster.jpg");
 
         candidate = candidate.Trim();
 
@@ -41,6 +38,7 @@
 }
 
 @section Styles {
+    <meta name="description" content="@(ViewBag.SeoDescription as string ?? $"Khám phá phim { categoryName } trên MoonPhim theo năm phát hành và danh sách tập cập nhật.")" />
     <link rel="stylesheet" href="~/css/filter-sidebar.css" asp-append-version="true" />
 }
 
@@ -73,7 +71,7 @@
                                  style="aspect-ratio: 2/3; object-fit: cover;"
                                  loading="lazy"
                                  decoding="async"
-                                 onerror="this.src='@Url.Content("~/images/no-image.jpg")'" />
+                                 onerror="this.onerror=null; this.src='@Url.Content("~/images/default-poster.jpg")'" />
                             <div class="p-2">
                                 <h6 class="text-truncate mb-0">@movie.Name</h6>
                             </div>

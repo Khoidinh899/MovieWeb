@@ -5,10 +5,7 @@
     var categoryName = ViewBag.CategoryName as string ?? "Phim bộ";
     var filters = ViewBag.Filters as MovieFilterViewModel ?? new MovieFilterViewModel();
 }
-@if (!string.IsNullOrEmpty(ViewBag.SeoDescription as string))
-{
-    <meta name="description" content="@ViewBag.SeoDescription" />
-}
+
 @functions {
     // 💡 (Bạn hãy copy hàm GetPosterUrl của bạn (từ file Search.cshtml) vào đây)
     private string GetPosterUrl(MovieWeb.Models.Entities.Movie m)
@@ -16,7 +13,7 @@
         // ... (Giống hệt file Search.cshtml)
         var candidate = !string.IsNullOrEmpty(m.ThumbUrl) ? m.ThumbUrl : m.PosterUrl;
         if (string.IsNullOrEmpty(candidate))
-            return Url.Content("~/images/no-image.jpg");
+            return Url.Content("~/images/default-poster.jpg");
         candidate = candidate.Trim();
         if (candidate.StartsWith("http") || candidate.StartsWith("//")) return candidate;
         if (candidate.StartsWith("/")) return candidate;
@@ -28,6 +25,7 @@
 }
 
 @section Styles {
+    <meta name="description" content="@(ViewBag.SeoDescription as string ?? "Khám phá phim bộ trên MoonPhim theo thể loại, quốc gia và năm phát hành; xem thông tin phim và danh sách tập.")" />
     <link rel="stylesheet" href="~/css/filter-sidebar.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/phimbo.css" asp-append-version="true" />
 }
@@ -53,7 +51,7 @@
                 <div class="col-6 col-sm-4 col-md-3 col-lg-2">
                     <div class="movie-card position-relative overflow-hidden rounded shadow-sm">
                         <a href="/phim/@movie.Slug" class="text-decoration-none text-white">
-                            <img src="@imgUrl" alt="@movie.Name" class="img-fluid w-100" style="aspect-ratio: 2/3; object-fit: cover;" loading="lazy" decoding="async" onerror="this.src='@Url.Content("~/images/no-image.jpg")'" />
+                            <img src="@imgUrl" alt="@movie.Name" class="img-fluid w-100" style="aspect-ratio: 2/3; object-fit: cover;" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='@Url.Content("~/images/default-poster.jpg")'" />
                             <div class="p-2">
                                 <h6 class="text-truncate mb-0">@movie.Name</h6>
                             </div>

@@ -977,3 +977,33 @@ body.mobile-search-active {
     display: none;
   }
 }
+/* Mobile menu must stay above the fixed bottom dock. */
+#mobileMenuOffcanvas {
+  z-index: 2147483646;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+}
+
+#mobileMenuOffcanvas .offcanvas-header {
+  flex-shrink: 0;
+}
+
+#mobileMenuOffcanvas .offcanvas-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+body:has(#mobileMenuOffcanvas.show, #mobileMenuOffcanvas.showing, #mobileMenuOffcanvas.hiding) .offcanvas-backdrop {
+  z-index: 2147483645;
+}
+
+body:has(#mobileMenuOffcanvas.show, #mobileMenuOffcanvas.showing, #mobileMenuOffcanvas.hiding) #mobileBottomNav {
+  visibility: hidden;
+  pointer-events: none !important;
+}

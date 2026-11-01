@@ -1,3 +1,4 @@
+using MovieWeb.Helpers;
 // File: Services/MovieSyncService.cs (FIXED - CHỈ LƯU SERVER THẬT TỪ API)
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -32,6 +33,7 @@ namespace MovieWeb.Services
     public class MovieSyncService : IMovieSyncService
     {
         private readonly MovieWebDbContext _context;
+        private readonly IConfiguration _configuration;
         private readonly IOPhimService _oPhimService;
         private readonly IVSMovService _vsMovService;
         private readonly ILogger<MovieSyncService> _logger;
@@ -48,8 +50,10 @@ namespace MovieWeb.Services
             ICategorySyncService categorySyncService,
             ICountrySyncService countrySyncService,
             IActorSyncService actorSyncService,
-            IDirectorSyncService directorSyncService)
+            IDirectorSyncService directorSyncService,
+            IConfiguration configuration)
         {
+            _configuration = configuration;
             _context = context;
             _oPhimService = oPhimService;
             _vsMovService = vsMovService;
@@ -61,6 +65,12 @@ namespace MovieWeb.Services
         }
         public async Task SyncMovieFromApiBySlug(string apiSlug, int movieId)
         {
+            if (_configuration.GetValue<bool>("CatalogMerge:LegacyWritersPaused"))
+            {
+                _logger.LogWarning("Legacy catalog write deferred during controlled merge");
+                return;
+            }
+
             _logger.LogInformation("[Hangfire Job] Bắt đầu sync tập phim cho MovieID: {MovieId}, ApiSlug: {ApiSlug}", movieId, apiSlug);
 
             try
@@ -186,6 +196,12 @@ namespace MovieWeb.Services
 
         public async Task SyncMoviesFromApiToDbAsync(List<ApiMovie> apiMovies, int minYear)
         {
+            if (_configuration.GetValue<bool>("CatalogMerge:LegacyWritersPaused"))
+            {
+                _logger.LogWarning("Legacy catalog write deferred during controlled merge");
+                return;
+            }
+
             int apiMovieCount = apiMovies?.Count ?? 0;
             _logger.LogInformation($"🎬🎬🎬 BẮT ĐẦU SYNC - API trả về: {apiMovieCount} phim, Lọc từ năm: {(minYear > 0 ? minYear : "không giới hạn")}");
 
@@ -509,6 +525,12 @@ namespace MovieWeb.Services
         // =================================================================
         public async Task BackfillAllEpisodesAsync()
         {
+            if (_configuration.GetValue<bool>("CatalogMerge:LegacyWritersPaused"))
+            {
+                _logger.LogWarning("Legacy catalog write deferred during controlled merge");
+                return;
+            }
+
             _logger.LogInformation(">>> Bắt đầu tác vụ rà soát và điền tập phim cho tất cả phim bộ/hoạt hình.");
 
             var moviesToProcess = await _context.Movies
@@ -605,6 +627,12 @@ namespace MovieWeb.Services
         // =================================================================
         public async Task BackfillSingleMoviesAsync()
         {
+            if (_configuration.GetValue<bool>("CatalogMerge:LegacyWritersPaused"))
+            {
+                _logger.LogWarning("Legacy catalog write deferred during controlled merge");
+                return;
+            }
+
             _logger.LogInformation(">>> Bắt đầu tác vụ rà soát và cập nhật link xem cho phim lẻ.");
 
             var moviesToProcess = await _context.Movies
@@ -694,6 +722,12 @@ namespace MovieWeb.Services
         // =================================================================
         public async Task BackfillFromVSMovAsync(int fromPage = 1, int toPage = 10)
         {
+            if (_configuration.GetValue<bool>("CatalogMerge:LegacyWritersPaused"))
+            {
+                _logger.LogWarning("Legacy catalog write deferred during controlled merge");
+                return;
+            }
+
             _logger.LogWarning($"🔄🔄🔄 [VSMov] BẮT ĐẦU ĐỒNG BỘ TỪ VSMOV - Trang {fromPage} đến {toPage}");
 
             int totalUpdated = 0;
@@ -965,6 +999,11 @@ namespace MovieWeb.Services
             bool isNewMovie = false;
             bool wasEpisodesModified = false;
 
+            try
+            {
+            await using var transaction = await CatalogWriteLock.AcquireAsync(_context);
+            try
+            {
             var movieInDb = await _context.Movies
                 .Include(m => m.Episodes)
                 .Include(m => m.Categories)
@@ -1044,7 +1083,7 @@ namespace MovieWeb.Services
             if (detailResponse.Episodes != null)
             {
                 var existingKeys = new HashSet<string>(
-                    movieInDb.Episodes.Select(e => $"{e.Slug}|{e.ServerName}")
+                    movieInDb.Episodes.Select(e => $"{e.Slug}|{VSMovSource.NormalizeServer(e.ServerName)}")
                 );
 
                 foreach (var server in detailResponse.Episodes)
@@ -1057,7 +1096,7 @@ namespace MovieWeb.Services
                         string linkEmbed = epData.LinkEmbed;
                         if (string.IsNullOrEmpty(linkEmbed)) continue;
 
-                        string uniqueKey = $"{epData.Slug}|{serverName}";
+                        string uniqueKey = $"{epData.Slug}|{VSMovSource.NormalizeServer(serverName)}";
                         if (existingKeys.Add(uniqueKey))
                         {
                             wasEpisodesModified = true;
@@ -1079,7 +1118,7 @@ namespace MovieWeb.Services
             if (wasUpdatedOrAdded)
             {
                 await _context.SaveChangesAsync();
-                SitemapCacheRefreshJob.TriggerImmediately();
+
                 _logger.LogInformation($"[VSMov Sync] ✅ Đã lưu/cập nhật phim '{movieInDb.Name}' với {movieInDb.Episodes.Count} tập!");
             }
             else
@@ -1087,7 +1126,22 @@ namespace MovieWeb.Services
                 _logger.LogInformation($"[VSMov Sync] ℹ️ Phim '{movieInDb.Name}' đã tồn tại đầy đủ, không có thay đổi.");
             }
 
+            await transaction.CommitAsync();
+            _context.ChangeTracker.Clear();
+            if (wasUpdatedOrAdded) SitemapCacheRefreshJob.TriggerImmediately();
             return (movieInDb, wasUpdatedOrAdded);
+            }
+            catch
+            {
+                _context.ChangeTracker.Clear();
+                throw;
+            }
+            }
+            catch (Npgsql.PostgresException exception) when (exception.SqlState == "55P03")
+            {
+                _logger.LogWarning("Catalog busy; deferring VSMov sync for {Slug}", slug);
+                return (null, false);
+            }
         }
     }
 }

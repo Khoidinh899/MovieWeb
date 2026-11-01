@@ -8,8 +8,8 @@
     
     // ===== BẮT ĐẦU KHỐI SEO =====
     var request = Context.Request;
-    var baseUrl = $"{request.Scheme}://{request.Host}";
-    var currentUrl = $"{baseUrl}{request.Path}{request.QueryString}";
+    var baseUrl = MovieWeb.Helpers.SeoMetadata.BaseUrl;
+    var currentUrl = MovieWeb.Helpers.SeoMetadata.Canonical(request);
     var defaultSeoImage = $"{baseUrl}/images/iconmoon.png";
     
     // Tạo title động
@@ -20,6 +20,31 @@
     // ===== KẾT THÚC KHỐI SEO =====
 }
 
+@functions {
+    private string GetPosterUrl(MovieWeb.Models.Entities.Movie m)
+    {
+        var candidate = !string.IsNullOrEmpty(m.ThumbUrl) ? m.ThumbUrl : m.PosterUrl;
+
+        if (string.IsNullOrEmpty(candidate))
+            return Url.Content("~/images/default-poster.jpg");
+
+        candidate = candidate.Trim();
+
+        if (candidate.StartsWith("http") || candidate.StartsWith("//"))
+            return candidate;
+
+        if (candidate.StartsWith("/"))
+            return candidate;
+
+        if (candidate.IndexOf("uploads", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            return candidate.StartsWith("/") ? candidate : "/" + candidate;
+
+        var fallbackBase = "https://vsmov.com/storage/images/";
+        return fallbackBase + candidate;
+    }
+}
+
+@section Styles {
 @* ===== META TAGS SEO ===== *@
 <meta name="description" content="@seoDescription" />
 <meta name="keywords" content="phim mới, phim mới cập nhật, phim mới nhất, xem phim mới" />
@@ -41,33 +66,7 @@
 <meta name="twitter:site" content="@("@")MoonPhim" />
 
 @* Canonical URL *@
-<link rel="canonical" href="@currentUrl" />
 
-@functions {
-    private string GetPosterUrl(MovieWeb.Models.Entities.Movie m)
-    {
-        var candidate = !string.IsNullOrEmpty(m.ThumbUrl) ? m.ThumbUrl : m.PosterUrl;
-
-        if (string.IsNullOrEmpty(candidate))
-            return Url.Content("~/images/no-image.jpg");
-
-        candidate = candidate.Trim();
-
-        if (candidate.StartsWith("http") || candidate.StartsWith("//"))
-            return candidate;
-
-        if (candidate.StartsWith("/"))
-            return candidate;
-
-        if (candidate.IndexOf("uploads", System.StringComparison.OrdinalIgnoreCase) >= 0)
-            return candidate.StartsWith("/") ? candidate : "/" + candidate;
-
-        var fallbackBase = "https://vsmov.com/storage/images/";
-        return fallbackBase + candidate;
-    }
-}
-
-@section Styles {
     <link rel="stylesheet" href="~/css/filter-sidebar.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/phimbo.css" asp-append-version="true" />
 
@@ -120,7 +119,7 @@
                                  style="aspect-ratio: 2/3; object-fit: cover;"
                                  loading="lazy"
                                  decoding="async"
-                                 onerror="this.src='@Url.Content("~/images/no-image.jpg")'" />
+                                 onerror="this.onerror=null; this.src='@Url.Content("~/images/default-poster.jpg")'" />
                             <div class="p-2">
                                 <h6 class="text-truncate mb-0">@movie.Name</h6>
                                 <small class="text-muted">@movie.EpisodeCurrent</small>

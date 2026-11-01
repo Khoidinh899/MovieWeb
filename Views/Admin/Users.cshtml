@@ -2,6 +2,19 @@
 
 @{
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    int pageSize = ViewBag.PageSize ?? 20;
+    int totalUsers = ViewBag.TotalUsers ?? 0;
+    int firstUser = totalUsers == 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    int lastUser = (int)Math.Min(currentPage * (long)pageSize, totalUsers);
+    int firstPage = Math.Max(1, currentPage - 2);
+    int lastPage = Math.Min(totalPages, currentPage + 2);
+    string? PageUrl(int number) => Url.Action("Users", "Admin", new {
+        page = number, pageSize, search = (string?)ViewBag.Search,
+        roleId = (int?)ViewBag.RoleId, isActive = (bool?)ViewBag.IsActive,
+        subscriptionType = (string?)ViewBag.SubscriptionType
+    });
     ViewData["Title"] = "Quản lý người dùng";
 }
 
@@ -323,6 +336,38 @@
             </table>
         </div>
     </div>
+</div>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 my-3">
+    <span class="text-muted" role="status">Hiển thị @firstUser–@lastUser / @totalUsers người dùng · Trang @currentPage/@totalPages</span>
+    @if (totalPages > 1)
+    {
+        <nav aria-label="Phân trang người dùng">
+            <ul class="pagination flex-wrap mb-0">
+                @if (currentPage > 1)
+                {
+                    <li class="page-item"><a class="page-link" href="@PageUrl(1)" aria-label="Trang đầu">«</a></li>
+                    <li class="page-item"><a class="page-link" href="@PageUrl(currentPage - 1)">Trước</a></li>
+                }
+                @for (int number = firstPage; number <= lastPage; number++)
+                {
+                    if (number == currentPage)
+                    {
+                        <li class="page-item active"><span class="page-link" aria-current="page">@number</span></li>
+                    }
+                    else
+                    {
+                        <li class="page-item"><a class="page-link" href="@PageUrl(number)">@number</a></li>
+                    }
+                }
+                @if (currentPage < totalPages)
+                {
+                    <li class="page-item"><a class="page-link" href="@PageUrl(currentPage + 1)">Sau</a></li>
+                    <li class="page-item"><a class="page-link" href="@PageUrl(totalPages)" aria-label="Trang cuối">»</a></li>
+                }
+            </ul>
+        </nav>
+    }
 </div>
 
 <!-- Hidden forms -->

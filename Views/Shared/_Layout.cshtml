@@ -3,7 +3,7 @@
 @{
     // ===== ✅ BẮT ĐẦU KHỐI CHUẨN BỊ BIẾN SEO MẶC ĐỊNH =====
     var request = Context.Request;
-    var baseUrl = $"{request.Scheme}://{request.Host}";
+    var baseUrl = MovieWeb.Helpers.SeoMetadata.BaseUrl;
     var defaultSeoImage = $"{baseUrl}/images/iconmoon.png";
 
     // ===== IP RATE LIMITING CHO QUẢNG CÁO ONCLICK (24H) =====
@@ -38,7 +38,16 @@
             crossorigin="anonymous"></script>
 
 
-    <title>@ViewData["Title"] - MoonPhim | Xem Phim Online Miễn Phí | Moon Phim Vietsub HD</title>
+    @{
+        var seoPageTitle = ViewData["SeoTitle"] as string ?? ViewData["Title"]?.ToString() ?? "MoonPhim";
+        if (!seoPageTitle.Contains("MoonPhim", StringComparison.OrdinalIgnoreCase)) seoPageTitle += " | MoonPhim";
+    }
+    <title>@seoPageTitle</title>
+    <link rel="canonical" href="@MovieWeb.Helpers.SeoMetadata.Canonical(Context.Request)" />
+    @if (MovieWeb.Helpers.SeoMetadata.NoIndex(Context.Request))
+    {
+        <meta name="robots" content="noindex, follow" />
+    }
 
     <!-- Schema.org WebSite & Brand Organization Markup (MoonPhim / Moon Phim) -->
     <script type="application/ld+json">
@@ -93,7 +102,7 @@
     <meta name="theme-color" content="#1c2a39" />
     <meta name="author" content="MoonPhim (Moon Phim)" />
 
-    <meta property="og:site_name" content="MoonPhim (Moon Phim) - PhimMoi | RoPhim | MotPhim Vietsub Full HD" />
+    <meta property="og:site_name" content="MoonPhim" />
     <meta property="og:image" content="@defaultSeoImage" />
     <meta property="og:locale" content="vi_VN" />
     @* --- KẾT THÚC KHỐI SEO MẶC ĐỊNH --- *@
@@ -142,7 +151,10 @@
     <!-- Monetag Vignette (Chạy trên cả Web và App qua Idle Callback) -->
     <script>
         (function () {
+            if (window.moonphimVignetteInitialized) return;
+            window.moonphimVignetteInitialized = true;
             var loadMonetag = function () {
+                if (document.querySelector('script[data-zone="11708850"]')) return;
                 // Nạp Vignette (Zone 11708850)
                 var vig = document.createElement('script');
                 vig.dataset.zone = '11708850';
@@ -169,46 +181,67 @@
         <!-- Monetag OnClick (Popunder) Ads Script - Chạy trên cả Mobile & Desktop - Tần suất: 2 tiếng / lần -->
         <script>
             (function () {
-                var STORAGE_KEY = 'moonphim_pop_done';
-                var COOLDOWN = 2 * 60 * 60 * 1000; // 2 tiếng (7200s)
+                const STORAGE_KEY = 'moonphim_pop_done';
+                const COOLDOWN = 2 * 60 * 60 * 1000;
+                const ZONE_ID = '11708858';
 
-                var lastShown = localStorage.getItem(STORAGE_KEY);
-                var hasCookie = document.cookie.indexOf('moonphim_pop_done=') !== -1;
-                var now = Date.now();
+                const isAppContext = () => {
+                    const userAgent = navigator.userAgent || '';
+                    const isInstalledPwa = navigator.standalone === true ||
+                        window.matchMedia?.('(display-mode: standalone)').matches === true ||
+                        window.matchMedia?.('(display-mode: minimal-ui)').matches === true;
+                    const isAndroidWebView = /Android/i.test(userAgent) && /\bwv\b/i.test(userAgent);
+                    const isNativeApp = /\bMoonPhimApp\b/i.test(userAgent) ||
+                        (document.referrer || '').startsWith('android-app://');
+                    return isInstalledPwa || isAndroidWebView || isNativeApp;
+                };
 
-                // Đã bật trong 2h qua (LocalStorage hoặc Cookie) -> Chặn
-                if (hasCookie || (lastShown && (now - parseInt(lastShown, 10)) < COOLDOWN)) {
+                // Disable website OnClick in installed apps; ordinary browser tabs keep it.
+                if (isAppContext()) return;
+                // Shared across SPA replays; a per-initializer flag cannot prevent duplicates.
+                const state = window.moonphimOnclickState ||= { pending: false, loaded: false };
+
+                const isCoolingDown = () => {
+                    const hasCookie = document.cookie.split(';').some(cookie =>
+                        cookie.trim().startsWith(STORAGE_KEY + '='));
+                    if (hasCookie) return true;
+                    try {
+                        const lastLoaded = Number(localStorage.getItem(STORAGE_KEY));
+                        return Number.isFinite(lastLoaded) && lastLoaded > 0 &&
+                            Date.now() - lastLoaded < COOLDOWN;
+                    } catch {
+                        return false; // Safari storage restrictions: rely on the cookie/global state.
+                    }
+                };
+
+                if (state.pending || state.loaded ||
+                    document.querySelector('script[data-zone="' + ZONE_ID + '"]') || isCoolingDown()) {
                     return;
                 }
 
-                var isFired = false;
+                const triggerPopunder = () => {
+                    window.removeEventListener('click', triggerPopunder);
+                    state.pending = false;
+                    // Another tab can start cooldown after this listener was registered.
+                    if (isAppContext() || state.loaded || isCoolingDown()) return;
+                    state.loaded = true;
 
-                var triggerPopunder = function () {
-                    if (isFired) return;
-                    isFired = true;
+                    try { localStorage.setItem(STORAGE_KEY, String(Date.now())); } catch {}
+                    document.cookie = STORAGE_KEY + '=1; max-age=7200; path=/; samesite=lax';
 
-                    // Ghi nhận ngay mốc thời gian LocalStorage + Cookie 2h (7200s)
-                    localStorage.setItem(STORAGE_KEY, Date.now().toString());
-                    document.cookie = "moonphim_pop_done=1; max-age=7200; path=/; samesite=lax";
-
-                    // Gửi ghi nhận IP lên server (MemoryCache 2h)
                     if (navigator.sendBeacon) {
                         navigator.sendBeacon('/api/ads/record-popunder');
                     } else {
-                        fetch('/api/ads/record-popunder', { method: 'POST', keepalive: true }).catch(function(){});
+                        fetch('/api/ads/record-popunder', { method: 'POST', keepalive: true }).catch(() => {});
                     }
 
-                    // Gỡ toàn bộ sự kiện ngay lập tức
-                    window.removeEventListener('click', triggerPopunder);
-
-                    // Nạp script OnClick Monetag (Zone 11708858)
-                    var s = document.createElement('script');
-                    s.dataset.zone = '11708858';
-                    s.src = 'https://al5sm.com/tag.min.js';
-                    (document.body || document.documentElement).appendChild(s);
+                    const script = document.createElement('script');
+                    script.dataset.zone = ZONE_ID;
+                    script.src = 'https://al5sm.com/tag.min.js';
+                    (document.body || document.documentElement).appendChild(script);
                 };
 
-                // Bắt sự kiện click bình thường trên cả mobile & desktop
+                state.pending = true;
                 window.addEventListener('click', triggerPopunder, { once: true, passive: true });
             })();
         </script>

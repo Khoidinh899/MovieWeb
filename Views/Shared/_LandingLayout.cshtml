@@ -2,15 +2,15 @@
     // ==========================================================
     // ===== ✅ BẮT ĐẦU KHỐI CHUẨN BỊ BIẾN SEO =====
     // ==========================================================
-    
+
     // 1. Chuẩn bị Mô tả
-    var seoDescription = "Với sự bùng nổ của các nền tảng phát trực tuyến phim, MoonPhim nổi bật lên như một trang web xem phim miễn phí uy tín, mang đến cho người dùng trải nghiệm xem phim tuyệt vời nhất.";
-    
+    var seoDescription = "MoonPhim: khám phá phim bộ, phim lẻ và hoạt hình theo thể loại, quốc gia. Tìm phim bằng tên Việt hoặc tên gốc, xem thông tin và danh sách tập cập nhật.";
+
     // 2. Chuẩn bị URL và Image
     var request = Context.Request;
-    var baseUrl = $"{request.Scheme}://{request.Host}"; 
-    var seoUrl = $"{baseUrl}{request.Path}";
-    var seoImage = $"{baseUrl}/images/iconmoon.png"; 
+    var baseUrl = MovieWeb.Helpers.SeoMetadata.BaseUrl;
+    var seoUrl = MovieWeb.Helpers.SeoMetadata.Canonical(request);
+    var seoImage = $"{baseUrl}/images/iconmoon.png";
 
     // 3. Chuẩn bị Schema JSON-LD (WebSite)
     var schemaJson = new System.Text.StringBuilder();
@@ -34,9 +34,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="monetag" content="1bd43555dd0c57f4ee0258b218db6891">
-    
-    <title>@ViewData["Title"]</title> 
-    
+
+    <title>@ViewData["Title"]</title>
+
     @* ===== FAVICON (Đã thêm file .ico) ===== *@
     <link rel="shortcut icon" href="~/favicon.ico" type="image/x-icon">
     <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png" asp-append-version="true">
@@ -45,7 +45,7 @@
     <link rel="manifest" href="~/site.webmanifest" asp-append-version="true">
 
     @* ===== META SEO ===== *@
-    <meta name="description" content="MoonPhim - Trang xem phim online miễn phí thay thế PhimMoi, RoPhim, MotPhim, CoBePhim, MotChill. Thư viện phim mới Vietsub Thuyết Minh chất lượng cao HD cập nhật 24/7." />
+    <meta name="description" content="@seoDescription" />
     <meta name="keywords" content="phimmoi, phim moi, rophim, ro phim, cobephim, co be phim, motphim, mot phim, motchill, phimmoichill, xem phim, xem phim miễn phí, xem phim online, phim HD, phim chất lượng cao, moonphim, bay bổng cùng điện ảnh" />
     <meta name="theme-color" content="#1c2a39" />
     <link rel="canonical" href="@seoUrl" />
@@ -71,12 +71,12 @@
     </script>
 
     <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
-    
+
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="landing-page">
     @RenderBody()
-    
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

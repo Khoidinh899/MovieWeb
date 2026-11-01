@@ -213,6 +213,7 @@ builder.Services.AddHangfire(configuration => configuration
         )
     ));
 
+if (builder.Configuration.GetValue("BackgroundJobs:Enabled", true))
 builder.Services.AddHangfireServer(options =>
 {
     options.WorkerCount = 2;
@@ -325,6 +326,9 @@ forwardedHeadersOptions.KnownNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeadersOptions);
 
+// SEO deployments can skip bootstrap mutations; normal payment handlers remain enabled.
+if (!builder.Configuration.GetValue<bool>("Deployment:SkipBootstrap"))
+{
 // ===== AUTO MIGRATE DATABASE =====
 using (var scope = app.Services.CreateScope())
 {
@@ -424,6 +428,8 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+}
+
 // ===== MIDDLEWARE CONFIGURATION =====
 // ✅ Đăng ký Global Exception Handling Middleware (PHẢI ĐẶT ĐẦU TIÊN)
 app.UseGlobalExceptionHandling();
@@ -473,6 +479,8 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 });
 
 // ===== ĐĂNG KÝ RECURRING JOBS =====
+if (app.Configuration.GetValue("BackgroundJobs:Enabled", true))
+{
 RecurringJob.AddOrUpdate<PaymentReminderJob>(
     recurringJobId: "payment-reminder-daily",
     methodCall: job => job.Execute(),
@@ -519,6 +527,8 @@ RecurringJob.AddOrUpdate<MovieWeb.Jobs.CleanupUnconfirmedUsersJob>(
             OperatingSystem.IsWindows() ? "SE Asia Standard Time" : "Asia/Bangkok")
     }
 );
+
+}
 
 // ===== ROUTE CONFIGURATION =====
 app.MapControllerRoute(

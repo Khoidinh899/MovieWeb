@@ -1,3 +1,4 @@
+@using MovieWeb.Helpers
 @model MovieWeb.Models.Entities.Movie
 @{
     ViewData["Title"] = $"{Model.Name} (Phim {Model.Year}) Vietsub Thuyết Minh HD - MoonPhim (Moon Phim)";
@@ -30,7 +31,10 @@
     // ==========================================================
 
     // 1. Chuẩn bị Mô tả (Description)
-    var seoDescription = $"Xem phim {Model.Name} ({Model.OriginalName} - {Model.Year}) Vietsub Thuyết Minh HD trọn bộ mới nhất tại MoonPhim (Moon Phim). Xem phim {Model.Name} miễn phí tốc độ cao.";
+    ViewData["SeoTitle"] = SeoMetadata.MovieTitle(Model.Name, Model.OriginalName, Model.Year, Model.Language);
+    var seoDescription = SeoMetadata.Description(Model.Description, Model.Content,
+        $"Thông tin phim {Model.Name}{(Model.Year.HasValue ? $" ({Model.Year})" : "")}, tên gốc {Model.OriginalName ?? Model.Name}. Xem nội dung và danh sách tập trên MoonPhim.");
+
     
     // 2. Chuẩn bị Ảnh (Image)
     var seoImage = (Model.PosterUrl?.StartsWith("http") == true
@@ -39,7 +43,7 @@
 
     // 3. Chuẩn bị URL
     var request = Context.Request;
-    var seoUrl = $"{request.Scheme}://{request.Host}{request.Path}";
+    var seoUrl = SeoMetadata.Canonical(request);
     var allEpisodesList = Model.Episodes?.ToList() ?? new List<MovieWeb.Models.Entities.Episode>();
     bool hasValidVideoUrl = !string.IsNullOrEmpty(Model.TrailerUrl) || allEpisodesList.Any();
 }
@@ -57,7 +61,7 @@
     <meta name="keywords" content="xem phim @Model.Name, @Model.Name vietsub, @Model.Name thuyet minh, @Model.Name tap moi nhat, lich chieu @Model.Name, @Model.OriginalName, moonphim, moon phim, phimmoi, rophim, motphim, cobephim, motchill, xem phim online, phim @Model.Year@(Model.Categories != null ? ", " + string.Join(", ", Model.Categories.Select(c => c.Name)) : "")" />
 
     @* ===== OPEN GRAPH (Facebook, Zalo, LinkedIn, etc.) ===== *@
-    <meta property="og:title" content="@ViewData["Title"]" />
+    <meta property="og:title" content="@ViewData["SeoTitle"]" />
     <meta property="og:description" content="@seoDescription" />
     <meta property="og:type" content="video.movie" />
     <meta property="og:url" content="@seoUrl" />
@@ -69,121 +73,54 @@
 
     @* ===== TWITTER CARD (X/Twitter share) ===== *@
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="@ViewData["Title"]" />
+    <meta name="twitter:title" content="@ViewData["SeoTitle"]" />
     <meta name="twitter:description" content="@seoDescription" />
     <meta name="twitter:image" content="@seoImage" />
     <meta name="twitter:site" content="@("@")MoonPhim" />
 
     @* ===== CANONICAL URL (Tránh duplicate content) ===== *@
-    <link rel="canonical" href="@seoUrl" />
+
 
     @* ===== SCHEMA.ORG JSON-LD (RICH SNIPPETS & BREADCRUMB) ===== *@
     @{
-        var schemaJson = new System.Text.StringBuilder();
-        schemaJson.AppendLine("{");
-        schemaJson.AppendLine("  \"@context\": \"https://schema.org\",");
-        schemaJson.AppendLine("  \"@type\": \"Movie\",");
-        schemaJson.AppendLine($"  \"name\": {System.Text.Json.JsonSerializer.Serialize(Model.Name)},");
-        schemaJson.AppendLine($"  \"alternateName\": {System.Text.Json.JsonSerializer.Serialize(Model.OriginalName ?? "")},");
-        schemaJson.AppendLine($"  \"image\": \"{seoImage}\",");
-        schemaJson.AppendLine($"  \"description\": {System.Text.Json.JsonSerializer.Serialize(seoDescription)},");
-        schemaJson.AppendLine($"  \"url\": \"{seoUrl}\",");
-        schemaJson.AppendLine($"  \"datePublished\": \"{(Model.CreatedAt?.ToString("yyyy-MM-dd") ?? DateTime.Now.ToString("yyyy-MM-dd"))}\",");
-        
-        if (Model.Year.HasValue)
+        var movieSchema = new Dictionary<string, object?>
         {
-            schemaJson.AppendLine($"  \"dateCreated\": \"{Model.Year.Value}-01-01\",");
-        }
-        
-        if (!string.IsNullOrEmpty(Model.Trailer))
+            ["@context"] = "https://schema.org",
+            ["@type"] = "Movie",
+            ["name"] = Model.Name,
+            ["url"] = seoUrl,
+            ["image"] = seoImage,
+            ["description"] = seoDescription
+        };
+        if (!string.IsNullOrWhiteSpace(Model.OriginalName)) movieSchema["alternateName"] = Model.OriginalName;
+        if (Model.Actors.Any()) movieSchema["actor"] = Model.Actors.Take(10)
+            .Select(a => new Dictionary<string, object> { ["@type"] = "Person", ["name"] = a.Name }).ToArray();
+        if (Model.Directors.Any()) movieSchema["director"] = Model.Directors.Take(5)
+            .Select(d => new Dictionary<string, object> { ["@type"] = "Person", ["name"] = d.Name }).ToArray();
+        if (Model.Categories.Any()) movieSchema["genre"] = Model.Categories.Select(c => c.Name).ToArray();
+        if (Model.Countries.Any()) movieSchema["countryOfOrigin"] = Model.Countries
+            .Select(c => new Dictionary<string, object> { ["@type"] = "Country", ["name"] = c.Name }).ToArray();
+        // Database import dates and picture quality are not movie release dates or age ratings.
+        var schemaJson = System.Text.Json.JsonSerializer.Serialize(movieSchema);
+        var breadcrumbSchema = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
         {
-            schemaJson.AppendLine("  \"trailer\": {");
-            schemaJson.AppendLine("    \"@type\": \"VideoObject\",");
-            schemaJson.AppendLine($"    \"name\": {System.Text.Json.JsonSerializer.Serialize($"Trailer - {Model.Name}")},");
-            schemaJson.AppendLine($"    \"description\": {System.Text.Json.JsonSerializer.Serialize(seoDescription)},");
-            schemaJson.AppendLine($"    \"uploadDate\": \"{(Model.CreatedAt?.ToString("yyyy-MM-ddTHH:mm:sszzz") ?? DateTime.Now.ToString("yyyy-MM-ddTHH:mm:sszzz"))}\",");
-            schemaJson.AppendLine($"    \"embedUrl\": \"{Model.Trailer}\",");
-            schemaJson.AppendLine($"    \"thumbnailUrl\": \"{seoImage}\"");
-            schemaJson.AppendLine("  },");
-        }
-        
-        if (Model.Rating.HasValue && Model.Rating > 0)
-        {
-            schemaJson.AppendLine("  \"aggregateRating\": {");
-            schemaJson.AppendLine("    \"@type\": \"AggregateRating\",");
-            schemaJson.AppendLine($"    \"ratingValue\": \"{Model.Rating.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}\",");
-            schemaJson.AppendLine("    \"bestRating\": \"10\",");
-            if (Model.RatingCount.HasValue && Model.RatingCount > 0)
+            ["@context"] = "https://schema.org",
+            ["@type"] = "BreadcrumbList",
+            ["itemListElement"] = new[]
             {
-                schemaJson.AppendLine("    \"worstRating\": \"1\",");
-                schemaJson.AppendLine($"    \"ratingCount\": {Model.RatingCount.Value}");
-            }
-            else
+                new { @type = "ListItem", position = 1, name = "Trang chủ", item = "https://moonphim.me/" },
+                new { @type = "ListItem", position = 2, name = Model.Name, item = seoUrl }
+            }.Select(item => new Dictionary<string, object>
             {
-                schemaJson.AppendLine("    \"worstRating\": \"1\"");
-            }
-            schemaJson.AppendLine("  },");
-        }
-        
-        if (Model.Actors != null && Model.Actors.Any())
-        {
-            var actors = string.Join(",", Model.Actors.Take(10).Select(a => $"{{\"@type\":\"Person\",\"name\":{System.Text.Json.JsonSerializer.Serialize(a.Name)}}}"));
-            schemaJson.AppendLine($"  \"actor\": [{actors}],");
-        }
-        
-        if (Model.Directors != null && Model.Directors.Any())
-        {
-            var directors = string.Join(",", Model.Directors.Take(5).Select(d => $"{{\"@type\":\"Person\",\"name\":{System.Text.Json.JsonSerializer.Serialize(d.Name)}}}"));
-            schemaJson.AppendLine($"  \"director\": [{directors}],");
-        }
-        
-        if (Model.Categories != null && Model.Categories.Any())
-        {
-            var genres = string.Join(",", Model.Categories.Select(c => System.Text.Json.JsonSerializer.Serialize(c.Name)));
-            schemaJson.AppendLine($"  \"genre\": [{genres}],");
-        }
-        
-        if (Model.Countries != null && Model.Countries.Any())
-        {
-            schemaJson.AppendLine("  \"countryOfOrigin\": {");
-            schemaJson.AppendLine("    \"@type\": \"Country\",");
-            schemaJson.AppendLine($"    \"name\": {System.Text.Json.JsonSerializer.Serialize(Model.Countries.FirstOrDefault()?.Name ?? "")}");
-            schemaJson.AppendLine("  },");
-        }
-        
-        schemaJson.AppendLine($"  \"contentRating\": \"{Model.Quality ?? "HD"}\",");
-        schemaJson.AppendLine($"  \"inLanguage\": \"{Model.Language ?? "Vietsub"}\",");
-        schemaJson.AppendLine($"  \"duration\": \"{Model.Time ?? "N/A"}\"");
-        schemaJson.AppendLine("}");
+                ["@type"] = item.type, ["position"] = item.position, ["name"] = item.name, ["item"] = item.item
+            }).ToArray()
+        });
     }
     <script type="application/ld+json">
-        @Html.Raw(schemaJson.ToString())
+        @Html.Raw(schemaJson)
     </script>
     <script type="application/ld+json">
-    {
-      "@@context": "https://schema.org",
-      "@@type": "BreadcrumbList",
-      "itemListElement": [
-        {
-          "@@type": "ListItem",
-          "position": 1,
-          "name": "Trang chủ",
-          "item": "https://moonphim.me/"
-        },
-        {
-          "@@type": "ListItem",
-          "position": 2,
-          "name": "@(Model.Type == "series" ? "Phim Bộ" : Model.Type == "single" ? "Phim Lẻ" : "Hoạt Hình")",
-          "item": "https://moonphim.me/the-loai/@(Model.Type == "series" ? "phim-bo" : Model.Type == "single" ? "phim-le" : "hoat-hinh")"
-        },
-        {
-          "@@type": "ListItem",
-          "position": 3,
-          "name": "@Model.Name",
-          "item": "@seoUrl"
-        }
-      ]
-    }
+        @Html.Raw(breadcrumbSchema)
     </script>
 
     @* --- KẾT THÚC KHỐI SEO --- *@

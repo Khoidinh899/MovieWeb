@@ -50,10 +50,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     suggestionBox.innerHTML = data.map(item => {
                         const name = (item.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                         const slug = encodeURIComponent(item.slug || '');
-                        const img = item.image || '/images/no-image.jpg';
+                        const img = item.image || '/images/default-poster.jpg';
                         return `
                             <a href="/phim/${slug}" class="suggestion-item text-decoration-none">
-                                <img src="${img}" onerror="this.src='/images/no-image.jpg'" alt="${name}">
+                                <img src="${img}" onerror="this.onerror=null; this.src='/images/default-poster.jpg'" alt="${name}">
                                 <div class="text-truncate">${name}</div>
                             </a>
                         `;

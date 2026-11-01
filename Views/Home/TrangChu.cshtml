@@ -6,7 +6,7 @@
     ViewData["IsHomePage"] = true; //gắn cờ đánh dấu đây là trang chủ
 
     // 1. Chuẩn bị Mô tả (Description)
-    var seoDescription = "MoonPhim - Xem phim online miễn phí thay thế PhimMoi, RoPhim, MotPhim, CoBePhim, MotChill. Cập nhật phim mới, phim hay, phim vietsub, thuyết minh nhanh nhất. Thư viện phim HD khổng lồ.";
+    var seoDescription = "Khám phá phim mới trên MoonPhim: phim bộ, phim lẻ và hoạt hình. Tìm theo tên phim, thể loại, quốc gia và năm phát hành; theo dõi danh sách tập cập nhật.";
 
     // 2. Chuẩn bị Ảnh (Image) - Lấy ảnh phim hot đầu tiên
     var seoImage = "/images/mooner_logo_large.png"; // Dùng ảnh logo làm dự phòng
@@ -17,7 +17,7 @@
 
     // 3. Chuẩn bị URL (Tự động lấy URL hiện tại)
     var request = Context.Request;
-    var seoUrl = $"{request.Scheme}://{request.Host}{request.Path}";
+    var seoUrl = SeoMetadata.Canonical(request);
 }
 @functions {
     public string GetMoviePosterUrl(MovieWeb.Models.Entities.Movie movie)

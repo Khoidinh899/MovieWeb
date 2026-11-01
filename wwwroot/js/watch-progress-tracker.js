@@ -1,3 +1,4 @@
+(function () {
 // ===================================================
 // WATCH PROGRESS TRACKER - CLEAN & USER FRIENDLY RESUME
 // ===================================================
@@ -20,19 +21,33 @@ class WatchProgressTracker {
         this.lastSavedTime = 0;
         this.resumePopup = null;
         this.resumeTime = null;
+        this.overlayClicked = false;
+        this.disposed = false;
+        this.pageElement = document.getElementById('videoContainer');
+        this.resumeRequest = null;
+        this.boundVideo = null;
+        this.pauseTimeout = null;
+        this.onEnded = () => this.saveProgress(true);
+        this.onPause = () => {
+            clearTimeout(this.pauseTimeout);
+            this.pauseTimeout = setTimeout(() => this.saveProgress(), 1500);
+        };
+        this.onPageHide = () => this.saveProgress();
+        this.onVisibilityChange = () => {
+            if (document.hidden) this.saveProgress();
+        };
         this.authToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value || 
                          document.querySelector("#RequestVerificationToken")?.value;
         this.isLoggedIn = (window.isLoggedIn === true) || 
                           (document.body.getAttribute('data-user-logged-in') === 'true') ||
                           (document.getElementById('notificationBell') !== null);
 
-        // Embed iframe tracking properties
         this.isEmbedMode = false;
         this.embedAccumulatedSeconds = 0;
         this.embedLastTick = 0;
         this.embedTimer = null;
         this.embedTotalDuration = 2700;
-        this.overlayClicked = false;
+
     }
 
     // Initialize
@@ -51,15 +66,9 @@ class WatchProgressTracker {
         this.videoPlayer = document.querySelector('video');
         this.embedPlayer = document.getElementById('embedPlayer');
 
-        if (this.resumeTime !== null) {
-            this.seekToResumeTime();
-        }
+        await this.checkResumeInfo();
 
-        if (this.resumeTime === null) {
-            await this.checkResumeInfo();
-        }
-
-        this.startTracking();
+        if (!this.disposed) this.startTracking();
     }
 
     // Tự động phát hiện ServerName hiện tại từ DOM
@@ -78,36 +87,22 @@ class WatchProgressTracker {
         return this.serverName || null;
     }
 
-    // Tự động kích hoạt Embed Tracking mà không tạo lớp phủ DOM cản trở
-    setupIframeClickOverlay(startTime = 0) {
-        this.overlayClicked = true;
-        const existingOverlay = document.getElementById('iframeClickOverlay');
-        if (existingOverlay) existingOverlay.remove();
-        this.startEmbedTracking(startTime);
-    }
-
-    // Embed Tracking Timer
+    // Preserve the existing embed resume flow; this clock is an estimate.
     startEmbedTracking(startTime = 0) {
+        if (this.disposed) return;
         this.isEmbedMode = true;
         this.embedAccumulatedSeconds = startTime;
         this.embedLastTick = Date.now();
         this.lastSavedTime = startTime;
-
         if (this.embedTimer) clearInterval(this.embedTimer);
-
         this.embedTimer = setInterval(() => {
+            const now = Date.now();
             if (!document.hidden && this.isEmbedMode) {
-                const now = Date.now();
                 const delta = (now - this.embedLastTick) / 1000;
-                this.embedLastTick = now;
-                if (delta > 0 && delta < 5) {
-                    this.embedAccumulatedSeconds += delta;
-                }
-            } else {
-                this.embedLastTick = Date.now();
+                if (delta > 0 && delta < 5) this.embedAccumulatedSeconds += delta;
             }
+            this.embedLastTick = now;
         }, 1000);
-
         this.startTracking();
     }
 
@@ -119,7 +114,13 @@ class WatchProgressTracker {
         }
     }
 
-    // Seek to resume time when video is ready
+    setupIframeClickOverlay(startTime = 0) {
+        this.overlayClicked = true;
+        const existingOverlay = document.getElementById('iframeClickOverlay');
+        if (existingOverlay) existingOverlay.remove();
+        this.startEmbedTracking(startTime);
+    }
+
     seekToResumeTime() {
         if (this.isEmbedMode) {
             this.embedAccumulatedSeconds = this.resumeTime || 0;
@@ -150,7 +151,11 @@ class WatchProgressTracker {
         try {
             const url = `/api/watch-history/resume/${this.movieId}${this.episodeNumber ? `?episodeNumber=${this.episodeNumber}` : ''}`;
 
+            this.resumeRequest?.abort();
+            const request = new AbortController();
+            this.resumeRequest = request;
             const response = await fetch(url, {
+                signal: request.signal,
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include'
@@ -158,68 +163,57 @@ class WatchProgressTracker {
 
             if (response.ok) {
                 const data = await response.json();
+                // Navigation may finish before an older history request returns.
+                if (request.signal.aborted || this.disposed || window.watchProgressTracker !== this ||
+                    this.pageElement !== document.getElementById('videoContainer')) return;
 
                 if (data.hasHistory && data.watchedDuration >= 5 && data.progressPercentage < 95) {
                     this.showResumePopup(data);
                 }
             }
         } catch (error) {
-            console.error('❌ Error checking resume info:', error);
+            if (error.name !== 'AbortError') console.error('Error checking resume info:', error);
         }
     }
 
-    // Show clean, friendly resume popup
+    // Bind actions to the instance that owns this popup, never a mutable global.
     showResumePopup(data) {
-        if (!isMovieDetailPage()) {
-            return;
-        }
-
-        let episodeBadgeHtml = '';
-
-        if (data.episodeNumber) {
-            let serverText = data.serverName ? ` - Server ${data.serverName}` : '';
-            episodeBadgeHtml = `<div class="resume-ep-badge"><i class="fas fa-play me-2"></i>Tập ${data.episodeNumber}${serverText}</div>`;
-        } else {
-            episodeBadgeHtml = `<div class="resume-ep-badge"><i class="fas fa-play me-2"></i>Phim này</div>`;
-        }
-
-        const existingPopup = document.getElementById('resumePopup');
-        if (existingPopup) existingPopup.remove();
-
-        const popupDiv = document.createElement('div');
-        popupDiv.id = 'resumePopup';
-        popupDiv.className = 'resume-popup';
-        popupDiv.innerHTML = `
+        if (this.disposed || !isMovieDetailPage() || window.watchProgressTracker !== this) return;
+        this.closeResumePopup();
+        document.getElementById('resumePopup')?.remove();
+        const popup = document.createElement('div');
+        popup.id = 'resumePopup';
+        popup.className = 'resume-popup show';
+        popup.setAttribute('role', 'dialog');
+        popup.setAttribute('aria-modal', 'true');
+        popup.setAttribute('aria-label', 'Tiếp tục xem phim');
+        popup.innerHTML = `
             <div class="resume-content">
                 <div class="resume-header">
                     <h4 class="resume-title"><i class="fas fa-history text-warning me-1"></i> BẠN ĐANG XEM DỞ</h4>
-                    <button class="resume-close" onclick="window.watchProgressTracker.closeResumePopup()" aria-label="Đóng">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <button type="button" class="resume-close" data-action="close" aria-label="Đóng"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="resume-body text-center">
                     <p class="resume-main-text">Hệ thống ghi nhận bạn đang xem dở:</p>
-                    ${episodeBadgeHtml}
+                    <div class="resume-ep-badge"></div>
                     <p class="resume-sub-text mt-2 mb-0">Bạn có muốn tiếp tục xem tiếp không?</p>
                 </div>
                 <div class="resume-actions">
-                    <button class="resume-btn resume-btn-secondary" onclick="window.watchProgressTracker.restartPlayback('${data.serverName || ''}')">
-                        <i class="fas fa-redo"></i> Xem từ đầu
-                    </button>
-                    <button class="resume-btn resume-btn-primary" onclick="window.watchProgressTracker.resumePlayback(${data.watchedDuration || 0}, ${data.episodeNumber}, '${data.serverName || ''}')">
-                        <i class="fas fa-play"></i> Xem tiếp
-                    </button>
+                    <button type="button" class="resume-btn resume-btn-secondary" data-action="restart"><i class="fas fa-redo"></i> Xem từ đầu</button>
+                    <button type="button" class="resume-btn resume-btn-primary" data-action="resume"><i class="fas fa-play"></i> Xem tiếp</button>
                 </div>
-            </div>
-        `;
-
-        document.body.appendChild(popupDiv);
-        this.resumePopup = popupDiv;
-
-        setTimeout(() => popupDiv.classList.add('show'), 100);
+            </div>`;
+        popup.querySelector('.resume-ep-badge').textContent =
+            (data.episodeNumber ? `Tập ${data.episodeNumber}` : 'Phim này') +
+            (data.serverName ? ` - Server ${data.serverName}` : '');
+        popup.querySelector('[data-action="close"]').addEventListener('click', () => this.closeResumePopup());
+        popup.querySelector('[data-action="restart"]').addEventListener('click', () => this.restartPlayback(data.serverName));
+        popup.querySelector('[data-action="resume"]').addEventListener('click', () =>
+            this.resumePlayback(data.watchedDuration, data.episodeNumber, data.serverName));
+        this.resumePopup = popup;
+        document.body.appendChild(popup);
     }
 
-    // Restart playback from beginning (Tập 1 hoặc từ đầu)
     restartPlayback(serverName = null) {
         this.closeResumePopup();
 
@@ -341,42 +335,32 @@ class WatchProgressTracker {
         }
     }
 
-    // Close resume popup
     closeResumePopup() {
-        if (this.resumePopup) {
-            this.resumePopup.classList.remove('show');
-            setTimeout(() => {
-                if (this.resumePopup) this.resumePopup.remove();
-                this.resumePopup = null;
-            }, 300);
-        }
+        const popup = this.resumePopup;
+        this.resumePopup = null;
+        // Remove synchronously so a stale timeout cannot remove a newer popup.
+        popup?.remove();
     }
 
     // Start tracking
     startTracking() {
+        if (this.disposed) return;
         if (this.saveInterval) clearInterval(this.saveInterval);
-
         this.saveInterval = setInterval(() => this.saveProgress(), this.saveIntervalTime);
-
-        if (this.videoPlayer) {
-            this.videoPlayer.addEventListener('ended', () => this.saveProgress(true));
-
-            let pauseTimeout;
-            this.videoPlayer.addEventListener('pause', () => {
-                clearTimeout(pauseTimeout);
-                pauseTimeout = setTimeout(() => this.saveProgress(), 1500);
-            });
+        if (this.boundVideo !== this.videoPlayer) {
+            this.boundVideo?.removeEventListener('ended', this.onEnded);
+            this.boundVideo?.removeEventListener('pause', this.onPause);
+            this.boundVideo = this.videoPlayer;
+            this.boundVideo?.addEventListener('ended', this.onEnded);
+            this.boundVideo?.addEventListener('pause', this.onPause);
         }
-
-        window.addEventListener('beforeunload', () => this.saveProgress());
-        window.addEventListener('pagehide', () => this.saveProgress());
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) this.saveProgress();
-        });
+        window.addEventListener('beforeunload', this.onPageHide);
+        window.addEventListener('pagehide', this.onPageHide);
+        document.addEventListener('visibilitychange', this.onVisibilityChange);
     }
 
    async saveProgress(isCompleted = false) {
-        if (!this.isLoggedIn || !this.authToken) {
+        if (this.disposed || !this.isLoggedIn || !this.authToken) {
              return; 
         }
 
@@ -452,6 +436,15 @@ class WatchProgressTracker {
     }
 
     stopTracking() {
+        this.disposed = true;
+        this.resumeRequest?.abort();
+        this.closeResumePopup();
+        clearTimeout(this.pauseTimeout);
+        this.boundVideo?.removeEventListener('ended', this.onEnded);
+        this.boundVideo?.removeEventListener('pause', this.onPause);
+        window.removeEventListener('beforeunload', this.onPageHide);
+        window.removeEventListener('pagehide', this.onPageHide);
+        document.removeEventListener('visibilitychange', this.onVisibilityChange);
         if (this.saveInterval) {
             clearInterval(this.saveInterval);
             this.saveInterval = null;
@@ -478,6 +471,9 @@ function initWatchProgressTrackerGlobal(mId) {
                            (document.getElementById('notificationBell') !== null);
 
     if (isUserLoggedIn && targetMovieId) {
+        const existing = window.watchProgressTracker;
+        if (existing && !existing.disposed && String(existing.movieId) === String(targetMovieId) &&
+            existing.pageElement === document.getElementById('videoContainer')) return existing;
         if (window.watchProgressTracker) {
             try { window.watchProgressTracker.stopTracking(); } catch (e) {}
         }
@@ -495,3 +491,5 @@ if (isMovieDetailPage()) {
         initWatchProgressTrackerGlobal();
     }
 }
+
+})();

@@ -7,36 +7,15 @@
     var filters = ViewBag.Filters as MovieFilterViewModel ?? new MovieFilterViewModel();
 }
 
-@if (!string.IsNullOrEmpty(ViewBag.SeoDescription as string))
-{
-    <meta name="description" content="@ViewBag.SeoDescription" />
-}
+
 
 @{
     var request = Context.Request;
-    var currentUrl = $"{request.Scheme}://{request.Host}{request.Path}{request.QueryString}";
+    var currentUrl = MovieWeb.Helpers.SeoMetadata.Canonical(request);
     var seoTitle = $"{categoryName} - Xem phim {categoryName} mới nhất | MoonPhim";
     var seoDesc = ViewBag.SeoDescription as string ?? $"Xem {categoryName} mới nhất, chất lượng cao, vietsub + thuyết minh. Cập nhật liên tục tại MoonPhim.";
     var seoImage = "https://moonphim.me/images/moonphim-logo.jpg";
 }
-
-@* ===== OPEN GRAPH (Facebook, Zalo) ===== *@
-<meta property="og:title" content="@seoTitle" />
-<meta property="og:description" content="@seoDesc" />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="@currentUrl" />
-<meta property="og:image" content="@seoImage" />
-<meta property="og:site_name" content="MoonPhim" />
-<meta property="og:locale" content="vi_VN" />
-
-@* ===== TWITTER CARD ===== *@
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="@seoTitle" />
-<meta name="twitter:description" content="@seoDesc" />
-<meta name="twitter:image" content="@seoImage" />
-
-@* ===== CANONICAL URL ===== *@
-<link rel="canonical" href="@currentUrl" />
 
 @functions {
     // 💡 (Bạn hãy copy hàm GetPosterUrl của bạn (từ file Search.cshtml) vào đây)
@@ -46,7 +25,7 @@
         var candidate = !string.IsNullOrEmpty(m.ThumbUrl) ? m.ThumbUrl : m.PosterUrl;
 
         if (string.IsNullOrEmpty(candidate))
-            return Url.Content("~/images/no-image.jpg");
+            return Url.Content("~/images/default-poster.jpg");
 
         candidate = candidate.Trim();
 
@@ -65,6 +44,24 @@
 }
 
 @section Styles {
+    <meta name="description" content="@seoDesc" />
+@* ===== OPEN GRAPH (Facebook, Zalo) ===== *@
+<meta property="og:title" content="@seoTitle" />
+<meta property="og:description" content="@seoDesc" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="@currentUrl" />
+<meta property="og:image" content="@seoImage" />
+<meta property="og:site_name" content="MoonPhim" />
+<meta property="og:locale" content="vi_VN" />
+
+@* ===== TWITTER CARD ===== *@
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="@seoTitle" />
+<meta name="twitter:description" content="@seoDesc" />
+<meta name="twitter:image" content="@seoImage" />
+
+@* ===== CANONICAL URL ===== *@
+
     <link rel="stylesheet" href="~/css/filter-sidebar.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/phimbo.css" asp-append-version="true" />
 
@@ -115,7 +112,7 @@
                                  style="aspect-ratio: 2/3; object-fit: cover;"
                                  loading="lazy"
                                  decoding="async"
-                                 onerror="this.src='@Url.Content("~/images/no-image.jpg")'" />
+                                 onerror="this.onerror=null; this.src='@Url.Content("~/images/default-poster.jpg")'" />
 
                             <div class="p-2">
                                 <h6 class="text-truncate mb-0">@movie.Name</h6>

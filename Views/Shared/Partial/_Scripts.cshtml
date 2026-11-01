@@ -126,7 +126,9 @@
         @* console.log("✅ Initializing mobile menu..."); *@
         
         // Khởi tạo Bootstrap Offcanvas
-        const bsOffcanvas = new bootstrap.Offcanvas(offcanvasElement);
+        if (menuToggleBtn.dataset.sidebarBound === 'true') return;
+        const bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasElement);
+        menuToggleBtn.dataset.sidebarBound = 'true';
         
         // Toggle menu khi click button
         menuToggleBtn.addEventListener('click', function(e) {

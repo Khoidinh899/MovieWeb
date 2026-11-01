@@ -8,6 +8,17 @@
     var isNavigating = false;
     var TAB_ORDER = ['new', 'watching', 'home', 'history', 'profile'];
 
+    function syncSeoHead(newDoc) {
+        // Replace only SEO tags; executable ads/player scripts remain untouched.
+        var selector = 'link[rel="canonical"], meta[name="description"], meta[name="robots"], '
+            + 'meta[name="keywords"], meta[property^="og:"], meta[name^="twitter:"], '
+            + 'script[type="application/ld+json"]';
+        document.head.querySelectorAll(selector).forEach(function (tag) { tag.remove(); });
+        newDoc.head.querySelectorAll(selector).forEach(function (tag) {
+            document.head.appendChild(tag.cloneNode(true));
+        });
+    }
+
     function getNavTargetForPath(path) {
         path = (path || window.location.pathname).toLowerCase().trim();
         if (path === '/' || path === '/trang-chu' || path === '/trangchu' || path === '') {
@@ -197,6 +208,8 @@
                 document.title = newTitle.textContent;
             }
 
+            syncSeoHead(doc);
+
             // Đồng bộ class body
             document.body.className = doc.body.className;
 
@@ -238,6 +251,11 @@
                     // Thực thi lần lượt các inline script trong Global Scope (window)
                     scriptsToRun.forEach(function (code) {
                         try {
+                            // Isolate detail declarations when SPA revisits a movie.
+                            if (/window\.initMovieDetailPage\s*=/.test(code) && /\bconst\s+movieId\s*=/.test(code)) {
+                                code = '(function () {\n' + code +
+                                    '\nif (typeof showNotification === "function") window.showNotification = showNotification;\n})();';
+                            }
                             var s = document.createElement('script');
                             s.textContent = code;
                             document.body.appendChild(s);
@@ -284,6 +302,9 @@
                 } catch (e) {
                     console.warn('Movie detail init error:', e);
                 }
+            }
+            if (typeof window.initWatchProgressTracker === 'function') {
+                window.initWatchProgressTracker(window.movieId);
             }
         } else {
             // Không phải trang phim -> Reset sạch sẽ để không bao giờ rò rỉ ID phim cũ
