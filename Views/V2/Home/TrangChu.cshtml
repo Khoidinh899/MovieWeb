@@ -134,7 +134,9 @@
                             <span class="v2-glass-frame block w-[300px] p-2 transition-transform duration-300 hover:-translate-y-2 hover:scale-[1.03] md:w-[340px] lg:w-[520px] xl:w-[640px] 2xl:w-[760px]">
                                 <span class="relative block aspect-video overflow-hidden rounded-[18px] bg-surface-container-lowest">
                                     <img src="@ImageHelper.Webp(GetHeroUrl(hero), 200)" alt="" aria-hidden="true" class="absolute inset-0 h-full w-full scale-125 object-cover blur-xl brightness-75" decoding="async" />
-                                    <img src="@ImageHelper.Webp(GetHeroUrl(hero), 800)" alt="@hero.Name" decoding="async" class="relative h-full w-full object-contain"
+                                    <img src="@ImageHelper.Webp(GetHeroUrl(hero), 1280)" srcset="@ImageHelper.WebpSrcSet(GetHeroUrl(hero), 800, 1280)"
+                                         sizes="(min-width: 1536px) 760px, (min-width: 1280px) 640px, (min-width: 1024px) 520px, 340px"
+                                         alt="@hero.Name" decoding="async" class="relative h-full w-full object-contain"
                                          onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
                                 </span>
                             </span>

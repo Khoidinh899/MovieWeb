@@ -140,8 +140,11 @@ public class ImageProxyController : Controller
         var targetWidth = Math.Min(width, info.Width); // chỉ thu nhỏ, không phóng to
         var targetHeight = Math.Max(1, (int)Math.Round(info.Height * (targetWidth / (double)info.Width)));
 
-        // Giải mã ở kích thước thu nhỏ do codec hỗ trợ (JPEG: 1/2, 1/4, 1/8) để đỡ RAM.
+        // Giải mã ở kích thước thu nhỏ do codec hỗ trợ (JPEG: 1/2, 1/4, 1/8) để đỡ RAM — nhưng chỉ khi kích thước đó
+        // không nhỏ hơn đích; nếu codec làm tròn xuống thì giải mã đủ kích thước, tránh phóng ngược lên làm ảnh mờ.
         var scaled = codec.GetScaledDimensions((float)targetWidth / info.Width);
+        if (scaled.Width < targetWidth || scaled.Height < targetHeight)
+            scaled = new SKSizeI(info.Width, info.Height);
         var decodeInfo = new SKImageInfo(Math.Max(scaled.Width, 1), Math.Max(scaled.Height, 1), SKColorType.Rgba8888, SKAlphaType.Premul);
         using var decoded = new SKBitmap(decodeInfo);
         if (codec.GetPixels(decodeInfo, decoded.GetPixels()) != SKCodecResult.Success) return null;
@@ -157,7 +160,7 @@ public class ImageProxyController : Controller
                 output = resized;
             }
             using var image = SKImage.FromBitmap(output);
-            using var data = image.Encode(SKEncodedImageFormat.Webp, 75);
+            using var data = image.Encode(SKEncodedImageFormat.Webp, 80);
             return data?.ToArray();
         }
         finally
