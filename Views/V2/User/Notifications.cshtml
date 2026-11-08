@@ -1,4 +1,4 @@
-﻿@model List<MovieWeb.Services.Interfaces.NotificationDto>
+@model List<MovieWeb.Services.Interfaces.NotificationDto>
 
 @{
     ViewData["Title"] = "Thông báo của tôi";
@@ -68,6 +68,19 @@
                             <span class="material-symbols-outlined text-[18px]">done_all</span> Đánh dấu tất cả đã đọc
                         </button>
                     }
+                </div>
+
+                @* Thông báo đẩy trên trình duyệt/PWA (wwwroot/js/web-push.js) *@
+                <div data-webpush style="display:none" class="mt-space-md flex flex-wrap items-center justify-between gap-space-sm rounded-xl border border-outline-variant/30 bg-surface-container-high/60 p-space-md">
+                    <div class="min-w-0">
+                        <p class="flex items-center gap-1 font-label-md text-label-md font-bold text-on-surface"><span class="material-symbols-outlined text-[18px] text-primary">notifications_active</span> Thông báo trên trình duyệt</p>
+                        <p class="mt-0.5 font-body-sm text-body-sm text-on-surface-variant" data-webpush-status></p>
+                    </div>
+                    <div class="flex flex-wrap gap-space-sm">
+                        <button type="button" class="v2-btn-3d v2-btn-3d--primary px-space-md py-space-sm text-sm" data-webpush-enable style="display:none">Bật thông báo</button>
+                        <button type="button" class="v2-btn-3d v2-btn-3d--secondary px-space-md py-space-sm text-sm" data-webpush-test style="display:none">Gửi thử</button>
+                        <button type="button" class="rounded-full px-space-md py-space-sm text-sm text-on-surface-variant hover:text-error" data-webpush-disable style="display:none">Tắt</button>
+                    </div>
                 </div>
             </section>
 
@@ -151,3 +164,5 @@
         </div>
     </div>
 </div>
+
+<script src="~/js/web-push.js" asp-append-version="true"></script>

@@ -3,6 +3,7 @@ using MovieWeb.Data;
 using MovieWeb.Models.Entities;
 using MovieWeb.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Hangfire;
 
 namespace MovieWeb.Services
 {
@@ -11,15 +12,40 @@ namespace MovieWeb.Services
         private readonly MovieWebDbContext _context;
         private readonly ILogger<NotificationService> _logger;
         private readonly IFcmNotificationService _fcmService;
+        private readonly IWebPushService _webPush;
+        private readonly IBackgroundJobClient _backgroundJobs;
 
         public NotificationService(
             MovieWebDbContext context, 
             ILogger<NotificationService> logger,
-            IFcmNotificationService fcmService)
+            IFcmNotificationService fcmService,
+            IWebPushService webPush,
+            IBackgroundJobClient backgroundJobs)
         {
             _context = context;
             _logger = logger;
             _fcmService = fcmService;
+            _webPush = webPush;
+            _backgroundJobs = backgroundJobs;
+        }
+
+        /// <summary>Tôn trọng cài đặt nhận thông báo của user theo nhóm (thanh toán / phim / hệ thống).</summary>
+        private static bool IsPushEnabled(User user, string type)
+        {
+            if (type == "PaymentReminder" || type == "PaymentSuccess" || type == "SubscriptionCancelled" || type == "CancelSubscription")
+                return user.NotifyPayment;
+            if (type == "MovieRequestSuccess" || type == "MovieUpdate" || type == "movie_request_completed" || type == "CommentReply")
+                return user.NotifyMovie;
+            return user.NotifySystem;
+        }
+
+        /// <summary>Đẩy thông báo lên trình duyệt/PWA (Web Push) qua job nền — không làm chậm request đang chạy.</summary>
+        private async Task QueueWebPushAsync(List<int> userIds, string title, string content, string type, string? url)
+        {
+            var targets = await _webPush.FilterUsersWithSubscriptionsAsync(userIds);
+            if (targets.Count == 0) return;
+            var message = new WebPushMessage { Title = title, Body = content, Url = url, Tag = type };
+            _backgroundJobs.Enqueue<IWebPushService>(s => s.SendToUsersAsync(targets, message));
         }
 
         // ========== CREATE NOTIFICATION FOR SINGLE USER ==========
@@ -49,30 +75,17 @@ namespace MovieWeb.Services
                 _logger.LogInformation("✅ Created notification {NotificationId} for User {UserId}", 
                     notification.NotificationId, userId);
 
-                // Send FCM push notification
+                // Send push notification: FCM (app Android) + Web Push (trình duyệt/PWA)
                 try
                 {
                     var user = await _context.Users.FindAsync(userId);
-                    if (user != null && !string.IsNullOrEmpty(user.FcmToken))
+                    if (user != null && IsPushEnabled(user, type))
                     {
-                        bool isEnabled = true;
-                        if (type == "PaymentReminder" || type == "PaymentSuccess" || type == "SubscriptionCancelled" || type == "CancelSubscription")
-                        {
-                            isEnabled = user.NotifyPayment;
-                        }
-                        else if (type == "MovieRequestSuccess" || type == "MovieUpdate" || type == "movie_request_completed" || type == "CommentReply")
-                        {
-                            isEnabled = user.NotifyMovie;
-                        }
-                        else
-                        {
-                            isEnabled = user.NotifySystem;
-                        }
-
-                        if (isEnabled)
+                        if (!string.IsNullOrEmpty(user.FcmToken))
                         {
                             await _fcmService.SendPushNotificationAsync(user.FcmToken, title, content, type, url);
                         }
+                        await QueueWebPushAsync(new List<int> { userId }, title, content, type, url);
                     }
                 }
                 catch (Exception ex)
@@ -115,29 +128,17 @@ namespace MovieWeb.Services
 
                 _logger.LogInformation("✅ Created {Count} notifications", notifications.Count);
 
-                // Send FCM push notifications for all users
+                // Send push notifications for all users: FCM (app Android) + Web Push (trình duyệt/PWA)
+                var webPushUserIds = new List<int>();
                 foreach (var userId in userIds)
                 {
                     try
                     {
                         var user = await _context.Users.FindAsync(userId);
-                        if (user != null && !string.IsNullOrEmpty(user.FcmToken))
+                        if (user != null && IsPushEnabled(user, type))
                         {
-                            bool isEnabled = true;
-                            if (type == "PaymentReminder" || type == "PaymentSuccess" || type == "SubscriptionCancelled" || type == "CancelSubscription")
-                            {
-                                isEnabled = user.NotifyPayment;
-                            }
-                            else if (type == "MovieRequestSuccess" || type == "MovieUpdate" || type == "movie_request_completed" || type == "CommentReply")
-                            {
-                                isEnabled = user.NotifyMovie;
-                            }
-                            else
-                            {
-                                isEnabled = user.NotifySystem;
-                            }
-
-                            if (isEnabled)
+                            webPushUserIds.Add(userId);
+                            if (!string.IsNullOrEmpty(user.FcmToken))
                             {
                                 await _fcmService.SendPushNotificationAsync(user.FcmToken, title, content, type, url);
                             }
@@ -147,6 +148,15 @@ namespace MovieWeb.Services
                     {
                         _logger.LogError(ex, "Error sending push notification in CreateNotificationsAsync for User {UserId}", userId);
                     }
+                }
+
+                try
+                {
+                    await QueueWebPushAsync(webPushUserIds, title, content, type, url);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error queueing web push in CreateNotificationsAsync");
                 }
 
                 return notifications;

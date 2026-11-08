@@ -34,6 +34,21 @@
                     </h4>
                 </div>
 
+                <!-- Thông báo đẩy trên trình duyệt/PWA (wwwroot/js/web-push.js) -->
+                <div data-webpush class="px-3 py-2 border-bottom" style="display:none; background: rgba(13,110,253,0.08);">
+                  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="small">
+                        <strong><i class="bi bi-phone-vibrate me-1"></i>Thông báo trên trình duyệt</strong>
+                        <div class="text-muted" data-webpush-status></div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-primary" data-webpush-enable style="display:none"><i class="bi bi-bell me-1"></i>Bật thông báo</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-webpush-test style="display:none">Gửi thử</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-webpush-disable style="display:none">Tắt</button>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Filters -->
                 <div class="notification-page-filters">
                     <!-- Type Filter -->
@@ -233,3 +248,4 @@
         </div>
     </div>
 </div>
+<script src="~/js/web-push.js" asp-append-version="true"></script>

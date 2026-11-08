@@ -23,19 +23,25 @@ namespace MovieWeb.Services
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly IWebHostEnvironment _env;
         private readonly ILogger<BroadcastService> _logger;
+        private readonly IFcmNotificationService _fcmService;
+        private readonly IWebPushService _webPush;
 
         public BroadcastService(
             MovieWebDbContext context,
             IBackgroundJobClient backgroundJobClient,
             IHubContext<NotificationHub> hubContext,
             IWebHostEnvironment env,
-            ILogger<BroadcastService> logger)
+            ILogger<BroadcastService> logger,
+            IFcmNotificationService fcmService,
+            IWebPushService webPush)
         {
             _context = context;
             _backgroundJobClient = backgroundJobClient;
             _hubContext = hubContext;
             _env = env;
             _logger = logger;
+            _fcmService = fcmService;
+            _webPush = webPush;
         }
 
         public async Task<AdminBroadcast> CreateAndEnqueueBroadcastAsync(
@@ -124,23 +130,25 @@ namespace MovieWeb.Services
 
                     totalSent += notifications.Count;
 
-                    // SignalR realtime per batch to user groups
-                    // Gửi tới group "User_{id}" của từng user nhận
-                    var groupNames = batch.Select(uid => $"User_{uid}").ToList();
-                    var payload = new
+                    // SignalR realtime tới group "User_{id}" của từng user, mỗi người đúng NotificationId của mình
+                    // (để "đánh dấu đã đọc" từ thông báo realtime hoạt động).
+                    await Task.WhenAll(notifications.Select(n => _hubContext.Clients.Group($"User_{n.UserId}").SendAsync("ReceiveNotification", new
                     {
-                        notificationId = notifications.First().NotificationId,
+                        notificationId = n.NotificationId,
                         title = broadcast.Title,
                         content = broadcast.Content,
                         type = "SystemBroadcast",
                         url = broadcast.Url,
                         isRead = false,
-                        createdAt = DateTime.Now,
+                        createdAt = n.CreatedAt,
                         broadcastId = broadcast.Id,
                         style = broadcast.StyleJson
-                    };
+                    })));
 
-                    await _hubContext.Clients.Groups(groupNames).SendAsync("ReceiveNotification", payload);
+                    if (broadcast.SendPush)
+                    {
+                        await SendPushBatchAsync(broadcast, batch);
+                    }
                 }
 
                 broadcast.RecipientCount = totalSent;
@@ -156,6 +164,35 @@ namespace MovieWeb.Services
                 broadcast.Status = "failed";
                 await _context.SaveChangesAsync();
                 // Do not rethrow to avoid duplicate broadcasts
+            }
+        }
+
+        /// <summary>Thông báo đẩy cho một lô: app Android (FCM) và trình duyệt/PWA (Web Push), theo cài đặt "thông báo hệ thống" của user.</summary>
+        private async Task SendPushBatchAsync(AdminBroadcast broadcast, List<int> batch)
+        {
+            try
+            {
+                var users = await _context.Users.AsNoTracking()
+                    .Where(u => batch.Contains(u.Id) && u.NotifySystem)
+                    .Select(u => new { u.Id, u.FcmToken })
+                    .ToListAsync();
+
+                foreach (var user in users.Where(u => !string.IsNullOrEmpty(u.FcmToken)))
+                {
+                    await _fcmService.SendPushNotificationAsync(user.FcmToken!, broadcast.Title, broadcast.Content, "SystemBroadcast", broadcast.Url);
+                }
+
+                await _webPush.SendToUsersAsync(users.Select(u => u.Id).ToList(), new WebPushMessage
+                {
+                    Title = broadcast.Title,
+                    Body = broadcast.Content,
+                    Url = broadcast.Url,
+                    Tag = $"broadcast-{broadcast.Id}"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Push failed for broadcast {Id}", broadcast.Id); // thông báo trong chuông đã lưu, không hủy broadcast
             }
         }
 

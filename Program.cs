@@ -293,6 +293,7 @@ builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 builder.Services.AddHttpClient<IGeminiService, GeminiService>();
 builder.Services.AddHttpClient<ITurnstileService, TurnstileService>();
 builder.Services.AddHttpClient<IIndexNowService, IndexNowService>();
+builder.Services.AddHttpClient<IWebPushService, WebPushService>();
 builder.Services.AddSingleton<IWatchPartyManager, WatchPartyManager>();
 builder.Services.AddScoped<IMovieRequestService, MovieRequestService>();
 builder.Services.AddScoped<ISiteSettingsService, SiteSettingsService>();

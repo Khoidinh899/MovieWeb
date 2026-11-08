@@ -52,6 +52,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
     // ===== Đợt 6: giao diện theo user + thông báo admin =====
     public virtual DbSet<SiteSetting> SiteSettings { get; set; }
     public virtual DbSet<UserUiPreference> UserUiPreferences { get; set; }
+    public virtual DbSet<WebPushSubscription> WebPushSubscriptions { get; set; }
     public virtual DbSet<UiFeedback> UiFeedbacks { get; set; }
     public virtual DbSet<NotificationTemplate> NotificationTemplates { get; set; }
     public virtual DbSet<AdminBroadcast> AdminBroadcasts { get; set; }
@@ -620,6 +621,23 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
         });
 
         // ===== Đợt 6: USER UI PREFERENCES =====
+        modelBuilder.Entity<WebPushSubscription>(entity =>
+        {
+            entity.ToTable("WebPushSubscriptions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Endpoint).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.P256dh).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Auth).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.UserAgent).HasMaxLength(300);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            entity.HasIndex(e => e.Endpoint).IsUnique();
+            entity.HasIndex(e => e.UserId);
+
+            entity.HasOne(d => d.User).WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<UserUiPreference>(entity =>
         {
             entity.ToTable("UserUiPreferences");
