@@ -55,13 +55,18 @@ namespace MovieWeb.Helpers
         private static readonly System.Text.RegularExpressions.Regex ProxyablePath =
             new(@"^[A-Za-z0-9_\-./]+\.(jpg|jpeg|png|webp|gif)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
 
+        /// <summary>Từ bề rộng này trở lên dùng ảnh gốc như V1: poster/thẻ phim/ảnh nền thu nhỏ bị mờ trên màn scale 125–200%.</summary>
+        private const int OriginalFromWidth = 400;
+
         /// <summary>
-        /// Đổi URL ảnh VSMov (https://vsmov.com/storage/images/...) sang ảnh WebP đã thu nhỏ của chính server (width: 200/400/800/1280).
+        /// Đổi URL ảnh VSMov (https://vsmov.com/storage/images/...) sang ảnh WebP đã thu nhỏ của chính server — chỉ cho ảnh rất nhỏ
+        /// (width &lt; 400: ảnh thu nhỏ trong danh sách, lớp nền làm mờ). Từ 400 trở lên trả ảnh gốc để ảnh nét như V1.
         /// URL thuộc nguồn khác hoặc ký tự lạ giữ nguyên.
         /// </summary>
         public static string Webp(string? url, int width)
         {
             if (string.IsNullOrEmpty(url)) return url ?? "";
+            if (width >= OriginalFromWidth) return url;
             if (!url.StartsWith(ApiImageBaseUrl, StringComparison.OrdinalIgnoreCase)) return url;
             var rest = url.Substring(ApiImageBaseUrl.Length);
             return ProxyablePath.IsMatch(rest) ? $"/img/w{width}/{rest}.webp" : url;
@@ -70,6 +75,8 @@ namespace MovieWeb.Helpers
         /// <summary>srcset cho các bề rộng cho trước, vd "/img/w200/a.jpg.webp 200w, /img/w400/a.jpg.webp 400w". Rỗng nếu URL không qua trạm ảnh.</summary>
         public static string WebpSrcSet(string? url, params int[] widths)
         {
+            // Có bề rộng dùng ảnh gốc thì bỏ srcset để trình duyệt lấy luôn src (ảnh gốc), không tải bản WebP nhỏ.
+            if (widths.Any(w => w >= OriginalFromWidth)) return "";
             var parts = widths.Select(w => (Url: Webp(url, w), W: w)).Where(x => x.Url.StartsWith("/img/w", StringComparison.Ordinal));
             return string.Join(", ", parts.Select(x => $"{x.Url} {x.W}w"));
         }
