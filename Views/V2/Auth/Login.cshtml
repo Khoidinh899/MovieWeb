@@ -1,0 +1,86 @@
+﻿@model MovieWeb.Models.DTOs.LoginDto
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    ViewData["Title"] = "Đăng nhập - MoonPhim";
+    var returnUrl = ViewData["ReturnUrl"] as string ?? "";
+}
+
+<div class="mx-auto flex min-h-[70vh] w-full max-w-5xl items-center px-margin-mobile py-10 md:px-margin">
+    <div class="flex w-full flex-col overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-container/70 shadow-2xl backdrop-blur-2xl lg:flex-row">
+        @await Html.PartialAsync("Partial/_AuthAsideV2")
+
+        <div class="p-6 md:p-10 lg:w-1/2">
+            @await Html.PartialAsync("Partial/_AuthTabsV2", "login")
+
+            <h2 class="font-headline-lg text-2xl font-bold text-on-surface">Chào mừng bạn trở lại</h2>
+            <p class="mb-6 mt-1 font-body-sm text-on-surface-variant">Đăng nhập để xem tiếp danh sách yêu thích của bạn</p>
+
+            <div id="authAlert" class="mb-4 hidden rounded-lg px-4 py-3 text-sm" role="alert"></div>
+
+            <form id="loginFormSubmit" method="post" data-return-url="@returnUrl" class="space-y-4">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label for="loginEmail" class="mb-1 block font-label-md text-on-surface">Email</label>
+                    <input type="email" id="loginEmail" name="Email" required placeholder="example@gmail.com" value="@Model.Email"
+                           class="w-full rounded-lg border border-outline-variant/60 bg-surface-container-low px-4 py-2.5 text-on-surface placeholder:text-outline focus:border-primary focus:outline-none" />
+                </div>
+                <div>
+                    <label for="loginPassword" class="mb-1 block font-label-md text-on-surface">Mật khẩu</label>
+                    <div class="relative">
+                        <input type="password" id="loginPassword" name="Password" required placeholder="••••••••"
+                               class="w-full rounded-lg border border-outline-variant/60 bg-surface-container-low px-4 py-2.5 pr-11 text-on-surface placeholder:text-outline focus:border-primary focus:outline-none" />
+                        <button type="button" id="togglePassword" aria-label="Hiện/ẩn mật khẩu" class="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface">
+                            <span class="material-symbols-outlined text-[20px]">visibility</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between gap-3 text-sm">
+                    <label class="flex items-center gap-2 text-on-surface-variant">
+                        <input type="checkbox" id="loginRememberMe" name="RememberMe" value="true" class="h-4 w-4 accent-primary" />
+                        Lưu đăng nhập
+                    </label>
+                    <a href="/Auth/ForgotPassword" class="text-on-surface-variant hover:text-primary">Quên mật khẩu?</a>
+                </div>
+
+                <div id="turnstile-container" data-sitekey="@Configuration["Turnstile:SiteKey"]"></div>
+
+                <button type="submit" id="loginSubmit" class="w-full py-3 font-headline-sm font-bold disabled:opacity-60 v2-btn-3d v2-btn-3d--primary">
+                    <span id="loginBtnText">Đăng nhập</span>
+                </button>
+            </form>
+
+            <div id="resendBox" class="mt-4 hidden">
+                <button type="button" id="resendVerification" class="w-full rounded-full border border-outline-variant py-2 text-sm text-on-surface-variant hover:text-white">Gửi lại email xác thực</button>
+            </div>
+
+            <div class="my-6 flex items-center gap-3 text-xs text-outline">
+                <span class="h-px flex-1 bg-outline-variant/40"></span> hoặc <span class="h-px flex-1 bg-outline-variant/40"></span>
+            </div>
+
+            <a asp-controller="Auth" asp-action="ExternalLogin" asp-route-provider="Google"
+               class="flex w-full items-center justify-center gap-2 rounded-full border border-outline-variant py-2.5 font-label-md text-on-surface hover:bg-surface-container-high">
+                Tiếp tục với Google
+            </a>
+
+            <p class="mt-6 text-center text-sm text-on-surface-variant">
+                Chưa có tài khoản? <a href="/Auth/Register" class="font-bold text-primary hover:text-secondary">Đăng ký ngay</a>
+            </p>
+            <div class="mt-6 border-t border-outline-variant/30 pt-4 text-center">
+                <p class="mb-1 flex items-center justify-center gap-1 font-label-sm text-label-sm font-bold uppercase text-secondary"><span class="material-symbols-outlined text-[16px]">volunteer_activism</span> Dự án phi thương mại</p>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">MoonPhim hoạt động vì tình yêu điện ảnh và cộng đồng mê phim.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('togglePassword')?.addEventListener('click', function () {
+            var i = document.getElementById('loginPassword');
+            var show = i.type === 'password';
+            i.type = show ? 'text' : 'password';
+            this.firstElementChild.textContent = show ? 'visibility_off' : 'visibility';
+        });
+    </script>
+    <script src="~/v2/js/pages/auth.js" asp-append-version="true"></script>
+}

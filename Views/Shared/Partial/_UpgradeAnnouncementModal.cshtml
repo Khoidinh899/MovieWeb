@@ -6,6 +6,10 @@
     {
         return;
     }
+
+    var isAuth = User?.Identity?.IsAuthenticated == true;
+    if (settings.Audience == "guests" && isAuth) return;
+    if (settings.Audience == "members" && !isAuth) return;
 }
 
 <div class="modal fade" id="upgradeAnnouncementModal" tabindex="-1" aria-labelledby="upgradeAnnouncementModalLabel" aria-hidden="true" data-bs-backdrop="static">
@@ -256,70 +260,39 @@
 }
 </style>
 
+<script src="~/js/announcement-popup.js" asp-append-version="true"></script>
 <script>
-    (function () {
-        const STORAGE_KEY = 'moonphim_announcement_seen_@(settings.StorageKeyVersion)';
-        const SHOW_ONCE = @(settings.ShowOncePerUser ? "true" : "false");
-
-        // Đánh dấu đã xem (cả LocalStorage lẫn Cookie 1 năm)
-        function markAsSeen() {
-            if (!SHOW_ONCE) return;
-            try {
-                localStorage.setItem(STORAGE_KEY, '1');
-                document.cookie = STORAGE_KEY + "=1; max-age=31536000; path=/; samesite=lax";
-            } catch (e) {}
+    window.closeMidAutumnModal = function () {
+        const modalEl = document.getElementById('upgradeAnnouncementModal');
+        if (modalEl) {
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) {
+                modalInstance.hide();
+            } else {
+                modalEl.classList.remove('show');
+                modalEl.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) backdrop.remove();
+            }
         }
+    };
 
-        function hasSeen() {
-            if (!SHOW_ONCE) return false;
-            try {
-                if (localStorage.getItem(STORAGE_KEY) === '1') return true;
-                if (document.cookie.indexOf(STORAGE_KEY + '=1') !== -1) return true;
-            } catch (e) {}
-            return false;
-        }
-
-        window.closeMidAutumnModal = function () {
-            markAsSeen();
-
+    window.initAnnouncementPopup({
+        version: '@settings.StorageKeyVersion',
+        frequencyMode: '@settings.FrequencyMode',
+        intervalHours: @settings.IntervalHours,
+        maxShows: @settings.MaxShows,
+        delaySeconds: @settings.DelaySeconds,
+        onShow: function () {
             const modalEl = document.getElementById('upgradeAnnouncementModal');
-            if (modalEl) {
-                const modalInstance = bootstrap.Modal.getInstance(modalEl);
-                if (modalInstance) {
-                    modalInstance.hide();
-                } else {
-                    modalEl.classList.remove('show');
-                    modalEl.style.display = 'none';
-                    document.body.classList.remove('modal-open');
-                    const backdrop = document.querySelector('.modal-backdrop');
-                    if (backdrop) backdrop.remove();
-                }
+            if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                const modal = new bootstrap.Modal(modalEl, {
+                    keyboard: true,
+                    backdrop: 'static'
+                });
+                modal.show();
             }
-        };
-
-        function checkAndShowModal() {
-            if (hasSeen()) {
-                return;
-            }
-
-            markAsSeen();
-
-            setTimeout(function () {
-                const modalEl = document.getElementById('upgradeAnnouncementModal');
-                if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    const modal = new bootstrap.Modal(modalEl, {
-                        keyboard: true,
-                        backdrop: 'static'
-                    });
-                    modal.show();
-                }
-            }, 1000);
         }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', checkAndShowModal);
-        } else {
-            checkAndShowModal();
-        }
-    })();
+    });
 </script>

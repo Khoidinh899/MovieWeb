@@ -1,0 +1,446 @@
+@model MovieWeb.Models.ViewModels.AdminUiRolloutViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản Lý Rollout Giao Diện";
+}
+
+<div class="container-fluid py-4">
+    <!-- Breadcrumb & Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="@Url.Action("Dashboard", "Admin")" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Rollout Giao Diện</li>
+                </ol>
+            </nav>
+            <h2 class="mb-0 fw-bold">
+                <i class="bi bi-toggles2 text-primary me-2"></i> Quản Lý Chuyển Đổi Giao Diện (UI Rollout)
+            </h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Dashboard", "Admin")" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Dashboard
+            </a>
+            <a href="/Admin/Announcements" class="btn btn-outline-warning">
+                <i class="bi bi-megaphone me-1"></i> Popup Thông Báo
+            </a>
+            <a href="/Admin/Notifications" class="btn btn-outline-info">
+                <i class="bi bi-bell me-1"></i> Gửi Thông Báo Chuông
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- 1. CÔNG TẮC 3 CHẾ ĐỘ ROLLOUT -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0 fs-6 fw-bold">
+                <i class="bi bi-sliders text-warning me-2"></i> Chế Độ Triển Khai Giao Diện
+            </h5>
+            <div>
+                @if (Model.CurrentMode == "all")
+                {
+                    <span class="badge bg-success px-3 py-2 fs-6">Đang Bật: Tất Cả (All)</span>
+                }
+                else if (Model.CurrentMode == "members")
+                {
+                    <span class="badge bg-primary px-3 py-2 fs-6">Đang Bật: Thành Viên Dùng Thử (Members)</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary px-3 py-2 fs-6">Đang Tắt (Off)</span>
+                }
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <form id="rolloutModeForm" asp-action="UpdateRolloutMode" asp-controller="Admin" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="row g-3 mb-4">
+                    <!-- Mode: off -->
+                    <div class="col-md-4">
+                        <label class="card h-100 p-3 border cursor-pointer @(Model.CurrentMode == "off" ? "border-primary bg-light" : "")" style="cursor: pointer;">
+                            <div class="d-flex align-items-center mb-2">
+                                <input class="form-check-input me-2 mt-0" type="radio" name="mode" value="off" @(Model.CurrentMode == "off" ? "checked" : "") />
+                                <span class="fw-bold fs-6 text-dark">1. Tắt (Off)</span>
+                            </div>
+                            <p class="text-muted small mb-0">
+                                Toàn bộ khách và thành viên đều sử dụng giao diện <strong>V1 cũ</strong>. Menu chọn giao diện ở tài khoản bị ẩn.
+                            </p>
+                        </label>
+                    </div>
+
+                    <!-- Mode: members -->
+                    <div class="col-md-4">
+                        <label class="card h-100 p-3 border cursor-pointer @(Model.CurrentMode == "members" ? "border-primary bg-light" : "")" style="cursor: pointer;">
+                            <div class="d-flex align-items-center mb-2">
+                                <input class="form-check-input me-2 mt-0" type="radio" name="mode" value="members" @(Model.CurrentMode == "members" ? "checked" : "") />
+                                <span class="fw-bold fs-6 text-primary">2. Thành Viên Dùng Thử (Members)</span>
+                            </div>
+                            <p class="text-muted small mb-0">
+                                Khách vãng lai và bot luôn dùng <strong>V1</strong> (bảo đảm SEO). Thành viên mặc định V1, có thể tự chọn chuyển sang <strong>V2</strong> tại trang tài khoản.
+                            </p>
+                        </label>
+                    </div>
+
+                    <!-- Mode: all -->
+                    <div class="col-md-4">
+                        <label class="card h-100 p-3 border cursor-pointer @(Model.CurrentMode == "all" ? "border-primary bg-light" : "")" style="cursor: pointer;">
+                            <div class="d-flex align-items-center mb-2">
+                                <input class="form-check-input me-2 mt-0" type="radio" name="mode" value="all" @(Model.CurrentMode == "all" ? "checked" : "") id="modeAllRadio" />
+                                <span class="fw-bold fs-6 text-success">3. Tất Cả Mọi Người (All)</span>
+                            </div>
+                            <p class="text-muted small mb-0">
+                                Phát hành chính thức: Khách và thành viên mới mặc định dùng <strong>V2</strong>. Thành viên đã chọn giữ V1 vẫn được tiếp tục dùng V1.
+                            </p>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        @if (Model.ModeUpdatedAt.HasValue)
+                        {
+                            <span>Lần cập nhật chế độ gần nhất: @Model.ModeUpdatedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</span>
+                        }
+                    </small>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold" id="btnSaveRollout">
+                        <i class="bi bi-check2-circle me-1"></i> Lưu Chế Độ Triển Khai
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. THỐNG KÊ TỶ LỆ SỬ DỤNG GIAO DIỆN -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-xl-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fs-6 fw-bold">
+                        <i class="bi bi-pie-chart-fill text-primary me-2"></i> Tỷ Lệ Sử Dụng Giao Diện Thành Viên
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3 text-center mb-4">
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 bg-light rounded">
+                                <div class="text-muted small">Tổng thành viên</div>
+                                <div class="fs-4 fw-bold text-dark">@Model.TotalUsers.ToString("N0")</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 bg-primary bg-opacity-10 rounded">
+                                <div class="text-primary small fw-semibold">Đã chọn V2 (Mới)</div>
+                                <div class="fs-4 fw-bold text-primary">@Model.V2Users.ToString("N0") <span class="fs-6 fw-normal">(@Model.V2Percent%)</span></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 bg-secondary bg-opacity-10 rounded">
+                                <div class="text-secondary small fw-semibold">Đã chọn V1 (Cũ)</div>
+                                <div class="fs-4 fw-bold text-secondary">@Model.V1Users.ToString("N0") <span class="fs-6 fw-normal">(@Model.V1Percent%)</span></div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 bg-warning bg-opacity-10 rounded">
+                                <div class="text-warning-emphasis small fw-semibold">Chưa chọn (Mặc định)</div>
+                                <div class="fs-4 fw-bold text-dark">@Model.UnpickedUsers.ToString("N0") <span class="fs-6 fw-normal">(@Model.UnpickedPercent%)</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thanh ngang phân bố % CSS -->
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Phân bổ lựa chọn giao diện</span>
+                            <span>@Model.TotalUsers.ToString("N0") thành viên</span>
+                        </div>
+                        <div class="progress" style="height: 24px; border-radius: 8px;">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: @Model.V2Percent%;" aria-valuenow="@Model.V2Percent" aria-valuemin="0" aria-valuemax="100">
+                                @if (Model.V2Percent >= 8) { <span>V2: @Model.V2Percent%</span> }
+                            </div>
+                            <div class="progress-bar bg-secondary" role="progressbar" style="width: @Model.V1Percent%;" aria-valuenow="@Model.V1Percent" aria-valuemin="0" aria-valuemax="100">
+                                @if (Model.V1Percent >= 8) { <span>V1: @Model.V1Percent%</span> }
+                            </div>
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: @Model.UnpickedPercent%;" aria-valuenow="@Model.UnpickedPercent" aria-valuemin="0" aria-valuemax="100">
+                                @if (Model.UnpickedPercent >= 8) { <span>Mặc định: @Model.UnpickedPercent%</span> }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-4 mt-3 small">
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="d-inline-block rounded-circle bg-primary" style="width: 12px; height: 12px;"></span>
+                            <span>Đã chọn V2 Mới (@Model.V2Users - @Model.V2Percent%)</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="d-inline-block rounded-circle bg-secondary" style="width: 12px; height: 12px;"></span>
+                            <span>Đã chọn V1 Cũ (@Model.V1Users - @Model.V1Percent%)</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="d-inline-block rounded-circle bg-warning" style="width: 12px; height: 12px;"></span>
+                            <span>Chưa chọn / Dùng mặc định (@Model.UnpickedUsers - @Model.UnpickedPercent%)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fs-6 fw-bold">
+                        <i class="bi bi-arrow-repeat text-danger me-2"></i> Chỉ Số Hành Vi Chuyển Đổi
+                    </h5>
+                </div>
+                <div class="card-body p-4 d-flex flex-column justify-content-around">
+                    <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded">
+                        <div>
+                            <div class="fw-bold text-dark">Quay lại V1 sau khi thử V2</div>
+                            <small class="text-muted">Đang ở V1 và đã chuyển ít nhất 1 lần</small>
+                        </div>
+                        <div class="fs-4 fw-bold text-danger">@Model.RevertedUsers.ToString("N0")</div>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded mt-3">
+                        <div>
+                            <div class="fw-bold text-dark">Tổng số lần chuyển đổi</div>
+                            <small class="text-muted">Tổng tích lũy của tất cả thành viên</small>
+                        </div>
+                        <div class="fs-4 fw-bold text-primary">@Model.TotalSwitches.ToString("N0")</div>
+                    </div>
+
+                    <div class="mt-3 p-3 border rounded small text-muted">
+                        <i class="bi bi-info-circle me-1 text-primary"></i>
+                        Hệ thống chỉ lưu bản ghi khi thành viên <strong>tự bấm chọn</strong>. Không có bản ghi nghĩa là thành viên đang theo thiết lập mặc định của hệ thống.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. HIỆU QUẢ CỦA THÔNG BÁO MỜI TRẢI NGHIỆM -->
+    @if (Model.BroadcastConversions.Any())
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fs-6 fw-bold">
+                    <i class="bi bi-funnel-fill text-info me-2"></i> Hiệu Quả Thông Báo Mời Dùng Thử V2 (Broadcasts)
+                </h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tiêu đề thông báo</th>
+                            <th>Thời gian gửi</th>
+                            <th class="text-center">Người nhận</th>
+                            <th class="text-center">Đã đọc</th>
+                            <th class="text-center">Tỷ lệ mở</th>
+                            <th class="text-center">Đã chọn V2</th>
+                            <th class="text-center">Tỷ lệ chuyển đổi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in Model.BroadcastConversions)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@b.Title</td>
+                                <td class="text-muted small">@b.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="text-center">@b.RecipientCount.ToString("N0")</td>
+                                <td class="text-center">@b.ReadCount.ToString("N0")</td>
+                                <td class="text-center">
+                                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
+                                        @b.ReadRate%
+                                    </span>
+                                </td>
+                                <td class="text-center fw-bold text-success">@b.ConvertedToV2Count.ToString("N0")</td>
+                                <td class="text-center">
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fw-bold">
+                                        @b.ConversionRate%
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <!-- 4. KẾT QUẢ KHẢO SÁT & GÓP Ý CỦA NGƯỜI DÙNG -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <h5 class="mb-0 fs-6 fw-bold">
+                    <i class="bi bi-chat-heart-fill text-danger me-2"></i> Kết Quả Khảo Sát & Ý Kiến Đóng Góp (@Model.TotalFeedbacks)
+                </h5>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="@Url.Action("ExportFeedbackCsv", "Admin")" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> Xuất CSV
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <!-- Thống kê khảo sát 3 lựa chọn -->
+            <div class="row g-3 mb-4 text-center">
+                <div class="col-md-3">
+                    <div class="p-3 bg-light rounded">
+                        <div class="text-muted small">Tổng lượt đánh giá</div>
+                        <div class="fs-4 fw-bold text-dark">@Model.SurveyTotal.ToString("N0")</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 bg-success bg-opacity-10 rounded">
+                        <div class="text-success small fw-semibold">Thích giao diện mới (V2)</div>
+                        <div class="fs-4 fw-bold text-success">@Model.SurveyNew.ToString("N0") <span class="fs-6 fw-normal">(@Model.SurveyNewPercent%)</span></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 bg-warning bg-opacity-10 rounded">
+                        <div class="text-warning-emphasis small fw-semibold">Thích giao diện cũ (V1)</div>
+                        <div class="fs-4 fw-bold text-warning-emphasis">@Model.SurveyOld.ToString("N0") <span class="fs-6 fw-normal">(@Model.SurveyOldPercent%)</span></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 bg-info bg-opacity-10 rounded">
+                        <div class="text-info small fw-semibold">Cả hai như nhau</div>
+                        <div class="fs-4 fw-bold text-info">@Model.SurveySame.ToString("N0") <span class="fs-6 fw-normal">(@Model.SurveySamePercent%)</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bộ lọc ý kiến -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+                <div class="btn-group btn-group-sm" role="group">
+                    <a href="@Url.Action("UiRollout", "Admin", new { filter = "all", page = 1 })" class="btn @(Model.SelectedFilter == "all" ? "btn-dark" : "btn-outline-secondary")">Tất cả</a>
+                    <a href="@Url.Action("UiRollout", "Admin", new { filter = "new", page = 1 })" class="btn @(Model.SelectedFilter == "new" ? "btn-success" : "btn-outline-success")">Thích mới (@Model.SurveyNew)</a>
+                    <a href="@Url.Action("UiRollout", "Admin", new { filter = "old", page = 1 })" class="btn @(Model.SelectedFilter == "old" ? "btn-warning" : "btn-outline-warning")">Thích cũ (@Model.SurveyOld)</a>
+                    <a href="@Url.Action("UiRollout", "Admin", new { filter = "same", page = 1 })" class="btn @(Model.SelectedFilter == "same" ? "btn-info" : "btn-outline-info")">Như nhau (@Model.SurveySame)</a>
+                </div>
+                <span class="text-muted small">Hiển thị @Model.Feedbacks.Count trên tổng số @Model.TotalFeedbacks ý kiến</span>
+            </div>
+
+            <!-- Bảng danh sách góp ý -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 200px;">Thành viên</th>
+                            <th style="width: 140px;">Lựa chọn</th>
+                            <th style="width: 120px;">Lúc đánh giá</th>
+                            <th>Nội dung góp ý</th>
+                            <th style="width: 160px;">Thời gian</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Feedbacks.Any())
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-3 d-block mb-1"></i> Chưa có ý kiến khảo sát nào phù hợp bộ lọc.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var fb in Model.Feedbacks)
+                            {
+                                <tr>
+                                    <td>
+                                        <a href="/Admin/UserDetail/@fb.UserId" class="fw-bold text-decoration-none">
+                                            @(string.IsNullOrEmpty(fb.FullName) ? fb.Username : fb.FullName)
+                                        </a>
+                                        <div class="text-muted small">@@@fb.Username</div>
+                                    </td>
+                                    <td>
+                                        @if (fb.Choice == "new")
+                                        {
+                                            <span class="badge bg-success">Thích mới</span>
+                                        }
+                                        else if (fb.Choice == "old")
+                                        {
+                                            <span class="badge bg-warning text-dark">Thích cũ</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info text-dark">Như nhau</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            @(fb.UiAtVote?.ToUpper() ?? "V1")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (string.IsNullOrWhiteSpace(fb.Comment))
+                                        {
+                                            <span class="text-muted fst-italic small">Không có bình luận</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-break">@fb.Comment</span>
+                                        }
+                                    </td>
+                                    <td class="text-muted small">
+                                        @fb.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Phân trang -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav class="d-flex justify-content-center mt-4" aria-label="Phân trang khảo sát">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(Model.CurrentPage <= 1 ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("UiRollout", "Admin", new { filter = Model.SelectedFilter, page = Model.CurrentPage - 1 })">Trước</a>
+                        </li>
+                        @for (int p = 1; p <= Model.TotalPages; p++)
+                        {
+                            <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("UiRollout", "Admin", new { filter = Model.SelectedFilter, page = p })">@p</a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("UiRollout", "Admin", new { filter = Model.SelectedFilter, page = Model.CurrentPage + 1 })">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('rolloutModeForm').addEventListener('submit', function (e) {
+            var selectedMode = document.querySelector('input[name="mode"]:checked');
+            if (selectedMode && selectedMode.value === 'all') {
+                var confirmed = confirm('⚠️ CẢNH BÁO: Bạn đang chọn chế độ "TẤT CẢ MỌI NGƯỜI (ALL)"!\n\nKhi bật chế độ này:\n- Khách vãng lai và thành viên mới đều sẽ dùng giao diện mới (V2).\n- Chỉ những thành viên đã chủ động chọn V1 mới giữ V1.\n\nBạn có chắc chắn muốn áp dụng không?');
+                if (!confirmed) {
+                    e.preventDefault();
+                }
+            }
+        });
+    </script>
+}

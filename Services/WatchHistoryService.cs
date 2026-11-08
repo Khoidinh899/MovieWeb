@@ -36,7 +36,7 @@ namespace MovieWeb.Services
                 var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
                 var histories = await query
-                    .Skip((page - 1) * pageSize)
+                    .Skip((Math.Max(page, 1) - 1) * pageSize)
                     .Take(pageSize)
                     .Select(w => new WatchHistoryMovieDto
                     {
@@ -46,6 +46,7 @@ namespace MovieWeb.Services
                         Name = w.Movie.Name,
                         OriginalName = w.Movie.OriginalName,
                         PosterUrl = w.Movie.PosterUrl,
+                        ThumbUrl = w.Movie.ThumbUrl,
                         Type = w.Movie.Type,
                         Status = w.Movie.Status,
                         EpisodeCurrent = w.Movie.EpisodeCurrent,

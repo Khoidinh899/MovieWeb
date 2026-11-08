@@ -15,6 +15,7 @@ namespace MovieWeb.Models.DTOs
         public string Name { get; set; } = string.Empty;
         public string? OriginalName { get; set; }
         public string? PosterUrl { get; set; }
+        public string? ThumbUrl { get; set; } // ảnh DỌC (VSMov thumb_url); PosterUrl là ảnh ngang
         public string? Type { get; set; }
         public string? Status { get; set; }
         public string? EpisodeCurrent { get; set; }

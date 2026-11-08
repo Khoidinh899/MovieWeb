@@ -1,0 +1,140 @@
+﻿@model MovieWeb.Models.DTOs.UpdateProfileDto
+
+@{
+    ViewData["Title"] = "Chỉnh sửa thông tin";
+    const string input = "w-full rounded-lg border-0 bg-surface-container px-space-md py-2.5 text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary";
+    const string label = "mb-1 block font-label-md text-label-md text-on-surface-variant";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/v2/css/bootstrap-lite.css" asp-append-version="true" />
+}
+
+<div class="u2-shell mx-auto w-full max-w-[1600px] px-margin-mobile pb-space-xl pt-space-lg md:px-margin">
+    <nav class="mb-space-md flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant" aria-label="Breadcrumb">
+        <a class="flex items-center gap-1 transition-colors hover:text-primary" href="/trang-chu"><span class="material-symbols-outlined text-[16px]">home</span> Trang Chủ</a>
+        <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+        <a class="transition-colors hover:text-primary" href="/user/profile">Tài Khoản</a>
+        <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+        <span class="font-headline-sm text-headline-sm text-on-surface">Cài Đặt Tài Khoản</span>
+    </nav>
+
+    <div class="grid grid-cols-1 gap-space-lg lg:grid-cols-[300px_minmax(0,1fr)]">
+        <!-- Sidebar -->
+        <div>
+            @{ var __sb = (MovieWeb.Models.DTOs.UserProfileDto)ViewBag.UserProfile; }
+            @await Html.PartialAsync("Partial/_UserSidebarV2", (__sb.Avatar, __sb.FullName, __sb.Username, __sb.RoleName, __sb.SubscriptionType, __sb.IsAdmin))
+        </div>
+
+        <!-- Content -->
+        <div class="u2-content min-w-0">
+            <div class="mb-space-lg">
+                <p class="font-label-sm text-label-sm font-bold uppercase tracking-widest text-secondary">Cài đặt &amp; bảo mật</p>
+                <h1 class="font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-headline-xl">Cài Đặt Tài Khoản</h1>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">Quản lý thông tin hồ sơ, email và mật khẩu của bạn.</p>
+            </div>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="mb-space-lg flex items-center gap-space-sm rounded-xl bg-surface-container-high p-space-md text-on-surface" role="status">
+                    <span class="material-symbols-outlined text-primary">check_circle</span> @TempData["SuccessMessage"]
+                </div>
+            }
+
+            <section class="mb-space-lg rounded-xl bg-surface-container-low p-space-lg shadow-sm" aria-labelledby="edit-title">
+                <div class="mb-space-lg flex items-center gap-space-sm">
+                    <span class="material-symbols-outlined flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-high text-[22px] text-primary">badge</span>
+                    <div>
+                        <h2 id="edit-title" class="font-headline-md text-headline-md font-bold text-on-surface">Cập Nhật Thông Tin Hồ Sơ &amp; Email</h2>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant">Thông tin hiển thị khi bạn tham gia bình luận và đánh giá phim.</p>
+                    </div>
+                </div>
+
+                <form asp-action="Edit" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="mb-space-md rounded-lg bg-error-container p-space-sm text-on-error-container"></div>
+
+                    <div class="grid grid-cols-1 gap-space-md md:grid-cols-2">
+                        <div>
+                            <label asp-for="FirstName" class="@label">Họ <span class="text-error">*</span></label>
+                            <input asp-for="FirstName" class="@input" />
+                            <span asp-validation-for="FirstName" class="mt-1 block font-label-sm text-label-sm text-error"></span>
+                        </div>
+                        <div>
+                            <label asp-for="LastName" class="@label">Tên <span class="text-error">*</span></label>
+                            <input asp-for="LastName" class="@input" />
+                            <span asp-validation-for="LastName" class="mt-1 block font-label-sm text-label-sm text-error"></span>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label asp-for="Email" class="@label">Địa chỉ Email <span class="text-error">*</span></label>
+                            <input asp-for="Email" type="email" class="@input" />
+                            <span asp-validation-for="Email" class="mt-1 block font-label-sm text-label-sm text-error"></span>
+                            <p class="mt-1 flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant"><span class="material-symbols-outlined text-[14px]">info</span> Nếu thay đổi email, bạn sẽ cần xác thực email mới.</p>
+                        </div>
+
+                        <div>
+                            <label asp-for="PhoneNumber" class="@label">Số điện thoại</label>
+                            <input asp-for="PhoneNumber" type="tel" class="@input" placeholder="Chưa cập nhật" />
+                            <span asp-validation-for="PhoneNumber" class="mt-1 block font-label-sm text-label-sm text-error"></span>
+                        </div>
+                        <div>
+                            <label asp-for="DateOfBirth" class="@label">Ngày sinh</label>
+                            <input asp-for="DateOfBirth" type="date" class="@input" />
+                            <span asp-validation-for="DateOfBirth" class="mt-1 block font-label-sm text-label-sm text-error"></span>
+                        </div>
+
+                        <div>
+                            <label asp-for="Gender" class="@label">Giới tính</label>
+                            <select asp-for="Gender" class="@input">
+                                <option value="">-- Chọn giới tính --</option>
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                            <span asp-validation-for="Gender" class="mt-1 block font-label-sm text-label-sm text-error"></span>
+                        </div>
+                        <div>
+                            <label asp-for="Address" class="@label">Địa chỉ</label>
+                            <input asp-for="Address" class="@input" placeholder="Chưa cập nhật" />
+                            <span asp-validation-for="Address" class="mt-1 block font-label-sm text-label-sm text-error"></span>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label asp-for="Bio" class="@label">Tiểu sử</label>
+                            <textarea asp-for="Bio" rows="3" class="@input" placeholder="Giới thiệu ngắn về bản thân..."></textarea>
+                            <span asp-validation-for="Bio" class="mt-1 block font-label-sm text-label-sm text-error"></span>
+                        </div>
+                    </div>
+
+                    <input type="hidden" asp-for="CurrentEmail" />
+
+                    <div class="mt-space-lg flex flex-wrap justify-end gap-space-sm">
+                        <a asp-action="Profile" class="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-space-lg py-space-sm font-label-md text-label-md text-on-surface hover:bg-surface-variant">Hủy Thay Đổi</a>
+                        <button type="submit" class="inline-flex items-center gap-1 px-space-lg py-space-sm font-label-md text-label-md font-bold v2-btn-3d v2-btn-3d--primary">
+                            <span class="material-symbols-outlined text-[18px]">save</span> Lưu Thông Tin Hồ Sơ
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="rounded-xl bg-surface-container-low p-space-lg shadow-sm" aria-labelledby="security-title">
+                <div class="flex flex-wrap items-center justify-between gap-space-md">
+                    <div class="flex items-center gap-space-sm">
+                        <span class="material-symbols-outlined flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-high text-[22px] text-secondary">shield_lock</span>
+                        <div>
+                            <h2 id="security-title" class="font-headline-md text-headline-md font-bold text-on-surface">Bảo Mật Tài Khoản</h2>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant">Nên đổi mật khẩu định kỳ để bảo vệ tài khoản khỏi truy cập trái phép.</p>
+                        </div>
+                    </div>
+                    <a href="/user/change-password" class="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-space-lg py-space-sm font-label-md text-label-md font-bold text-on-surface hover:bg-surface-variant"><span class="material-symbols-outlined text-[18px]">key</span> Đổi mật khẩu</a>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

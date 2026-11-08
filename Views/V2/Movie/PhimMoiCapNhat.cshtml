@@ -1,0 +1,54 @@
+@model List<MovieWeb.Models.Entities.Movie>
+@using MovieWeb.Models.ViewModels
+
+@{
+    var categoryName = "Phim Mới Cập Nhật";
+    var filters = ViewBag.Filters as MovieFilterViewModel ?? new MovieFilterViewModel();
+
+    // Khối SEO giống V1 (Views/Movie/PhimMoiCapNhat.cshtml)
+    var baseUrl = MovieWeb.Helpers.SeoMetadata.BaseUrl;
+    var currentUrl = MovieWeb.Helpers.SeoMetadata.Canonical(Context.Request);
+    var defaultSeoImage = $"{baseUrl}/images/iconmoon.png";
+    var pageTitle = "Phim Mới Cập Nhật | Phim Mới Nhất Hôm Nay";
+    var seoDescription = ViewBag.SeoDescription as string ?? "Phim mới cập nhật liên tục, xem phim online miễn phí chất lượng cao, cập nhật nhanh nhất tại MoonPhim.";
+
+    ViewData["Title"] = pageTitle;
+}
+
+@section Styles {
+    <meta name="description" content="@seoDescription" />
+    <meta name="keywords" content="phim mới, phim mới cập nhật, phim mới nhất, xem phim mới" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="@pageTitle" />
+    <meta property="og:description" content="@seoDescription" />
+    <meta property="og:url" content="@currentUrl" />
+    <meta property="og:image" content="@defaultSeoImage" />
+    <meta property="og:site_name" content="MoonPhim" />
+    <meta property="og:locale" content="vi_VN" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@pageTitle" />
+    <meta name="twitter:description" content="@seoDescription" />
+    <meta name="twitter:image" content="@defaultSeoImage" />
+    <meta name="twitter:site" content="@("@")MoonPhim" />
+
+    <script type="application/ld+json">
+    {
+        "@@context": "https://schema.org",
+        "@@type": "BreadcrumbList",
+        "itemListElement": [{
+            "@@type": "ListItem",
+            "position": 1,
+            "name": "Trang chủ",
+            "item": "@(Context.Request.Scheme)://@(Context.Request.Host)/"
+        },{
+            "@@type": "ListItem",
+            "position": 2,
+            "name": "Phim Mới Cập Nhật"
+        }]
+    }
+    </script>
+}
+
+@await Html.PartialAsync("Partial/_MovieListV2", (categoryName, Model, filters, (int)(ViewBag.CurrentPage ?? 1), (int)(ViewBag.TotalPages ?? 1), "Popup_PhimMoi"))

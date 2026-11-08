@@ -6,6 +6,11 @@ using MovieWeb.Models.DTOs;
 using MovieWeb.Models.Entities;
 using System.Security.Claims;
 using MovieWeb.Services.Interfaces;
+using MovieWeb.Data;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.EntityFrameworkCore;
+using MovieWeb.Helpers;
+using MovieWeb.Models.ViewModels;
 
 namespace MovieWeb.Controllers
 {
@@ -21,6 +26,8 @@ namespace MovieWeb.Controllers
         private readonly IFavoriteService _favoriteService;
         private readonly IWatchHistoryService _watchHistoryService;
         private readonly INotificationService _notificationService;
+        private readonly MovieWebDbContext _dbContext;
+        private readonly IMemoryCache _memoryCache;
 
         public ProfileController(
             IProfileService profileService,
@@ -30,7 +37,9 @@ namespace MovieWeb.Controllers
             IStudentEmailService studentEmailService,
             IFavoriteService favoriteService,
             IWatchHistoryService watchHistoryService,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            MovieWebDbContext dbContext,
+            IMemoryCache memoryCache)
         {
             _profileService = profileService;
             _logger = logger;
@@ -40,6 +49,8 @@ namespace MovieWeb.Controllers
             _favoriteService = favoriteService;
             _watchHistoryService = watchHistoryService;
             _notificationService = notificationService;
+            _dbContext = dbContext;
+            _memoryCache = memoryCache;
         }
 
         private int GetCurrentUserId()
@@ -415,7 +426,7 @@ namespace MovieWeb.Controllers
                 var totalNotifications = filteredNotifications.Count;
                 var totalPages = (int)Math.Ceiling(totalNotifications / (double)pageSize);
                 var notifications = filteredNotifications
-                    .Skip((page - 1) * pageSize)
+                    .Skip((Math.Max(page, 1) - 1) * pageSize)
                     .Take(pageSize)
                     .ToList();
 
@@ -439,6 +450,150 @@ namespace MovieWeb.Controllers
                 TempData["Error"] = "Không thể tải danh sách thông báo";
                 return RedirectToAction("Profile", "Profile");
             }
+        }
+
+        [HttpGet("giao-dien")]
+        public async Task<IActionResult> Interface()
+        {
+            var mode = UiVersion.GetRolloutMode(HttpContext);
+            if (mode == "off")
+            {
+                return RedirectToAction("Profile");
+            }
+
+            var userId = GetCurrentUserId();
+            if (userId == 0) return RedirectToAction("Login", "Auth", new { ReturnUrl = "/user/giao-dien" });
+
+            var userProfile = await _profileService.GetUserProfileAsync(userId);
+            var pref = await _dbContext.UserUiPreferences.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == userId);
+            var feedback = await _dbContext.UiFeedbacks.AsNoTracking().FirstOrDefaultAsync(f => f.UserId == userId);
+
+            var currentUi = UiVersion.IsV2(HttpContext) ? "v2" : "v1";
+
+            var model = new UserInterfaceViewModel
+            {
+                CurrentUi = currentUi,
+                RolloutMode = mode,
+                SelectedChoice = feedback?.Choice ?? "",
+                FeedbackComment = feedback?.Comment,
+                FeedbackUpdatedAt = feedback?.UpdatedAt,
+                SwitchCount = pref?.SwitchCount ?? 0,
+                UserProfile = userProfile
+            };
+
+            ViewBag.UserProfile = userProfile;
+            return View("Interface", model);
+        }
+
+        [HttpPost("giao-dien")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateInterface([FromForm] string ui)
+        {
+            var mode = UiVersion.GetRolloutMode(HttpContext);
+            if (mode == "off")
+            {
+                return RedirectToAction("Profile");
+            }
+
+            var userId = GetCurrentUserId();
+            if (userId == 0) return RedirectToAction("Login", "Auth", new { ReturnUrl = "/user/giao-dien" });
+
+            ui = (ui ?? "").Trim().ToLowerInvariant();
+            if (ui != "v1" && ui != "v2")
+            {
+                TempData["ErrorMessage"] = "Lựa chọn giao diện không hợp lệ.";
+                return RedirectToAction("Interface");
+            }
+
+            var pref = await _dbContext.UserUiPreferences.FirstOrDefaultAsync(p => p.UserId == userId);
+            if (pref == null)
+            {
+                pref = new UserUiPreference
+                {
+                    UserId = userId,
+                    Ui = ui,
+                    SwitchCount = 1,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _dbContext.UserUiPreferences.Add(pref);
+            }
+            else
+            {
+                if (pref.Ui != ui)
+                {
+                    pref.SwitchCount++;
+                    pref.Ui = ui;
+                    pref.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
+            UiVersion.InvalidateUserPreferenceCache(_memoryCache, userId);
+
+            TempData["SuccessMessage"] = ui == "v2"
+                ? "Đã chuyển sang giao diện mới (V2) thành công!"
+                : "Đã chuyển về giao diện cũ (V1) thành công!";
+
+            return RedirectToAction("Interface");
+        }
+
+        [HttpPost("giao-dien/danh-gia")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SubmitFeedback([FromForm] string choice, [FromForm] string? comment)
+        {
+            var mode = UiVersion.GetRolloutMode(HttpContext);
+            if (mode == "off")
+            {
+                return RedirectToAction("Profile");
+            }
+
+            var userId = GetCurrentUserId();
+            if (userId == 0) return RedirectToAction("Login", "Auth", new { ReturnUrl = "/user/giao-dien" });
+
+            choice = (choice ?? "").Trim().ToLowerInvariant();
+            if (choice != "new" && choice != "old" && choice != "same")
+            {
+                TempData["ErrorMessage"] = "Vui lòng chọn một trong các phương án đánh giá.";
+                return RedirectToAction("Interface");
+            }
+
+            if (!string.IsNullOrEmpty(comment))
+            {
+                comment = comment.Trim();
+                if (comment.Length > 1000)
+                {
+                    comment = comment.Substring(0, 1000);
+                }
+            }
+
+            var currentUi = UiVersion.IsV2(HttpContext) ? "v2" : "v1";
+            var feedback = await _dbContext.UiFeedbacks.FirstOrDefaultAsync(f => f.UserId == userId);
+            if (feedback == null)
+            {
+                feedback = new UiFeedback
+                {
+                    UserId = userId,
+                    Choice = choice,
+                    Comment = comment,
+                    UiAtVote = currentUi,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _dbContext.UiFeedbacks.Add(feedback);
+            }
+            else
+            {
+                feedback.Choice = choice;
+                feedback.Comment = comment;
+                feedback.UiAtVote = currentUi;
+                feedback.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Cảm ơn bạn đã đóng góp ý kiến đánh giá giao diện!";
+            return RedirectToAction("Interface");
         }
 
         public class SelectAvatarRequest

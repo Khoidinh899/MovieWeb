@@ -1,0 +1,208 @@
+@model MovieWeb.Models.ViewModels.UserInterfaceViewModel
+
+@{
+    ViewData["Title"] = "Tuỳ chọn giao diện";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/v2/css/bootstrap-lite.css" asp-append-version="true" />
+}
+
+<div class="u2-shell mx-auto w-full max-w-[1600px] px-margin-mobile pb-space-xl pt-space-lg md:px-margin">
+    <nav class="mb-space-md flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant" aria-label="Breadcrumb">
+        <a class="flex items-center gap-1 transition-colors hover:text-primary" href="/trang-chu"><span class="material-symbols-outlined text-[16px]">home</span> Trang Chủ</a>
+        <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+        <a class="transition-colors hover:text-primary" href="/user/profile">Tài Khoản</a>
+        <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+        <span class="font-headline-sm text-headline-sm text-on-surface">Tuỳ Chọn Giao Diện</span>
+    </nav>
+
+    <div class="grid grid-cols-1 gap-space-lg lg:grid-cols-[300px_minmax(0,1fr)]">
+        <div>
+            @{ var __sb = (MovieWeb.Models.DTOs.UserProfileDto)ViewBag.UserProfile; }
+            @await Html.PartialAsync("Partial/_UserSidebarV2", (__sb.Avatar, __sb.FullName, __sb.Username, __sb.RoleName, __sb.SubscriptionType, __sb.IsAdmin))
+        </div>
+
+        <div class="u2-content min-w-0">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="mb-space-md flex items-center gap-space-sm rounded-xl bg-success-container/30 border border-success/40 p-space-md text-on-surface shadow-sm" role="alert">
+                    <span class="material-symbols-outlined text-[22px] text-success">check_circle</span>
+                    <div class="flex-grow font-body-sm text-body-sm">@TempData["SuccessMessage"]</div>
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="mb-space-md flex items-center gap-space-sm rounded-xl bg-error-container/30 border border-error/40 p-space-md text-on-surface shadow-sm" role="alert">
+                    <span class="material-symbols-outlined text-[22px] text-error">error</span>
+                    <div class="flex-grow font-body-sm text-body-sm">@TempData["ErrorMessage"]</div>
+                </div>
+            }
+
+            <div class="mb-space-lg">
+                <p class="font-label-sm text-label-sm font-bold uppercase tracking-widest text-secondary">Trải nghiệm cá nhân hóa</p>
+                <div class="flex flex-wrap items-center justify-between gap-space-sm">
+                    <h1 class="font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-headline-xl">Lựa Chọn Giao Diện</h1>
+                    @if (Model.SwitchCount > 0)
+                    {
+                        <span class="rounded-full bg-surface-container-high px-space-md py-1 font-label-sm text-label-sm text-on-surface-variant">
+                            Đã chuyển đổi @Model.SwitchCount lần
+                        </span>
+                    }
+                </div>
+                <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">
+                    Chọn phong cách hiển thị bạn yêu thích. Bạn có thể tự do chuyển đổi giữa giao diện hiện đại và giao diện cổ điển bất cứ lúc nào.
+                </p>
+            </div>
+
+            <!-- Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg mb-space-xl">
+                <!-- Card V2 -->
+                <div class="flex flex-col rounded-2xl overflow-hidden bg-surface-container-low transition-all duration-300 @(Model.CurrentUi == "v2" ? "ring-2 ring-primary shadow-xl shadow-primary/10" : "border border-surface-container-highest/60 hover:-translate-y-1 hover:shadow-lg")">
+                    <div class="relative aspect-video w-full overflow-hidden bg-surface-container-high">
+                        <img src="~/images/ui/v2-preview.png" alt="Giao diện mới (V2)" class="h-full w-full object-cover" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-surface-container-low/90 via-transparent to-transparent"></div>
+                        @if (Model.CurrentUi == "v2")
+                        {
+                            <span class="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-primary px-space-sm py-0.5 font-label-sm text-label-sm font-bold text-on-primary shadow-lg">
+                                <span class="material-symbols-outlined text-[16px]">check_circle</span> Đang sử dụng
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="absolute top-3 right-3 rounded-full bg-secondary px-space-sm py-0.5 font-label-sm text-label-sm font-bold text-on-secondary shadow-lg">
+                                Khuyên dùng
+                            </span>
+                        }
+                    </div>
+                    <div class="flex flex-1 flex-col p-space-lg">
+                        <div class="flex items-center gap-space-xs mb-1">
+                            <span class="material-symbols-outlined text-[20px] text-primary">movie</span>
+                            <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Giao diện mới (V2 - Cinematic)</h2>
+                        </div>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant flex-1 mb-space-lg">
+                            Được thiết kế theo phong cách Cinematic Streaming tối giản, sang trọng. Chuyển trang mượt mà, bộ lọc trực quan và tối ưu tốt cho mọi thiết bị.
+                        </p>
+                        <div>
+                            @if (Model.CurrentUi == "v2")
+                            {
+                                <button type="button" disabled class="w-full flex items-center justify-center gap-2 rounded-xl bg-surface-container-high py-3 font-label-md text-label-md font-bold text-primary opacity-90 cursor-default">
+                                    <span class="material-symbols-outlined text-[18px]">verified</span> Đang kích hoạt
+                                </button>
+                            }
+                            else
+                            {
+                                <form asp-action="UpdateInterface" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="ui" value="v2" />
+                                    <button type="submit" class="v2-btn-3d w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3 font-label-md text-label-md font-bold text-on-primary transition-all">
+                                        <span class="material-symbols-outlined text-[18px]">auto_awesome</span> Trải nghiệm giao diện mới
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card V1 -->
+                <div class="flex flex-col rounded-2xl overflow-hidden bg-surface-container-low transition-all duration-300 @(Model.CurrentUi == "v1" ? "ring-2 ring-primary shadow-xl shadow-primary/10" : "border border-surface-container-highest/60 hover:-translate-y-1 hover:shadow-lg")">
+                    <div class="relative aspect-video w-full overflow-hidden bg-surface-container-high">
+                        <img src="~/images/ui/v1-preview.png" alt="Giao diện cũ (V1)" class="h-full w-full object-cover" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-surface-container-low/90 via-transparent to-transparent"></div>
+                        @if (Model.CurrentUi == "v1")
+                        {
+                            <span class="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-primary px-space-sm py-0.5 font-label-sm text-label-sm font-bold text-on-primary shadow-lg">
+                                <span class="material-symbols-outlined text-[16px]">check_circle</span> Đang sử dụng
+                            </span>
+                        }
+                    </div>
+                    <div class="flex flex-1 flex-col p-space-lg">
+                        <div class="flex items-center gap-space-xs mb-1">
+                            <span class="material-symbols-outlined text-[20px] text-outline">history</span>
+                            <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Giao diện cổ điển (V1)</h2>
+                        </div>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant flex-1 mb-space-lg">
+                            Giao diện truyền thống đã quen thuộc với thành viên MoonPhim trong suốt thời gian qua. Đơn giản, trực quan và dễ sử dụng.
+                        </p>
+                        <div>
+                            @if (Model.CurrentUi == "v1")
+                            {
+                                <button type="button" disabled class="w-full flex items-center justify-center gap-2 rounded-xl bg-surface-container-high py-3 font-label-md text-label-md font-bold text-primary opacity-90 cursor-default">
+                                    <span class="material-symbols-outlined text-[18px]">verified</span> Đang kích hoạt
+                                </button>
+                            }
+                            else
+                            {
+                                <form asp-action="UpdateInterface" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="ui" value="v1" />
+                                    <button type="submit" class="w-full flex items-center justify-center gap-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest py-3 font-label-md text-label-md font-bold text-on-surface transition-colors">
+                                        <span class="material-symbols-outlined text-[18px]">undo</span> Quay về giao diện cũ
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Survey Section -->
+            <section class="rounded-2xl bg-surface-container-low p-space-lg border border-surface-container-highest/60 shadow-sm" aria-labelledby="survey-title">
+                <div class="flex flex-wrap items-center justify-between gap-space-sm mb-space-md">
+                    <div class="flex items-center gap-space-sm">
+                        <span class="material-symbols-outlined flex h-10 w-10 items-center justify-center rounded-full bg-secondary-container text-on-secondary-container text-[20px]">rate_review</span>
+                        <div>
+                            <h2 id="survey-title" class="font-headline-sm text-headline-sm font-bold text-on-surface">Khảo Sát Trải Nghiệm</h2>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant">Đóng góp ý kiến của bạn để MoonPhim ngày một tốt hơn.</p>
+                        </div>
+                    </div>
+                    @if (Model.FeedbackUpdatedAt.HasValue)
+                    {
+                        <span class="font-label-sm text-label-sm text-outline">
+                            Đã đánh giá: @Model.FeedbackUpdatedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                        </span>
+                    }
+                </div>
+
+                <form asp-action="SubmitFeedback" method="post" class="flex flex-col gap-space-md">
+                    @Html.AntiForgeryToken()
+
+                    <fieldset>
+                        <legend class="mb-space-sm font-label-md text-label-md font-bold text-on-surface">Bạn thấy trải nghiệm phiên bản nào tốt hơn?</legend>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-space-sm">
+                            <label class="flex items-center gap-space-sm rounded-xl bg-surface-container p-space-md cursor-pointer border border-transparent transition-all hover:border-primary/50 has-[:checked]:border-primary has-[:checked]:bg-primary-container/20">
+                                <input type="radio" name="choice" value="new" class="accent-primary h-4 w-4" @(Model.SelectedChoice == "new" ? "checked" : "") required />
+                                <span class="font-body-sm text-body-sm text-on-surface font-semibold">Thích giao diện mới</span>
+                            </label>
+                            <label class="flex items-center gap-space-sm rounded-xl bg-surface-container p-space-md cursor-pointer border border-transparent transition-all hover:border-primary/50 has-[:checked]:border-primary has-[:checked]:bg-primary-container/20">
+                                <input type="radio" name="choice" value="old" class="accent-primary h-4 w-4" @(Model.SelectedChoice == "old" ? "checked" : "") />
+                                <span class="font-body-sm text-body-sm text-on-surface font-semibold">Thích giao diện cũ</span>
+                            </label>
+                            <label class="flex items-center gap-space-sm rounded-xl bg-surface-container p-space-md cursor-pointer border border-transparent transition-all hover:border-primary/50 has-[:checked]:border-primary has-[:checked]:bg-primary-container/20">
+                                <input type="radio" name="choice" value="same" class="accent-primary h-4 w-4" @(Model.SelectedChoice == "same" ? "checked" : "") />
+                                <span class="font-body-sm text-body-sm text-on-surface font-semibold">Cả hai như nhau</span>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <div>
+                        <label for="feedbackCommentV2" class="mb-1 block font-label-md text-label-md text-on-surface-variant">
+                            Góp ý chi tiết (tùy chọn)
+                        </label>
+                        <textarea id="feedbackCommentV2" name="comment" rows="3" maxlength="1000"
+                                  placeholder="Chia sẻ thêm cảm nhận, tính năng mong muốn hoặc sự cố bạn gặp phải..."
+                                  class="w-full rounded-xl border-0 bg-surface-container px-space-md py-space-sm text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary font-body-sm text-body-sm">@Model.FeedbackComment</textarea>
+                        <div class="mt-1 text-right font-label-sm text-label-sm text-outline">Tối đa 1000 ký tự</div>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="submit" class="v2-btn-3d flex items-center gap-2 rounded-xl bg-primary px-space-lg py-2.5 font-label-md text-label-md font-bold text-on-primary transition-all">
+                            <span class="material-symbols-outlined text-[18px]">send</span> Gửi đánh giá
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
+</div>

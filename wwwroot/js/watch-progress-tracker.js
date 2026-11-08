@@ -167,6 +167,9 @@ class WatchProgressTracker {
                 if (request.signal.aborted || this.disposed || window.watchProgressTracker !== this ||
                     this.pageElement !== document.getElementById('videoContainer')) return;
 
+                const explicit = document.querySelector('[data-selected-episode-id]:not([data-selected-episode-id=""])');
+                if (explicit && (Number(data.episodeNumber) !== Number(this.episodeNumber) ||
+                    (data.serverName && data.serverName !== this.getCurrentServerName()))) return;
                 if (data.hasHistory && data.watchedDuration >= 5 && data.progressPercentage < 95) {
                     this.showResumePopup(data);
                 }
@@ -477,7 +480,8 @@ function initWatchProgressTrackerGlobal(mId) {
         if (window.watchProgressTracker) {
             try { window.watchProgressTracker.stopTracking(); } catch (e) {}
         }
-        window.watchProgressTracker = new WatchProgressTracker(targetMovieId);
+        const explicitEpisode = document.querySelector('[data-episode-number]')?.getAttribute('data-episode-number');
+        window.watchProgressTracker = new WatchProgressTracker(targetMovieId, explicitEpisode ? Number(explicitEpisode) : null);
         window.watchProgressTracker.init();
     }
 }

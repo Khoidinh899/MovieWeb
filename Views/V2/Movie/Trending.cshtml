@@ -1,0 +1,148 @@
+﻿@model List<MovieWeb.Models.Entities.Movie>
+@using MovieWeb.Models.ViewModels
+
+@{
+    var categoryName = ViewBag.CategoryName as string ?? "Bảng Xếp Hạng Phim Trending Trên MoonPhim";
+    var filters = ViewBag.Filters as MovieFilterViewModel ?? new MovieFilterViewModel();
+    int currentPage = ViewBag.CurrentPage != null ? (int)ViewBag.CurrentPage : 1;
+    int pageSize = ViewBag.PageSize != null ? (int)ViewBag.PageSize : 24;
+    int startRank = (currentPage - 1) * pageSize;
+    int totalPages = ViewBag.TotalPages != null ? (int)ViewBag.TotalPages : 1;
+    int range = 2;
+
+    var currentFilters = new Dictionary<string, string>();
+    if (!string.IsNullOrEmpty(filters.Type)) currentFilters["Type"] = filters.Type;
+    if (!string.IsNullOrEmpty(filters.Countries)) currentFilters["Countries"] = filters.Countries;
+    if (!string.IsNullOrEmpty(filters.Categories)) currentFilters["Categories"] = filters.Categories;
+    if (!string.IsNullOrEmpty(filters.Years)) currentFilters["Years"] = filters.Years;
+    if (!string.IsNullOrEmpty(filters.Language)) currentFilters["Language"] = filters.Language;
+
+    string GetUrl(int p)
+    {
+        var queryParams = string.Join("&", currentFilters.Select(kvp => $"{kvp.Key}={System.Net.WebUtility.UrlEncode(kvp.Value)}"));
+        return $"?Page={p}" + (string.IsNullOrEmpty(queryParams) ? "" : "&" + queryParams);
+    }
+}
+
+@functions {
+    // Poster: giống V1 (Views/Movie/Trending.cshtml)
+    // Ảnh DỌC của VSMov là thumb_url (ThumbUrl); xem ImageHelper
+    private string GetPosterUrl(MovieWeb.Models.Entities.Movie m) => MovieWeb.Helpers.ImageHelper.Portrait(m.ThumbUrl, m.PosterUrl);
+
+    public string FormatViews(int? views)
+    {
+        int v = views ?? 0;
+        if (v >= 1000000) return (v / 1000000.0).ToString("0.#") + "M";
+        if (v >= 1000) return (v / 1000.0).ToString("0.#") + "K";
+        return v.ToString();
+    }
+
+    // Màu huy hiệu hạng: top 1 vàng, top 2 bạc, top 3 đồng, còn lại xanh (token, không hex)
+    public string RankClass(int rank) => rank switch
+    {
+        1 => "bg-secondary text-on-secondary",
+        2 => "bg-surface-container-highest text-white",
+        3 => "bg-tertiary-container text-white",
+        _ => "bg-primary-container text-white"
+    };
+}
+
+@section Styles {
+    @if (!string.IsNullOrEmpty(ViewBag.SeoDescription as string))
+    {
+        <meta name="description" content="@ViewBag.SeoDescription" />
+    }
+}
+
+<section class="mx-auto w-full max-w-[1600px] px-margin-mobile py-10 md:px-margin">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-outline-variant/40 bg-surface-container-low p-5">
+        <div>
+            <div class="mb-1 flex items-center gap-2">
+                <span class="rounded bg-error px-2 py-1 text-[12px] font-bold text-white">HOT RANKING</span>
+                <span class="text-xs text-outline">Cập nhật liên tục theo lượt xem thực tế</span>
+            </div>
+            <h1 class="font-headline-xl text-2xl font-bold tracking-tight text-white lg:text-3xl">@categoryName</h1>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-outline">Tổng cộng:</span>
+            <span class="rounded-full bg-secondary px-3 py-1 font-bold text-on-secondary">@(ViewBag.TotalMovies ?? Model.Count) Phim</span>
+        </div>
+    </div>
+
+    @await Html.PartialAsync("Partial/_FilterSidebarV2", filters)
+
+    @if (!Model.Any())
+    {
+        <div class="mt-8 rounded-xl border border-outline-variant/40 bg-surface-container-low p-8 text-center text-on-surface-variant">
+            Không tìm thấy phim nào phù hợp với bộ lọc hiện tại.
+        </div>
+    }
+    else
+    {
+        <div data-v2-img-group class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+            @for (int i = 0; i < Model.Count; i++)
+            {
+                var movie = Model[i];
+                int rank = startRank + i + 1;
+                <article class="group flex h-full flex-col">
+                    <a href="/phim/@movie.Slug" class="flex h-full flex-col no-underline">
+                        <div class="relative aspect-[2/3] overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-container">
+                            <span class="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-md px-2 py-0.5 text-[12px] font-bold @RankClass(rank)">
+                                @if (rank <= 3)
+                                {
+                                    <span class="material-symbols-outlined text-[14px]">emoji_events</span>
+                                }
+                                #@rank
+                            </span>
+                            <span class="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-md bg-background/75 px-2 py-0.5 text-[12px] font-bold text-secondary backdrop-blur">
+                                <span class="material-symbols-outlined text-[14px]">visibility</span>@FormatViews(movie.ViewCount)
+                            </span>
+                            <img src="@MovieWeb.Helpers.ImageHelper.Webp(GetPosterUrl(movie), 400)" srcset="@MovieWeb.Helpers.ImageHelper.WebpSrcSet(GetPosterUrl(movie), 200, 400)" sizes="(min-width: 1280px) 16vw, (min-width: 768px) 22vw, 45vw" alt="@movie.Name" loading="lazy"
+                                 class="v2-img h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                 onerror="this.onerror=null; this.src='@Url.Content("~/images/default-poster.jpg")'" />
+                        </div>
+                        <div class="mt-2 flex flex-1 flex-col justify-between gap-1">
+                            <h2 class="truncate font-headline-sm text-sm font-semibold text-on-surface" title="@movie.Name">@movie.Name</h2>
+                            <div class="flex items-center justify-between text-xs text-outline">
+                                <span>@(movie.Year?.ToString() ?? "N/A")</span>
+                                <span class="rounded bg-surface-container-high px-1.5 py-0.5 text-on-surface-variant">@(movie.Quality ?? "HD")</span>
+                            </div>
+                        </div>
+                    </a>
+                </article>
+            }
+        </div>
+
+        @if (totalPages > 1)
+        {
+            <nav class="mt-10" aria-label="Phân trang">
+                <ul class="flex flex-wrap items-center justify-center gap-2 font-label-md text-sm">
+                    @if (currentPage > 1)
+                    {
+                        <li><a class="flex h-9 min-w-9 items-center justify-center rounded-full border border-outline-variant px-3 text-on-surface-variant hover:text-white" href="@GetUrl(currentPage - 1)">&laquo;</a></li>
+                    }
+                    @for (int p = 1; p <= totalPages; p++)
+                    {
+                        if (p == 1 || p == totalPages || (p >= currentPage - range && p <= currentPage + range))
+                        {
+                            <li>
+                                <a class="flex h-9 min-w-9 items-center justify-center rounded-full px-3 @(p == currentPage ? "bg-primary-container font-bold text-white" : "border border-outline-variant text-on-surface-variant hover:text-white")"
+                                   href="@GetUrl(p)">@p</a>
+                            </li>
+                        }
+                        else if (p == currentPage - range - 1 || p == currentPage + range + 1)
+                        {
+                            <li><span class="px-2 text-outline">...</span></li>
+                        }
+                    }
+                    @if (currentPage < totalPages)
+                    {
+                        <li><a class="flex h-9 min-w-9 items-center justify-center rounded-full border border-outline-variant px-3 text-on-surface-variant hover:text-white" href="@GetUrl(currentPage + 1)">&raquo;</a></li>
+                    }
+                </ul>
+            </nav>
+        }
+    }
+</section>
+
+<script src="~/v2/js/pages/filter-sidebar.js" asp-append-version="true"></script>

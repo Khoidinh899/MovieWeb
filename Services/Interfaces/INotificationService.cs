@@ -95,12 +95,15 @@ namespace MovieWeb.Services.Interfaces
         public string? Url { get; set; }
         public bool? IsRead { get; set; }
         public DateTime? CreatedAt { get; set; }
+        public int? BroadcastId { get; set; }
+        public string? Style { get; set; }
     }
 
     public class UnreadCountDto
     {
         public int Payment { get; set; }
         public int Movie { get; set; }
+        public int System { get; set; }
         public int Total { get; set; }
     }
 }

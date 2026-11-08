@@ -1,0 +1,75 @@
+﻿@* Hiện ảnh thẻ phim theo nhóm. Inline (không tải file) và chạy ngay sau </main> trong _LayoutV2,
+   để không phải chờ các script cuối trang khi mạng chậm (ảnh VSMov rất nặng chiếm hết băng thông). *@
+<script>
+// Ảnh thẻ phim (img.v2-img): tải theo nhóm [data-v2-img-group] và hiện đồng loạt khi cả nhóm tải xong.
+// Khi nhóm tới gần màn hình: chuyển các ảnh lazy của nhóm sang eager để tải cùng lúc (kể cả ảnh nằm ngoài hàng cuộn ngang trên mobile).
+// Quá 2,5 s: ảnh nào xong thì hiện ngay (mạng chậm vẫn không phải chờ cả nhóm). CSS: .v2-js .v2-img trong ClientApp-v2/src/v2.css.
+(function () {
+    'use strict';
+    var GROUP_TIMEOUT = 2500;
+
+    function done(img) { return img.complete; } // complete = đã tải xong hoặc lỗi (onerror tự thay ảnh mặc định)
+    function show(img) { img.classList.add('is-loaded'); }
+    function showWhenLoaded(img) {
+        if (done(img)) { show(img); return; }
+        img.addEventListener('load', function () { show(img); }, { once: true });
+        img.addEventListener('error', function () { show(img); }, { once: true });
+    }
+
+    // Hiện dần thẻ phim lần lượt (stagger 35ms, tối đa 12 thẻ). Chỉ cho nhóm nằm dưới màn hình lúc tải trang;
+    // nhóm đã thấy ngay thì không ẩn (tránh nhấp nháy/CLS). Không JS: không ẩn gì.
+    var STAGGER = true; // chủ dự án yêu cầu: hiệu ứng luôn chạy, không phụ thuộc cài đặt giảm chuyển động
+    function prepStagger(group) {
+        if (!STAGGER || group.getBoundingClientRect().top < window.innerHeight) return;
+        group.classList.add('v2-stagger');
+    }
+    function runStagger(group) {
+        if (!group.classList.contains('v2-stagger')) return;
+        var cards = [].slice.call(group.querySelectorAll('.movie-card'));
+        cards.forEach(function (c, i) { c.style.setProperty('--d', (Math.min(i, 11) * 35) + 'ms'); });
+        requestAnimationFrame(function () { group.classList.add('is-staggered'); });
+        setTimeout(function () { group.classList.remove('v2-stagger', 'is-staggered'); }, 1200);
+    }
+
+    function startGroup(group) {
+        if (group.dataset.v2ImgStarted) return;
+        group.dataset.v2ImgStarted = '1';
+        runStagger(group);
+        var imgs = [].slice.call(group.querySelectorAll('img.v2-img'));
+        imgs.forEach(function (img) { if (img.loading === 'lazy') img.loading = 'eager'; });
+        var finished = false;
+        function revealAll() {
+            if (finished) return;
+            finished = true;
+            imgs.forEach(showWhenLoaded);
+        }
+        function check() { if (imgs.every(done)) revealAll(); }
+        imgs.forEach(function (img) {
+            if (!done(img)) {
+                img.addEventListener('load', check, { once: true });
+                img.addEventListener('error', check, { once: true });
+            }
+        });
+        check();
+        setTimeout(revealAll, GROUP_TIMEOUT);
+    }
+
+    function init() {
+        var groups = [].slice.call(document.querySelectorAll('[data-v2-img-group]'));
+        // Ảnh không thuộc nhóm nào: hiện ngay khi tải xong.
+        [].slice.call(document.querySelectorAll('img.v2-img')).forEach(function (img) {
+            if (!img.closest('[data-v2-img-group]')) showWhenLoaded(img);
+        });
+        groups.forEach(prepStagger);
+        if (!('IntersectionObserver' in window)) { groups.forEach(startGroup); return; }
+        var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (e) {
+                if (e.isIntersecting) { io.unobserve(e.target); startGroup(e.target); }
+            });
+        }, { rootMargin: '600px 0px' });
+        groups.forEach(function (g) { io.observe(g); });
+    }
+
+    window.MoonPhimV2ImgInit = init;
+})();
+</script>

@@ -1,0 +1,8 @@
+{
+  "name": "moonphim-visual-compare",
+  "private": true,
+  "description": "Side-by-side screenshots: Stitch design (code.html) vs V2 page on localhost.",
+  "type": "module",
+  "scripts": { "compare": "node compare.mjs" },
+  "devDependencies": { "playwright": "1.48.2" }
+}

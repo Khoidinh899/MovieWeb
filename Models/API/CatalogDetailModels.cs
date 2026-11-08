@@ -3,15 +3,6 @@ using System.Collections.Generic;
 
 namespace MovieWeb.Models.API
 {
-    public class OPhimDetailResponse
-    {
-        [JsonProperty("seoOnPage")]
-        public SeoOnPage? SeoOnPage { get; set; }
-
-        [JsonProperty("item")]
-        public Movie? Item { get; set; }
-    }
-
     public class SeoOnPage
     {
         [JsonProperty("descriptionHead")]

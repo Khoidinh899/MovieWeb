@@ -267,6 +267,48 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-6 col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header text-white d-flex justify-content-between align-items-center"
+                    style="background: linear-gradient(135deg, #0d6efd 0%, #0099ff 100%);">
+                    <h5 class="mb-0 fs-6 fs-md-5">
+                        <i class="bi bi-toggles2 me-1"></i> Rollout Giao Diện
+                    </h5>
+                    <span class="badge bg-white text-primary px-2 py-1">V1/V2</span>
+                </div>
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <p class="text-muted mb-3">
+                        Công tắc 3 chế độ triển khai V2, thống kê tỷ lệ thành viên chuyển đổi và kết quả khảo sát người dùng.
+                    </p>
+                    <a href="@Url.Action("UiRollout", "Admin")" class="btn w-100 text-white mt-auto"
+                        style="background: linear-gradient(135deg, #0d6efd 0%, #0099ff 100%); font-weight: 600;">
+                        <i class="bi bi-sliders me-1"></i> Quản Lý Triển Khai
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header text-white d-flex justify-content-between align-items-center"
+                    style="background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);">
+                    <h5 class="mb-0 fs-6 fs-md-5">
+                        <i class="bi bi-bell-fill me-1"></i> Thông Báo Hệ Thống
+                    </h5>
+                    <span class="badge bg-white text-info px-2 py-1">Broadcast</span>
+                </div>
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <p class="text-muted mb-3">
+                        Thiết kế mẫu, gửi thông báo realtime qua SignalR tới chuông người dùng và quản lý lịch sử gửi.
+                    </p>
+                    <a href="@Url.Action("Notifications", "Admin")" class="btn w-100 text-white mt-auto"
+                        style="background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); font-weight: 600;">
+                        <i class="bi bi-send me-1"></i> Quản Lý Thông Báo
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
     @if (stats.UnconfirmedEmails > 0)
     {

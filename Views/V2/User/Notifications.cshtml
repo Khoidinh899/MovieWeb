@@ -1,0 +1,153 @@
+﻿@model List<MovieWeb.Services.Interfaces.NotificationDto>
+
+@{
+    ViewData["Title"] = "Thông báo của tôi";
+    var currentType = ViewBag.CurrentType as string ?? "all";
+    var currentStatus = ViewBag.CurrentStatus as string ?? "all";
+    var currentPage = (int)ViewBag.CurrentPage;
+    var totalPages = (int)ViewBag.TotalPages;
+    var unreadCount = ViewBag.UnreadCount as MovieWeb.Services.Interfaces.UnreadCountDto;
+
+    string TimeAgo(DateTime? created)
+    {
+        if (!created.HasValue) return "";
+        var diff = DateTime.Now - created.Value;
+        if (diff.TotalMinutes < 1) return "Vừa xong";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} phút trước";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours} giờ trước";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays} ngày trước";
+        return created.Value.ToString("dd/MM/yyyy HH:mm");
+    }
+    (string Icon, string Label, string Tone) Kind(string? type) => type switch
+    {
+        "payment" or "PaymentSuccess" or "PaymentReminder" or "SubscriptionCancelled" or "CancelSubscription" => ("credit_card", "Thanh toán", "text-secondary"),
+        "CommentReply" => ("forum", "Bình luận", "text-primary"),
+        _ => ("movie", "Phim", "text-primary")
+    };
+    const string pill = "inline-flex items-center gap-1 rounded-full px-space-md py-space-xs font-label-md text-label-md transition-colors";
+    const string pillOn = "bg-primary-container font-bold text-on-primary-container";
+    const string pillOff = "bg-surface-container-low text-on-surface-variant hover:text-on-surface";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/v2/css/bootstrap-lite.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/v2/css/notification.css" asp-append-version="true" />
+}
+
+<div class="u2-shell mx-auto w-full max-w-[1600px] px-margin-mobile pb-space-xl pt-space-lg md:px-margin notification-page-container">
+    <nav class="mb-space-md flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant" aria-label="Breadcrumb">
+        <a class="flex items-center gap-1 transition-colors hover:text-primary" href="/trang-chu"><span class="material-symbols-outlined text-[16px]">home</span> Trang Chủ</a>
+        <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+        <a class="transition-colors hover:text-primary" href="/user/profile">Tài Khoản</a>
+        <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+        <span class="font-headline-sm text-headline-sm text-on-surface">Thông Báo</span>
+    </nav>
+
+    <div class="grid grid-cols-1 gap-space-lg lg:grid-cols-[300px_minmax(0,1fr)]">
+        <div>
+            @{ var __sb = (MovieWeb.Models.DTOs.UserProfileDto)ViewBag.UserProfile; }
+            @await Html.PartialAsync("Partial/_UserSidebarV2", (__sb.Avatar, __sb.FullName, __sb.Username, __sb.RoleName, __sb.SubscriptionType, __sb.IsAdmin))
+        </div>
+
+        <div class="u2-content min-w-0">
+            <section class="mb-space-lg rounded-xl bg-gradient-to-br from-surface-container to-surface-container-low p-space-lg shadow-xl">
+                <div class="flex flex-wrap items-start justify-between gap-space-md">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-space-sm">
+                            <h1 class="font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-headline-xl">Trung Tâm Thông Báo</h1>
+                            @if (unreadCount != null && unreadCount.Total > 0)
+                            {
+                                <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-space-sm py-0.5 font-label-sm text-label-sm text-primary"><span class="h-1.5 w-1.5 rounded-full bg-primary"></span> @unreadCount.Total thông báo chưa đọc</span>
+                            }
+                        </div>
+                        <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">Cập nhật phim mới, phản hồi bình luận và các thông báo về tài khoản của bạn.</p>
+                    </div>
+                    @if (unreadCount != null && unreadCount.Total > 0)
+                    {
+                        <button type="button" class="btn-mark-all inline-flex items-center gap-1 rounded-full bg-surface-container-high px-space-md py-space-sm font-label-md text-label-md text-on-surface transition-colors hover:bg-surface-variant" onclick="markAllAsReadPage('@currentType')">
+                            <span class="material-symbols-outlined text-[18px]">done_all</span> Đánh dấu tất cả đã đọc
+                        </button>
+                    }
+                </div>
+            </section>
+
+            <div class="notification-page-filters mb-space-lg flex flex-wrap items-center justify-between gap-space-sm">
+                <div class="flex flex-wrap items-center gap-space-xs">
+                    <a href="/user/notifications?type=all&status=@currentStatus" class="@pill @(currentType == "all" ? pillOn : pillOff)">
+                        Tất cả @if (unreadCount != null && unreadCount.Total > 0) { <span class="rounded-full bg-error px-1.5 text-[11px] font-bold text-on-error">@unreadCount.Total</span> }
+                    </a>
+                    <a href="/user/notifications?type=payment&status=@currentStatus" class="@pill @(currentType == "payment" ? pillOn : pillOff)">
+                        <span class="material-symbols-outlined text-[16px]">credit_card</span> Thanh toán @if (unreadCount != null && unreadCount.Payment > 0) { <span class="rounded-full bg-error px-1.5 text-[11px] font-bold text-on-error">@unreadCount.Payment</span> }
+                    </a>
+                    <a href="/user/notifications?type=movie&status=@currentStatus" class="@pill @(currentType == "movie" ? pillOn : pillOff)">
+                        <span class="material-symbols-outlined text-[16px]">movie</span> Phim @if (unreadCount != null && unreadCount.Movie > 0) { <span class="rounded-full bg-error px-1.5 text-[11px] font-bold text-on-error">@unreadCount.Movie</span> }
+                    </a>
+                    <a href="/user/notifications?type=system&status=@currentStatus" class="@pill @(currentType == "system" ? pillOn : pillOff)">
+                        <span class="material-symbols-outlined text-[16px]">notifications</span> Hệ thống @if (unreadCount != null && unreadCount.System > 0) { <span class="rounded-full bg-error px-1.5 text-[11px] font-bold text-on-error">@unreadCount.System</span> }
+                    </a>
+                </div>
+                <div class="flex items-center gap-1 rounded-full bg-surface-container-low p-1">
+                    <a href="/user/notifications?type=@currentType&status=all" class="rounded-full px-space-md py-1 font-label-md text-label-md @(currentStatus == "all" ? "bg-surface-container-high text-on-surface" : "text-on-surface-variant hover:text-on-surface")">Toàn bộ</a>
+                    <a href="/user/notifications?type=@currentType&status=unread" class="rounded-full px-space-md py-1 font-label-md text-label-md @(currentStatus == "unread" ? "bg-surface-container-high text-on-surface" : "text-on-surface-variant hover:text-on-surface")">Chưa đọc</a>
+                    <a href="/user/notifications?type=@currentType&status=read" class="rounded-full px-space-md py-1 font-label-md text-label-md @(currentStatus == "read" ? "bg-surface-container-high text-on-surface" : "text-on-surface-variant hover:text-on-surface")">Đã đọc</a>
+                </div>
+            </div>
+
+            @if (Model == null || !Model.Any())
+            {
+                <div class="empty-state rounded-xl bg-surface-container-low p-space-xl text-center">
+                    <span class="material-symbols-outlined text-[56px] text-outline">inbox</span>
+                    <h2 class="mt-space-sm font-headline-md text-headline-md text-on-surface">Không có thông báo nào</h2>
+                    <p class="font-body-md text-body-md text-on-surface-variant">
+                        @if (currentStatus == "unread") { <text>Bạn đã đọc hết thông báo rồi!</text> }
+                        else if (currentType == "payment") { <text>Chưa có thông báo thanh toán nào.</text> }
+                        else if (currentType == "movie") { <text>Chưa có thông báo về phim nào.</text> }
+                        else { <text>Bạn chưa có thông báo nào.</text> }
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="notification-list flex flex-col gap-space-sm">
+                    @foreach (var notif in Model)
+                    {
+                        var kind = Kind(notif.Type);
+                        var unread = notif.IsRead == false;
+                        <div class="notification-page-item group relative flex cursor-pointer items-start gap-space-md rounded-xl p-space-md transition-colors @(unread ? "unread bg-surface-container" : "bg-surface-container-low hover:bg-surface-container")"
+                             onclick="markAsReadAndRedirect(@notif.NotificationId, '@(notif.Url ?? "#")')" role="link" tabindex="0">
+                            <span class="notification-icon material-symbols-outlined flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-[24px] @kind.Tone">@kind.Icon</span>
+                            <div class="notification-content min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant">
+                                    <span class="rounded bg-surface-container-high px-2 py-0.5 font-bold @kind.Tone">@kind.Label</span>
+                                    <span class="notification-time flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">schedule</span> @TimeAgo(notif.CreatedAt)</span>
+                                    @if (unread) { <span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold uppercase text-on-secondary">Mới</span> }
+                                </div>
+                                <h2 class="notification-title mt-1 font-headline-sm text-headline-sm font-bold text-on-surface">@notif.Title</h2>
+                                <p class="notification-text mt-1 font-body-md text-body-md text-on-surface-variant">@notif.Content</p>
+                                @if (!string.IsNullOrEmpty(notif.Url) && notif.Url != "#")
+                                {
+                                    <span class="mt-space-xs inline-flex items-center gap-1 font-label-md text-label-md font-bold text-primary">Xem chi tiết <span class="material-symbols-outlined text-[16px]">arrow_forward</span></span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (totalPages > 1)
+                {
+                    <div class="notification-pagination mt-space-lg flex items-center justify-center gap-space-md">
+                        @if (ViewBag.HasPrevious)
+                        {
+                            <a href="/user/notifications?type=@currentType&status=@currentStatus&page=@(currentPage - 1)" class="btn-page inline-flex items-center gap-1 rounded-full bg-surface-container-low px-space-md py-space-xs font-label-md text-label-md text-on-surface hover:bg-surface-container"><span class="material-symbols-outlined text-[16px]">arrow_back</span> Trang trước</a>
+                        }
+                        <span class="page-info font-label-md text-label-md text-on-surface-variant">Trang <strong class="text-on-surface">@currentPage</strong> / @totalPages</span>
+                        @if (ViewBag.HasNext)
+                        {
+                            <a href="/user/notifications?type=@currentType&status=@currentStatus&page=@(currentPage + 1)" class="btn-page inline-flex items-center gap-1 rounded-full bg-surface-container-low px-space-md py-space-xs font-label-md text-label-md text-on-surface hover:bg-surface-container">Trang sau <span class="material-symbols-outlined text-[16px]">arrow_forward</span></a>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>

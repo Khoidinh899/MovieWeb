@@ -1,0 +1,914 @@
+@model MovieWeb.Models.ViewModels.AdminNotificationsViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản Lý Thông Báo Hệ Thống";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="@Url.Action("Dashboard", "Admin")" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Thông Báo Hệ Thống</li>
+                </ol>
+            </nav>
+            <h2 class="mb-0 fw-bold">
+                <i class="bi bi-bell-fill text-info me-2"></i> Quản Lý Thông Báo Hệ Thống & Broadcast
+            </h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Dashboard", "Admin")" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Dashboard
+            </a>
+            <a href="/Admin/UiRollout" class="btn btn-outline-primary">
+                <i class="bi bi-toggles2 me-1"></i> Rollout Giao Diện
+            </a>
+            <a href="/Admin/Announcements" class="btn btn-outline-warning">
+                <i class="bi bi-megaphone me-1"></i> Popup Toàn Trang
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- TABS NAVIGATION -->
+    <ul class="nav nav-pills mb-4 gap-2" id="notifTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a href="@Url.Action("Notifications", "Admin", new { tab = "templates" })" class="nav-link px-4 fw-bold @(Model.ActiveTab == "templates" ? "active" : "bg-white border")">
+                <i class="bi bi-palette me-1"></i> 1. Mẫu Thiết Kế (@Model.Templates.Count)
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a href="@Url.Action("Notifications", "Admin", new { tab = "send" })" class="nav-link px-4 fw-bold @(Model.ActiveTab == "send" ? "active" : "bg-white border")">
+                <i class="bi bi-send-fill me-1"></i> 2. Soạn &amp; Gửi Broadcast
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a href="@Url.Action("Notifications", "Admin", new { tab = "history" })" class="nav-link px-4 fw-bold @(Model.ActiveTab == "history" ? "active" : "bg-white border")">
+                <i class="bi bi-clock-history me-1"></i> 3. Lịch Sử Đã Gửi (@Model.TotalBroadcasts)
+            </a>
+        </li>
+    </ul>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: MẪU THIẾT KẾ (TEMPLATES) -->
+    <!-- ========================================== -->
+    @if (Model.ActiveTab == "templates")
+    {
+        <div class="row g-4">
+            <!-- Cột trái: Form tạo mẫu -->
+            <div class="col-12 col-xl-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-dark text-white py-3">
+                        <h5 class="mb-0 fs-6 fw-bold">
+                            <i class="bi bi-plus-circle text-warning me-2"></i> Thiết Kế Mẫu Mới
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form asp-action="CreateNotificationTemplate" asp-controller="Admin" method="post" id="templateForm">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="styleJson" id="tmplStyleJson" />
+
+                            <div class="mb-3">
+                                <label for="tmplName" class="form-label fw-bold text-dark small">Tên mẫu lưu nội bộ:</label>
+                                <input type="text" class="form-control" id="tmplName" name="name" placeholder="VD: Mẫu thông báo Tết, Mẫu bảo trì..." required maxlength="100" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="tmplTitle" class="form-label fw-bold text-dark small">Tiêu đề thông báo (tối đa 150 ký tự):</label>
+                                <input type="text" class="form-control" id="tmplTitle" name="title" placeholder="VD: Ra mắt giao diện xem phim mới..." required maxlength="150" oninput="updateTmplPreview()" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="tmplContent" class="form-label fw-bold text-dark small">Nội dung text thuần (tối đa 1000 ký tự):</label>
+                                <textarea class="form-control" id="tmplContent" name="content" rows="4" maxlength="1000" placeholder="Nội dung thông báo (text thuần, xuống dòng được giữ nguyên)..." required oninput="updateTmplPreview()"></textarea>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-dark small">Biểu tượng (Icon):</label>
+                                    <select class="form-select" id="tmplIcon" onchange="updateTmplPreview()">
+                                        <option value="bi-bell-fill">🔔 Chuông (Mặc định)</option>
+                                        <option value="bi-stars">✨ Ngôi sao / Mới</option>
+                                        <option value="bi-gift-fill">🎁 Quà tặng / Ưu đãi</option>
+                                        <option value="bi-exclamation-triangle-fill">⚠️ Cảnh báo</option>
+                                        <option value="bi-patch-check-fill">✅ Chứng nhận / Hoàn tất</option>
+                                        <option value="bi-trophy-fill">🏆 Giải thưởng</option>
+                                        <option value="bi-ticket-perforated-fill">🎟️ Vé phim</option>
+                                        <option value="bi-camera-reels-fill">🎬 Cuộn phim</option>
+                                        <option value="bi-palette-fill">🎨 Giao diện</option>
+                                        <option value="bi-info-circle-fill">ℹ️ Thông tin</option>
+                                        <option value="bi-heart-fill">❤️ Yêu thích</option>
+                                        <option value="bi-fire">🔥 Nổi bật / Hot</option>
+                                        <option value="bi-rocket-takeoff-fill">🚀 Tốc độ / Nâng cấp</option>
+                                        <option value="bi-sparkles">❇️ Lấp lánh</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-dark small">Màu nhấn (Accent):</label>
+                                    <select class="form-select" id="tmplAccent" onchange="updateTmplPreview()">
+                                        <option value="primary">Xanh dương (Primary)</option>
+                                        <option value="secondary">Xám bạc (Secondary)</option>
+                                        <option value="success">Xanh lá (Success)</option>
+                                        <option value="danger">Đỏ (Danger)</option>
+                                        <option value="warning">Vàng cam (Warning)</option>
+                                        <option value="info">Xanh lơ (Info)</option>
+                                        <option value="purple">Tím (Purple)</option>
+                                        <option value="cyan">Lam ngọc (Cyan)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-dark small">Badge nhãn nhỏ (tối đa 20 ký tự):</label>
+                                    <input type="text" class="form-control" id="tmplBadge" placeholder="VD: MỚI, QUAN TRỌNG..." maxlength="20" oninput="updateTmplPreview()" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-dark small">Chữ nút hành động:</label>
+                                    <input type="text" class="form-control" id="tmplBtnText" placeholder="VD: Xem ngay, Khám phá..." maxlength="50" oninput="updateTmplPreview()" />
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-dark small">Đường dẫn khi click (Url):</label>
+                                <input type="text" class="form-control" id="tmplUrl" placeholder="VD: /user/giao-dien hoặc https://..." oninput="updateTmplPreview()" />
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-dark small">Ảnh thumbnail đi kèm (URL hoặc upload ≤ 1MB):</label>
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" id="tmplImageUrl" placeholder="https://... hoặc tải ảnh lên" oninput="updateTmplPreview()" />
+                                    <input type="file" id="tmplFileInput" class="d-none" accept=".jpg,.jpeg,.png,.webp" onchange="handleImageUpload('tmplFileInput', 'tmplImageUrl', updateTmplPreview)" />
+                                    <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('tmplFileInput').click()">
+                                        <i class="bi bi-upload"></i> Tải ảnh
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block">Ảnh hiển thị dạng thumbnail vuông/chữ nhật nhỏ trong item thông báo.</small>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary fw-bold px-4" onclick="packTmplStyleJson()">
+                                <i class="bi bi-floppy-fill me-1"></i> Lưu Mẫu Thiết Kế
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cột phải: Live Preview & Danh sách mẫu -->
+            <div class="col-12 col-xl-6">
+                <!-- Preview Box -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fs-6 fw-bold">
+                            <i class="bi bi-eye text-info me-2"></i> Xem Trước Trực Tiếp Trong Chuông
+                        </h5>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-light active" id="btnPreviewV1" onclick="setNotifPreviewTheme('v1')">Chuông V1</button>
+                            <button type="button" class="btn btn-outline-light" id="btnPreviewV2" onclick="setNotifPreviewTheme('v2')">Chuông V2</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-4 bg-light">
+                        <div id="previewThemeContainer" class="p-3 rounded border bg-white shadow-sm" style="max-width: 420px; margin: 0 auto;">
+                            <!-- V1 Preview Element -->
+                            <div id="previewItemWrapper">
+                                <div class="d-flex align-items-start gap-3 p-3 rounded border position-relative" id="previewCard" style="border-left: 4px solid #0d6efd !important;">
+                                    <div id="prevIconBox" class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 40px; height: 40px; background: rgba(13,110,253,0.1); color: #0d6efd;">
+                                        <i class="bi bi-bell-fill fs-5" id="prevIcon"></i>
+                                    </div>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="d-flex align-items-center gap-1 mb-1">
+                                            <span class="badge bg-primary" id="prevBadge" style="display: none;">MỚI</span>
+                                            <h6 class="mb-0 fw-bold text-dark text-truncate" id="prevTitle">Tiêu đề thông báo mẫu</h6>
+                                        </div>
+                                        <p class="mb-2 text-muted small text-break" id="prevContent" style="white-space: pre-line;">Nội dung thông báo sẽ hiển thị tại đây...</p>
+                                        <div class="d-flex align-items-center justify-content-between mt-2">
+                                            <small class="text-muted" style="font-size: 11px;">Vừa xong • Hệ thống</small>
+                                            <a href="javascript:void(0)" class="btn btn-sm btn-outline-primary py-0 px-2" id="prevBtn" style="font-size: 11px; display: none;">Chi tiết</a>
+                                        </div>
+                                    </div>
+                                    <img id="prevThumb" src="" alt="Thumbnail" class="rounded flex-shrink-0" style="width: 50px; height: 50px; object-fit: cover; display: none;" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danh sách mẫu đã lưu -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fs-6 fw-bold">
+                            <i class="bi bi-collection text-primary me-2"></i> Mẫu Đã Lưu (@Model.Templates.Count)
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (!Model.Templates.Any())
+                        {
+                            <div class="p-4 text-center text-muted">
+                                <i class="bi bi-inbox fs-3 d-block mb-1"></i> Chưa có mẫu thiết kế nào được lưu.
+                            </div>
+                        }
+                        else
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var tmpl in Model.Templates)
+                                {
+                                    <li class="list-group-item p-3 d-flex justify-content-between align-items-start gap-3">
+                                        <div class="min-w-0 flex-grow-1">
+                                            <div class="fw-bold text-dark">@tmpl.Name</div>
+                                            <div class="text-primary small fw-semibold">@tmpl.Title</div>
+                                            <div class="text-muted small text-truncate">@tmpl.Content</div>
+                                            <div class="text-muted" style="font-size: 11px;">Cập nhật: @tmpl.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                        </div>
+                                        <div class="d-flex gap-2 flex-shrink-0">
+                                            <a href="@Url.Action("Notifications", "Admin", new { tab = "send", templateId = tmpl.Id })" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-send me-1"></i> Dùng mẫu
+                                            </a>
+                                            <form asp-action="DeleteNotificationTemplate" asp-controller="Admin" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa mẫu này?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@tmpl.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ========================================== -->
+    <!-- TAB 2: SOẠN & GỬI BROADCAST (SEND) -->
+    <!-- ========================================== -->
+    @if (Model.ActiveTab == "send")
+    {
+        <div class="row g-4">
+            <div class="col-12 col-xl-7">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fs-6 fw-bold">
+                            <i class="bi bi-send text-warning me-2"></i> Soạn &amp; Gửi Thông Báo Mới
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" onclick="applyPresetInviteV2()">
+                            <i class="bi bi-stars me-1"></i> Mẫu: Mời Dùng Thử V2
+                        </button>
+                    </div>
+                    <div class="card-body p-4">
+                        <form asp-action="SendBroadcastNotification" asp-controller="Admin" method="post" id="broadcastForm">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="styleJson" id="sendStyleJson" />
+                            <input type="hidden" name="selectedUserIds" id="selectedUserIdsInput" />
+
+                            <div class="mb-3">
+                                <label for="sendTitle" class="form-label fw-bold text-dark small">Tiêu đề thông báo:</label>
+                                <input type="text" class="form-control" id="sendTitle" name="title" value="@Model.PresetTitle" placeholder="Nhập tiêu đề thông báo (≤ 150 ký tự)..." required maxlength="150" oninput="updateSendPreview()" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="sendContent" class="form-label fw-bold text-dark small">Nội dung thông báo (text thuần):</label>
+                                <textarea class="form-control" id="sendContent" name="content" rows="4" maxlength="1000" placeholder="Nội dung chi tiết thông báo gửi đến người dùng..." required oninput="updateSendPreview()">@Model.PresetContent</textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="sendUrl" class="form-label fw-bold text-dark small">Đường dẫn khi click (URL):</label>
+                                <input type="text" class="form-control" id="sendUrl" name="url" value="@Model.PresetUrl" placeholder="VD: /user/giao-dien hoặc https://..." oninput="updateSendPreview()" />
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-dark small">Biểu tượng (Icon):</label>
+                                    <select class="form-select" id="sendIcon" onchange="updateSendPreview()">
+                                        <option value="bi-bell-fill">🔔 Chuông (Mặc định)</option>
+                                        <option value="bi-stars">✨ Ngôi sao / Mới</option>
+                                        <option value="bi-gift-fill">🎁 Quà tặng / Ưu đãi</option>
+                                        <option value="bi-exclamation-triangle-fill">⚠️ Cảnh báo</option>
+                                        <option value="bi-patch-check-fill">✅ Chứng nhận</option>
+                                        <option value="bi-trophy-fill">🏆 Giải thưởng</option>
+                                        <option value="bi-palette-fill">🎨 Giao diện</option>
+                                        <option value="bi-info-circle-fill">ℹ️ Thông tin</option>
+                                        <option value="bi-fire">🔥 Nổi bật / Hot</option>
+                                        <option value="bi-rocket-takeoff-fill">🚀 Nâng cấp</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-dark small">Màu nhấn (Accent):</label>
+                                    <select class="form-select" id="sendAccent" onchange="updateSendPreview()">
+                                        <option value="primary">Xanh dương (Primary)</option>
+                                        <option value="secondary">Xám bạc (Secondary)</option>
+                                        <option value="success">Xanh lá (Success)</option>
+                                        <option value="danger">Đỏ (Danger)</option>
+                                        <option value="warning">Vàng cam (Warning)</option>
+                                        <option value="info">Xanh lơ (Info)</option>
+                                        <option value="purple">Tím (Purple)</option>
+                                        <option value="cyan">Lam ngọc (Cyan)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-dark small">Badge nhãn nhỏ:</label>
+                                    <input type="text" class="form-control" id="sendBadge" placeholder="VD: MỚI, NÓNG..." maxlength="20" oninput="updateSendPreview()" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-dark small">Chữ nút hành động:</label>
+                                    <input type="text" class="form-control" id="sendBtnText" placeholder="VD: Thử ngay, Xem ngay..." maxlength="50" oninput="updateSendPreview()" />
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-dark small">Ảnh thumbnail đi kèm (URL hoặc upload ≤ 1MB):</label>
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" id="sendImageUrl" placeholder="https://... hoặc tải ảnh" oninput="updateSendPreview()" />
+                                    <input type="file" id="sendFileInput" class="d-none" accept=".jpg,.jpeg,.png,.webp" onchange="handleImageUpload('sendFileInput', 'sendImageUrl', updateSendPreview)" />
+                                    <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('sendFileInput').click()">
+                                        <i class="bi bi-upload"></i> Tải ảnh
+                                    </button>
+                                </div>
+                            </div>
+
+                            <hr class="my-4" />
+
+                            <!-- NGƯỜI NHẬN -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-dark">
+                                    <i class="bi bi-people-fill me-1 text-primary"></i> Đối tượng người nhận:
+                                </label>
+                                <div class="d-flex flex-column gap-2 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="targetType" id="targetAll" value="all" checked onchange="toggleRecipientMode()" />
+                                        <label class="form-check-label fw-bold" for="targetAll">
+                                            Tất cả thành viên hệ thống (@Model.TotalActiveMembers.ToString("N0") người dùng hoạt động)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="targetType" id="targetSelected" value="selected" onchange="toggleRecipientMode()" />
+                                        <label class="form-check-label fw-bold" for="targetSelected">
+                                            Chỉ định các thành viên cụ thể
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Box tìm kiếm và chọn user khi chọn "selected" -->
+                                <div id="selectedUsersGroup" class="p-3 bg-light rounded border" style="display: none;">
+                                    <label class="form-label small fw-bold text-dark">Tìm thành viên theo tên/email/username:</label>
+                                    <div class="position-relative mb-2">
+                                        <input type="text" class="form-control" id="userSearchInput" placeholder="Nhập ít nhất 2 ký tự để tìm..." autocomplete="off" oninput="searchUsersLive(this.value)" />
+                                        <div id="userSearchResults" class="list-group position-absolute w-100 shadow mt-1" style="z-index: 50; max-height: 250px; overflow-y: auto; display: none;"></div>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2 mt-2" id="selectedUserChips"></div>
+                                    <small class="text-muted d-block mt-2">Đã chọn: <span id="selectedCount">0</span> thành viên</small>
+                                </div>
+                            </div>
+
+                            <!-- Checkbox FCM Push -->
+                            <div class="form-check mb-4 p-3 bg-light rounded border">
+                                <input class="form-check-input ms-0 me-2" type="checkbox" id="sendPushCheck" name="sendPush" value="true" />
+                                <label class="form-check-label small fw-bold" for="sendPushCheck">
+                                    <i class="bi bi-phone me-1 text-success"></i> Gửi thông báo đẩy về ứng dụng điện thoại (FCM Push)
+                                </label>
+                                <small class="text-muted d-block ms-4" style="font-size: 11px;">Mặc định tắt. Trên môi trường Development sẽ tự động bỏ qua để tránh gọi API thật.</small>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary fw-bold px-4 py-2" id="btnSubmitBroadcast">
+                                <i class="bi bi-broadcast me-1"></i> Xác Nhận &amp; Gửi Broadcast Ngay
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cột phải: Live Preview khi soạn -->
+            <div class="col-12 col-xl-5">
+                <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-header bg-dark text-white py-3">
+                        <h5 class="mb-0 fs-6 fw-bold">
+                            <i class="bi bi-eye text-info me-2"></i> Xem Trước Broadcast
+                        </h5>
+                    </div>
+                    <div class="card-body p-4 bg-light">
+                        <div class="p-3 rounded border bg-white shadow-sm" style="max-width: 420px; margin: 0 auto;">
+                            <div class="d-flex align-items-start gap-3 p-3 rounded border position-relative" id="sendPreviewCard" style="border-left: 4px solid #0d6efd !important;">
+                                <div id="sendPrevIconBox" class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 40px; height: 40px; background: rgba(13,110,253,0.1); color: #0d6efd;">
+                                    <i class="bi bi-bell-fill fs-5" id="sendPrevIcon"></i>
+                                </div>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="d-flex align-items-center gap-1 mb-1">
+                                        <span class="badge bg-primary" id="sendPrevBadge" style="display: none;">MỚI</span>
+                                        <h6 class="mb-0 fw-bold text-dark text-truncate" id="sendPrevTitle">Tiêu đề thông báo</h6>
+                                    </div>
+                                    <p class="mb-2 text-muted small text-break" id="sendPrevContent" style="white-space: pre-line;">Nội dung thông báo...</p>
+                                    <div class="d-flex align-items-center justify-content-between mt-2">
+                                        <small class="text-muted" style="font-size: 11px;">Vừa xong • Hệ thống</small>
+                                        <a href="javascript:void(0)" class="btn btn-sm btn-outline-primary py-0 px-2" id="sendPrevBtn" style="font-size: 11px; display: none;">Chi tiết</a>
+                                    </div>
+                                </div>
+                                <img id="sendPrevThumb" src="" alt="Thumbnail" class="rounded flex-shrink-0" style="width: 50px; height: 50px; object-fit: cover; display: none;" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ========================================== -->
+    <!-- TAB 3: LỊCH SỬ ĐÃ GỬI (HISTORY) -->
+    <!-- ========================================== -->
+    @if (Model.ActiveTab == "history")
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fs-6 fw-bold">
+                    <i class="bi bi-clock-history text-primary me-2"></i> Lịch Sử Broadcast Đã Gửi (@Model.TotalBroadcasts)
+                </h5>
+                <a href="@Url.Action("Notifications", "Admin", new { tab = "send" })" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i> Soạn Thông Báo Mới
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 70px;">Mã</th>
+                            <th>Tiêu đề &amp; Nội dung</th>
+                            <th style="width: 140px;" class="text-center">Người nhận</th>
+                            <th style="width: 120px;" class="text-center">Đã đọc</th>
+                            <th style="width: 100px;" class="text-center">Push FCM</th>
+                            <th style="width: 110px;" class="text-center">Trạng thái</th>
+                            <th style="width: 150px;">Thời gian</th>
+                            <th style="width: 170px;" class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Broadcasts.Any())
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-3 d-block mb-1"></i> Chưa có đợt gửi broadcast nào.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var b in Model.Broadcasts)
+                            {
+                                <tr>
+                                    <td class="text-muted fw-bold">#@b.Id</td>
+                                    <td>
+                                        <div class="fw-bold text-dark">@b.Title</div>
+                                        <div class="text-muted small text-truncate" style="max-width: 380px;">@b.Content</div>
+                                        @if (!string.IsNullOrEmpty(b.Url))
+                                        {
+                                            <a href="@b.Url" target="_blank" class="small text-primary text-decoration-none">
+                                                <i class="bi bi-link-45deg"></i> @b.Url
+                                            </a>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (b.TargetType == "all")
+                                        {
+                                            <span class="badge bg-secondary">Tất cả (@b.RecipientCount.ToString("N0"))</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info text-dark">Chỉ định (@b.RecipientCount.ToString("N0"))</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="fw-bold text-success">@b.ReadCount.ToString("N0")</span>
+                                        <span class="text-muted small">/ @b.RecipientCount.ToString("N0")</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (b.SendPush)
+                                        {
+                                            <span class="badge bg-success">Có</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Không</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (b.Status == "done")
+                                        {
+                                            <span class="badge bg-success">Hoàn tất</span>
+                                        }
+                                        else if (b.Status == "sending")
+                                        {
+                                            <span class="badge bg-primary">Đang gửi...</span>
+                                        }
+                                        else if (b.Status == "queued")
+                                        {
+                                            <span class="badge bg-warning text-dark">Trong hàng đợi</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Thất bại</span>
+                                        }
+                                    </td>
+                                    <td class="text-muted small">
+                                        @b.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <a href="@Url.Action("Notifications", "Admin", new { tab = "send", reuseId = b.Id })" class="btn btn-sm btn-outline-primary" title="Gửi lại nội dung này">
+                                                <i class="bi bi-arrow-repeat"></i> Gửi lại
+                                            </a>
+                                            <form asp-action="RevokeBroadcast" asp-controller="Admin" method="post" onsubmit="return confirm('⚠️ CẢNH BÁO: Thu hồi thông báo #@b.Id?\n\nToàn bộ thông báo này sẽ bị xóa khỏi chuông người dùng ngay lập tức.');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@b.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Thu hồi thông báo">
+                                                    <i class="bi bi-x-circle"></i> Thu hồi
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <nav class="d-flex justify-content-center my-4">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(Model.CurrentPage <= 1 ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("Notifications", "Admin", new { tab = "history", page = Model.CurrentPage - 1 })">Trước</a>
+                        </li>
+                        @for (int p = 1; p <= Model.TotalPages; p++)
+                        {
+                            <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Notifications", "Admin", new { tab = "history", page = p })">@p</a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("Notifications", "Admin", new { tab = "history", page = Model.CurrentPage + 1 })">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // MÀU ACCENT MAP
+        const accentColors = {
+            primary: '#0d6efd',
+            secondary: '#6c757d',
+            success: '#198754',
+            danger: '#dc3545',
+            warning: '#fd7e14',
+            info: '#0dcaf0',
+            purple: '#6f42c1',
+            cyan: '#20c997'
+        };
+
+        // --- PREVIEW THEME V1 vs V2 ---
+        function setNotifPreviewTheme(theme) {
+            const container = document.getElementById('previewThemeContainer');
+            const btnV1 = document.getElementById('btnPreviewV1');
+            const btnV2 = document.getElementById('btnPreviewV2');
+
+            if (theme === 'v2') {
+                container.style.backgroundColor = '#131b2e';
+                container.style.borderColor = 'rgba(255,255,255,0.1)';
+                btnV2.classList.add('active');
+                btnV1.classList.remove('active');
+                document.getElementById('prevTitle').classList.remove('text-dark');
+                document.getElementById('prevTitle').style.color = '#fff';
+            } else {
+                container.style.backgroundColor = '#ffffff';
+                container.style.borderColor = '#dee2e6';
+                btnV1.classList.add('active');
+                btnV2.classList.remove('active');
+                document.getElementById('prevTitle').classList.add('text-dark');
+                document.getElementById('prevTitle').style.color = '';
+            }
+        }
+
+        // --- TEMPLATE LIVE PREVIEW ---
+        function updateTmplPreview() {
+            const title = document.getElementById('tmplTitle')?.value || 'Tiêu đề thông báo mẫu';
+            const content = document.getElementById('tmplContent')?.value || 'Nội dung thông báo sẽ hiển thị tại đây...';
+            const icon = document.getElementById('tmplIcon')?.value || 'bi-bell-fill';
+            const accent = document.getElementById('tmplAccent')?.value || 'primary';
+            const badge = document.getElementById('tmplBadge')?.value || '';
+            const btnText = document.getElementById('tmplBtnText')?.value || '';
+            const imageUrl = document.getElementById('tmplImageUrl')?.value || '';
+
+            const colorHex = accentColors[accent] || '#0d6efd';
+
+            const card = document.getElementById('previewCard');
+            if (card) card.style.borderLeftColor = colorHex;
+
+            const iconEl = document.getElementById('prevIcon');
+            if (iconEl) iconEl.className = 'bi ' + icon + ' fs-5';
+
+            const iconBox = document.getElementById('prevIconBox');
+            if (iconBox) {
+                iconBox.style.color = colorHex;
+                iconBox.style.backgroundColor = colorHex + '1A';
+            }
+
+            const titleEl = document.getElementById('prevTitle');
+            if (titleEl) titleEl.textContent = title;
+
+            const contentEl = document.getElementById('prevContent');
+            if (contentEl) contentEl.textContent = content;
+
+            const badgeEl = document.getElementById('prevBadge');
+            if (badgeEl) {
+                if (badge) {
+                    badgeEl.textContent = badge;
+                    badgeEl.style.backgroundColor = colorHex;
+                    badgeEl.style.display = 'inline-block';
+                } else {
+                    badgeEl.style.display = 'none';
+                }
+            }
+
+            const btnEl = document.getElementById('prevBtn');
+            if (btnEl) {
+                if (btnText) {
+                    btnEl.textContent = btnText;
+                    btnEl.style.color = colorHex;
+                    btnEl.style.borderColor = colorHex;
+                    btnEl.style.display = 'inline-block';
+                } else {
+                    btnEl.style.display = 'none';
+                }
+            }
+
+            const thumbEl = document.getElementById('prevThumb');
+            if (thumbEl) {
+                if (imageUrl) {
+                    thumbEl.src = imageUrl;
+                    thumbEl.style.display = 'block';
+                } else {
+                    thumbEl.style.display = 'none';
+                }
+            }
+        }
+
+        function packTmplStyleJson() {
+            const style = {
+                icon: document.getElementById('tmplIcon')?.value,
+                accent: document.getElementById('tmplAccent')?.value,
+                imageUrl: document.getElementById('tmplImageUrl')?.value || null,
+                buttonText: document.getElementById('tmplBtnText')?.value || null,
+                url: document.getElementById('tmplUrl')?.value || null,
+                badge: document.getElementById('tmplBadge')?.value || null
+            };
+            document.getElementById('tmplStyleJson').value = JSON.stringify(style);
+        }
+
+        // --- SEND FORM LIVE PREVIEW ---
+        function updateSendPreview() {
+            const title = document.getElementById('sendTitle')?.value || 'Tiêu đề thông báo';
+            const content = document.getElementById('sendContent')?.value || 'Nội dung thông báo...';
+            const icon = document.getElementById('sendIcon')?.value || 'bi-bell-fill';
+            const accent = document.getElementById('sendAccent')?.value || 'primary';
+            const badge = document.getElementById('sendBadge')?.value || '';
+            const btnText = document.getElementById('sendBtnText')?.value || '';
+            const imageUrl = document.getElementById('sendImageUrl')?.value || '';
+
+            const colorHex = accentColors[accent] || '#0d6efd';
+
+            const card = document.getElementById('sendPreviewCard');
+            if (card) card.style.borderLeftColor = colorHex;
+
+            const iconEl = document.getElementById('sendPrevIcon');
+            if (iconEl) iconEl.className = 'bi ' + icon + ' fs-5';
+
+            const iconBox = document.getElementById('sendPrevIconBox');
+            if (iconBox) {
+                iconBox.style.color = colorHex;
+                iconBox.style.backgroundColor = colorHex + '1A';
+            }
+
+            const titleEl = document.getElementById('sendPrevTitle');
+            if (titleEl) titleEl.textContent = title;
+
+            const contentEl = document.getElementById('sendPrevContent');
+            if (contentEl) contentEl.textContent = content;
+
+            const badgeEl = document.getElementById('sendPrevBadge');
+            if (badgeEl) {
+                if (badge) {
+                    badgeEl.textContent = badge;
+                    badgeEl.style.backgroundColor = colorHex;
+                    badgeEl.style.display = 'inline-block';
+                } else {
+                    badgeEl.style.display = 'none';
+                }
+            }
+
+            const btnEl = document.getElementById('sendPrevBtn');
+            if (btnEl) {
+                if (btnText) {
+                    btnEl.textContent = btnText;
+                    btnEl.style.color = colorHex;
+                    btnEl.style.borderColor = colorHex;
+                    btnEl.style.display = 'inline-block';
+                } else {
+                    btnEl.style.display = 'none';
+                }
+            }
+
+            const thumbEl = document.getElementById('sendPrevThumb');
+            if (thumbEl) {
+                if (imageUrl) {
+                    thumbEl.src = imageUrl;
+                    thumbEl.style.display = 'block';
+                } else {
+                    thumbEl.style.display = 'none';
+                }
+            }
+        }
+
+        // --- QUICK PRESET: MỜI DÙNG THỬ V2 ---
+        function applyPresetInviteV2() {
+            document.getElementById('sendTitle').value = 'Trải nghiệm giao diện mới MoonPhim V2';
+            document.getElementById('sendContent').value = 'MoonPhim chính thức ra mắt giao diện Cinematic Streaming hiện đại. Mời bạn trải nghiệm thử và chia sẻ cảm nhận để cùng chúng tôi hoàn thiện sản phẩm nhé!';
+            document.getElementById('sendUrl').value = '/user/giao-dien';
+            document.getElementById('sendIcon').value = 'bi-stars';
+            document.getElementById('sendAccent').value = 'primary';
+            document.getElementById('sendBadge').value = 'MỚI';
+            document.getElementById('sendBtnText').value = 'Thử ngay';
+            updateSendPreview();
+        }
+
+        // --- RECIPIENT TOGGLE & SEARCH CHIPS ---
+        const selectedUsers = new Map();
+
+        function toggleRecipientMode() {
+            const isSelected = document.getElementById('targetSelected')?.checked;
+            const group = document.getElementById('selectedUsersGroup');
+            if (group) group.style.display = isSelected ? 'block' : 'none';
+        }
+
+        let searchTimeout = null;
+        function searchUsersLive(query) {
+            clearTimeout(searchTimeout);
+            const dropdown = document.getElementById('userSearchResults');
+            if (!query || query.trim().length < 2) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            searchTimeout = setTimeout(function () {
+                fetch('/Admin/SearchUsersForNotification?q=' + encodeURIComponent(query))
+                    .then(r => r.json())
+                    .then(data => {
+                        dropdown.innerHTML = '';
+                        if (!data || data.length === 0) {
+                            dropdown.innerHTML = '<div class="list-group-item text-muted small">Không tìm thấy thành viên phù hợp.</div>';
+                        } else {
+                            data.forEach(user => {
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'list-group-item list-group-item-action d-flex align-items-center gap-2';
+                                btn.innerHTML = '<img src="' + (user.avatar || '/images/nouser.png') + '" class="rounded-circle" style="width:28px;height:28px;object-fit:cover;">' +
+                                                '<div><strong>' + (user.fullName || user.username) + '</strong> <span class="text-muted small">(@@' + user.username + ')</span></div>';
+                                btn.onclick = function () {
+                                    addUserChip(user);
+                                    dropdown.style.display = 'none';
+                                    document.getElementById('userSearchInput').value = '';
+                                };
+                                dropdown.appendChild(btn);
+                            });
+                        }
+                        dropdown.style.display = 'block';
+                    })
+                    .catch(() => {
+                        dropdown.style.display = 'none';
+                    });
+            }, 300);
+        }
+
+        function addUserChip(user) {
+            if (selectedUsers.has(user.id)) return;
+            selectedUsers.set(user.id, user);
+            renderChips();
+        }
+
+        function removeUserChip(id) {
+            selectedUsers.delete(id);
+            renderChips();
+        }
+
+        function renderChips() {
+            const container = document.getElementById('selectedUserChips');
+            const countEl = document.getElementById('selectedCount');
+            const input = document.getElementById('selectedUserIdsInput');
+            if (!container) return;
+
+            container.innerHTML = '';
+            const ids = [];
+
+            selectedUsers.forEach((u, id) => {
+                ids.push(id);
+                const chip = document.createElement('span');
+                chip.className = 'badge bg-primary d-inline-flex align-items-center gap-1 p-2 fs-6';
+                chip.innerHTML = (u.fullName || u.username) + ' <i class="bi bi-x-circle-fill cursor-pointer" onclick="removeUserChip(' + id + ')"></i>';
+                container.appendChild(chip);
+            });
+
+            if (countEl) countEl.textContent = ids.length;
+            if (input) input.value = ids.join(',');
+        }
+
+        // --- IMAGE UPLOAD AJAX ---
+        function handleImageUpload(fileInputId, targetUrlId, callback) {
+            const fileInput = document.getElementById(fileInputId);
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
+
+            const file = fileInput.files[0];
+            if (file.size > 1024 * 1024) {
+                alert('Dung lượng ảnh tối đa là 1MB!');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            fetch('/Admin/UploadNotificationImage', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success && res.url) {
+                    document.getElementById(targetUrlId).value = res.url;
+                    if (typeof callback === 'function') callback();
+                } else {
+                    alert(res.message || 'Lỗi tải ảnh!');
+                }
+            })
+            .catch(e => {
+                alert('Có lỗi xảy ra khi tải ảnh lên.');
+            });
+        }
+
+        // --- SUBMIT CONFIRM FOR ALL ---
+        document.getElementById('broadcastForm')?.addEventListener('submit', function (e) {
+            const targetAll = document.getElementById('targetAll')?.checked;
+            const style = {
+                icon: document.getElementById('sendIcon')?.value,
+                accent: document.getElementById('sendAccent')?.value,
+                imageUrl: document.getElementById('sendImageUrl')?.value || null,
+                buttonText: document.getElementById('sendBtnText')?.value || null,
+                url: document.getElementById('sendUrl')?.value || null,
+                badge: document.getElementById('sendBadge')?.value || null
+            };
+            document.getElementById('sendStyleJson').value = JSON.stringify(style);
+
+            if (targetAll) {
+                const total = @Model.TotalActiveMembers;
+                const ok = confirm('⚠️ BẠN ĐANG CHỌN GỬI CHO TẤT CẢ ' + total.toLocaleString() + ' THÀNH VIÊN!\n\nThông báo sẽ được bắn realtime qua SignalR tới toàn bộ tài khoản đang hoạt động.\n\nBạn có chắc chắn muốn phát sóng (Broadcast) thông báo này ngay bây giờ?');
+                if (!ok) {
+                    e.preventDefault();
+                }
+            } else {
+                if (selectedUsers.size === 0) {
+                    alert('Vui lòng chọn ít nhất 1 thành viên để gửi!');
+                    e.preventDefault();
+                }
+            }
+        });
+
+        // Initialize preview on tab load
+        document.addEventListener('DOMContentLoaded', function () {
+            if (document.getElementById('tmplTitle')) updateTmplPreview();
+            if (document.getElementById('sendTitle')) updateSendPreview();
+        });
+    </script>
+}

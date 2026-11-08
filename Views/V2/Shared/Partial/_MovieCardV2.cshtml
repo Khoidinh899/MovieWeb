@@ -1,0 +1,22 @@
+@* Thẻ phim V2 dùng chung (poster, tên, năm, badge). Model: (Movie, Poster URL đã xử lý fallback, nhãn badge, class badge, dòng phụ). *@
+@model (MovieWeb.Models.Entities.Movie Movie, string Poster, string Badge, string BadgeClass, string Sub)
+<article class="group flex flex-col">
+    <a href="/phim/@Model.Movie.Slug" class="relative block aspect-[2/3] overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-container transition-all duration-300 group-hover:border-secondary/50">
+        <img src="@Model.Poster" alt="@Model.Movie.Name" loading="lazy" decoding="async"
+             class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+             onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
+        <span class="absolute left-2 top-2 rounded-md px-2 py-0.5 text-[11px] font-bold @Model.BadgeClass">@Model.Badge</span>
+        <span class="absolute inset-0 flex items-center justify-center bg-background/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden="true">
+            <span class="material-symbols-outlined flex h-12 w-12 items-center justify-center rounded-full bg-primary-container text-[28px] text-white">play_arrow</span>
+        </span>
+    </a>
+    <div class="mt-2 space-y-1">
+        <h3 class="truncate font-headline-sm text-sm font-semibold text-on-surface" title="@Model.Movie.Name">
+            <a href="/phim/@Model.Movie.Slug" class="hover:text-secondary">@Model.Movie.Name</a>
+        </h3>
+        <div class="flex items-center justify-between text-xs text-outline">
+            <span>@Model.Movie.Year</span>
+            <span class="truncate text-secondary">@Model.Sub</span>
+        </div>
+    </div>
+</article>

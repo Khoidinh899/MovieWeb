@@ -125,7 +125,7 @@
         
         @* console.log("✅ Initializing mobile menu..."); *@
         
-        // Khởi tạo Bootstrap Offcanvas
+        // Header persists across SPA navigation: bind once per button.
         if (menuToggleBtn.dataset.sidebarBound === 'true') return;
         const bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasElement);
         menuToggleBtn.dataset.sidebarBound = 'true';

@@ -1,0 +1,174 @@
+@model List<MovieWeb.Models.DTOs.WatchHistoryMovieDto>
+
+@{
+    ViewData["Title"] = "Lịch Sử Xem";
+}
+
+@functions {
+    public string GetMoviePosterUrl(string? posterUrl)
+    {
+        if (string.IsNullOrEmpty(posterUrl))
+        {
+            return "/images/default-poster.jpg";
+        }
+
+        if (posterUrl.StartsWith("http"))
+        {
+            return posterUrl;
+        }
+
+        return "https://vsmov.com/storage/images/" + posterUrl.TrimStart('/');
+    }
+
+    public string FormatTimeDuration(int totalSeconds)
+    {
+        if (totalSeconds <= 0) return "0:00";
+        var hrs = totalSeconds / 3600;
+        var mins = (totalSeconds % 3600) / 60;
+        var secs = totalSeconds % 60;
+        if (hrs > 0)
+        {
+            return $"{hrs}:{mins:D2}:{secs:D2}";
+        }
+        return $"{mins}:{secs:D2}";
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/v2/css/bootstrap-lite.css" asp-append-version="true" />
+}
+
+<div class="u2-shell mx-auto w-full max-w-[1600px] px-margin-mobile pb-space-xl pt-space-lg md:px-margin">
+    @Html.AntiForgeryToken()
+
+    <nav class="mb-space-md flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant" aria-label="Breadcrumb">
+        <a class="flex items-center gap-1 transition-colors hover:text-primary" href="/trang-chu"><span class="material-symbols-outlined text-[16px]">home</span> Trang Chủ</a>
+        <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+        <a class="transition-colors hover:text-primary" href="/user/profile">Tài Khoản</a>
+        <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+        <span class="font-headline-sm text-headline-sm text-on-surface">Lịch Sử Xem</span>
+    </nav>
+
+    <div class="grid grid-cols-1 gap-space-lg lg:grid-cols-[300px_minmax(0,1fr)]">
+        <div>
+            @{ var __sb = (MovieWeb.Models.DTOs.UserProfileDto)ViewBag.UserProfile; }
+            @await Html.PartialAsync("Partial/_UserSidebarV2", (__sb.Avatar, __sb.FullName, __sb.Username, __sb.RoleName, __sb.SubscriptionType, __sb.IsAdmin))
+        </div>
+
+        <div class="u2-content min-w-0">
+            <div class="mb-space-lg flex flex-wrap items-end justify-between gap-space-md">
+                <div>
+                    <p class="font-label-sm text-label-sm font-bold uppercase tracking-widest text-secondary">Thư viện cá nhân</p>
+                    <h1 class="font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-headline-xl">Lịch Sử Xem</h1>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant">Danh sách các bộ phim bạn đã xem gần đây.</p>
+                </div>
+                @if (Model != null && Model.Any())
+                {
+                    <button type="button" id="clearAllHistoryBtn" class="inline-flex items-center gap-1 rounded-full bg-error-container px-space-lg py-space-sm font-label-md text-label-md font-bold text-on-error-container transition-opacity hover:opacity-90">
+                        <span class="material-symbols-outlined text-[18px]">delete_sweep</span> Xóa tất cả
+                    </button>
+                }
+            </div>
+
+            @if (Model == null || !Model.Any())
+            {
+                <div class="rounded-xl bg-surface-container-low p-space-xl text-center">
+                    <span class="material-symbols-outlined text-[56px] text-outline">history</span>
+                    <h2 class="mt-space-sm font-headline-md text-headline-md text-on-surface">Chưa có lịch sử xem</h2>
+                    <p class="mb-space-md font-body-md text-body-md text-on-surface-variant">Bạn chưa xem phim nào. Hãy bắt đầu khám phá ngay!</p>
+                    <a href="/trang-chu" class="inline-flex items-center gap-1 px-space-lg py-space-sm font-label-md text-label-md font-bold v2-btn-3d v2-btn-3d--primary"><span class="material-symbols-outlined text-[18px]">play_circle</span> Xem phim ngay</a>
+                </div>
+            }
+            else
+            {
+                var resume = Model.Where(m => !m.IsCompleted && m.WatchedDuration > 0).Take(3).ToList();
+                @if (resume.Any())
+                {
+                    <section class="mb-space-xl" aria-labelledby="resume-title">
+                        <h2 id="resume-title" class="mb-space-md flex items-center gap-space-xs font-headline-md text-headline-md font-bold text-on-surface">
+                            <span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">resume</span> Đang Xem Dở Dang
+                            <span class="rounded bg-surface-container-high px-2 py-0.5 font-label-sm text-label-sm font-normal text-on-surface-variant">@resume.Count phim</span>
+                        </h2>
+                        <div data-v2-img-group class="grid grid-cols-1 gap-space-md md:grid-cols-2 xl:grid-cols-3">
+                            @foreach (var r in resume)
+                            {
+                                var left = Math.Max(r.TotalDuration - r.WatchedDuration, 0);
+                                <article class="overflow-hidden rounded-xl bg-surface-container-low shadow-sm transition-colors hover:bg-surface-container">
+                                    <a href="/phim/@r.Slug" class="relative block aspect-video bg-surface-container">
+                                        <img src="@MovieWeb.Helpers.ImageHelper.Webp(MovieWeb.Helpers.ImageHelper.Landscape(r.PosterUrl, r.ThumbUrl), 800)" alt="@r.Name" loading="lazy" class="v2-img h-full w-full object-cover" onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
+                                        @if (!string.IsNullOrEmpty(r.Quality)) { <span class="absolute left-2 top-2 rounded bg-surface-container-high/90 px-2 py-0.5 font-label-sm text-label-sm font-bold text-on-surface">@r.Quality</span> }
+                                        @if (r.EpisodeNumber.HasValue) { <span class="absolute right-2 top-2 rounded bg-secondary-container/90 px-2 py-0.5 font-label-sm text-label-sm font-bold text-on-secondary-container">Tập @r.EpisodeNumber</span> }
+                                    </a>
+                                    <div class="p-space-md">
+                                        <h3 class="truncate font-headline-sm text-headline-sm font-bold text-on-surface" title="@r.Name">@r.Name</h3>
+                                        <div class="mt-space-xs flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+                                            <span>@FormatTimeDuration(r.WatchedDuration) / @FormatTimeDuration(r.TotalDuration)</span>
+                                            <span>Còn @FormatTimeDuration(left) (@r.ProgressPercentage%)</span>
+                                        </div>
+                                        <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-container-highest"><div class="h-full rounded-full bg-primary-container" style="width:@r.ProgressPercentage%"></div></div>
+                                        <a href="/phim/@r.Slug" class="mt-space-md flex items-center justify-center gap-1 py-space-sm font-label-md text-label-md font-bold v2-btn-3d v2-btn-3d--primary"><span class="material-symbols-outlined text-[18px]">play_arrow</span> Xem Tiếp Ngay</a>
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    </section>
+                }
+
+                <section aria-labelledby="all-title">
+                    <h2 id="all-title" class="mb-space-md font-headline-md text-headline-md font-bold text-on-surface">Toàn Bộ Lịch Sử Xem</h2>
+                    <div id="historyGrid" data-v2-img-group class="flex flex-col gap-space-sm">
+                        @foreach (var item in Model)
+                        {
+                            <div class="col-md-4 col-sm-6 !w-full !max-w-full flex items-center gap-space-md rounded-xl bg-surface-container-low p-space-sm transition-colors hover:bg-surface-container md:p-space-md">
+                                <a href="/phim/@item.Slug" class="relative block h-24 w-16 shrink-0 overflow-hidden rounded-lg bg-surface-container md:h-28 md:w-20">
+                                    <img src="@MovieWeb.Helpers.ImageHelper.Webp(MovieWeb.Helpers.ImageHelper.Portrait(item.ThumbUrl, item.PosterUrl), 200)" alt="@item.Name" loading="lazy" class="v2-img h-full w-full object-cover" onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
+                                </a>
+                                <div class="min-w-0 flex-1">
+                                    <a href="/phim/@item.Slug" class="block truncate font-headline-sm text-headline-sm font-bold text-on-surface hover:text-primary" title="@item.Name">@item.Name</a>
+                                    <div class="mt-1 flex flex-wrap items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant">
+                                        @if (item.EpisodeNumber.HasValue) { <span class="rounded bg-surface-container-high px-1.5 py-0.5">Tập @item.EpisodeNumber.Value</span> }
+                                        @if (!string.IsNullOrEmpty(item.Quality)) { <span class="rounded bg-surface-container-high px-1.5 py-0.5">@item.Quality</span> }
+                                        @if (item.Year.HasValue) { <span>@item.Year.Value</span> }
+                                        <span class="text-outline">• @item.LastWatchedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                    </div>
+                                    <div class="mt-space-xs flex items-center gap-space-sm">
+                                        <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-container-highest"><div class="h-full rounded-full @(item.IsCompleted ? "bg-secondary" : "bg-primary-container")" style="width:@item.ProgressPercentage%"></div></div>
+                                        <span class="shrink-0 font-label-sm text-label-sm @(item.IsCompleted ? "text-secondary" : "text-on-surface-variant")">@(item.IsCompleted ? "Đã xem xong" : $"{FormatTimeDuration(item.WatchedDuration)} · {item.ProgressPercentage}%")</span>
+                                    </div>
+                                </div>
+                                <div class="flex shrink-0 items-center gap-space-xs">
+                                    <a href="/phim/@item.Slug" class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-high text-on-surface transition-colors hover:bg-primary-container hover:text-on-primary-container" title="@(item.IsCompleted ? "Xem lại" : "Xem tiếp")" aria-label="@(item.IsCompleted ? "Xem lại" : "Xem tiếp")"><span class="material-symbols-outlined text-[20px]">@(item.IsCompleted ? "replay" : "play_arrow")</span></a>
+                                    <button type="button" class="remove-history flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-high text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container" data-history-id="@item.HistoryId" title="Xóa khỏi lịch sử" aria-label="Xóa khỏi lịch sử"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @if (ViewBag.TotalPages > 1)
+                    {
+                        <nav class="mt-space-lg flex justify-center" aria-label="Phân trang">
+                            <ul class="flex flex-wrap items-center justify-center gap-1 rounded-full bg-surface-container-low px-space-sm py-space-xs font-label-md text-label-md">
+                                @if (ViewBag.HasPrevious)
+                                {
+                                    <li><a class="flex h-9 items-center gap-1 rounded-full px-3 text-on-surface-variant hover:text-on-surface" href="/user/history?page=@(ViewBag.CurrentPage - 1)"><span class="material-symbols-outlined text-[16px]">arrow_back</span> Trang trước</a></li>
+                                }
+                                @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                                {
+                                    <li><a class="flex h-9 min-w-9 items-center justify-center rounded-full px-3 @(i == ViewBag.CurrentPage ? "bg-primary-container font-bold text-on-primary-container" : "text-on-surface-variant hover:text-on-surface")" href="/user/history?page=@i">@i</a></li>
+                                }
+                                @if (ViewBag.HasNext)
+                                {
+                                    <li><a class="flex h-9 items-center gap-1 rounded-full px-3 text-on-surface-variant hover:text-on-surface" href="/user/history?page=@(ViewBag.CurrentPage + 1)">Trang sau <span class="material-symbols-outlined text-[16px]">arrow_forward</span></a></li>
+                                }
+                            </ul>
+                        </nav>
+                    }
+                </section>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/user-history.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,56 @@
+﻿@* Mobile tab bar: KEEP V1 DESIGN (owner decision). Markup copied verbatim from Views/Shared/Partial/_MobileBottomNav.cshtml,
+   styled by the V1 file wwwroot/css/mobile-bottom-nav.css, driven by wwwroot/v2/js/mobile-nav-v2.js (no SPA). Do not redesign. *@
+@* ==========================================================================
+   MOONPHIM - LIQUID GLASS 3D MOBILE BOTTOM NAVIGATION PARTIAL
+   ========================================================================== *@
+
+<div id="mobileBottomNav" class="liquid-nav-container" role="navigation" aria-label="Mobile Navigation">
+    <div class="liquid-glass-dock">
+        <!-- Quả cầu Kính Lỏng 3D Trượt Dạng Giọt Nước (Gliding 3D Liquid Water Drop) -->
+        <div class="liquid-sliding-orb" id="liquidSlidingOrb">
+            <div class="liquid-orb-surface">
+                <i class="liquid-orb-icon bi bi-house-door-fill" id="liquidOrbIcon"></i>
+            </div>
+        </div>
+
+        <!-- 1. PHIM MỚI -->
+        <a href="/the-loai/phim-moi-cap-nhat" class="liquid-nav-item" data-nav-target="new" data-icon="bi-fire" title="Phim Mới">
+            <div class="liquid-nav-icon-slot">
+                <i class="bi bi-fire"></i>
+            </div>
+            <span class="liquid-nav-label">Phim Mới</span>
+        </a>
+
+        <!-- 2. ĐANG XEM (NOW PLAYING / QUICK RESUME) -->
+        <a href="javascript:void(0)" class="liquid-nav-item" data-nav-target="watching" data-icon="bi-play-circle-fill" title="Đang Xem">
+            <div class="liquid-nav-icon-slot">
+                <i class="bi bi-play-circle-fill"></i>
+            </div>
+            <span class="liquid-nav-label">Đang Xem</span>
+        </a>
+
+        <!-- 3. TRANG CHỦ -->
+        <a href="/trang-chu" class="liquid-nav-item" data-nav-target="home" data-icon="bi-house-door-fill" title="Trang Chủ">
+            <div class="liquid-nav-icon-slot">
+                <i class="bi bi-house-door-fill"></i>
+            </div>
+            <span class="liquid-nav-label">Trang Chủ</span>
+        </a>
+
+        <!-- 4. XEM TIẾP / LỊCH SỬ -->
+        <a href="/user/history" class="liquid-nav-item" data-nav-target="history" data-icon="bi-clock-history" title="Lịch Sử">
+            <div class="liquid-nav-icon-slot">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <span class="liquid-nav-label">Xem Tiếp</span>
+        </a>
+
+        <!-- 5. TÀI KHOẢN / CÁ NHÂN -->
+        <a href="/user/profile" class="liquid-nav-item" data-nav-target="profile" data-icon="bi-person-circle" title="Tài Khoản">
+            <div class="liquid-nav-icon-slot">
+                <i class="bi bi-person-circle"></i>
+            </div>
+            <span class="liquid-nav-label">Cá Nhân</span>
+        </a>
+    </div>
+</div>

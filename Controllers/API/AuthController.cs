@@ -40,6 +40,9 @@ namespace MovieWeb.Controllers
             _turnstileService = turnstileService;
         }
 
+        // V2 UI: auth screens are full pages (Views/V2/Auth/*.cshtml). V1 keeps the modal flow.
+        private bool IsUiV2 => MovieWeb.Helpers.UiVersion.IsV2(HttpContext);
+
         // GET: /Auth/Register
         [HttpGet]
         public IActionResult Register()
@@ -48,6 +51,8 @@ namespace MovieWeb.Controllers
             {
                 return RedirectToAction("TrangChu", "TrangChu");
             }
+
+            if (IsUiV2) return View("~/Views/V2/Auth/Register.cshtml", new RegisterDto());
 
             return PartialView("~/Views/Shared/Partial/_AuthModal.cshtml", new RegisterDto());
         }
@@ -169,6 +174,12 @@ namespace MovieWeb.Controllers
             {
                 TempData["LoginReturnUrl"] = returnUrl;
                 _logger.LogInformation("Saving LoginReturnUrl: {ReturnUrl}", returnUrl);
+            }
+
+            if (IsUiV2)
+            {
+                ViewData["ReturnUrl"] = returnUrl;
+                return View("~/Views/V2/Auth/Login.cshtml", new LoginDto());
             }
 
             // ✅ Redirect về trang chủ (không render PartialView nữa)
@@ -414,6 +425,8 @@ namespace MovieWeb.Controllers
                 return RedirectToAction("TrangChu", "TrangChu");
             }
 
+            if (IsUiV2) return View("~/Views/V2/Auth/ForgotPassword.cshtml", new ForgotPasswordDto());
+
             return PartialView("~/Views/Shared/Partial/_AuthModal.cshtml", new ForgotPasswordDto());
         }
 
@@ -472,6 +485,13 @@ namespace MovieWeb.Controllers
             {
                 TempData["ErrorMessage"] = "Link đặt lại mật khẩu không hợp lệ.";
                 return RedirectToAction("TrangChu", "TrangChu");
+            }
+
+            if (IsUiV2)
+            {
+                ViewData["ResetUserId"] = userId;
+                ViewData["ResetToken"] = token;
+                return View("~/Views/V2/Auth/ResetPassword.cshtml");
             }
 
             // ✅ Redirect với query params

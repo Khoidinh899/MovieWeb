@@ -1,0 +1,245 @@
+@model MovieWeb.Models.ViewModels.UserInterfaceViewModel
+
+@{
+    ViewData["Title"] = "Tuỳ chọn giao diện";
+    Layout = "~/Views/Shared/_UserLayout.cshtml";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/user.css" asp-append-version="true" />
+    <style>
+        .ui-preview-card {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            transition: all 0.25s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #fff;
+        }
+        .ui-preview-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .ui-preview-card.active {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 1px #0d6efd, 0 8px 24px rgba(13,110,253,0.15);
+        }
+        .ui-preview-thumb {
+            aspect-ratio: 16/9;
+            width: 100%;
+            object-fit: cover;
+            border-bottom: 1px solid #f0f0f0;
+            background: #111;
+        }
+        .ui-feedback-box {
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            padding: 24px;
+        }
+    </style>
+}
+
+<div class="container py-5">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            @await Html.PartialAsync(
+                "~/Views/User/Shared/_ProfileSidebar.cshtml", 
+                (MovieWeb.Models.DTOs.UserProfileDto)ViewBag.UserProfile
+            )
+        </div>
+
+        <!-- Content -->
+        <div class="col-lg-9">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <div class="card mb-4">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="mb-0">
+                            <i class="bi bi-palette-fill me-2 text-primary"></i> Tuỳ chọn giao diện trải nghiệm
+                        </h5>
+                        @if (Model.SwitchCount > 0)
+                        {
+                            <span class="badge bg-light text-muted border">
+                                Đã chuyển @Model.SwitchCount lần
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <p class="text-muted mb-4">
+                        MoonPhim hỗ trợ 2 phiên bản giao diện để bạn thoải mái lựa chọn theo nhu cầu và sở thích. Bạn có thể chuyển đổi bất cứ lúc nào.
+                    </p>
+
+                    <div class="row g-4 mb-5">
+                        <!-- Card V2 (Mới) -->
+                        <div class="col-md-6">
+                            <div class="ui-preview-card @(Model.CurrentUi == "v2" ? "active" : "")">
+                                <div class="position-relative">
+                                    <img src="~/images/ui/v2-preview.png" alt="Giao diện mới (V2)" class="ui-preview-thumb" />
+                                    @if (Model.CurrentUi == "v2")
+                                    {
+                                        <span class="position-absolute top-0 end-0 m-2 badge bg-success shadow-sm">
+                                            <i class="bi bi-check-circle me-1"></i> Đang sử dụng
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="position-absolute top-0 end-0 m-2 badge bg-primary shadow-sm">
+                                            Khuyên dùng
+                                        </span>
+                                    }
+                                </div>
+                                <div class="p-3 d-flex flex-column flex-grow-1">
+                                    <h6 class="fw-bold mb-1">Giao diện mới (V2 - Cinematic)</h6>
+                                    <p class="text-muted small mb-3 flex-grow-1">
+                                        Phong cách streaming điện ảnh hiện đại, tông màu tối sang trọng, chuyển trang mượt mà và tối ưu hóa cho màn hình mọi kích cỡ.
+                                    </p>
+                                    <div>
+                                        @if (Model.CurrentUi == "v2")
+                                        {
+                                            <button type="button" class="btn btn-outline-success w-100 disabled" disabled>
+                                                <i class="bi bi-check-lg me-1"></i> Đang kích hoạt
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <form asp-action="UpdateInterface" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="ui" value="v2" />
+                                                <button type="submit" class="btn btn-primary w-100">
+                                                    <i class="bi bi-stars me-1"></i> Trải nghiệm giao diện mới
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card V1 (Cũ) -->
+                        <div class="col-md-6">
+                            <div class="ui-preview-card @(Model.CurrentUi == "v1" ? "active" : "")">
+                                <div class="position-relative">
+                                    <img src="~/images/ui/v1-preview.png" alt="Giao diện cũ (V1)" class="ui-preview-thumb" />
+                                    @if (Model.CurrentUi == "v1")
+                                    {
+                                        <span class="position-absolute top-0 end-0 m-2 badge bg-success shadow-sm">
+                                            <i class="bi bi-check-circle me-1"></i> Đang sử dụng
+                                        </span>
+                                    }
+                                </div>
+                                <div class="p-3 d-flex flex-column flex-grow-1">
+                                    <h6 class="fw-bold mb-1">Giao diện cổ điển (V1)</h6>
+                                    <p class="text-muted small mb-3 flex-grow-1">
+                                        Giao diện truyền thống quen thuộc của MoonPhim, bố cục thân thiện, trực quan và dễ thao tác.
+                                    </p>
+                                    <div>
+                                        @if (Model.CurrentUi == "v1")
+                                        {
+                                            <button type="button" class="btn btn-outline-success w-100 disabled" disabled>
+                                                <i class="bi bi-check-lg me-1"></i> Đang kích hoạt
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <form asp-action="UpdateInterface" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="ui" value="v1" />
+                                                <button type="submit" class="btn btn-outline-secondary w-100">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Quay về giao diện cũ
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Survey Box -->
+                    <div class="ui-feedback-box">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h6 class="fw-bold mb-0 text-dark">
+                                <i class="bi bi-chat-square-heart-fill me-2 text-danger"></i> Khảo sát trải nghiệm giao diện
+                            </h6>
+                            @if (Model.FeedbackUpdatedAt.HasValue)
+                            {
+                                <small class="text-muted">
+                                    Đã đánh giá: @Model.FeedbackUpdatedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                </small>
+                            }
+                        </div>
+                        <p class="text-muted small mb-3">
+                            Ý kiến của bạn giúp chúng tôi cải thiện giao diện ngày càng hoàn thiện hơn. Bạn có thể thay đổi đánh giá bất kỳ lúc nào.
+                        </p>
+
+                        <form asp-action="SubmitFeedback" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-muted">Bạn cảm thấy phiên bản nào phù hợp hơn?</label>
+                                <div class="d-flex flex-column gap-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="choice" id="choiceNew" value="new" @(Model.SelectedChoice == "new" ? "checked" : "") required />
+                                        <label class="form-check-label" for="choiceNew">
+                                            <strong>Thích giao diện mới</strong> — Đẹp mắt, hiện đại và tiện lợi hơn
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="choice" id="choiceOld" value="old" @(Model.SelectedChoice == "old" ? "checked" : "") />
+                                        <label class="form-check-label" for="choiceOld">
+                                            <strong>Thích giao diện cũ</strong> — Thân thuộc, dễ dùng hơn
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="choice" id="choiceSame" value="same" @(Model.SelectedChoice == "same" ? "checked" : "") />
+                                        <label class="form-check-label" for="choiceSame">
+                                            <strong>Như nhau</strong> — Cả hai giao diện đều ổn, không thấy khác biệt lớn
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="feedbackComment" class="form-label fw-semibold small text-muted">
+                                    Ý kiến hoặc góp ý thêm (tùy chọn)
+                                </label>
+                                <textarea class="form-control" id="feedbackComment" name="comment" rows="3" maxlength="1000" placeholder="Chia sẻ thêm cảm nhận, tính năng mong muốn hoặc lỗi bạn gặp phải...">@Model.FeedbackComment</textarea>
+                                <div class="form-text text-end small">Tối đa 1000 ký tự</div>
+                            </div>
+
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary px-4">
+                                    <i class="bi bi-send-fill me-1"></i> Gửi đánh giá
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

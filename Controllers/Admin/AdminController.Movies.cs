@@ -76,7 +76,7 @@ namespace MovieWeb.Controllers
                 var totalMovies = await query.CountAsync();
                 var movieList = await query
                     .OrderByDescending(m => m.CreatedAt)
-                    .Skip((page - 1) * pageSize)
+                    .Skip((Math.Max(page, 1) - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 

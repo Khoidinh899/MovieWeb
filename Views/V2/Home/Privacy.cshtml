@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Chính sách - MoonPhim";
+    const string h2Cls = "mb-space-sm flex items-center gap-space-xs font-headline-md text-headline-md font-bold text-on-surface";
+    const string pCls = "mb-space-sm font-body-md text-body-md leading-relaxed text-on-surface-variant";
+    const string ulCls = "mb-space-lg list-disc space-y-space-xs pl-space-lg font-body-md text-body-md leading-relaxed text-on-surface-variant marker:text-primary";
+}
+
+<div class="mx-auto w-full max-w-[1100px] px-margin-mobile pb-space-xl pt-space-lg md:px-margin">
+    <nav class="mb-space-md flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant" aria-label="Breadcrumb">
+        <a class="flex items-center gap-1 transition-colors hover:text-primary" href="/trang-chu"><span class="material-symbols-outlined text-[16px]">home</span> Trang Chủ</a>
+        <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+        <span class="font-headline-sm text-headline-sm text-secondary">Chính sách &amp; Điều khoản</span>
+    </nav>
+
+    <article class="rounded-xl bg-surface-container-low p-space-lg shadow-xl md:p-space-xl">
+        <h1 class="font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-headline-xl">Chính sách & Điều khoản</h1>
+        <p class="mb-space-lg mt-space-xs font-body-sm text-body-sm text-on-surface-variant">Cập nhật lần cuối: Ngày 06 tháng 05 năm 2026</p>
+
+        <h2 class="@h2Cls"><span class="material-symbols-outlined text-primary">verified_user</span> 1. Chính sách bảo mật &amp; Cookie Quảng Cáo</h2>
+        <p class="@pCls">MoonPhim tôn trọng quyền riêng tư của bạn. Chúng tôi thu thập và sử dụng thông tin nhằm nâng cao trải nghiệm người dùng:</p>
+        <ul class="@ulCls">
+            <li>Thông tin tài khoản (khi bạn đăng ký) để lưu lịch sử xem phim và danh sách yêu thích.</li>
+            <li>Dữ liệu ẩn danh về lượt truy cập nhằm phục vụ tối ưu hóa hạ tầng và tốc độ tải trang.</li>
+            <li><strong class="text-on-surface">Bên thứ ba &amp; Cookie Quảng cáo (Google AdSense):</strong> Các nhà cung cấp bên thứ ba (bao gồm Google) sử dụng cookie để phục vụ quảng cáo dựa trên các lượt truy cập trước đó của người dùng vào trang web này hoặc các trang web khác. Việc Google sử dụng cookie quảng cáo cho phép Google và các đối tác của họ phục vụ quảng cáo cho người dùng dựa trên việc họ truy cập vào trang web của bạn và/hoặc các trang web khác trên Internet. Người dùng có thể tùy chọn tắt quảng cáo cá nhân hóa bằng cách truy cập Cài đặt quảng cáo của Google.</li>
+            <li>Chúng tôi cam kết KHÔNG bán thông tin cá nhân của bạn cho bên thứ ba.</li>
+        </ul>
+
+        <h2 class="@h2Cls"><span class="material-symbols-outlined text-primary">description</span> 2. Điều khoản sử dụng</h2>
+        <p class="@pCls">Bằng việc truy cập vào MoonPhim, bạn đồng ý tuân thủ các quy định sau:</p>
+        <ul class="@ulCls">
+            <li>Sử dụng dịch vụ cho mục đích giải trí cá nhân, phi thương mại.</li>
+            <li>Không thực hiện các hành vi tấn công, phá hoại hoặc can thiệp bất hợp pháp vào hệ thống.</li>
+            <li>Tôn trọng quyền sở hữu trí tuệ của các nhà sản xuất phim.</li>
+        </ul>
+
+        <h2 class="@h2Cls"><span class="material-symbols-outlined text-primary">copyright</span> 3. Bản quyền &amp; Quy trình DMCA</h2>
+        <p class="@pCls">MoonPhim là một dịch vụ tìm kiếm và tổng hợp các liên kết video nhúng tự động từ các nguồn mở công cộng trên internet. Chúng tôi không lưu trữ bất kỳ tệp tin phương tiện nào trên máy chủ riêng. Mọi thông tin chi tiết về chính sách bản quyền và form báo cáo vi phạm, vui lòng xem tại trang <a href="/dmca" class="font-bold text-primary hover:underline">Tuyên bố DMCA &amp; Miễn trừ trách nhiệm</a>.</p>
+
+        <h2 class="@h2Cls"><span class="material-symbols-outlined text-primary">warning</span> 4. Miễn trừ trách nhiệm</h2>
+        <p class="@pCls">Chúng tôi nỗ lực cung cấp dịch vụ tốt nhất nhưng không đảm bảo rằng trang web sẽ luôn sẵn sàng 100% hoặc không có lỗi kỹ thuật. MoonPhim không chịu trách nhiệm về nội dung của các trang web bên thứ ba mà chúng tôi liên kết tới.</p>
+
+        <div class="mt-space-lg rounded-lg bg-surface-container p-space-md text-center font-label-md text-label-md text-on-surface-variant">
+            Việc tiếp tục sử dụng MoonPhim đồng nghĩa với việc bạn chấp nhận các thay đổi trong chính sách này tại từng thời điểm.
+        </div>
+    </article>
+</div>

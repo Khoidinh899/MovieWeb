@@ -1,0 +1,58 @@
+﻿@{
+    Layout = "_LandingLayoutV2";
+    ViewData["Title"] = "MoonPhim - Bay bổng cùng điện ảnh";
+}
+
+<div class="lv2-bg" aria-hidden="true">
+    <div class="lv2-circle"></div>
+    <div class="lv2-circle"></div>
+    <div class="lv2-circle"></div>
+</div>
+
+<div class="lv2-stars" id="stars" aria-hidden="true"></div>
+
+<div class="landing-container relative z-[2] flex min-h-screen min-h-[100svh] flex-col items-center justify-center px-margin-mobile py-space-xl text-center md:px-margin">
+    <div class="logo-container lv2-in mb-space-lg">
+        <div class="logo-wrapper flex flex-col items-center justify-center gap-space-sm md:flex-row md:gap-space-md">
+            <img src="~/images/iconmoon.png" alt="MoonPhim Logo" class="logo lv2-glow h-20 w-20 md:h-[120px] md:w-[120px]">
+            <div class="brand-text flex flex-col items-center md:items-start">
+                <div class="brand-name font-headline-xl text-[2.5rem] font-extrabold leading-none text-on-surface md:text-[4rem]">MoonPhim</div>
+                <div class="brand-slogan mt-1 font-body-md text-body-md text-secondary md:text-[1.3rem]">Bay bổng cùng điện ảnh</div>
+            </div>
+        </div>
+    </div>
+
+    <h1 class="main-heading lv2-in lv2-d3 my-space-lg max-w-3xl font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-headline-xl">
+        Xem Phim Miễn Phí Chất Lượng Cao
+    </h1>
+
+    <p class="sub-heading lv2-in lv2-d5 mb-space-xl font-headline-sm text-headline-sm text-on-surface-variant md:text-[1.6rem]">
+        Hàng Nghìn Bộ Phim HD Cập Nhật Liên Tục
+    </p>
+
+    <a href="/trang-chu" class="cta-button lv2-in lv2-d7 v2-btn-3d v2-btn-3d--primary gap-space-sm px-space-xl py-space-sm font-label-md text-[1.15rem] font-bold md:py-space-md md:text-[1.3rem]">
+        <span>Xem Ngay</span>
+    </a>
+
+    <div class="description lv2-in lv2-d10 mt-space-xl max-w-3xl font-body-md text-body-md text-on-surface-variant">
+        Trong kỷ nguyên số ngày nay, việc xem phim miễn phí trực tuyến đã trở thành nhu cầu giải trí không thể thiếu.
+        Với sự bùng nổ của các nền tảng phát trực tuyến phim, MoonPhim nổi bật lên như một trang web xem phim miễn phí uy tín,
+        mang đến cho người dùng trải nghiệm xem phim tuyệt vời nhất.
+    </div>
+</div>
+
+<script>
+    // Tạo stars (giữ như V1; hiệu ứng nhấp nháy chỉ animate opacity và tắt khi prefers-reduced-motion)
+    const starsContainer = document.getElementById('stars');
+    for (let i = 0; i < 100; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        const size = Math.random() * 3 + 2;
+        star.style.width = size + 'px';
+        star.style.height = size + 'px';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.animationDelay = Math.random() * 3 + 's';
+        starsContainer.appendChild(star);
+    }
+</script>

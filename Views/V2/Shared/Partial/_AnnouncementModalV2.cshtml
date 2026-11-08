@@ -1,0 +1,142 @@
+@* Partial View: _AnnouncementModalV2.cshtml - Popup Thông Báo Hệ Thống (Chuẩn V2 Stitch) *@
+@inject MovieWeb.Services.Interfaces.IAnnouncementService AnnouncementService
+@{
+    var settings = await AnnouncementService.GetSettingsAsync();
+    if (settings == null || !settings.IsEnabled)
+    {
+        return;
+    }
+
+    var isAuth = User?.Identity?.IsAuthenticated == true;
+    if (settings.Audience == "guests" && isAuth) return;
+    if (settings.Audience == "members" && !isAuth) return;
+}
+
+<div id="v2AnnouncementModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="v2AnnouncementTitle">
+    <!-- Nền mờ kính tối (Backdrop) -->
+    <div id="v2AnnouncementBackdrop" class="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity"></div>
+
+    <!-- Nội dung Modal -->
+    <div class="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-surface-container-low border border-outline-variant/40 p-6 md:p-8 shadow-2xl transition-all transform scale-95 text-on-surface">
+        <!-- Nút Đóng -->
+        <button type="button" id="v2AnnouncementCloseBtn" aria-label="Đóng thông báo" class="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-surface-container-high/80 text-on-surface-variant hover:bg-error hover:text-white transition-all">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+
+        <!-- Badge & Tiêu đề -->
+        @if (!string.IsNullOrWhiteSpace(settings.BadgeText) || !string.IsNullOrWhiteSpace(settings.Title))
+        {
+            <div class="text-center mb-4">
+                @if (!string.IsNullOrWhiteSpace(settings.BadgeText))
+                {
+                    <div class="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/15 border border-primary/30 px-3.5 py-1 text-xs font-bold text-primary">
+                        <span>@settings.BadgeText</span>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(settings.Title))
+                {
+                    <h2 id="v2AnnouncementTitle" class="font-headline-md text-headline-md font-bold text-on-surface">
+                        @settings.Title
+                    </h2>
+                }
+            </div>
+        }
+
+        <!-- Thông điệp chính -->
+        @if (!string.IsNullOrWhiteSpace(settings.MainMessageHtml))
+        {
+            <div class="mb-4 rounded-2xl bg-surface-container p-4 font-body-md text-body-md text-on-surface leading-relaxed">
+                @Html.Raw(settings.MainMessageHtml)
+            </div>
+        }
+
+        <!-- Khối Thông Báo Kỹ Thuật / Chi Tiết -->
+        @if (!string.IsNullOrWhiteSpace(settings.NoticeHeaderHtml) || !string.IsNullOrWhiteSpace(settings.NoticeBodyHtml))
+        {
+            <div class="mb-5 rounded-2xl bg-surface-container-high/60 border border-outline-variant/30 p-4 font-body-sm text-body-sm text-on-surface-variant">
+                @if (!string.IsNullOrWhiteSpace(settings.NoticeHeaderHtml))
+                {
+                    <div class="font-bold text-on-surface mb-2">
+                        @Html.Raw(settings.NoticeHeaderHtml)
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(settings.NoticeBodyHtml))
+                {
+                    <div>
+                        @Html.Raw(settings.NoticeBodyHtml)
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Nút hành động -->
+        <div>
+            @if (!string.IsNullOrWhiteSpace(settings.ButtonUrl))
+            {
+                <a href="@settings.ButtonUrl" class="v2-btn-3d w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3 px-6 font-label-md text-label-md font-bold text-on-primary transition-all text-center">
+                    @settings.ButtonText
+                </a>
+            }
+            else
+            {
+                <button type="button" id="v2AnnouncementActionBtn" class="v2-btn-3d w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3 px-6 font-label-md text-label-md font-bold text-on-primary transition-all text-center">
+                    @settings.ButtonText
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+<script src="~/js/announcement-popup.js" asp-append-version="true"></script>
+<script>
+    (function () {
+        var modal = document.getElementById('v2AnnouncementModal');
+        var closeBtn = document.getElementById('v2AnnouncementCloseBtn');
+        var backdrop = document.getElementById('v2AnnouncementBackdrop');
+        var actionBtn = document.getElementById('v2AnnouncementActionBtn');
+
+        function openModal() {
+            if (!modal) return;
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100', 'pointer-events-auto');
+            var dialog = modal.querySelector('div[role="dialog"]') || modal.children[1];
+            if (dialog) {
+                dialog.classList.remove('scale-95');
+                dialog.classList.add('scale-100');
+            }
+            document.body.style.overflow = 'hidden';
+            if (closeBtn) closeBtn.focus();
+        }
+
+        function closeModal() {
+            if (!modal) return;
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.classList.remove('opacity-100', 'pointer-events-auto');
+            var dialog = modal.querySelector('div[role="dialog"]') || modal.children[1];
+            if (dialog) {
+                dialog.classList.add('scale-95');
+                dialog.classList.remove('scale-100');
+            }
+            document.body.style.overflow = '';
+        }
+
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (backdrop) backdrop.addEventListener('click', closeModal);
+        if (actionBtn) actionBtn.addEventListener('click', closeModal);
+
+        window.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modal && modal.classList.contains('opacity-100')) {
+                closeModal();
+            }
+        });
+
+        window.initAnnouncementPopup({
+            version: '@settings.StorageKeyVersion',
+            frequencyMode: '@settings.FrequencyMode',
+            intervalHours: @settings.IntervalHours,
+            maxShows: @settings.MaxShows,
+            delaySeconds: @settings.DelaySeconds,
+            onShow: openModal
+        });
+    })();
+</script>

@@ -1,0 +1,116 @@
+﻿@* Sidebar mobile/tablet của V2 (giống offcanvas V1): mở bằng nút 3 gạch ở header (#v2MenuOpen). Dữ liệu Thể loại/Quốc gia lấy chung cache với MegaMenu. *@
+@inject MovieWeb.Services.Interfaces.IAuthService _authService
+@inject MovieWeb.Data.MovieWebDbContext Db
+@inject Microsoft.Extensions.Caching.Memory.IMemoryCache Cache
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Caching.Memory
+@{
+    var me = await _authService.GetCurrentUserAsync();
+    var wpOn = Configuration.GetValue<bool>("FeatureFlags:PublicWatchParty", false);
+    async Task<List<KeyValuePair<string, string>>> Menu(string kind) => (await Cache.GetOrCreateAsync("v2_menu_" + kind, async e =>
+    {
+        e.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+        return kind == "category"
+            ? await Db.Categories.AsNoTracking().Where(c => (c.IsActive ?? false) && c.Name != "Phim Bộ").OrderBy(c => c.CategoryId)
+                .Select(c => new KeyValuePair<string, string>(c.Slug, c.Name)).ToListAsync()
+            : await Db.Countries.AsNoTracking().Where(c => c.IsActive == true).OrderBy(c => c.Name)
+                .Select(c => new KeyValuePair<string, string>(c.Slug, c.Name)).ToListAsync();
+    })) ?? new List<KeyValuePair<string, string>>();
+    var cats = await Menu("category");
+    var countries = await Menu("country");
+    const string row = "flex items-center gap-3 border-b border-white/10 px-5 py-3.5 text-white/95 transition-colors hover:bg-white/10";
+}
+<div id="v2Sidebar" class="v2-sidebar" aria-hidden="true">
+    <div class="v2-sidebar-backdrop" data-v2-sidebar-close></div>
+    <aside class="v2-sidebar-panel pt-safe" role="dialog" aria-modal="true" aria-label="Menu">
+        <div class="flex items-center justify-between border-b border-white/15 px-5 py-4">
+            <a href="/trang-chu" class="flex items-center gap-3">
+                <img src="~/images/iconmoon.png" alt="MoonPhim" class="h-10 w-10" />
+                <span class="font-headline-md text-[22px] font-extrabold text-white">MoonPhim</span>
+            </a>
+            <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/15" data-v2-sidebar-close aria-label="Đóng menu">
+                <span class="material-symbols-outlined text-[26px]">close</span>
+            </button>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto">
+            <a class="@row" href="/trang-chu"><span class="material-symbols-outlined text-[22px]">home</span> Trang chủ</a>
+            <a class="@row" href="/the-loai/phim-le"><span class="material-symbols-outlined text-[22px]">movie</span> Phim lẻ</a>
+            <a class="@row" href="/the-loai/phim-bo"><span class="material-symbols-outlined text-[22px]">video_library</span> Phim bộ</a>
+            <a class="@row" href="/the-loai/hoat-hinh"><span class="material-symbols-outlined text-[22px]">animation</span> Hoạt hình</a>
+            <a class="@row" href="/phim-trending"><span class="material-symbols-outlined text-[22px]">trending_up</span> Phim Trending</a>
+
+            <button type="button" class="@row w-full justify-between text-left" data-v2-sidebar-toggle="v2SideCats" aria-expanded="false">
+                <span class="flex items-center gap-3"><span class="material-symbols-outlined text-[22px]">grid_view</span> Thể loại</span>
+                <span class="material-symbols-outlined text-[22px] v2-side-chevron">expand_more</span>
+            </button>
+            <div id="v2SideCats" class="v2-side-collapse" hidden>
+                <div class="grid grid-cols-2 gap-x-2 bg-black/10 px-5 py-2">
+                    @foreach (var it in cats)
+                    {
+                        <a class="rounded px-2 py-2 text-[14px] text-white/90 hover:bg-white/10" href="/the-loai/@it.Key">@it.Value</a>
+                    }
+                </div>
+            </div>
+
+            <button type="button" class="@row w-full justify-between text-left" data-v2-sidebar-toggle="v2SideCountries" aria-expanded="false">
+                <span class="flex items-center gap-3"><span class="material-symbols-outlined text-[22px]">location_on</span> Quốc gia</span>
+                <span class="material-symbols-outlined text-[22px] v2-side-chevron">expand_more</span>
+            </button>
+            <div id="v2SideCountries" class="v2-side-collapse" hidden>
+                <div class="grid grid-cols-2 gap-x-2 bg-black/10 px-5 py-2">
+                    @foreach (var it in countries)
+                    {
+                        <a class="rounded px-2 py-2 text-[14px] text-white/90 hover:bg-white/10" href="/quoc-gia/@it.Key">@it.Value</a>
+                    }
+                </div>
+            </div>
+
+            @if (wpOn)
+            {
+                <a class="@row justify-between font-bold" href="/watch-party">
+                    <span class="flex items-center gap-3"><span class="material-symbols-outlined text-[22px]">groups</span> Xem Chung</span>
+                    <span class="rounded bg-secondary-container px-2 py-0.5 text-[10px] font-bold text-on-secondary-container">NEW</span>
+                </a>
+            }
+            <a class="@row justify-between" href="/downloads/MoonPhim-v2.apk?v=2.1" download="MoonPhim-v2.apk">
+                <span class="flex items-center gap-3"><span class="material-symbols-outlined text-[22px]">android</span> Tải App Android (.APK)</span>
+                <span class="rounded bg-cyan-300 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-900">v2.1 • 19.9 MB</span>
+            </a>
+
+            <div class="px-5 py-4">
+                @if (me != null)
+                {
+                    <div class="mb-4 flex items-center gap-3">
+                        <img src="@(string.IsNullOrEmpty(me.Avatar) ? "/images/nouser.png" : me.Avatar)" alt="Avatar" class="h-12 w-12 rounded-full object-cover ring-2 ring-white/60" />
+                        <div class="min-w-0">
+                            <div class="truncate font-bold text-white">@(me.FullName ?? me.UserName)</div>
+                            <div class="truncate text-[12px] text-white/70">@me.Email</div>
+                        </div>
+                    </div>
+                    <a href="/nang-cap" class="v2-btn-3d v2-btn-3d--secondary mb-4 w-full gap-2 px-5 py-2.5 font-label-md font-bold">
+                        <span class="material-symbols-outlined text-[20px]">star</span> Nâng cấp ngay
+                    </a>
+                    <div class="-mx-5">
+                        @if (me.IsAdmin)
+                        {
+                            <a class="@row" href="@Url.Action("Dashboard", "Admin")"><span class="material-symbols-outlined text-[22px]">shield_lock</span> Admin Panel</a>
+                        }
+                        <a class="@row" href="/user/profile"><span class="material-symbols-outlined text-[22px]">person</span> Quản lý tài khoản</a>
+                        <a class="@row" href="/user/notifications"><span class="material-symbols-outlined text-[22px]">notifications</span> Thông báo</a>
+                        <a class="@row" href="/user/favorite"><span class="material-symbols-outlined text-[22px]">favorite</span> Yêu thích</a>
+                        <a class="@row" href="/user/history"><span class="material-symbols-outlined text-[22px]">history</span> Lịch sử xem</a>
+                        <a class="@row text-error" href="#" onclick="event.preventDefault(); document.getElementById('logoutForm').submit();"><span class="material-symbols-outlined text-[22px]">logout</span> Đăng xuất</a>
+                    </div>
+                }
+                else
+                {
+                    <a href="/Auth/Login" class="v2-btn-3d v2-btn-3d--secondary w-full gap-2 px-5 py-2.5 font-label-md font-bold">
+                        <span class="material-symbols-outlined text-[20px]">account_circle</span> Đăng nhập / Đăng ký
+                    </a>
+                }
+            </div>
+        </nav>
+    </aside>
+</div>

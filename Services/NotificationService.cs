@@ -185,6 +185,10 @@ namespace MovieWeb.Services
                         n.Type == "movie_request_completed" ||
                         n.Type == "CommentReply");
                 }
+                else if (type == "system")
+                {
+                    query = query.Where(n => n.Type == "SystemBroadcast");
+                }
 
                 var notifications = await query
                     .OrderByDescending(n => n.CreatedAt)
@@ -197,7 +201,9 @@ namespace MovieWeb.Services
                         Type = n.Type ?? string.Empty,
                         Url = n.Url,
                         IsRead = n.IsRead ?? false,
-                        CreatedAt = n.CreatedAt ?? DateTime.Now // ✅ ĐỔI: UTC -> Now
+                        CreatedAt = n.CreatedAt ?? DateTime.Now,
+                        BroadcastId = n.BroadcastId,
+                        Style = n.Broadcast != null ? n.Broadcast.StyleJson : null
                     })
                     .ToListAsync();
 
@@ -234,12 +240,19 @@ namespace MovieWeb.Services
                                 n.Type == "CommentReply"))
                     .CountAsync();
 
-                var total = paymentCount + movieCount;
+                var systemCount = await _context.Notifications
+                    .Where(n => n.UserId == userId &&
+                               (n.IsRead == false || n.IsRead == null) &&
+                               n.Type == "SystemBroadcast")
+                    .CountAsync();
+
+                var total = paymentCount + movieCount + systemCount;
 
                 return new UnreadCountDto
                 {
                     Payment = paymentCount,
                     Movie = movieCount,
+                    System = systemCount,
                     Total = total
                 };
             }
@@ -300,6 +313,10 @@ namespace MovieWeb.Services
                         n.Type == "MovieUpdate" ||
                         n.Type == "movie_request_completed" ||
                         n.Type == "CommentReply");
+                }
+                else if (type == "system")
+                {
+                    query = query.Where(n => n.Type == "SystemBroadcast");
                 }
 
                 var notifications = await query.ToListAsync();
@@ -366,6 +383,10 @@ namespace MovieWeb.Services
                         n.Type == "MovieUpdate" ||
                         n.Type == "movie_request_completed" ||
                         n.Type == "CommentReply");
+                }
+                else if (type == "system")
+                {
+                    query = query.Where(n => n.Type == "SystemBroadcast");
                 }
 
                 var notifications = await query.ToListAsync();

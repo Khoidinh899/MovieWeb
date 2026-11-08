@@ -1,0 +1,1043 @@
+﻿@using MovieWeb.Helpers
+@model MovieWeb.Models.Entities.Movie
+@{
+    ViewData["Title"] = $"{Model.Name} (Phim {Model.Year}) Vietsub Thuyết Minh HD - MoonPhim (Moon Phim)";
+    var relatedMovies = ViewBag.RelatedMovies as List<MovieWeb.Models.Entities.Movie>;
+
+    // Nền/khung player: ảnh NGANG (VSMov poster_url = PosterUrl); poster dọc dùng ImageHelper.Portrait
+    var bgImage = !string.IsNullOrEmpty(Model.PosterUrl)
+        ? (Model.PosterUrl.StartsWith("http") ? Model.PosterUrl : "https://vsmov.com/storage/images/" + Model.PosterUrl.TrimStart('/'))
+        : (!string.IsNullOrEmpty(Model.ThumbUrl)
+            ? (Model.ThumbUrl.StartsWith("http") ? Model.ThumbUrl : "https://vsmov.com/storage/images/" + Model.ThumbUrl.TrimStart('/'))
+            : "/images/default-poster.jpg");
+
+    var grouped = ViewBag.GroupedEpisodes as Dictionary<string, List<MovieWeb.Models.Entities.Episode>>;
+    var serverUrlKeys = ViewBag.ServerUrlKeys as Dictionary<string, string> ?? new();
+    var serverDisplay = ViewBag.ServerDisplayNames as Dictionary<string, string>;
+    var servers = ViewBag.Servers as List<string>;
+    string defaultServer = ViewBag.DefaultServer as string ?? "";
+
+    var shouldShowAds = ViewBag.ShouldShowAds ?? true;
+    var isSeriesMovie = ViewBag.IsSeriesType ?? false;
+    int? selectedEpisodeId = ViewBag.SelectedEpisodeId as int?;
+    string? selectedEpisodeName = ViewBag.SelectedEpisodeName as string;
+    var episode1Url = ViewBag.Episode1Url as string ?? "";
+    var episodeMinMap = ViewBag.EpisodeMinIdMap as Dictionary<int, (string CleanSlug, int MinId)> ?? new();
+    var latestMoviesToday = ViewBag.LatestMoviesToday as List<MovieWeb.Models.Entities.Movie>;
+
+    // ✅ Hiển thị danh sách tập cho tất cả các phim có tập phim
+    bool shouldShowEpisodeList = grouped != null && grouped.Any();
+
+    // ⭐ Quảng cáo
+    var advertisements = ViewBag.Advertisements as IEnumerable<MovieWeb.Models.Entities.Advertisement> ?? new List<MovieWeb.Models.Entities.Advertisement>();
+
+    // ==========================================================
+    // ===== ✅ BẮT ĐẦU KHỐI CHUẨN BỊ BIẾN SEO =====
+    // ==========================================================
+
+    // 1. Chuẩn bị Mô tả (Description)
+    ViewData["SeoTitle"] = SeoMetadata.MovieTitle(Model.Name, Model.OriginalName, Model.Year, Model.Language);
+    if (selectedEpisodeName is not null)
+        ViewData["SeoTitle"] = $"{Model.Name} - Tập {selectedEpisodeName} | {Model.Language} | MoonPhim";
+    var seoDescription = SeoMetadata.Description(Model.Description, Model.Content,
+        $"Thông tin phim {Model.Name}{(Model.Year.HasValue ? $" ({Model.Year})" : "")}, tên gốc {Model.OriginalName ?? Model.Name}. Xem nội dung và danh sách tập trên MoonPhim.");
+
+    // 2. Chuẩn bị Ảnh (Image)
+    var seoImage = (Model.PosterUrl?.StartsWith("http") == true
+                   ? Model.PosterUrl
+                   : "https://vsmov.com/storage/images/" + Model.PosterUrl);
+
+    // 3. Chuẩn bị URL
+    var request = Context.Request;
+    var seoUrl = SeoMetadata.Canonical(request);
+    var allEpisodesList = Model.Episodes?.ToList() ?? new List<MovieWeb.Models.Entities.Episode>();
+    bool hasValidVideoUrl = !string.IsNullOrEmpty(Model.TrailerUrl) || allEpisodesList.Any();
+}
+
+
+@functions {
+    static string PosterOf(string? url) => string.IsNullOrEmpty(url) ? "/images/default-poster.jpg"
+        : (url.StartsWith("http") ? url : "https://vsmov.com/storage/images/" + url.TrimStart('/'));
+    static string Initials(string? name)
+    {
+        var parts = (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return "?";
+        return parts.Length == 1 ? parts[0][..1].ToUpperInvariant() : (parts[0][..1] + parts[^1][..1]).ToUpperInvariant();
+    }
+    static string FormatViews(int? v)
+    {
+        var n = v ?? 0;
+        return n >= 1_000_000 ? (n / 1_000_000.0).ToString("0.#") + "M" : n >= 1_000 ? (n / 1_000.0).ToString("0.#") + "K" : n.ToString();
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/v2/css/bootstrap-lite.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/v2/css/watch-progress.css" asp-append-version="true" />
+
+    @* --- BẮT ĐẦU KHỐI SEO (Hiển thị trong <head>) --- *@
+
+    <meta name="description" content="@seoDescription" />
+
+    <meta name="keywords" content="xem phim @Model.Name, @Model.Name vietsub, @Model.Name thuyet minh, @Model.Name tap moi nhat, lich chieu @Model.Name, @Model.OriginalName, moonphim, moon phim, phimmoi, rophim, motphim, cobephim, motchill, xem phim online, phim @Model.Year@(Model.Categories != null ? ", " + string.Join(", ", Model.Categories.Select(c => c.Name)) : "")" />
+
+    @* ===== OPEN GRAPH (Facebook, Zalo, LinkedIn, etc.) ===== *@
+    <meta property="og:title" content="@ViewData["SeoTitle"]" />
+    <meta property="og:description" content="@seoDescription" />
+    <meta property="og:type" content="video.movie" />
+    <meta property="og:url" content="@seoUrl" />
+    <meta property="og:image" content="@seoImage" />
+    <meta property="og:image:width" content="800" />
+    <meta property="og:image:height" content="1200" />
+    <meta property="og:site_name" content="MoonPhim (Moon Phim)" />
+    <meta property="og:locale" content="vi_VN" />
+
+    @* ===== TWITTER CARD (X/Twitter share) ===== *@
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@ViewData["SeoTitle"]" />
+    <meta name="twitter:description" content="@seoDescription" />
+    <meta name="twitter:image" content="@seoImage" />
+    <meta name="twitter:site" content="@("@")MoonPhim" />
+
+    @* ===== CANONICAL URL (Tránh duplicate content) ===== *@
+
+
+    @* ===== SCHEMA.ORG JSON-LD (RICH SNIPPETS & BREADCRUMB ĐA TẦNG) ===== *@
+    @if (ViewBag.MovieSchemaJson != null)
+    {
+        @Html.Raw("<script type=\"application/ld+json\">\n" + ViewBag.MovieSchemaJson + "\n</script>")
+    }
+    @if (ViewBag.EpisodeSchemaJson != null)
+    {
+        @Html.Raw("<script type=\"application/ld+json\">\n" + ViewBag.EpisodeSchemaJson + "\n</script>")
+    }
+    @if (ViewBag.BreadcrumbSchemaJson != null)
+    {
+        @Html.Raw("<script type=\"application/ld+json\">\n" + ViewBag.BreadcrumbSchemaJson + "\n</script>")
+    }
+    @* --- KẾT THÚC KHỐI SEO --- *@
+}
+
+<!-- ✅ THÊM: AntiForgery Token -->
+@Html.AntiForgeryToken()
+
+<!-- ✅ THÊM: Data attributes -->
+<div data-movie-id="@Model.MovieId" style="display: none;"></div>
+<!-- ✅ THÊM: Data attributes cho JavaScript -->
+<div data-movie-id="@Model.MovieId" data-selected-episode-id="@(selectedEpisodeId?.ToString())" data-episode-movie-name="@Model.Name" data-episode-number="@ViewBag.CurrentEpisode" style="display: none;"></div>
+
+@{
+    var trending = ViewBag.TrendingMovies as List<MovieWeb.Models.Entities.Movie>;
+    var firstCat = Model.Categories?.FirstOrDefault();
+    var posterUrl = ImageHelper.Portrait(Model.ThumbUrl, Model.PosterUrl);
+    var epStatus = MovieWeb.Helpers.EpisodeStatus.Format(Model.EpisodeCurrent, Model.EpisodeTotal);
+}
+
+<div class="detail-wrapper flex w-full flex-col text-on-surface">
+    <!-- Hero -->
+    <section class="relative w-full overflow-hidden bg-surface-container-lowest">
+        <div class="absolute inset-0 z-0">
+            <div class="h-full w-full scale-105 bg-cover bg-center opacity-40" style="background-image: url('@MovieWeb.Helpers.ImageHelper.Webp(bgImage, 1280)');"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-surface via-surface/85 to-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-surface via-surface/75 to-transparent"></div>
+            <div class="pointer-events-none absolute -top-32 right-1/4 h-96 w-96 rounded-full bg-primary-container/20 blur-3xl"></div>
+        </div>
+        <div class="relative z-10 w-full px-margin-mobile pb-space-xl pt-space-lg md:px-margin">
+            <nav class="mb-space-lg flex flex-wrap items-center gap-space-xs font-label-md text-label-md text-on-surface-variant" aria-label="Breadcrumb">
+                <a class="flex items-center gap-1 transition-colors hover:text-primary" href="/trang-chu"><span class="material-symbols-outlined text-[16px]">home</span> Trang Chủ</a>
+                @if (firstCat != null)
+                {
+                    <span class="text-outline">/</span>
+                    <a class="transition-colors hover:text-primary" href="/the-loai/@firstCat.Slug">@firstCat.Name</a>
+                }
+                <span class="text-outline">/</span>
+                <span class="font-semibold text-on-surface">@Model.Name</span>
+            </nav>
+
+            <div class="grid grid-cols-1 items-start gap-space-xl lg:grid-cols-12">
+                <!-- Poster -->
+                <div class="flex flex-col items-center lg:col-span-4 xl:col-span-3">
+                    <div class="relative aspect-[2/3] w-full max-w-[340px] overflow-hidden rounded-xl shadow-2xl shadow-primary-container/20">
+                        <img src="@MovieWeb.Helpers.ImageHelper.Webp(posterUrl, 400)" srcset="@MovieWeb.Helpers.ImageHelper.WebpSrcSet(posterUrl, 200, 400)" sizes="(min-width: 1024px) 340px, 70vw" alt="@Model.Name" decoding="async" class="h-full w-full object-cover"
+                             onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
+                        <div class="absolute left-3 top-3 flex flex-col gap-1.5">
+                            @if (!string.IsNullOrEmpty(Model.Quality))
+                            {
+                                <span class="rounded-full bg-surface-container-high/90 px-2.5 py-1 font-label-sm text-label-sm font-bold text-primary shadow-sm backdrop-blur-md">@Model.Quality</span>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.Language))
+                            {
+                                <span class="rounded-full bg-surface-container-high/90 px-2.5 py-1 font-label-sm text-label-sm font-bold text-secondary shadow-sm backdrop-blur-md">@Model.Language</span>
+                            }
+                        </div>
+                        <div class="absolute right-3 top-3">
+                            <span class="rounded-full bg-secondary-container/90 px-2.5 py-1 font-label-sm text-label-sm font-extrabold uppercase text-on-secondary-container shadow-sm backdrop-blur-md">100% Miễn Phí</span>
+                        </div>
+                    </div>
+                    <div class="mt-space-md grid w-full max-w-[340px] grid-cols-3 gap-space-xs text-center">
+                        <div class="rounded-lg bg-surface-container/70 p-space-xs">
+                            <span class="block font-label-sm text-label-sm text-on-surface-variant">Thời Lượng</span>
+                            <span class="font-label-md text-label-md font-bold text-on-surface">@(string.IsNullOrWhiteSpace(Model.Time) ? "—" : Model.Time)</span>
+                        </div>
+                        <div class="rounded-lg bg-surface-container/70 p-space-xs">
+                            <span class="block font-label-sm text-label-sm text-on-surface-variant">Phát Hành</span>
+                            <span class="font-label-md text-label-md font-bold text-on-surface">@(Model.Year?.ToString() ?? "—")</span>
+                        </div>
+                        <div class="rounded-lg bg-surface-container/70 p-space-xs">
+                            <span class="block font-label-sm text-label-sm text-on-surface-variant">Tập</span>
+                            <span class="block truncate font-label-md text-label-md font-bold text-secondary" title="@epStatus">@(epStatus ?? "—")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info + actions -->
+                <div class="flex flex-col lg:col-span-8 xl:col-span-9">
+                    <div class="mb-space-sm flex flex-wrap items-center gap-space-sm">
+                        @foreach (var c in (Model.Categories ?? new List<MovieWeb.Models.Entities.Category>()).Take(4))
+                        {
+                            <a href="/the-loai/@c.Slug" class="rounded-full bg-surface-container-high px-space-sm py-0.5 font-label-sm text-label-sm text-on-surface-variant transition-colors hover:text-primary">@c.Name</a>
+                        }
+                        @if (epStatus != null)
+                        {
+                            <span class="inline-flex items-center gap-1 rounded-full bg-secondary-container px-space-sm py-0.5 font-label-sm text-label-sm font-bold text-on-secondary-container"><span class="material-symbols-outlined text-[14px]">playlist_add_check</span> @epStatus</span>
+                        }
+                        @if (Model.Rating is > 0)
+                        {
+                            <span class="text-body-sm text-outline">•</span>
+                            <span class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant">
+                                <span class="material-symbols-outlined text-[16px] text-secondary" style="font-variation-settings: 'FILL' 1;">star</span>
+                                <span class="font-headline-sm text-headline-sm font-bold text-secondary">@Model.Rating.Value.ToString("0.0")</span> / 10@(Model.RatingCount is > 0 ? $" ({Model.RatingCount:N0} bình chọn)" : "")
+                            </span>
+                        }
+                    </div>
+
+                    <h1 class="mb-1 font-display-hero-mobile text-display-hero-mobile tracking-tight text-on-surface md:font-display-hero md:text-display-hero">@Model.Name@(selectedEpisodeName is null ? "" : $" - Tập {selectedEpisodeName}")</h1>
+                    @if (!string.IsNullOrEmpty(Model.OriginalName))
+                    {
+                        <h2 class="mb-space-md font-headline-md text-headline-md font-medium tracking-wide text-primary">@Model.OriginalName</h2>
+                    }
+
+                    <div class="mb-space-lg flex flex-wrap items-center gap-space-sm">
+                        <div id="heroButtons" class="hero-play-buttons flex flex-wrap items-center gap-space-sm">
+                            @if (hasValidVideoUrl)
+                            {
+                                <button type="button" id="watchBtn" class="btn-watch inline-flex items-center gap-space-xs px-space-lg py-space-sm font-headline-sm text-headline-sm font-bold v2-btn-3d v2-btn-3d--primary">
+                                    <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span> Xem Phim Ngay
+                                </button>
+                            }
+                            <button type="button" id="trailerBtn" title="@(string.IsNullOrEmpty(Model.Trailer) ? "Trailer (đang cập nhật)" : "Xem Trailer")" aria-label="Xem Trailer"
+                                    class="btn-trailer inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-high text-on-surface transition-colors hover:bg-surface-variant disabled:cursor-not-allowed disabled:opacity-40 @(string.IsNullOrEmpty(Model.Trailer) ? "disabled" : "")"
+                                    @(string.IsNullOrEmpty(Model.Trailer) ? "disabled" : "")>
+                                <span class="material-symbols-outlined text-[22px]">smart_display</span>
+                            </button>
+                        </div>
+                        <button class="favorite-btn v2-btn-3d v2-btn-3d--secondary" id="favoriteBtn" type="button">
+                            <i class="far fa-heart"></i>
+                            <span>Yêu thích</span>
+                        </button>
+                        <button type="button" id="shareBtn" title="Chia Sẻ" aria-label="Chia sẻ" class="flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-high text-on-surface transition-colors hover:bg-surface-variant">
+                            <span class="material-symbols-outlined text-[22px]">share</span>
+                        </button>
+                        <a href="#binh-luan" title="Đánh Giá Phim" aria-label="Đánh giá phim" class="flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-high text-secondary transition-colors hover:bg-surface-variant">
+                            <span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">star</span>
+                        </a>
+                        <a href="/dmca?url=@(Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}"))&title=@(Uri.EscapeDataString(Model.Name))" title="Báo cáo vi phạm bản quyền" aria-label="Báo cáo bản quyền" class="flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant transition-colors hover:bg-surface-variant hover:text-error">
+                            <span class="material-symbols-outlined text-[22px]">flag</span>
+                        </a>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Description))
+                    {
+                        <div class="movie-description mb-space-md rounded-xl bg-surface-container/70 p-space-md backdrop-blur-md">
+                            <h3 class="mb-space-xs flex items-center gap-1 font-headline-sm text-headline-sm font-bold text-on-surface">
+                                <span class="material-symbols-outlined text-[20px] text-primary">movie_edit</span> Tóm Tắt Nội Dung
+                            </h3>
+                            <div class="font-body-md text-body-md leading-relaxed text-on-surface-variant">@Html.Raw(Model.Description)</div>
+                        </div>
+                    }
+
+                    <div class="grid grid-cols-1 gap-space-sm font-body-sm text-body-sm sm:grid-cols-2 lg:grid-cols-3">
+                        <div class="flex flex-col rounded-lg bg-surface-container-low p-space-sm">
+                            <span class="font-label-sm text-label-sm text-on-surface-variant">Đạo Diễn</span>
+                            <span class="font-semibold text-on-surface">@(Model.Directors?.Any() == true ? string.Join(", ", Model.Directors.Select(d => d.Name)) : "Đang cập nhật")</span>
+                        </div>
+                        <div class="flex flex-col rounded-lg bg-surface-container-low p-space-sm">
+                            <span class="font-label-sm text-label-sm text-on-surface-variant">Diễn Viên</span>
+                            <span class="truncate font-semibold text-on-surface">@(Model.Actors?.Any() == true ? string.Join(", ", Model.Actors.Select(a => a.Name)) : "Đang cập nhật")</span>
+                        </div>
+                        <div class="flex flex-col rounded-lg bg-surface-container-low p-space-sm">
+                            <span class="font-label-sm text-label-sm text-on-surface-variant">Quốc Gia</span>
+                            <span class="font-semibold text-on-surface">
+                                @if (Model.Countries?.Any() == true)
+                                {
+                                    @foreach (var (c, i) in Model.Countries.Select((c, i) => (c, i)))
+                                    {
+                                        <a href="/quoc-gia/@c.Slug" class="hover:text-primary">@c.Name</a>@(i < Model.Countries.Count - 1 ? ", " : "")
+                                    }
+                                }
+                                else { <span>Đang cập nhật</span> }
+                            </span>
+                        </div>
+                        <div class="flex flex-col rounded-lg bg-surface-container-low p-space-sm">
+                            <span class="font-label-sm text-label-sm text-on-surface-variant">Thể Loại</span>
+                            <span class="font-semibold text-on-surface">
+                                @if (Model.Categories?.Any() == true)
+                                {
+                                    @foreach (var (c, i) in Model.Categories.Select((c, i) => (c, i)))
+                                    {
+                                        <a href="/the-loai/@c.Slug" class="hover:text-primary">@c.Name</a>@(i < Model.Categories.Count - 1 ? ", " : "")
+                                    }
+                                }
+                                else { <span>Đang cập nhật</span> }
+                            </span>
+                        </div>
+                        @if (epStatus != null)
+                        {
+                            <div class="flex flex-col rounded-lg bg-surface-container-low p-space-sm">
+                                <span class="font-label-sm text-label-sm text-on-surface-variant">Tình Trạng</span>
+                                <span class="font-semibold text-secondary">@epStatus</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Quality))
+                        {
+                            <div class="flex flex-col rounded-lg bg-surface-container-low p-space-sm">
+                                <span class="font-label-sm text-label-sm text-on-surface-variant">Chất Lượng</span>
+                                <span class="font-semibold text-primary">@Model.Quality</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Language))
+                        {
+                            <div class="flex flex-col rounded-lg bg-surface-container-low p-space-sm">
+                                <span class="font-label-sm text-label-sm text-on-surface-variant">Ngôn Ngữ</span>
+                                <span class="font-semibold text-on-surface">@Model.Language</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Xem phim -->
+    <section class="w-full px-margin-mobile py-space-xl md:px-margin" id="xem-ngay">
+        <div id="playerFrame" class="relative mx-auto mb-space-lg w-full max-w-[min(1200px,calc((100svh-140px)*1.7778))] overflow-hidden rounded-xl bg-surface-container-lowest shadow-2xl">
+            <div id="playerPlaceholder" class="relative flex aspect-video w-full items-center justify-center">
+                <div class="absolute inset-0 bg-cover bg-center brightness-90" style="background-image: url('@MovieWeb.Helpers.ImageHelper.Webp(bgImage, 1280)');"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-surface-dim via-transparent to-surface-dim/40"></div>
+                <div class="relative z-10 flex flex-col items-center gap-space-sm text-center">
+                    <button type="button" id="placeholderPlay" aria-label="Phát phim" class="v2-btn-3d v2-btn-3d--primary v2-btn-3d--icon h-20 w-20">
+                        <span class="material-symbols-outlined text-[48px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                    </button>
+                    <span class="font-headline-sm text-headline-sm font-bold text-on-surface drop-shadow-md">Nhấn vào để phát phim</span>
+                </div>
+            </div>
+
+            <div id="videoContainer" style="display:none;">
+                <div class="video-wrapper relative">
+                    <video id="moviePlayer" controls playsinline webkit-playsinline width="100%"
+                           class="aspect-video w-full bg-black object-contain"
+                           data-current-episode-index="-1"></video>
+                    <iframe id="embedPlayer" style="display:none; border:none;" class="aspect-video w-full bg-black"
+                            allowfullscreen
+                            allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope"></iframe>
+                    <button id="nextEpisodeButton" class="next-episode-btn absolute bottom-space-md right-space-md rounded-full bg-primary-container px-space-md py-space-xs font-label-md text-label-md font-bold text-on-primary-container" style="display: none;">
+                        Tập tiếp theo <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        
+        @if (!string.IsNullOrWhiteSpace(ViewBag.SpintaxDescription as string))
+        {
+            <div class="mb-space-lg rounded-2xl border border-outline-variant/30 bg-surface-container/40 p-space-md text-[14px] leading-relaxed text-on-surface-variant backdrop-blur-md">
+                <div class="mb-space-xs flex items-center gap-2 font-semibold text-primary">
+                    <span class="material-symbols-outlined text-[20px]">smart_display</span>
+                    <span>Thông tin tập phim & Tóm tắt phát sóng</span>
+                </div>
+                <p class="m-0">@ViewBag.SpintaxDescription</p>
+            </div>
+        }
+    
+        @if (shouldShowEpisodeList)
+        {
+            <div class="episode-section mb-space-lg rounded-xl bg-surface-container-low p-space-lg shadow-xl">
+                <div class="flex flex-col justify-between gap-space-md pb-space-md md:flex-row md:items-center">
+                    <div>
+                        <div class="mb-1 flex items-center gap-space-xs">
+                            <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-secondary "></span>
+                            <h2 class="font-headline-md text-headline-md font-bold text-on-surface">Chọn Nguồn Phát &amp; Server</h2>
+                        </div>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant">Chọn server để phát phim. Nếu server này chậm hoặc lỗi, hãy thử server khác.</p>
+                    </div>
+                    <span class="flex items-center gap-1 self-start rounded bg-surface-container-highest px-space-sm py-1 font-label-sm text-label-sm font-bold text-secondary md:self-auto">
+                        <span class="material-symbols-outlined text-[16px]">dns</span> @grouped.Count server
+                    </span>
+                </div>
+                <div class="server-tabs grid grid-cols-1 gap-space-sm pt-space-xs sm:grid-cols-2 md:grid-cols-4">
+                    @foreach (var group in grouped)
+                    {
+                        var key = group.Key;
+                        var isActive = string.Equals(key, defaultServer, StringComparison.OrdinalIgnoreCase);
+                        <button type="button" class="server-tab v2-btn-3d v2-btn-3d--secondary @(isActive ? "active" : "")" data-server="@key">
+                            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">play_circle</span> @(serverDisplay.ContainsKey(key) ? serverDisplay[key] : key)</span>
+                            <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+
+        
+        @if (!string.IsNullOrWhiteSpace(ViewBag.SpintaxDescription as string))
+        {
+            <div class="mb-space-lg rounded-2xl border border-outline-variant/30 bg-surface-container/40 p-space-md text-[14px] leading-relaxed text-on-surface-variant backdrop-blur-md">
+                <div class="mb-space-xs flex items-center gap-2 font-semibold text-primary">
+                    <span class="material-symbols-outlined text-[20px]">smart_display</span>
+                    <span>Thông tin tập phim & Tóm tắt phát sóng</span>
+                </div>
+                <p class="m-0">@ViewBag.SpintaxDescription</p>
+            </div>
+        }
+    
+        @if (shouldShowEpisodeList)
+        {
+            <div class="mb-space-xl">
+                <h2 class="mb-space-md flex items-center gap-space-xs font-headline-md text-headline-md font-bold text-on-surface">
+                    <span class="material-symbols-outlined text-primary">format_list_bulleted</span> Danh Sách Tập Phim
+                </h2>
+                @{ int episodeIndex = 0; }
+                @foreach (var group in grouped)
+                {
+                    var key = group.Key;
+                    var show = string.Equals(key, defaultServer, StringComparison.OrdinalIgnoreCase) ? "block" : "none";
+                    var sortedEpisodes = group.Value
+                        .OrderBy(e =>
+                        {
+                            var match = System.Text.RegularExpressions.Regex.Match(e.EpisodeName, @"\d+");
+                            return match.Success ? int.Parse(match.Value) : 0;
+                        })
+                        .ToList();
+
+                    <div class="episode-group" data-server="@key" style="display:@show;">
+                        <div class="episodes flex flex-wrap gap-space-sm">
+                            @{ var isFirstEpInGroup = true; }
+                            @foreach (var ep in sortedEpisodes)
+                            {
+                                var isEpActive = string.Equals(key, defaultServer, StringComparison.OrdinalIgnoreCase) && (selectedEpisodeId.HasValue ? ep.EpisodeId == selectedEpisodeId.Value : isFirstEpInGroup);
+                                <a href="@(episodeMinMap.TryGetValue(ep.EpisodeId, out var cInfo) ? SeoUrlHelper.EpisodeUrl(Model.Slug, cInfo.CleanSlug, cInfo.MinId) : $"/phim/{Model.Slug}/tap-{ep.Slug}-{ep.EpisodeId}")"
+                                   data-episode-id="@ep.EpisodeId"
+                                   class="episode-list-item @(isEpActive ? "active" : "")"
+                                   data-index="@episodeIndex"
+                                   data-url="@VSMovSource.GetPlaybackUrl(ep.LinkM3u8)"
+                                   data-episode-name="@ep.EpisodeName">
+                                    Tập @ep.EpisodeName
+                                </a>
+                                episodeIndex++;
+                                isFirstEpInGroup = false;
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @{
+            var cast = (Model.Directors ?? new List<MovieWeb.Models.Entities.Director>()).Select(d => new { d.Name, Avatar = (string?)null, Role = "Đạo Diễn", IsDirector = true })
+                .Concat((Model.Actors ?? new List<MovieWeb.Models.Entities.Actor>()).Select(a => new { a.Name, Avatar = a.Avatar, Role = "Diễn Viên", IsDirector = false }))
+                .Take(12).ToList();
+        }
+        @if (cast.Any())
+        {
+            <div class="mb-space-xl">
+                <h2 class="mb-space-md font-headline-md text-headline-md font-bold text-on-surface">Đạo Diễn &amp; Diễn Viên</h2>
+                <div class="-mx-margin-mobile flex snap-x gap-space-md overflow-x-auto px-margin-mobile pb-space-xs md:mx-0 md:grid md:grid-cols-6 md:overflow-visible md:px-0">
+                    @foreach (var person in cast)
+                    {
+                        <div class="flex w-[120px] shrink-0 snap-start flex-col items-center rounded-xl bg-surface-container p-space-sm md:w-auto md:shrink md:p-space-md text-center transition-colors hover:bg-surface-variant">
+                            <div class="relative mb-space-sm flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-surface-container-highest font-headline-sm text-headline-sm font-bold text-on-surface-variant">
+                                @Initials(person.Name)
+                                @if (!string.IsNullOrEmpty(person.Avatar))
+                                {
+                                    <img src="@PosterOf(person.Avatar)" alt="@person.Name" loading="lazy" class="absolute inset-0 h-full w-full object-cover" onerror="this.remove();" />
+                                }
+                            </div>
+                            <span class="line-clamp-2 font-headline-sm text-headline-sm font-semibold text-on-surface">@person.Name</span>
+                            <span class="font-label-sm text-label-sm @(person.IsDirector ? "text-primary" : "text-on-surface-variant")">@person.Role</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (relatedMovies?.Any() == true)
+        {
+            <div class="related mb-space-xl">
+                <div class="mb-space-md flex items-center justify-between">
+                    <h2 class="font-headline-lg text-headline-lg font-bold text-on-surface">Phim Đề Xuất Cùng Thể Loại</h2>
+                    @if (firstCat != null)
+                    {
+                        <a class="flex items-center gap-1 font-label-md text-label-md text-primary hover:underline" href="/the-loai/@firstCat.Slug">Xem Tất Cả <span class="material-symbols-outlined text-[16px]">chevron_right</span></a>
+                    }
+                </div>
+                <div data-v2-img-group class="-mx-margin-mobile flex snap-x gap-space-md overflow-x-auto px-margin-mobile pb-space-xs md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 lg:grid-cols-6">
+                    @foreach (var movie in relatedMovies.Take(6))
+                    {
+                        <a href="@SeoUrlHelper.MovieUrl(movie.Slug, movie.MovieId)" class="group flex w-[140px] shrink-0 snap-start flex-col md:w-auto md:shrink">
+                            <div class="relative aspect-[2/3] overflow-hidden rounded-xl bg-surface-container shadow-md transition-all group-hover:shadow-primary-container/20">
+                                <img src="@ImageHelper.Webp(ImageHelper.Portrait(movie.ThumbUrl, movie.PosterUrl), 400)" srcset="@ImageHelper.WebpSrcSet(ImageHelper.Portrait(movie.ThumbUrl, movie.PosterUrl), 200, 400)" sizes="(min-width: 1024px) 16vw, 140px" alt="@movie.Name" loading="lazy" class="v2-img h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 "
+                                     onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
+                                @if (!string.IsNullOrEmpty(movie.Quality))
+                                {
+                                    <div class="absolute left-2 top-2 rounded-full bg-surface-container-high/90 px-2 py-0.5 font-label-sm text-label-sm font-bold text-primary">@movie.Quality</div>
+                                }
+                                @if (movie.Rating is > 0)
+                                {
+                                    <div class="absolute right-2 top-2 flex items-center gap-0.5 rounded-full bg-surface-container-high/90 px-2 py-0.5 font-label-sm text-label-sm font-bold text-secondary">
+                                        <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">star</span> @movie.Rating.Value.ToString("0.0")
+                                    </div>
+                                }
+                            </div>
+                            <span class="mt-2 truncate font-headline-sm text-headline-sm font-bold text-on-surface transition-colors group-hover:text-primary">@movie.Name</span>
+                            <span class="truncate font-label-sm text-label-sm text-on-surface-variant">@(movie.Categories?.FirstOrDefault()?.Name)@(movie.Year.HasValue ? " • " + movie.Year : "")</span>
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Bình luận + cột phải -->
+        <div class="grid grid-cols-1 gap-space-xl lg:grid-cols-12">
+            <div class="comment-section flex flex-col gap-space-lg lg:col-span-8" id="binh-luan">
+                <h2 class="flex items-center gap-2 font-headline-md text-headline-md font-bold text-on-surface">
+                    <span class="material-symbols-outlined text-[24px] text-primary">forum</span> Bình Luận &amp; Đánh Giá
+                </h2>
+                <div class="comment-box rounded-xl bg-surface-container-low p-space-md shadow-sm">
+                    <div class="mb-space-sm flex flex-wrap items-center gap-space-sm">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-container font-bold text-on-primary-container">
+                            @if (User.Identity?.IsAuthenticated == true) { @Initials(User.Identity.Name) } else { <span class="material-symbols-outlined">person</span> }
+                        </div>
+                        <span class="font-headline-sm text-headline-sm font-semibold text-on-surface">@(User.Identity?.IsAuthenticated == true ? User.Identity.Name : "Khách")</span>
+                        <div class="ml-auto flex items-center gap-1" title="Chọn điểm số">
+                            <span class="mr-1 font-label-md text-label-md text-on-surface-variant">Đánh giá:</span>
+                            <div class="rating-stars flex items-center">
+                                <span class="material-symbols-outlined" data-star="1">star</span><span class="material-symbols-outlined" data-star="2">star</span><span class="material-symbols-outlined" data-star="3">star</span><span class="material-symbols-outlined" data-star="4">star</span><span class="material-symbols-outlined" data-star="5">star</span>
+                            </div>
+                        </div>
+                    </div>
+                    <textarea id="commentContent" maxlength="1000" rows="3" placeholder="Chia sẻ cảm nghĩ của bạn về bộ phim… (Không tiết lộ kết thúc cốt truyện)"
+                              class="w-full rounded-lg border-0 bg-surface p-space-sm font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary"></textarea>
+                    <div class="comment-bottom mt-space-sm flex items-center justify-between gap-space-sm">
+                        <label class="spoiler flex items-center gap-1 font-label-sm text-label-sm text-outline"><input type="checkbox" class="rounded border-outline-variant bg-surface text-primary-container"> Tiết lộ nội dung?</label>
+                        <button type="button" class="btn-send inline-flex items-center gap-1 px-space-md py-space-xs font-label-md text-label-md font-bold v2-btn-3d v2-btn-3d--primary">
+                            <i class="fa-solid fa-paper-plane"></i> Gửi Bình Luận
+                        </button>
+                    </div>
+                </div>
+                <div id="comment-list"></div>
+            </div>
+
+            <aside class="flex flex-col gap-space-lg lg:col-span-4">
+                <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-surface-container to-surface-container-high p-space-lg">
+                    <div class="pointer-events-none absolute -bottom-4 -right-4 h-28 w-28 rounded-full bg-secondary/10 blur-2xl"></div>
+                    <div class="mb-space-sm flex items-center gap-space-xs text-secondary">
+                        <span class="material-symbols-outlined text-[24px]">verified</span>
+                        <span class="font-headline-sm text-headline-sm font-bold">MoonPhim Xem Phim Miễn Phí</span>
+                    </div>
+                    <p class="mb-space-md font-body-sm text-body-sm leading-relaxed text-on-surface-variant">Xem phim online miễn phí, không cần trả phí để xem nội dung. Nhiều server và phụ đề/thuyết minh để bạn chọn.</p>
+                    <ul class="space-y-space-xs font-label-md text-label-md text-on-surface">
+                        <li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-primary">check_circle</span> Xem miễn phí, không cần nâng cấp</li>
+                        <li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-primary">check_circle</span> Nhiều server dự phòng</li>
+                        <li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-primary">check_circle</span> Cập nhật tập mới liên tục</li>
+                    </ul>
+                </div>
+
+                @if (trending?.Any() == true)
+                {
+                    <div class="rounded-xl bg-surface-container-low p-space-md">
+                        <h3 class="mb-space-sm flex items-center gap-2 font-headline-sm text-headline-sm font-bold text-on-surface">
+                            <span class="material-symbols-outlined text-[20px] text-secondary">trending_up</span> Top Thịnh Hành
+                        </h3>
+                        <div class="space-y-space-sm">
+                            @foreach (var (t, idx) in trending.Select((t, i) => (t, i)))
+                            {
+                                <a href="/phim/@t.Slug" class="flex items-center gap-space-sm rounded-lg p-space-xs transition-colors hover:bg-surface-container">
+                                    <span class="w-6 text-center font-headline-md text-headline-md font-extrabold @(idx == 0 ? "text-secondary" : "text-outline")">@(idx + 1)</span>
+                                    <div class="h-16 w-12 shrink-0 overflow-hidden rounded">
+                                        <img src="@ImageHelper.Webp(ImageHelper.Portrait(t.ThumbUrl, t.PosterUrl), 200)" alt="@t.Name" loading="lazy" class="h-full w-full object-cover" onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
+                                    </div>
+                                    <div class="flex min-w-0 flex-col">
+                                        <span class="truncate font-headline-sm text-headline-sm font-bold text-on-surface">@t.Name</span>
+                                        <span class="font-label-sm text-label-sm text-on-surface-variant">@(string.IsNullOrEmpty(t.Quality) ? "" : t.Quality + " • ")@FormatViews(t.ViewCount) lượt xem</span>
+                                    </div>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            </aside>
+        </div>
+    </section>
+
+    <div class="login-popup" id="loginPopup">
+        <div class="popup-content">
+            <h4>Bạn cần đăng nhập để bình luận</h4>
+            <p>
+                Vui lòng <a href="#" id="openLoginPopup">đăng nhập</a> hoặc
+                <a href="#" id="openRegisterPopup">đăng ký</a> tài khoản.
+            </p>
+            <button id="closePopup" type="button">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<div id="reply-form-template" class="comment-box mt-2" style="display: none;">
+    <textarea class="form-control reply-textarea" placeholder="Viết phản hồi..." rows="2"></textarea>
+    <div class="comment-bottom mt-space-sm flex items-center justify-between">
+        <label class="spoiler flex items-center gap-1 font-label-sm text-label-sm text-outline">
+            <input type="checkbox" class="form-check-input"> Tiết lộ?
+        </label>
+        <div class="flex items-center gap-2">
+            <button class="btn btn-cancel-reply rounded-full bg-surface-container-high px-3 py-1 font-label-sm text-label-sm text-on-surface-variant" onclick="cancelReply()" type="button">Hủy</button>
+            <button class="btn-send btn-submit-reply flex items-center gap-1 font-label-md text-label-md font-semibold text-secondary" type="button">
+                Gửi <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="~/js/video-ads-handler.js" asp-append-version="true"></script>
+    <script src="~/js/watch-progress-tracker.js" asp-append-version="true"></script>
+    
+    <!-- ✅ THÊM: Khai báo biến TRƯỚC KHI load favorite-handler.js -->
+    <script>
+        window.movieId = @Model.MovieId;
+        window.isLoggedIn = @Html.Raw(User.Identity.IsAuthenticated.ToString().ToLower());
+        window.movieTime = "@Html.Raw(Model.Time ?? "")";
+        
+        @* console.log('🎬 Movie ID:', window.movieId);
+        console.log('🔐 Is Logged In:', window.isLoggedIn);
+        console.log('👤 Username:', '@User.Identity?.Name'); *@
+    </script>
+    
+    <!-- ✅ SAU ĐÓ MỚI LOAD favorite-handler.js -->
+    <script src="~/js/favorite-handler.js" asp-append-version="true"></script>
+
+    <script>
+        (() => {
+        const movieId = @Model.MovieId;
+        const isLoggedIn = @Html.Raw(User.Identity.IsAuthenticated.ToString().ToLower());
+        @* console.log('Movie ID:', movieId);
+        console.log('Is Logged In:', isLoggedIn);
+        console.log('User Claims:', '@User.Identity?.Name'); *@
+        let selectedRating = 0;
+        
+        function renderUserBadge(comment) {
+            if (comment.isAdmin) {
+                return '<span class="subscription-tag admin-tag"><i class="bi bi-shield-check"></i> Quản Trị Viên</span>';
+            }
+            
+            if (comment.subscriptionType === "premium") {
+                return '<span class="subscription-tag moonpro"><i class="bi bi-gem"></i> MoonPro</span>';
+            }
+            
+            if (comment.subscriptionType === "student") {
+                return '<span class="subscription-tag moonstu"><i class="bi bi-mortarboard"></i> MoonStu</span>';
+            }
+            
+            return '<span class="subscription-tag free"><i class="bi bi-person"></i> Free</span>';
+        }
+
+        window.shouldShowAds = @Json.Serialize(shouldShowAds);
+        window.isSeriesType = @Json.Serialize(isSeriesMovie);
+        window.trailerUrl = "@Html.Raw(Model.Trailer ?? "")";
+        window.movieMainUrl = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(VSMovSource.GetPlaybackUrl(Model.TrailerUrl) ?? ""));
+        window.episode1Url = "@Html.Raw(episode1Url)";
+
+        // ==== 💡 THAY ĐỔI 1: THÊM HÀM SHOWNOTIFICATION VÀO ĐÂY ====
+        window.showNotification = function (message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            // Style này giống bên Admin
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
+            alertDiv.innerHTML = `
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+
+            setTimeout(() => {
+                alertDiv.classList.remove('show');
+                setTimeout(() => alertDiv.remove(), 150);
+            }, 5000);
+        }
+
+        window.initMovieDetailPage = function () {
+            const page = document.getElementById('videoContainer');
+            if (!page || page.dataset.detailInitialized === 'true') return;
+            page.dataset.detailInitialized = 'true';
+            // Tự động lưu thông tin phim đang xem vào bộ nhớ máy (dành cho Tab Đang Xem)
+            try {
+                localStorage.setItem('moon_current_watching', JSON.stringify({
+                    url: window.location.pathname,
+                    slug: '@Model.Slug',
+                    name: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Name)),
+                    updatedAt: Date.now()
+                }));
+            } catch (e) {}
+
+            // Kích hoạt kiểm tra lịch sử xem dở để hiển thị popup xem tiếp
+            if (typeof window.initWatchProgressTracker === 'function') {
+                window.initWatchProgressTracker(@Model.MovieId);
+            }
+
+            // ✅ THÊM: Ẩn/hiện nút khi video đang phát
+            const watchBtn = document.getElementById("watchBtn");
+            const trailerBtn = document.getElementById("trailerBtn");
+            const videoContainer = document.getElementById("videoContainer");
+            
+            if (videoContainer) {
+                const observer = new MutationObserver(function(mutations) {
+                    const video = document.getElementById("moviePlayer");
+                    const hasVideo = video && video.src;
+                    
+                    if (hasVideo && videoContainer.style.display !== 'none') {
+                        if (watchBtn) watchBtn.style.display = 'none';
+                        if (trailerBtn) trailerBtn.style.display = 'none';
+                    } else {
+                        if (watchBtn) watchBtn.style.display = 'inline-flex';
+                        if (trailerBtn) trailerBtn.style.display = 'inline-flex';
+                    }
+                });
+                
+                observer.observe(videoContainer, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['style']
+                });
+            }
+            
+            const loginPopup = document.getElementById("loginPopup");
+            const closePopup = document.getElementById("closePopup");
+            const openLoginPopup = document.getElementById("openLoginPopup");
+            const openRegisterPopup = document.getElementById("openRegisterPopup");
+
+            if (closePopup) {
+                closePopup.addEventListener("click", () => loginPopup.classList.remove("show"));
+            }
+
+            if (openLoginPopup) {
+                openLoginPopup.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    loginPopup.classList.remove("show");
+                    const modal = new bootstrap.Modal(document.getElementById("authModal"));
+                    document.getElementById("loginForm").classList.remove("d-none");
+                    document.getElementById("registerForm").classList.add("d-none");
+                    document.getElementById("authModalTitle").textContent = "Đăng nhập";
+                    modal.show();
+                });
+            }
+
+            if (openRegisterPopup) {
+                openRegisterPopup.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    loginPopup.classList.remove("show");
+                    const modal = new bootstrap.Modal(document.getElementById("authModal"));
+                    document.getElementById("loginForm").classList.add("d-none");
+                    document.getElementById("registerForm").classList.remove("d-none");
+                    document.getElementById("authModalTitle").textContent = "Đăng ký";
+                    modal.show();
+                });
+            }
+
+            // Kích hoạt Player & Episode Handler
+            if (typeof window.initVideoPlayerHandler === 'function') {
+                window.initVideoPlayerHandler();
+            }
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+                });
+            });
+
+            document.querySelectorAll('.rating-stars span').forEach(star => {
+                star.addEventListener('click', () => {
+                    selectedRating = parseInt(star.dataset.star);
+                    document.querySelectorAll('.rating-stars span').forEach(s =>
+                        s.classList.toggle('active', parseInt(s.dataset.star) <= selectedRating)
+                    );
+                });
+            });
+
+            document.querySelector('.btn-send')?.addEventListener('click', async () => {
+                if (!isLoggedIn) {
+                    loginPopup.classList.add("show");
+                    return;
+                }
+                
+                const contentBox = document.querySelector(".comment-box textarea");
+                const content = contentBox.value.trim();
+
+                if (!content) {
+                    // alert("Vui lòng nhập nội dung bình luận!"); // <-- Bỏ
+                    showNotification("Vui lòng nhập nội dung bình luận!", "warning"); // <-- Dùng
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append("movieId", movieId);
+                formData.append("content", content);
+                formData.append("rating", selectedRating);
+
+                try {
+                    const res = await fetch("/api/comment/add", {
+                        method: "POST",
+                        body: formData,
+                        credentials: "include",
+                        headers: { "Accept": "application/json" }
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                        contentBox.value = "";
+                        selectedRating = 0;
+                        // alert("Gửi bình luận thành công!"); // <-- Bỏ
+                        showNotification("Gửi bình luận thành công!", "success"); // <-- Dùng
+                        await loadComments();
+                    } else {
+                        // alert(result.message || "Lỗi khi gửi bình luận!"); // <-- Bỏ
+                        showNotification(result.message || "Lỗi khi gửi bình luận!", "danger"); // <-- Dùng
+                    }
+                } catch (err) {
+                    console.error(err);
+                    // alert("Không thể gửi bình luận!"); // <-- Bỏ
+                    showNotification("Không thể gửi bình luận!", "danger"); // <-- Dùng
+                }
+            });
+
+        async function loadComments() {
+            try {
+                const res = await fetch(`/api/comment/list-json?movieId=${movieId}`, { credentials: "include" });
+                const data = await res.json();
+
+                const container = document.getElementById("comment-list");
+                if (!container) return;
+
+                const comments = data.comments || [];
+                if (!comments.length) {
+                    container.innerHTML = `<p class="text-gray-400">Chưa có bình luận nào, hãy là người đầu tiên!</p>`;
+                    return;
+                }
+
+                container.innerHTML = comments.map(c => {
+                    const itemClass = c.isAdmin ? "comment-item admin" : "comment-item";
+
+                    return `
+                    <div class="${itemClass} d-flex mb-3" id="comment-${c.commentId}">
+                        <img src="${c.avatar || '/images/nouser.png'}" alt="${c.userName}"
+                            class="rounded-circle me-2" style="width:45px;height:45px;object-fit:cover;">
+
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                                <strong>${c.userName || 'Ẩn danh'}</strong>
+                                
+                                ${renderUserBadge(c)} 
+                                
+                                <small class="text-muted ms-2">${formatDate(c.createdAt)}</small>
+                            </div>
+                            ${c.rating ? `<div class="text-warning mb-1">★ ${c.rating}/5</div>` : ''}
+                            <div class="text-white mb-1">${escapeHtml(c.content)}</div>
+
+                            <div class="comment-actions mt-1">
+                                <button class="btn btn-sm btn-outline-secondary me-1" onclick="replyComment(${c.commentId})">💬 Trả lời</button>
+                                ${c.canDelete ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteComment(${c.commentId})">🗑 Xóa</button>` : ''}
+                            </div>
+
+                            ${c.replies && c.replies.length > 0 ? `
+                                <div class="replies mt-2 ms-4">
+                                    ${c.replies.map(r => {
+                                        const replyClass = r.isAdmin ? "reply-item admin" : "reply-item";
+
+                                        return `
+                                        <div class="${replyClass} mb-2 d-flex" id="comment-${r.commentId}">
+                                            <img src="${r.avatar || '/images/nouser.png'}" class="rounded-circle me-2"
+                                                style="width:35px;height:35px;object-fit:cover;">
+                                            <div>
+                                                <div class="d-flex align-items-center">
+                                                    <strong>${r.userName}</strong>
+                                                    
+                                                    ${renderUserBadge(r)} 
+                                                    
+                                                    <small class="text-muted ms-2">${formatDate(r.createdAt)}</small>
+                                                </div>
+                                                <div class="text-white">${escapeHtml(r.content)}</div>
+                                                <div class="reply-actions mt-1">
+                                                    ${r.canDelete ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteComment(${r.commentId})">🗑 Xóa</button>` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `}).join('')}
+                                </div>` : ''}
+                        </div>
+                    </div>
+                `}).join('');
+            } catch (err) {
+                console.error("Lỗi khi tải bình luận:", err);
+                const container = document.getElementById("comment-list");
+                if (container) {
+                    container.innerHTML = `<p class="text-gray-400">Không thể tải bình luận.</p>`;
+                }
+            }
+        }
+
+            function formatDate(dateStr) {
+                const d = new Date(dateStr);
+                if (isNaN(d)) return "";
+                return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
+                       " " + d.toLocaleDateString('vi-VN');
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement("div");
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+        window.replyComment = function (parentId) {
+            if (!isLoggedIn) {
+                loginPopup.classList.add("show");
+                return;
+            }
+
+            cancelReply();
+
+            const parentCommentElement = document.getElementById(`comment-${parentId}`);
+            if (!parentCommentElement) return;
+            const commentActions = parentCommentElement.querySelector('.comment-actions');
+            if (!commentActions) return;
+
+            const template = document.getElementById('reply-form-template');
+            if (!template) {
+                console.error("Không tìm thấy #reply-form-template!");
+                return;
+            }
+            const newForm = template.cloneNode(true);
+
+            newForm.id = 'inline-reply-form';
+            newForm.style.display = 'block';
+
+            const textarea = newForm.querySelector('.reply-textarea');
+            const submitButton = newForm.querySelector('.btn-submit-reply');
+            
+            textarea.id = `reply-textarea-${parentId}`;
+            submitButton.setAttribute('onclick', `submitReply(${parentId})`);
+            
+            commentActions.insertAdjacentHTML('afterend', newForm.outerHTML);
+            
+            document.getElementById(`reply-textarea-${parentId}`).focus();
+        }
+
+        window.submitReply = async function (parentId) {
+                const textarea = document.getElementById(`reply-textarea-${parentId}`);
+                const content = textarea.value.trim();
+                
+                if (!content) {
+                    // alert("Vui lòng nhập nội dung phản hồi!"); // <-- Bỏ
+                    showNotification("Vui lòng nhập nội dung phản hồi!", "warning"); // <-- Dùng
+                    return;
+                }
+
+            const formData = new FormData();
+            formData.append("parentId", parentId);
+            formData.append("movieId", movieId);
+            formData.append("content", content);
+
+            try {
+                const res = await fetch("/api/comment/reply", {
+                    method: "POST",
+                    body: formData,
+                    credentials: "include",
+                    headers: { "Accept": "application/json" }
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    cancelReply();
+                    await loadComments();
+                } else {
+                        // alert(result.message || "Không thể phản hồi!"); // <-- Bỏ
+                        showNotification(result.message || "Không thể phản hồi!", "danger"); // <-- Dùng
+                    }
+                } catch (err) {
+                    console.error(err);
+                    // alert("Lỗi khi gửi phản hồi."); // <-- Bỏ
+                    showNotification("Lỗi khi gửi phản hồi.", "danger"); // <-- Dùng
+                }
+        }
+
+        window.cancelReply = function () {
+            const existingForm = document.getElementById('inline-reply-form');
+            if (existingForm) {
+                existingForm.remove();
+            }
+        }
+
+            window.deleteComment = async function (id) {
+                if (!confirm("Bạn có chắc muốn xóa bình luận này?")) return;
+
+                const res = await fetch(`/api/comment/delete?commentId=${id}`, {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "Accept": "application/json" }
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    showNotification("Đã xóa bình luận!", "success");
+                    await loadComments();
+                } else {
+                    showNotification(result.message || "Không thể xóa bình luận!", "danger");
+                }
+            };
+
+            loadComments();
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener("DOMContentLoaded", window.initMovieDetailPage);
+        } else {
+            window.initMovieDetailPage();
+        }
+        })();
+    </script>
+
+    <script>
+        (() => {
+            const placeholder = document.getElementById('playerPlaceholder');
+            const container = document.getElementById('videoContainer');
+            const watchBtn = document.getElementById('watchBtn');
+            const syncPlaceholder = () => { if (placeholder && container) placeholder.style.display = container.style.display === 'none' ? '' : 'none'; };
+            if (container) new MutationObserver(syncPlaceholder).observe(container, { attributes: true, attributeFilter: ['style'] });
+            document.getElementById('placeholderPlay')?.addEventListener('click', () => {
+                if (watchBtn) watchBtn.click();
+                else document.querySelector('.episode-list-item.active')?.click();
+            });
+            watchBtn?.addEventListener('click', () => document.getElementById('xem-ngay')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+            document.getElementById('shareBtn')?.addEventListener('click', async () => {
+                const data = { title: document.title, url: location.href };
+                try {
+                    if (navigator.share) await navigator.share(data);
+                    else if (navigator.clipboard) { await navigator.clipboard.writeText(data.url); window.showNotification?.('Đã sao chép liên kết', 'success'); }
+                } catch (e) { }
+            });
+        })();
+    </script>
+}

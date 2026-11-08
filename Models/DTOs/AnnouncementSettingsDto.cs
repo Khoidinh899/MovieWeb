@@ -15,5 +15,12 @@ namespace MovieWeb.Models.DTOs
         public bool ShowOncePerUser { get; set; } = true;
         public string StorageKeyVersion { get; set; } = "v1";
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
+
+        // ===== Cấu hình tần suất & đối tượng (Đợt 6) =====
+        public string FrequencyMode { get; set; } = "once"; // "once" | "session" | "interval" | "always"
+        public int IntervalHours { get; set; } = 24; // 1 - 720
+        public int MaxShows { get; set; } = 0; // 0 = không giới hạn
+        public int DelaySeconds { get; set; } = 1; // 0 - 30
+        public string Audience { get; set; } = "all"; // "all" | "guests" | "members"
     }
 }

@@ -1,0 +1,190 @@
+﻿@model List<MovieWeb.Models.Entities.Movie>
+@using MovieWeb.Models.ViewModels
+
+@{
+    string keyword = ViewBag.Keyword as string ?? "";
+    var filters = ViewBag.Filters as MovieFilterViewModel ?? new MovieFilterViewModel();
+    int currentPage = ViewBag.CurrentPage != null ? (int)ViewBag.CurrentPage : 1;
+    int totalPages = ViewBag.TotalPages != null ? (int)ViewBag.TotalPages : 1;
+    int totalMovies = ViewBag.TotalMovies is int tm ? tm : Model.Count;
+
+    // Tham số giữ lại khi chuyển trang: keyword + bộ lọc (như V1 Search.cshtml)
+    var currentFilters = new Dictionary<string, string>();
+    if (!string.IsNullOrWhiteSpace(keyword)) currentFilters["keyword"] = keyword;
+    if (!string.IsNullOrEmpty(filters.Type)) currentFilters["Type"] = filters.Type;
+    if (!string.IsNullOrEmpty(filters.Countries)) currentFilters["Countries"] = filters.Countries;
+    if (!string.IsNullOrEmpty(filters.Categories)) currentFilters["Categories"] = filters.Categories;
+    if (!string.IsNullOrEmpty(filters.Language)) currentFilters["Language"] = filters.Language;
+    if (!string.IsNullOrEmpty(filters.Years)) currentFilters["Years"] = filters.Years;
+    if (!string.IsNullOrEmpty(filters.SortBy)) currentFilters["SortBy"] = filters.SortBy;
+
+    string GetUrl(int p)
+    {
+        var queryParams = string.Join("&", currentFilters.Select(kvp => $"{kvp.Key}={System.Net.WebUtility.UrlEncode(kvp.Value)}"));
+        return $"?Page={p}" + (string.IsNullOrEmpty(queryParams) ? "" : "&" + queryParams);
+    }
+}
+
+@functions {
+    // Poster: giống V1 (Views/Movie/Search.cshtml)
+    // Ảnh DỌC của VSMov là thumb_url (ThumbUrl); xem ImageHelper
+    private string GetPosterUrl(MovieWeb.Models.Entities.Movie m) => MovieWeb.Helpers.ImageHelper.Portrait(m.ThumbUrl, m.PosterUrl);
+
+    public string QualityClass(string? quality) => quality?.ToLower() switch
+    {
+        "hd" => "bg-surface-container-highest text-on-surface",
+        "full hd" => "bg-primary-container text-white",
+        "4k" => "bg-secondary text-on-secondary",
+        "cam" => "bg-outline text-background",
+        _ => "bg-surface-container-high text-on-surface-variant"
+    };
+}
+
+<div class="relative w-full overflow-hidden">
+    <div class="pointer-events-none absolute -top-32 left-1/4 h-[350px] w-[600px] rounded-full bg-primary/10 blur-[130px]"></div>
+    <section class="relative mx-auto w-full max-w-[1600px] px-margin-mobile pb-space-xl pt-space-lg md:px-margin">
+        <nav class="mb-space-lg flex flex-wrap items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant" aria-label="Breadcrumb">
+            <a class="flex items-center gap-1 transition-colors hover:text-primary" href="/trang-chu"><span class="material-symbols-outlined text-[16px]">home</span> Trang Chủ</a>
+            <span class="text-outline">/</span>
+            <span>Tìm Kiếm</span>
+            @if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                <span class="text-outline">/</span>
+                <span class="font-semibold text-secondary">“@keyword”</span>
+            }
+        </nav>
+
+        <div class="mx-auto mb-space-xl max-w-3xl">
+            <form data-v2-suggest-host action="/tim-kiem" method="get" class="flex items-center gap-space-sm rounded-full bg-surface-container-low p-2 pl-space-lg shadow-xl">
+                <span class="material-symbols-outlined text-[24px] text-primary">search</span>
+                <input type="text" name="keyword" value="@keyword" placeholder="Tìm phim, đạo diễn, diễn viên..." autocomplete="off" data-v2-suggest
+                       class="min-w-0 flex-1 border-0 bg-transparent font-headline-sm text-headline-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-0" />
+                <button type="submit" class="inline-flex items-center gap-1 px-space-lg py-space-sm font-label-md text-label-md font-bold v2-btn-3d v2-btn-3d--primary">
+                    Tìm Kiếm <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                </button>
+            </form>
+            <p class="mt-space-sm px-space-sm font-body-sm text-body-sm text-on-surface-variant">
+                @if (string.IsNullOrWhiteSpace(keyword))
+                {
+                    <span>Tìm kiếm &amp; lọc phim — tìm thấy <span class="font-bold text-secondary">@totalMovies.ToString("N0")</span> phim</span>
+                }
+                else
+                {
+                    <span>Tìm thấy <span class="font-bold text-secondary">@totalMovies.ToString("N0")</span> kết quả phù hợp với từ khóa <span class="font-semibold text-on-surface">“@keyword”</span></span>
+                }
+            </p>
+        </div>
+
+        @if (Model.Any())
+        {
+            var top = Model.First();
+            <h2 class="mb-space-md flex items-center gap-space-xs font-headline-md text-headline-md font-bold uppercase text-on-surface">
+                <span class="material-symbols-outlined text-secondary">star</span> Kết quả hàng đầu khớp nhất
+            </h2>
+            <div class="mb-space-xl grid grid-cols-1 overflow-hidden rounded-xl bg-surface-container-low shadow-xl md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+                <a href="/phim/@top.Slug" class="relative block aspect-video bg-surface-container md:aspect-auto md:min-h-[320px]">
+                    <img src="@MovieWeb.Helpers.ImageHelper.Webp(GetPosterUrl(top), 800)" alt="@top.Name" class="absolute inset-0 h-full w-full object-cover" onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
+                    <div class="absolute left-3 top-3 flex gap-2">
+                        @if (!string.IsNullOrEmpty(top.Quality)) { <span class="rounded bg-surface-container-high/90 px-2 py-0.5 font-label-sm text-label-sm font-bold text-primary">@top.Quality</span> }
+                        @if (!string.IsNullOrEmpty(top.Language)) { <span class="rounded bg-secondary-container/90 px-2 py-0.5 font-label-sm text-label-sm font-bold text-on-secondary-container">@top.Language</span> }
+                    </div>
+                </a>
+                <div class="flex flex-col justify-center gap-space-sm p-space-lg">
+                    <div class="flex flex-wrap items-center gap-space-xs font-label-md text-label-md text-on-surface-variant">
+                        @foreach (var c in top.Categories?.Take(2) ?? Enumerable.Empty<MovieWeb.Models.Entities.Category>())
+                        {
+                            <span class="rounded bg-surface-container-high px-2 py-0.5">@c.Name</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(top.Time)) { <span>• Thời lượng: @top.Time</span> }
+                    </div>
+                    <h3 class="font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-headline-xl">@top.Name</h3>
+                    <div class="flex flex-wrap items-center gap-space-md font-body-sm text-body-sm text-on-surface-variant">
+                        @if (top.Rating is > 0)
+                        {
+                            <span class="flex items-center gap-1 font-bold text-secondary"><span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>@top.Rating.Value.ToString("0.0") <span class="font-normal text-on-surface-variant">/ 10</span></span>
+                        }
+                        @if (top.Year.HasValue) { <span>Năm @top.Year</span> }
+                        @if (!string.IsNullOrWhiteSpace(top.EpisodeCurrent)) { <span>@top.EpisodeCurrent</span> }
+                    </div>
+                    <div class="mt-space-sm flex flex-wrap items-center gap-space-sm">
+                        <a href="/phim/@top.Slug" class="inline-flex items-center gap-space-xs px-space-lg py-space-sm font-headline-sm text-headline-sm font-bold v2-btn-3d v2-btn-3d--primary">
+                            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span> Xem Phim Ngay
+                        </a>
+                        <a href="/phim/@top.Slug#binh-luan" class="inline-flex items-center gap-space-xs rounded-full bg-surface-container-high px-space-lg py-space-sm font-label-md text-label-md text-on-surface transition-colors hover:bg-surface-variant">
+                            <span class="material-symbols-outlined text-[18px]">info</span> Xem Chi Tiết &amp; Đánh Giá
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <details class="group mb-space-lg" @(filters.Countries != null || filters.Categories != null || filters.Years != null || filters.Type != null || filters.Language != null ? "open" : "")>
+            <summary class="mb-space-sm inline-flex cursor-pointer list-none items-center gap-2 rounded-full bg-surface-container px-space-md py-space-xs font-label-md text-label-md text-on-surface hover:bg-surface-container-high">
+                <span class="material-symbols-outlined text-[18px]">tune</span> Bộ lọc nâng cao
+            </summary>
+            @await Html.PartialAsync("Partial/_FilterSidebarV2", filters)
+        </details>
+
+        <h2 class="mb-space-md flex items-center gap-space-xs font-headline-md text-headline-md font-bold uppercase text-on-surface">
+            <span class="material-symbols-outlined text-primary">movie</span>
+            @(string.IsNullOrWhiteSpace(keyword) ? "Danh sách phim" : "Danh sách phim liên quan đến “" + keyword + "”")
+        </h2>
+
+        @if (!Model.Any())
+        {
+            <div class="rounded-xl bg-surface-container-low p-8 text-center text-on-surface-variant">Không tìm thấy phim nào phù hợp.</div>
+        }
+        else
+        {
+            <div data-v2-img-group class="grid grid-cols-2 gap-space-md sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+                @foreach (var movie in Model)
+                {
+                    @await Html.PartialAsync("Partial/_MovieCardDetailedV2", (movie, GetPosterUrl(movie)))
+                }
+            </div>
+
+            @if (totalPages > 1)
+            {
+                <nav class="mt-10 flex justify-center" aria-label="Phân trang">
+                    <ul class="flex flex-wrap items-center justify-center gap-1 rounded-full bg-surface-container-low px-space-sm py-space-xs font-label-md text-label-md">
+                        @if (currentPage > 1)
+                        {
+                            <li><a class="flex h-9 items-center gap-1 rounded-full px-3 text-on-surface-variant transition-colors hover:text-on-surface" href="@GetUrl(currentPage - 1)"><span class="material-symbols-outlined text-[16px]">arrow_back</span> Trang trước</a></li>
+                        }
+                        @for (int i = 1; i <= totalPages; i++)
+                        {
+                            if (i == 1 || i == totalPages || (i >= currentPage - 2 && i <= currentPage + 2))
+                            {
+                                <li><a class="flex h-9 min-w-9 items-center justify-center rounded-full px-3 @(i == currentPage ? "bg-primary-container font-bold text-on-primary-container" : "text-on-surface-variant hover:text-on-surface")" href="@GetUrl(i)" @(i == currentPage ? "aria-current=page" : "")>@i</a></li>
+                            }
+                            else if (i == currentPage - 3 || i == currentPage + 3)
+                            {
+                                <li><span class="px-2 text-outline">...</span></li>
+                            }
+                        }
+                        @if (currentPage < totalPages)
+                        {
+                            <li><a class="flex h-9 items-center gap-1 rounded-full px-3 text-on-surface-variant transition-colors hover:text-on-surface" href="@GetUrl(currentPage + 1)">Trang sau <span class="material-symbols-outlined text-[16px]">arrow_forward</span></a></li>
+                        }
+                    </ul>
+                </nav>
+            }
+        }
+
+        <div class="mt-space-xl flex flex-col items-start justify-between gap-space-md rounded-xl bg-surface-container-low p-space-lg md:flex-row md:items-center">
+            <div class="flex items-center gap-space-md">
+                <span class="material-symbols-outlined flex h-12 w-12 items-center justify-center rounded-full bg-surface-container text-[26px] text-primary">search_off</span>
+                <div>
+                    <p class="font-headline-sm text-headline-sm font-bold text-on-surface">Không tìm thấy tựa phim bạn mong muốn?</p>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant">MoonPhim liên tục cập nhật thêm phim mới. Hãy thử từ khóa khác hoặc khám phá kho phim.</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-space-sm">
+                <a href="/contact" class="rounded-full bg-surface-container-high px-space-lg py-space-sm font-label-md text-label-md text-on-surface hover:bg-surface-variant">Gửi Yêu Cầu Thêm Phim</a>
+                <a href="/the-loai/phim-moi-cap-nhat" class="px-space-lg py-space-sm font-label-md text-label-md font-bold v2-btn-3d v2-btn-3d--primary">Khám Phá Kho Phim</a>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script src="~/v2/js/pages/filter-sidebar.js" asp-append-version="true"></script>

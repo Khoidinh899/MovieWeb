@@ -1,0 +1,34 @@
+@* Menu thả xuống Thể loại / Quốc gia của header V2. Dữ liệu đọc-only, cache 10 phút (cùng tiêu chí lọc với CategoryMenu/CountryMenu V1). Model: "category" | "country". *@
+@model string
+@inject MovieWeb.Data.MovieWebDbContext Db
+@inject Microsoft.Extensions.Caching.Memory.IMemoryCache Cache
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Caching.Memory
+@{
+    var isCategory = Model == "category";
+    var items = await Cache.GetOrCreateAsync("v2_menu_" + Model, async e =>
+    {
+        e.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+        return isCategory
+            ? await Db.Categories.AsNoTracking().Where(c => (c.IsActive ?? false) && c.Name != "Phim Bộ").OrderBy(c => c.CategoryId)
+                .Select(c => new KeyValuePair<string, string>(c.Slug, c.Name)).ToListAsync()
+            : await Db.Countries.AsNoTracking().Where(c => c.IsActive == true).OrderBy(c => c.Name)
+                .Select(c => new KeyValuePair<string, string>(c.Slug, c.Name)).ToListAsync();
+    }) ?? new List<KeyValuePair<string, string>>();
+    var prefix = isCategory ? "/the-loai/" : "/quoc-gia/";
+    var id = isCategory ? "categoryMenu" : "countryMenu";
+}
+<div class="dropdown relative">
+    <button type="button" id="@id" data-bs-toggle="dropdown" aria-expanded="false"
+            class="flex items-center gap-1 pb-1 text-on-surface-variant transition-colors hover:text-white">
+        @(isCategory ? "Thể loại" : "Quốc gia") <span class="material-symbols-outlined text-[18px]">expand_more</span>
+    </button>
+    <div class="dropdown-menu left-0 top-full mt-2 w-[min(720px,90vw)] rounded-xl border border-outline-variant/40 bg-surface-container-high p-space-md shadow-2xl" aria-labelledby="@id">
+        <ul class="grid max-h-[60vh] grid-cols-2 gap-x-space-md gap-y-1 overflow-y-auto font-body-sm text-body-sm md:grid-cols-4">
+            @foreach (var it in items)
+            {
+                <li><a class="block rounded px-2 py-1 text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface" href="@(prefix + it.Key)">@it.Value</a></li>
+            }
+        </ul>
+    </div>
+</div>

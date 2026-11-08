@@ -1,0 +1,6 @@
+@* Chuyển đổi Đăng nhập / Đăng ký (hai trang riêng, không phải modal). Model: "login" hoặc "register". *@
+@model string
+<div class="mb-8 mx-auto flex max-w-sm rounded-full bg-surface-container-low p-1">
+    <a href="/Auth/Login" class="flex-1 rounded-full py-2 text-center font-headline-sm transition-all @(Model == "login" ? "bg-primary-container text-on-primary shadow-md" : "text-on-surface-variant hover:text-on-surface")">Đăng nhập</a>
+    <a href="/Auth/Register" class="flex-1 rounded-full py-2 text-center font-headline-sm transition-all @(Model == "register" ? "bg-primary-container text-on-primary shadow-md" : "text-on-surface-variant hover:text-on-surface")">Đăng ký</a>
+</div>

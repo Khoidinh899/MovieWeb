@@ -43,7 +43,7 @@ namespace MovieWeb.Models.API
 
     // ============================================================
     // 🎥 Thông tin phim từ VSMov
-    // Cấu trúc tương tự Movie (OPhim) nhưng có thêm tmdb, imdb
+    // Cấu trúc tương tự Movie (VSMov) nhưng có thêm tmdb, imdb
     // và episodes sử dụng link_embed thay vì link_m3u8
     // ============================================================
     public class VSMovItem
@@ -156,7 +156,7 @@ namespace MovieWeb.Models.API
 
     // ============================================================
     // 🖥️ Server phát tập phim (Vietsub #1, Thuyết Minh #1, ...)
-    // Tương tự Episode (OPhim) nhưng server_data chứa VSMovEpisodeData
+    // Tương tự Episode (VSMov) nhưng server_data chứa VSMovEpisodeData
     // ============================================================
     public class VSMovEpisodeServer
     {
@@ -169,7 +169,7 @@ namespace MovieWeb.Models.API
 
     // ============================================================
     // ▶️ Dữ liệu từng tập phim
-    // Khác với OPhim: dùng link_embed thay vì link_m3u8
+    // Khác với VSMov: dùng link_embed thay vì link_m3u8
     // ============================================================
     public class VSMovEpisodeData
     {
@@ -188,7 +188,7 @@ namespace MovieWeb.Models.API
 
     // ============================================================
     // 📄 Thông tin phân trang từ VSMov API
-    // Cấu trúc giống Pagination (OPhim)
+    // Cấu trúc giống Pagination (VSMov)
     // ============================================================
     public class VSMovPagination
     {

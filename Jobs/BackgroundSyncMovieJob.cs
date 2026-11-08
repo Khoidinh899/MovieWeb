@@ -49,7 +49,7 @@ namespace MovieWeb.Jobs
             // 1. Tìm tất cả request "Chờ đồng bộ" VÀ có ophim_slug
             var requestsToProcess = await _context.RequestsMovies
                 .Include(r => r.UserRequests) // Lấy danh sách user đã yêu cầu
-                .Where(r => r.Status == RequestStatus.Pending && r.OphimSlug != null)
+                .Where(r => r.Status == RequestStatus.Pending && r.SourceSlug != null)
                 .ToListAsync();
 
             if (!requestsToProcess.Any())
@@ -85,15 +85,15 @@ namespace MovieWeb.Jobs
                 // 3. Dùng MovieSyncService của b để đồng bộ phim
                 // Tạo một List<ApiMovie> "giả" từ RequestsMovie
                 var apiMoviesToSync = requestsToProcess
-                    .Where(r => !string.IsNullOrEmpty(r.OphimSlug)) // Double check
+                    .Where(r => !string.IsNullOrEmpty(r.SourceSlug)) // Double check
                     .Select(r => new MovieWeb.Models.API.Movie
                     {
-                        Slug = r.OphimSlug!,
+                        Slug = r.SourceSlug!,
                         Name = r.MovieTitle ?? "N/A",
                         Year = r.MovieYear ?? 0
                     }).ToList();
 
-                // Gọi hàm sync chính (hàm này sẽ tự check phim tồn tại, tự gọi OPhim, tự save)
+                // Gọi hàm sync chính (hàm này sẽ tự check phim tồn tại, tự gọi VSMov, tự save)
                 await _movieSyncService.SyncMoviesFromApiToDbAsync(apiMoviesToSync, 0);
             }
             catch (Exception ex)
@@ -119,7 +119,7 @@ namespace MovieWeb.Jobs
                 // Tìm lại phim trong DB (vì MovieSyncService vừa thêm nó vào)
                 var movieInDb = await _context.Movies
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(m => m.Slug == request.OphimSlug);
+                    .FirstOrDefaultAsync(m => m.Slug == request.SourceSlug);
 
                 if (movieInDb != null)
                 {
@@ -146,7 +146,7 @@ namespace MovieWeb.Jobs
                 else
                 {
                     // 4b. THẤT BẠI: MovieSyncService (vì lý do nào đó) không thêm được phim này
-                    _logger.LogWarning("❌ Thất bại: MovieSyncService đã chạy nhưng không tìm thấy phim (Slug: {Slug}). Chuyển sang 'Cần xác minh'.", request.OphimSlug);
+                    _logger.LogWarning("❌ Thất bại: MovieSyncService đã chạy nhưng không tìm thấy phim (Slug: {Slug}). Chuyển sang 'Cần xác minh'.", request.SourceSlug);
                     request.Status = RequestStatus.NeedsVerification;
                     request.AdminNote = "Job tự động: MovieSyncService không thể đồng bộ phim này.";
                 }

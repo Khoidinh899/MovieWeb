@@ -22,3 +22,20 @@ Properties/PublishProfiles/
 # Bỏ qua các file tài liệu nội bộ (.md), trừ README.md
 *.md
 !README.md
+
+# Tài liệu vận hành AWS MoonPhim (lưu riêng, không đồng bộ qua Git)
+docs/AWS-SERVER-GUIDE.md
+docs/AWS-SSH-LOGIN.md
+docs/AWS-SSM-LOGIN.md
+docs/AWS-RECOVERY-GUIDE.md
+docs/AWS-INFRASTRUCTURE.md
+
+# Cache ảnh WebP của trạm ảnh nội bộ (ImageProxyController)
+App_Data/
+
+# Upload ảnh thông báo
+wwwroot/images/uploads/notifications/
+
+# Tài liệu nội bộ chứa IP server / cấu hình nginx / lỗ hổng: chỉ giữ ở máy local (repo GitHub công khai)
+CLAUDE.md
+ops/server-snapshot-*/

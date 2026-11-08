@@ -76,6 +76,7 @@ namespace MovieWeb.Controllers
                     success = true,
                     payment = unreadCountDto.Payment,
                     movie = unreadCountDto.Movie,
+                    system = unreadCountDto.System,
                     total = unreadCountDto.Total
                 });
             }

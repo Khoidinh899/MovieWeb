@@ -67,6 +67,15 @@
                                     <span class="badge bg-danger ms-1">@unreadCount.Movie</span>
                                 }
                             </a>
+                            <a href="/user/notifications?type=system&status=@currentStatus" 
+                               class="btn btn-filter @(currentType == "system" ? "active" : "")">
+                                <i class="bi bi-bell-fill me-1"></i>
+                                Hệ thống
+                                @if (unreadCount != null && unreadCount.System > 0)
+                                {
+                                    <span class="badge bg-danger ms-1">@unreadCount.System</span>
+                                }
+                            </a>
                         </div>
                     </div>
 

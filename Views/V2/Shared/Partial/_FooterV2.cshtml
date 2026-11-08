@@ -1,0 +1,42 @@
+﻿@* Footer V2 (Stitch ui02 layout). Logo + slogan kept exactly as V1 footer (80px icon, 40px name, 20px slogan) via _BrandLogoV2. *@
+<footer class="mt-space-xl border-t border-outline-variant/30 bg-surface-container-lowest pb-24 pt-14 text-on-surface-variant md:pb-space-lg">
+    <div class="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-8 px-margin-mobile pb-10 md:grid-cols-2 md:px-margin lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <div class="space-y-4">
+            @await Html.PartialAsync("Partial/_BrandLogoV2")
+            <p class="font-body-sm text-xs leading-relaxed text-outline">
+                MoonPhim cung cấp trải nghiệm xem phim trực tuyến cho cộng đồng yêu phim Việt Nam.
+            </p>
+        </div>
+        <div class="space-y-3">
+            <h3 class="font-headline-sm text-sm font-bold uppercase tracking-wider text-on-surface">Danh mục phim</h3>
+            <nav class="flex flex-col space-y-2 font-body-sm text-xs">
+                <a class="text-outline transition-colors hover:text-white" href="/trang-chu">Trang chủ</a>
+                <a class="text-outline transition-colors hover:text-white" href="/the-loai/phim-moi-cap-nhat">Phim mới cập nhật</a>
+                <a class="text-outline transition-colors hover:text-white" href="/the-loai/phim-le">Phim lẻ</a>
+                <a class="text-outline transition-colors hover:text-white" href="/the-loai/phim-bo">Phim bộ</a>
+                <a class="text-outline transition-colors hover:text-white" href="/the-loai/hoat-hinh">Hoạt hình</a>
+            </nav>
+        </div>
+        <div class="space-y-3">
+            <h3 class="font-headline-sm text-sm font-bold uppercase tracking-wider text-on-surface">Khám phá</h3>
+            <nav class="flex flex-col space-y-2 font-body-sm text-xs">
+                <a class="text-outline transition-colors hover:text-white" href="/phim-trending">Phim Trending</a>
+                <a class="text-outline transition-colors hover:text-white" href="/tim-kiem">Tìm kiếm &amp; lọc phim</a>
+                <a class="text-outline transition-colors hover:text-white" href="/user/favorite">Phim yêu thích</a>
+                <a class="text-outline transition-colors hover:text-white" href="/user/history">Lịch sử xem</a>
+            </nav>
+        </div>
+        <div class="space-y-3">
+            <h3 class="font-headline-sm text-sm font-bold uppercase tracking-wider text-on-surface">Hỗ trợ &amp; Pháp lý</h3>
+            <nav class="flex flex-col space-y-2 font-body-sm text-xs">
+                <a class="text-outline transition-colors hover:text-white" href="/about">Giới thiệu &amp; FAQ</a>
+                <a class="text-outline transition-colors hover:text-white" href="/contact">Liên hệ</a>
+                <a class="text-outline transition-colors hover:text-white" href="/privacy">Chính sách bảo mật</a>
+                <a class="text-outline transition-colors hover:text-white" href="/dmca">Miễn trừ DMCA</a>
+            </nav>
+        </div>
+    </div>
+    <div class="mx-auto w-full max-w-[1600px] border-t border-outline-variant/30 px-margin-mobile pt-6 font-body-sm text-xs text-outline md:px-margin">
+        © 2025 <strong>MoonPhim</strong>. All rights reserved.
+    </div>
+</footer>

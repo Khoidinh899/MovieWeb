@@ -179,7 +179,7 @@ namespace MovieWeb.Controllers
 
                 var viewModel = new HomeViewModel
                 {
-                    CdnImageDomain = "https://img.ophim.live/uploads/movies/"
+                    CdnImageDomain = "https://vsmov.com/storage/images/"
                 };
                 ViewBag.Advertisements = new List<Advertisement>();
                 ViewBag.ShouldShowAds = true; // Lỗi thì cứ hiện QC cho chắc

@@ -251,11 +251,6 @@
                     // Thực thi lần lượt các inline script trong Global Scope (window)
                     scriptsToRun.forEach(function (code) {
                         try {
-                            // Isolate detail declarations when SPA revisits a movie.
-                            if (/window\.initMovieDetailPage\s*=/.test(code) && /\bconst\s+movieId\s*=/.test(code)) {
-                                code = '(function () {\n' + code +
-                                    '\nif (typeof showNotification === "function") window.showNotification = showNotification;\n})();';
-                            }
                             var s = document.createElement('script');
                             s.textContent = code;
                             document.body.appendChild(s);
@@ -302,9 +297,6 @@
                 } catch (e) {
                     console.warn('Movie detail init error:', e);
                 }
-            }
-            if (typeof window.initWatchProgressTracker === 'function') {
-                window.initWatchProgressTracker(window.movieId);
             }
         } else {
             // Không phải trang phim -> Reset sạch sẽ để không bao giờ rò rỉ ID phim cũ
@@ -365,6 +357,7 @@
 
         var movieLinks = document.querySelectorAll('a[href^="/phim/"]');
         movieLinks.forEach(function (link) {
+            if (link.classList.contains('episode-list-item')) return;
             if (link.dataset.spaBound === 'true') return;
             link.dataset.spaBound = 'true';
 
@@ -443,7 +436,9 @@
         })
         .then(function (data) {
             var latestItem = null;
-            if (data && data.items && data.items.length > 0) {
+            if (data && Array.isArray(data.movies) && data.movies.length > 0) {
+                latestItem = data.movies[0];
+            } else if (data && data.items && data.items.length > 0) {
                 latestItem = data.items[0];
             } else if (Array.isArray(data) && data.length > 0) {
                 latestItem = data[0];

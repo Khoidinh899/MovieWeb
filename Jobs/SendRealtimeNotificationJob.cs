@@ -35,6 +35,7 @@ namespace MovieWeb.Jobs
                 var notifications = await _context.Notifications
                     .Where(n => n.UserId == userId 
                                 && n.IsRead == false 
+                                && n.Type != "SystemBroadcast"
                                 && n.CreatedAt >= lookBackTime) // <--- CHỈ SỬA DÒNG NÀY
                     .OrderByDescending(n => n.CreatedAt)
                     .ToListAsync();
@@ -85,6 +86,7 @@ namespace MovieWeb.Jobs
                 var userIds = await _context.Notifications
                     .Where(n => n.IsRead == false 
                                 && n.UserId.HasValue 
+                                && n.Type != "SystemBroadcast"
                                 && n.CreatedAt >= lookBackTime) // <--- Lọc ngay từ đầu để tối ưu
                     .Select(n => n.UserId.Value)
                     .Distinct()

@@ -1,0 +1,114 @@
+@model List<MovieWeb.Models.DTOs.FavoriteMovieDto>
+@{
+    ViewData["Title"] = "Phim Yêu Thích";
+}
+
+@functions {
+    public string GetMoviePosterUrl(string? posterUrl)
+    {
+        if (string.IsNullOrEmpty(posterUrl))
+        {
+            return "/images/default-poster.jpg";
+        }
+        
+        if (posterUrl.StartsWith("http"))
+        {
+            return posterUrl;
+        }
+        
+        return "https://vsmov.com/storage/images/" + posterUrl.TrimStart('/');
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/v2/css/bootstrap-lite.css" asp-append-version="true" />
+}
+
+<div class="u2-shell mx-auto w-full max-w-[1600px] px-margin-mobile pb-space-xl pt-space-lg md:px-margin">
+    @Html.AntiForgeryToken()
+
+    <nav class="mb-space-md flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant" aria-label="Breadcrumb">
+        <a class="flex items-center gap-1 transition-colors hover:text-primary" href="/trang-chu"><span class="material-symbols-outlined text-[16px]">home</span> Trang Chủ</a>
+        <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+        <a class="transition-colors hover:text-primary" href="/user/profile">Tài Khoản</a>
+        <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+        <span class="font-headline-sm text-headline-sm text-on-surface">Phim Yêu Thích</span>
+    </nav>
+
+    <div class="grid grid-cols-1 gap-space-lg lg:grid-cols-[300px_minmax(0,1fr)]">
+        <div>
+            @{ var __sb = (MovieWeb.Models.DTOs.UserProfileDto)ViewBag.UserProfile; }
+            @await Html.PartialAsync("Partial/_UserSidebarV2", (__sb.Avatar, __sb.FullName, __sb.Username, __sb.RoleName, __sb.SubscriptionType, __sb.IsAdmin))
+        </div>
+
+        <div class="u2-content min-w-0">
+            <div class="mb-space-lg">
+                <p class="font-label-sm text-label-sm font-bold uppercase tracking-widest text-secondary">Thư viện cá nhân</p>
+                <h1 class="font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-headline-xl">Phim Yêu Thích</h1>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">Danh sách các bộ phim bạn đã yêu thích.</p>
+            </div>
+
+            @if (Model == null || !Model.Any())
+            {
+                <div class="rounded-xl bg-surface-container-low p-space-xl text-center">
+                    <span class="material-symbols-outlined text-[56px] text-outline" style="font-variation-settings: 'FILL' 1;">favorite</span>
+                    <h2 class="mt-space-sm font-headline-md text-headline-md text-on-surface">Chưa có phim yêu thích</h2>
+                    <p class="mb-space-md font-body-md text-body-md text-on-surface-variant">Hãy thêm phim vào danh sách yêu thích để xem lại sau nhé!</p>
+                    <a href="/trang-chu" class="inline-flex items-center gap-1 px-space-lg py-space-sm font-label-md text-label-md font-bold v2-btn-3d v2-btn-3d--primary"><span class="material-symbols-outlined text-[18px]">movie</span> Khám phá phim</a>
+                </div>
+            }
+            else
+            {
+                <div id="favoriteGrid" data-v2-img-group class="grid grid-cols-2 gap-space-md md:grid-cols-3 xl:grid-cols-4">
+                    @foreach (var movie in Model)
+                    {
+                        var ep = MovieWeb.Helpers.EpisodeStatus.Format(movie.EpisodeCurrent, movie.EpisodeTotal);
+                        var poster = MovieWeb.Helpers.ImageHelper.Portrait(movie.ThumbUrl, movie.PosterUrl);
+                        <div class="col-md-4 col-sm-6 !w-full !max-w-full group relative flex flex-col overflow-hidden rounded-xl bg-surface-container-low transition-colors hover:bg-surface-container">
+                            <a href="/phim/@movie.Slug" class="relative block aspect-[2/3] overflow-hidden bg-surface-container">
+                                <img src="@MovieWeb.Helpers.ImageHelper.Webp(poster, 400)" srcset="@MovieWeb.Helpers.ImageHelper.WebpSrcSet(poster, 200, 400)" sizes="(min-width: 1280px) 16vw, (min-width: 768px) 22vw, 45vw" alt="@movie.Name" loading="lazy"
+                                     class="v2-img h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 " onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
+                                @if (!string.IsNullOrEmpty(movie.Quality)) { <span class="absolute left-2 top-2 rounded bg-surface-container-high/90 px-2 py-0.5 font-label-sm text-label-sm font-bold text-on-surface backdrop-blur-md">@movie.Quality</span> }
+                                @if (!string.IsNullOrEmpty(ep)) { <span class="absolute bottom-2 left-2 right-2 truncate rounded bg-background/80 px-2 py-0.5 text-center font-label-sm text-label-sm font-bold text-secondary backdrop-blur-sm">@ep</span> }
+                            </a>
+                            <div class="flex flex-1 flex-col gap-1 p-space-sm">
+                                <div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+                                    <span>@(movie.Year?.ToString())</span>
+                                    @if (movie.Rating > 0) { <span class="flex items-center gap-0.5 font-bold text-secondary"><span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">star</span>@movie.Rating.ToString("0.0")</span> }
+                                </div>
+                                <a href="/phim/@movie.Slug" class="truncate font-headline-sm text-headline-sm font-bold text-on-surface hover:text-primary" title="@movie.Name">@movie.Name</a>
+                            </div>
+                            <button type="button" class="remove-favorite absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-background/80 text-error backdrop-blur-md transition-colors hover:bg-error-container hover:text-on-error-container" data-movie-id="@movie.MovieId" title="Xóa khỏi yêu thích" aria-label="Xóa khỏi yêu thích">
+                                <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">favorite</span>
+                            </button>
+                        </div>
+                    }
+                </div>
+
+                @if (ViewBag.TotalPages > 1)
+                {
+                    <nav class="mt-space-lg flex justify-center" aria-label="Phân trang">
+                        <ul class="flex flex-wrap items-center justify-center gap-1 rounded-full bg-surface-container-low px-space-sm py-space-xs font-label-md text-label-md">
+                            @if (ViewBag.HasPrevious)
+                            {
+                                <li><a class="flex h-9 items-center gap-1 rounded-full px-3 text-on-surface-variant hover:text-on-surface" href="/user/favorite?page=@(ViewBag.CurrentPage - 1)"><span class="material-symbols-outlined text-[16px]">arrow_back</span> Trang trước</a></li>
+                            }
+                            @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                            {
+                                <li><a class="flex h-9 min-w-9 items-center justify-center rounded-full px-3 @(i == ViewBag.CurrentPage ? "bg-primary-container font-bold text-on-primary-container" : "text-on-surface-variant hover:text-on-surface")" href="/user/favorite?page=@i">@i</a></li>
+                            }
+                            @if (ViewBag.HasNext)
+                            {
+                                <li><a class="flex h-9 items-center gap-1 rounded-full px-3 text-on-surface-variant hover:text-on-surface" href="/user/favorite?page=@(ViewBag.CurrentPage + 1)">Trang sau <span class="material-symbols-outlined text-[16px]">arrow_forward</span></a></li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/user-favorite.js" asp-append-version="true"></script>
+}

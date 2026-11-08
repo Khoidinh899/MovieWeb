@@ -362,7 +362,7 @@ namespace MovieWeb.Services
             .Include(t => t.SubscriptionPlan)
             .Include(t => t.UserSubscription)
             .OrderByDescending(t => t.CreatedAt)
-            .Skip((page - 1) * pageSize)
+            .Skip((Math.Max(page, 1) - 1) * pageSize)
             .Take(pageSize)
             .Select(t => new PaymentHistoryViewModel
             {

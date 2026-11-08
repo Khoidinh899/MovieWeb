@@ -1,0 +1,87 @@
+﻿@{
+    // ==========================================================
+    // ===== ✅ BẮT ĐẦU KHỐI CHUẨN BỊ BIẾN SEO =====
+    // ==========================================================
+
+    // 1. Chuẩn bị Mô tả
+    var seoDescription = "MoonPhim: khám phá phim bộ, phim lẻ và hoạt hình theo thể loại, quốc gia. Tìm phim bằng tên Việt hoặc tên gốc, xem thông tin và danh sách tập cập nhật.";
+
+    // 2. Chuẩn bị URL và Image
+    var request = Context.Request;
+    var baseUrl = MovieWeb.Helpers.SeoMetadata.BaseUrl;
+    var seoUrl = MovieWeb.Helpers.SeoMetadata.Canonical(request);
+    var seoImage = $"{baseUrl}/images/iconmoon.png";
+
+    // 3. Chuẩn bị Schema JSON-LD (WebSite)
+    var schemaJson = new System.Text.StringBuilder();
+    schemaJson.AppendLine("{");
+    schemaJson.AppendLine("  \"@context\": \"https://schema.org\",");
+    schemaJson.AppendLine("  \"@type\": \"WebSite\",");
+    schemaJson.AppendLine("  \"name\": \"MoonPhim\",");
+    schemaJson.AppendLine($"  \"url\": \"{baseUrl}\",");
+    schemaJson.AppendLine("  \"potentialAction\": {");
+    schemaJson.AppendLine("    \"@type\": \"SearchAction\",");
+    schemaJson.AppendLine($"    \"target\": \"{baseUrl}/tim-kiem?tu-khoa={{search_term_string}}\",");
+    schemaJson.AppendLine("    \"query-input\": \"required name=search_term_string\"");
+    schemaJson.AppendLine("  }");
+    schemaJson.AppendLine("}");
+    // ==========================================================
+}
+
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="monetag" content="1bd43555dd0c57f4ee0258b218db6891">
+
+    <title>@ViewData["Title"]</title>
+
+    @* ===== FAVICON (Đã thêm file .ico) ===== *@
+    <link rel="shortcut icon" href="~/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png" asp-append-version="true">
+    <link rel="icon" type="image/png" sizes="32x32" href="~/favicon-32x32.png" asp-append-version="true">
+    <link rel="icon" type="image/png" sizes="16x16" href="~/favicon-16x16.png" asp-append-version="true">
+    <link rel="manifest" href="~/site.webmanifest" asp-append-version="true">
+
+    @* ===== META SEO ===== *@
+    <meta name="description" content="@seoDescription" />
+    <meta name="keywords" content="phimmoi, phim moi, rophim, ro phim, cobephim, co be phim, motphim, mot phim, motchill, phimmoichill, xem phim, xem phim miễn phí, xem phim online, phim HD, phim chất lượng cao, moonphim, bay bổng cùng điện ảnh" />
+    <meta name="theme-color" content="#1c2a39" />
+    <link rel="canonical" href="@seoUrl" />
+
+    @* ===== OPEN GRAPH ===== *@
+    <meta property="og:title" content="@ViewData["Title"]" />
+    <meta property="og:description" content="@seoDescription" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="@seoUrl" />
+    <meta property="og:image" content="@seoImage" />
+    <meta property="og:site_name" content="MoonPhim" />
+    <meta property="og:locale" content="vi_VN" />
+
+    @* ===== TWITTER CARDS ===== *@
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@ViewData["Title"]" />
+    <meta name="twitter:description" content="@seoDescription" />
+    <meta name="twitter:image" content="@seoImage" />
+
+    @* ===== SCHEMA MARKUP (JSON-LD) ===== *@
+    <script type="application/ld+json">
+        @Html.Raw(schemaJson.ToString())
+    </script>
+
+    @* ===== V2 STYLES: chỉ thay landing.css bằng v2.css (Tailwind); phần <head> còn lại y nguyên _LandingLayout ===== *@
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/v2/css/v2.css" asp-append-version="true" />
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="v2 landing-v2 bg-background text-on-background font-body antialiased">
+    @RenderBody()
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

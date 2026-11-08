@@ -1,0 +1,29 @@
+﻿@{
+    ViewData["Title"] = "Kết Quả Thanh Toán";
+}
+
+<div class="mx-auto w-full max-w-2xl px-margin-mobile py-space-xl text-center md:px-margin">
+    @if (ViewBag.IsSuccess == true)
+    {
+        <div class="alert alert-success rounded-xl bg-surface-container-low p-space-xl" role="alert">
+            <i class="bi bi-check-circle-fill text-[4rem] text-primary"></i>
+            <h1 class="mt-space-sm font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-headline-xl">Thanh Toán Thành Công!</h1>
+            <p class="mt-space-xs font-body-md text-body-md text-on-surface-variant">@ViewBag.Message</p>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-danger rounded-xl bg-surface-container-low p-space-xl" role="alert">
+            <i class="bi bi-x-circle-fill text-[4rem] text-error"></i>
+            <h1 class="mt-space-sm font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-headline-xl">Thanh Toán Thất Bại</h1>
+            <p class="mt-space-xs font-body-md text-body-md text-on-surface-variant">@ViewBag.Message</p>
+        </div>
+        <a href="/nang-cap" class="mr-space-xs mt-space-lg inline-flex items-center gap-1 rounded-full bg-secondary-container px-space-lg py-space-sm font-label-md text-label-md font-bold text-on-secondary-container">
+            <i class="bi bi-arrow-repeat"></i> Thử lại
+        </a>
+    }
+
+    <a href="/trangchu" class="mt-space-lg inline-flex items-center gap-1 px-space-lg py-space-sm font-label-md text-label-md font-bold v2-btn-3d v2-btn-3d--primary">
+        <i class="bi bi-house-door-fill"></i> Quay về trang chủ
+    </a>
+</div>

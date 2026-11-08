@@ -1,0 +1,147 @@
+﻿@model MovieWeb.Models.NangCapViewModel
+@{
+    ViewData["Title"] = "Nâng Cấp Tài Khoản";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/v2/css/bootstrap-lite.css" asp-append-version="true" />
+}
+
+<div class="upgrade-page-container mx-auto w-full max-w-[1200px] px-margin-mobile pb-space-xl pt-space-lg md:px-margin">
+    <div class="mb-space-xl text-center">
+        <p class="font-label-sm text-label-sm font-bold uppercase tracking-widest text-secondary">Gói thành viên</p>
+        <h1 class="font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-headline-xl">TÀI KHOẢN MoonX</h1>
+        <p class="mx-auto mt-space-xs max-w-2xl font-body-md text-body-md text-on-surface-variant">Sở hữu tài khoản MoonX để nhận nhiều quyền lợi và tăng trải nghiệm xem phim.</p>
+
+        <div class="user-status my-space-lg flex flex-col items-center gap-space-xs">
+            <img src="@Model.Avatar" alt="Avatar" class="avatar-circle-large h-24 w-24 rounded-full object-cover ring-2 ring-secondary">
+            <h4 class="font-headline-sm text-headline-sm text-on-surface">@Model.UserName</h4>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">@Model.CurrentStatus</p>
+        </div>
+
+        <h2 class="font-headline-md text-headline-md text-on-surface">Nâng cấp tài khoản MoonX ngay bây giờ</h2>
+    </div>
+
+    <div class="grid grid-cols-1 gap-space-lg md:grid-cols-2 lg:grid-cols-3">
+        @foreach (var plan in Model.Plans)
+        {
+            <div>
+                <div class="pricing-card relative flex h-full flex-col overflow-hidden rounded-xl p-space-lg shadow-lg @(plan.IsPopular ? "recommended bg-surface-container ring-2 ring-secondary" : "bg-surface-container-low")">
+                @if (plan.DisplayName.Contains("6 Tháng") || plan.DisplayName.Contains("12 Tháng"))
+                    {
+                        <div class="bonus-tag absolute right-space-sm top-space-sm inline-flex items-center gap-1 rounded-full bg-secondary-container px-space-sm py-0.5 font-label-sm text-label-sm font-bold text-on-secondary-container">
+                            <i class="bi bi-gift-fill"></i> Tặng 1 Tháng
+                        </div>
+                    }
+                    <h3 class="font-headline-md text-headline-md text-on-surface">@plan.DisplayName</h3>
+                    <p class="price my-space-md font-headline-xl-mobile text-headline-xl-mobile text-secondary">@plan.PriceVND.ToString("N0") <span class="currency-icon text-body-md text-on-surface-variant">VNĐ</span></p>
+                    <ul class="list-unstyled features-list flex flex-1 flex-col gap-space-xs font-body-md text-body-md text-on-surface-variant">
+                        <li class="flex items-center gap-space-xs"><i class="bi bi-check-circle-fill text-primary"></i> Tắt quảng cáo</li>
+                        <li class="flex items-center gap-space-xs"><i class="bi bi-check-circle-fill text-primary"></i> Xem phim chất lượng 4K</li>
+                        <li class="flex items-center gap-space-xs"><i class="bi bi-check-circle-fill text-primary"></i> Tải lên ảnh đại diện của bạn</li>
+                        <li class="flex items-center gap-space-xs"><i class="bi bi-check-circle-fill text-primary"></i> Yêu cầu phim cùng Mooner Al</li>
+                        <li class="flex items-center gap-space-xs"><i class="bi bi-check-circle-fill text-primary"></i> Tên được gắn nhãn MoonX</li>
+                    </ul>
+                    <button class="btn btn-primary btn-purchase mt-space-lg w-full px-space-lg py-space-sm font-label-md text-label-md font-bold disabled:opacity-60 v2-btn-3d v2-btn-3d--primary" data-plan-id="@plan.PlanId">
+                        Chọn gói này
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const purchaseButtons = document.querySelectorAll('.btn-purchase');
+
+            purchaseButtons.forEach(button => {
+                button.addEventListener('click', async function (event) {
+                    event.preventDefault();
+                    const planId = this.dataset.planId;
+                    
+                    try {
+                        const checkResponse = await fetch('/api/subscription/check-active', {
+                            method: 'GET',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        
+                        const checkData = await checkResponse.json();
+                        
+                        if (checkData.success && checkData.data.hasActiveSubscription) {
+                            const sub = checkData.data.subscription;
+                            showWarningPopup(sub.planName, sub.daysRemaining);
+                            return;
+                        }
+                        
+                        await processPurchase(planId, this);
+                        
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Đã có lỗi xảy ra. Vui lòng thử lại.');
+                    }
+                });
+            });
+        });
+
+        function showWarningPopup(planName, daysRemaining) {
+            const popup = document.createElement('div');
+            popup.className = 'warning-overlay';
+            popup.innerHTML = `
+                <div class="warning-box">
+                    <div class="warning-icon">⚠️</div>
+                    <h3>Bạn đang có gói đăng ký</h3>
+                    <p class="warning-text">
+                        Bạn đang là thành viên <strong>${planName}</strong><br>
+                        Thời hạn còn <strong>${daysRemaining} ngày</strong>
+                    </p>
+                    <p class="warning-note">
+                        Bạn cần phải huỷ gói cũ trước để mua gói mới.
+                    </p>
+                    <p class="warning-reminder">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Lưu ý:</strong> Sau khi huỷ gói, bạn vẫn được sử dụng đến hết thời hạn còn lại.
+                    </p>
+                    <div class="warning-buttons">
+                        <button class="btn-warning-ok" onclick="closeWarningPopup()">Đã hiểu</button>
+                        <a href="/user/payment-history" class="btn-warning-cancel">Đi đến quản lý gói</a>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(popup);
+        }
+
+        function closeWarningPopup() {
+            const popup = document.querySelector('.warning-overlay');
+            if (popup) popup.remove();
+        }
+
+        async function processPurchase(planId, button) {
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang xử lý...';
+
+            try {
+                const response = await fetch('/api/payment/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ planId: parseInt(planId) })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.data.sessionUrl) {
+                    window.location.href = data.data.sessionUrl;
+                } else {
+                    alert('Lỗi: ' + (data.message || 'Không thể tạo phiên thanh toán.'));
+                    button.disabled = false;
+                    button.innerHTML = 'Chọn gói này';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Đã có lỗi nghiêm trọng xảy ra. Vui lòng thử lại.');
+                button.disabled = false;
+                button.innerHTML = 'Chọn gói này';
+            }
+        }
+    </script>
+}

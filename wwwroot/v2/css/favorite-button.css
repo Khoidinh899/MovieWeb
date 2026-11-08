@@ -1,0 +1,105 @@
+/* ================================
+   FAVORITE BUTTON STYLES
+   ================================ */
+
+.favorite-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 25px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 2px solid #dc3545;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.favorite-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(220, 53, 69, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.favorite-btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.favorite-btn:hover {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border-color: #dc3545;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(220, 53, 69, 0.4);
+}
+
+.favorite-btn.active {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border-color: #dc3545;
+}
+
+.favorite-btn.active:hover {
+    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+}
+
+.favorite-btn i {
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.favorite-btn span {
+    position: relative;
+    z-index: 1;
+}
+
+.favorite-btn.active i {
+    animation: heartPulse 0.6s ease;
+}
+
+@keyframes heartPulse {
+    0%, 100% { transform: scale(1); }
+    25% { transform: scale(1.3); }
+    50% { transform: scale(1.1); }
+    75% { transform: scale(1.2); }
+}
+
+/* Loading state */
+.favorite-btn.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.favorite-btn.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .favorite-btn {
+        padding: 10px 20px;
+        font-size: 0.95rem;
+    }
+    
+    .favorite-btn i {
+        font-size: 1.1rem;
+    }
+}

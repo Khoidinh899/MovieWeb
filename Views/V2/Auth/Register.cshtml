@@ -1,0 +1,67 @@
+﻿@model MovieWeb.Models.DTOs.RegisterDto
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    ViewData["Title"] = "Đăng ký - MoonPhim";
+}
+
+<div class="mx-auto flex min-h-[70vh] w-full max-w-5xl items-center px-margin-mobile py-10 md:px-margin">
+    <div class="flex w-full flex-col overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-container/70 shadow-2xl backdrop-blur-2xl lg:flex-row">
+        @await Html.PartialAsync("Partial/_AuthAsideV2")
+
+        <div class="p-6 md:p-10 lg:w-1/2">
+            @await Html.PartialAsync("Partial/_AuthTabsV2", "register")
+
+            <h2 class="font-headline-lg text-2xl font-bold text-on-surface">Tạo tài khoản</h2>
+            <p class="mb-6 mt-1 font-body-sm text-on-surface-variant">Miễn phí, chỉ mất vài giây</p>
+
+            <div id="authAlert" class="mb-4 hidden rounded-lg px-4 py-3 text-sm" role="alert"></div>
+
+            <form id="registerFormSubmit" method="post" class="space-y-4">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label for="registerFullName" class="mb-1 block font-label-md text-on-surface">Họ và tên</label>
+                    <input type="text" id="registerFullName" name="FullName" required placeholder="Nguyễn Văn A"
+                           class="w-full rounded-lg border border-outline-variant/60 bg-surface-container-low px-4 py-2.5 text-on-surface placeholder:text-outline focus:border-primary focus:outline-none" />
+                </div>
+                <div>
+                    <label for="registerUsername" class="mb-1 block font-label-md text-on-surface">Tên đăng nhập</label>
+                    <input type="text" id="registerUsername" name="Username" required placeholder="tennguoidung"
+                           class="w-full rounded-lg border border-outline-variant/60 bg-surface-container-low px-4 py-2.5 text-on-surface placeholder:text-outline focus:border-primary focus:outline-none" />
+                </div>
+                <div>
+                    <label for="registerEmail" class="mb-1 block font-label-md text-on-surface">Email</label>
+                    <input type="email" id="registerEmail" name="Email" required placeholder="example@gmail.com"
+                           class="w-full rounded-lg border border-outline-variant/60 bg-surface-container-low px-4 py-2.5 text-on-surface placeholder:text-outline focus:border-primary focus:outline-none" />
+                </div>
+                <div>
+                    <label for="registerPassword" class="mb-1 block font-label-md text-on-surface">Mật khẩu (ít nhất 6 ký tự)</label>
+                    <input type="password" id="registerPassword" name="Password" required minlength="6" placeholder="••••••••"
+                           class="w-full rounded-lg border border-outline-variant/60 bg-surface-container-low px-4 py-2.5 text-on-surface placeholder:text-outline focus:border-primary focus:outline-none" />
+                </div>
+                <div>
+                    <label for="registerConfirmPassword" class="mb-1 block font-label-md text-on-surface">Nhập lại mật khẩu</label>
+                    <input type="password" id="registerConfirmPassword" name="ConfirmPassword" required minlength="6" placeholder="Nhập lại mật khẩu"
+                           class="w-full rounded-lg border border-outline-variant/60 bg-surface-container-low px-4 py-2.5 text-on-surface placeholder:text-outline focus:border-primary focus:outline-none" />
+                </div>
+
+                <div id="turnstile-container" data-sitekey="@Configuration["Turnstile:SiteKey"]"></div>
+
+                <button type="submit" id="registerSubmit" class="w-full py-3 font-headline-sm font-bold disabled:opacity-60 v2-btn-3d v2-btn-3d--primary">
+                    <span id="registerBtnText">Đăng ký</span>
+                </button>
+            </form>
+
+            <p class="mt-6 text-center text-sm text-on-surface-variant">
+                Đã có tài khoản? <a href="/Auth/Login" class="font-bold text-primary hover:text-secondary">Đăng nhập</a>
+            </p>
+            <div class="mt-6 border-t border-outline-variant/30 pt-4 text-center">
+                <p class="mb-1 flex items-center justify-center gap-1 font-label-sm text-label-sm font-bold uppercase text-secondary"><span class="material-symbols-outlined text-[16px]">volunteer_activism</span> Dự án phi thương mại</p>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">MoonPhim hoạt động vì tình yêu điện ảnh và cộng đồng mê phim.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/v2/js/pages/auth.js" asp-append-version="true"></script>
+}

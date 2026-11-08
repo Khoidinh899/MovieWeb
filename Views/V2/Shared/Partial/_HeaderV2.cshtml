@@ -1,0 +1,127 @@
+﻿@inject MovieWeb.Services.Interfaces.IAuthService _authService
+@{
+    var currentUser = await _authService.GetCurrentUserAsync();
+}
+@* Header V2 (Stitch ui02 desktop/mobile). Keep the <header class="v2-header ..."> element: its colours and scroll
+   behaviour are fixed to match V1 (v2.css + v2.js). Routes below are the real V1 routes, not Stitch anchors. *@
+<header class="v2-header pt-safe">
+    <div class="mx-auto flex h-20 w-full max-w-[1600px] items-center justify-between gap-4 px-margin-mobile md:px-margin">
+        <div class="flex shrink-0 items-center gap-8">
+            @await Html.PartialAsync("Partial/_BrandLogoV2")
+            <nav class="hidden items-center gap-4 font-label-md text-[14px] xl:flex 2xl:gap-6">
+                <a class="pb-1 text-on-surface-variant transition-colors hover:text-white" href="/trang-chu">Trang chủ</a>
+                <a class="pb-1 text-on-surface-variant transition-colors hover:text-white" href="/phim-trending">Phim Trending</a>
+                <a class="pb-1 text-on-surface-variant transition-colors hover:text-white" href="/the-loai/phim-le">Phim lẻ</a>
+                <a class="pb-1 text-on-surface-variant transition-colors hover:text-white" href="/the-loai/phim-bo">Phim bộ</a>
+                <a class="pb-1 text-on-surface-variant transition-colors hover:text-white" href="/the-loai/hoat-hinh">Hoạt hình</a>
+                <a class="pb-1 text-on-surface-variant transition-colors hover:text-white" href="/the-loai/phim-moi-cap-nhat">Phim mới</a>
+                @await Html.PartialAsync("Partial/_MegaMenuV2", "category")
+                @await Html.PartialAsync("Partial/_MegaMenuV2", "country")
+            </nav>
+        </div>
+
+        <form class="hidden min-w-[200px] max-w-md flex-1 items-center md:flex" action="/tim-kiem" method="get">
+            <label data-v2-suggest-host class="relative flex w-full items-center rounded-full border border-white/25 bg-white/15 px-4 py-2 backdrop-blur-md transition-all focus-within:border-white/60 focus-within:bg-white/20">
+                <span class="material-symbols-outlined select-none text-[20px] text-white/80">search</span>
+                <input class="w-full border-0 bg-transparent px-3 font-body-sm text-[14px] text-white placeholder:text-white/70 focus:outline-none focus:ring-0"
+                       type="search" name="keyword" placeholder="Tìm phim, diễn viên..." aria-label="Tìm kiếm phim" autocomplete="off" data-v2-suggest />
+            </label>
+        </form>
+
+        <div class="flex shrink-0 items-center gap-3">
+            @* Mobile: bấm mở lớp phủ tìm kiếm (header-v2.js); nếu JS lỗi thì vẫn là link tới /tim-kiem *@
+            <a href="/tim-kiem" id="v2SearchOpen" class="flex h-10 w-10 items-center justify-center rounded-full text-white/90 transition-colors hover:bg-white/15 hover:text-white md:hidden" aria-label="Tìm kiếm">
+                <span class="material-symbols-outlined text-[22px]">search</span>
+            </a>
+            @if (currentUser != null)
+            {
+                @* Chuông thông báo: dùng lại notification.js + API của V1 (hook: .notification-trigger, .notification-dropdown, .nav-link[data-tab], .mark-all-read, #notificationList, .notification-badge, #paymentBadge, #movieBadge). notification.js chuyển dropdown ra <body> và đặt vị trí bằng JS. *@
+                <div class="notification-wrapper relative" id="notificationBell">
+                    <button type="button" class="notification-trigger relative flex h-10 w-10 items-center justify-center rounded-full text-white/90 transition-colors hover:bg-white/15 hover:text-white" aria-label="Thông báo" aria-haspopup="true">
+                        <span class="material-symbols-outlined text-[22px]">notifications</span>
+                        <span class="notification-badge absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full bg-error px-1 text-center text-[10px] font-bold leading-[18px] text-on-error" style="display: none;">0</span>
+                    </button>
+                    <div class="notification-dropdown" style="display: none;" role="dialog" aria-label="Thông báo">
+                        <div class="notification-header flex items-center justify-between gap-2 px-space-sm pt-space-sm">
+                            <div class="flex flex-1 gap-1" role="tablist">
+                                <button type="button" class="nav-link active" data-tab="payment" role="tab">
+                                    <span class="material-symbols-outlined text-[16px]">credit_card</span> Thanh toán
+                                    <span class="notif-tab-badge" id="paymentBadge" style="display: none;">0</span>
+                                </button>
+                                <button type="button" class="nav-link" data-tab="movie" role="tab">
+                                    <span class="material-symbols-outlined text-[16px]">movie</span> Phim
+                                    <span class="notif-tab-badge" id="movieBadge" style="display: none;">0</span>
+                                </button>
+                                <button type="button" class="nav-link" data-tab="system" role="tab">
+                                    <span class="material-symbols-outlined text-[16px]">notifications</span> Hệ thống
+                                    <span class="notif-tab-badge" id="systemBadge" style="display: none;">0</span>
+                                </button>
+                            </div>
+                            <button type="button" class="mark-all-read" title="Đánh dấu tất cả đã đọc">
+                                <span class="material-symbols-outlined text-[16px]">done_all</span> Đã đọc
+                            </button>
+                        </div>
+                        <div class="notification-body" id="notificationList">
+                            <div class="empty-state-message text-center">
+                                <span class="material-symbols-outlined text-[40px] opacity-40">notifications_off</span>
+                                <p class="mb-0">Không có thông báo nào</p>
+                            </div>
+                        </div>
+                        <div class="notification-footer">
+                            <a href="/user/notifications" class="block py-space-sm text-center font-label-md text-label-md font-bold text-primary hover:underline">Xem tất cả thông báo</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="dropdown relative max-xl:hidden">
+                    <button class="flex items-center gap-2 rounded-full border border-outline-variant/40 bg-surface-container/60 p-1 hover:bg-surface-container" id="userDropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="@(string.IsNullOrEmpty(currentUser.Avatar) ? "/images/nouser.png" : currentUser.Avatar)" alt="Avatar" class="h-8 w-8 rounded-full object-cover" />
+                        <span class="hidden pr-1 text-sm font-medium text-on-surface sm:inline">@(currentUser.FullName ?? currentUser.UserName)</span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end w-56 rounded-xl border border-outline-variant/60 bg-surface-container-high py-2" aria-labelledby="userDropdown">
+                        <a class="block px-4 py-2 text-on-surface-variant hover:bg-surface-container hover:text-white" href="/nang-cap">Nâng cấp ngay</a>
+                        @if (currentUser.IsAdmin)
+                        {
+                            <a class="block px-4 py-2 text-on-surface-variant hover:bg-surface-container hover:text-white" href="@Url.Action("Dashboard", "Admin")">Admin Panel</a>
+                        }
+                        <a class="block px-4 py-2 text-on-surface-variant hover:bg-surface-container hover:text-white" href="/user/favorite">Yêu thích</a>
+                        <a class="block px-4 py-2 text-on-surface-variant hover:bg-surface-container hover:text-white" href="/user/history">Lịch sử xem</a>
+                        <a class="block px-4 py-2 text-on-surface-variant hover:bg-surface-container hover:text-white" href="/user/profile">Tài khoản</a>
+                        <div class="my-1 border-t border-outline-variant/40"></div>
+                        <a class="block px-4 py-2 text-error hover:bg-surface-container" href="#"
+                           onclick="event.preventDefault(); document.getElementById('logoutForm').submit();">Đăng xuất</a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <a href="/Auth/Login" class="max-md:hidden rounded-full border border-outline-variant px-4 py-2 text-label-md text-on-surface transition-colors hover:border-primary hover:text-primary">
+                    Đăng nhập
+                </a>
+            }
+            <button type="button" id="v2MenuOpen" class="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 text-white transition-colors hover:bg-white/15 xl:hidden" aria-label="Mở menu" aria-controls="v2Sidebar" aria-expanded="false">
+                <span class="material-symbols-outlined text-[26px]">menu</span>
+            </button>
+        </div>
+    </div>
+
+    @* Lớp phủ tìm kiếm mobile (Tailwind; không dùng #mobileSearchOverlay của V1) *@
+    <div id="v2SearchOverlay" class="fixed inset-0 z-[1200] hidden flex-col bg-background/95 px-margin-mobile pt-safe backdrop-blur-xl" role="dialog" aria-modal="true" aria-label="Tìm kiếm phim">
+        <form action="/tim-kiem" method="get" class="mt-space-md flex items-center gap-space-sm">
+            <label data-v2-suggest-host class="relative flex min-w-0 flex-1 items-center rounded-full border border-outline-variant/60 bg-surface-container px-4 py-2.5 focus-within:border-primary">
+                <span class="material-symbols-outlined select-none text-[20px] text-on-surface-variant">search</span>
+                <input id="v2SearchOverlayInput" class="w-full border-0 bg-transparent px-3 font-body-md text-[16px] text-on-surface placeholder:text-outline focus:outline-none focus:ring-0"
+                       type="search" name="keyword" placeholder="Tìm phim, diễn viên..." aria-label="Tìm kiếm phim" autocomplete="off" enterkeyhint="search" data-v2-suggest />
+            </label>
+            <button type="button" id="v2SearchClose" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-on-surface" aria-label="Đóng tìm kiếm">
+                <span class="material-symbols-outlined text-[22px]">close</span>
+            </button>
+        </form>
+    </div>
+
+    <form id="logoutForm" method="post" asp-controller="Auth" asp-action="Logout" style="display:none;">
+        @Html.AntiForgeryToken()
+    </form>
+</header>
+
+@* Sidebar nằm ngoài <header> (header có z-index riêng) *@
+@await Html.PartialAsync("Partial/_MobileSidebarV2")

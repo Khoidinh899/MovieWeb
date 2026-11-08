@@ -1,7 +1,9 @@
+using MovieWeb.Helpers;
 // NỘI DUNG ĐẦY ĐỦ CỦA: Controllers/MovieController.cs
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using MovieWeb.Data;
 using MovieWeb.Models.Entities;
 using MovieWeb.Repositories; // Giữ nguyên (nếu bạn dùng)
@@ -15,58 +17,94 @@ namespace MovieWeb.Controllers
 {
     public class MovieController : Controller
     {
+        private readonly IMovieSyncService _movieSync;
         private readonly MovieWebDbContext _context;
         private readonly IMovieRepository _movieRepository; // Giữ nguyên
         private readonly IAuthService _authService; // Giữ nguyên
+        private readonly IMemoryCache _cache;
 
-        public MovieController(MovieWebDbContext context, IMovieRepository movieRepository, IAuthService authService)
+        public MovieController(MovieWebDbContext context, IMovieRepository movieRepository, IAuthService authService, IMovieSyncService movieSync, IMemoryCache cache)
         {
+            _movieSync = movieSync;
             _context = context;
             _movieRepository = movieRepository;
             _authService = authService;
+            _cache = cache;
         }
 
         // ============================================================
-        // 🎬 TRANG CHI TIẾT PHIM (PHỤC HỒI CODE GỐC)
+        // 🎬 TRANG CHI TIẾT PHIM & XEM TẬP (SEO CHUẨN HÓA URL & 301 REDIRECT)
         // ============================================================
         [Route("phim/{slug}")]
-        public async Task<IActionResult> Detail(string slug)
+        [Route("phim/{slug}/{episodeSlug}")]
+        public async Task<IActionResult> Detail(string slug, string? episodeSlug = null, [FromQuery] string? server = null)
         {
             if (string.IsNullOrEmpty(slug))
                 return NotFound();
 
-            var movie = await _context.Movies
+            IQueryable<Movie> MovieQuery() => _context.Movies
                 .Include(m => m.Actors)
                 .Include(m => m.Categories)
                 .Include(m => m.Directors)
                 .Include(m => m.Countries)
                 .Include(m => m.Episodes)
-                .FirstOrDefaultAsync(m => m.Slug == slug && (m.IsActive ?? false));
+                .Where(m => m.IsActive ?? false);
+
+            // URL chuẩn của trang phim là /phim/{slug} (slug là duy nhất, đã được Google index) — tìm theo slug đầy đủ.
+            var movie = await MovieQuery().FirstOrDefaultAsync(m => m.Slug == slug);
+
+            if (movie == null && SeoUrlHelper.TryParseMovieSegment(slug, out var movieSlug, out var parsedMovieId))
+            {
+                // Dạng /phim/{slug}-{id} (bản thử chưa từng lên production): chỉ 301 khi slug khớp đúng phim của ID đó.
+                // Không chuyển hướng chỉ theo ID: "abc-phan-2" của phim đã gỡ sẽ bị đẩy sang phim ID 2 khác hẳn.
+                var movieById = await MovieQuery().FirstOrDefaultAsync(m => m.MovieId == parsedMovieId!.Value);
+                if (movieById != null && string.Equals(movieById.Slug, movieSlug, StringComparison.OrdinalIgnoreCase))
+                {
+                    var target = string.IsNullOrEmpty(episodeSlug)
+                        ? SeoUrlHelper.MovieUrl(movieById.Slug, movieById.MovieId)
+                        : $"/phim/{movieById.Slug}/{episodeSlug}";
+                    Response.Headers.Append("Cache-Control", "public, max-age=86400");
+                    return RedirectPermanent(target);
+                }
+            }
 
             if (movie == null)
                 return NotFound();
 
-            // 🎯 Gợi ý phim liên quan
-            var categoryIds = movie.Categories.Select(c => c.CategoryId).ToList();
-
-            var relatedMovies = await _context.Movies
-                .Include(m => m.Categories)
-                .Where(m => (m.IsActive ?? false)
-                                && m.MovieId != movie.MovieId
-                                && m.Categories.Any(c => categoryIds.Contains(c.CategoryId)))
-                .OrderByDescending(m => m.ViewCount ?? 0)
-                .Take(8)
-                .ToListAsync();
+            await _movieSync.EnsureVSMovEpisodesAsync(movie.MovieId);
 
             // 👁️ Tăng lượt xem
             movie.ViewCount = (movie.ViewCount ?? 0) + 1;
             await _context.SaveChangesAsync();
 
-            // 🎞️ Lấy danh sách tập phim
+            // 🎞️ Lấy danh sách tập phim khả dụng
             var allEpisodes = await _context.Episodes
                 .Where(e => e.MovieId == movie.MovieId)
                 .OrderBy(e => e.EpisodeName)
                 .ToListAsync();
+
+            allEpisodes = allEpisodes.Where(e => VSMovSource.IsSupported(e.LinkM3u8)).ToList();
+
+            // 🧩 Gom nhóm canonical episode để lấy MIN(EpisodeId) cho từng tập (chống trùng lặp nhiều server)
+            var canonicalGroups = allEpisodes
+                .GroupBy(e => SeoUrlHelper.NormalizeEpisodeSlug(e.Slug))
+                .ToDictionary(
+                    g => g.Key,
+                    g => new
+                    {
+                        CleanSlug = g.Key,
+                        MinEpisodeId = g.Min(e => e.EpisodeId),
+                        Episodes = g.ToList()
+                    });
+
+            var episodeToCanonicalMap = new Dictionary<int, (string CleanSlug, int MinId)>();
+            foreach (var grp in canonicalGroups.Values)
+            {
+                foreach (var ep in grp.Episodes)
+                {
+                    episodeToCanonicalMap[ep.EpisodeId] = (grp.CleanSlug, grp.MinEpisodeId);
+                }
+            }
 
             // 🧩 Chuẩn hóa server key
             string NormalizeKey(string? s)
@@ -117,12 +155,147 @@ namespace MovieWeb.Controllers
                 defaultServerKey = serverDisplayNames.Keys.FirstOrDefault() ?? "";
             }
 
+            var serverUrlKeys = VSMovSource.ServerUrlKeys(serverDisplayNames.Keys);
+            ViewBag.ServerUrlKeys = serverUrlKeys;
+
+            // 🎯 XỬ LÝ KIỂM TRA ROUTE TẬP & 301 REDIRECT NẾU URL CHƯA PHẢI CANONICAL MIN(EPISODE_ID)
+            Episode? selectedEpisode = null;
+            if (!string.IsNullOrEmpty(episodeSlug))
+            {
+                bool isNewEpFormat = SeoUrlHelper.TryParseEpisodeSegment(episodeSlug, out var parsedEpSlug, out var parsedEpId);
+
+                if (parsedEpId.HasValue)
+                {
+                    // User/Bot vào /tap-{cleanSlug}-{episodeId}
+                    if (episodeToCanonicalMap.TryGetValue(parsedEpId.Value, out var canon))
+                    {
+                        // Nếu ID không phải MIN(EpisodeId) hoặc URL chưa đúng chuẩn -> 301 Permanent Redirect
+                        if (parsedEpId.Value != canon.MinId || !isNewEpFormat || !string.Equals(parsedEpSlug, canon.CleanSlug, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var targetUrl = SeoUrlHelper.EpisodeUrl(movie.Slug, canon.CleanSlug, canon.MinId);
+                            Response.Headers.Append("Cache-Control", "public, max-age=86400");
+                            return RedirectPermanent(targetUrl);
+                        }
+
+                        // Đúng URL canonical chứa MIN(EpisodeId)
+                        var matchedGroup = canonicalGroups[canon.CleanSlug];
+                        var availableServerEpisodes = matchedGroup.Episodes;
+
+                        // Nếu có chỉ định server trong query, ưu tiên server đó nhưng KHÔNG đổi URL
+                        if (!string.IsNullOrEmpty(server))
+                        {
+                            selectedEpisode = availableServerEpisodes.FirstOrDefault(e =>
+                                NormalizeKey(e.ServerName) == NormalizeKey(server) ||
+                                (serverUrlKeys.TryGetValue(NormalizeKey(e.ServerName), out var uk) && uk.Equals(server, StringComparison.OrdinalIgnoreCase)));
+                        }
+
+                        selectedEpisode ??= availableServerEpisodes.FirstOrDefault(e => NormalizeKey(e.ServerName) == defaultServerKey)
+                            ?? availableServerEpisodes.FirstOrDefault(e => e.EpisodeId == canon.MinId)
+                            ?? availableServerEpisodes.First();
+
+                        defaultServerKey = NormalizeKey(selectedEpisode.ServerName);
+                    }
+                    else
+                    {
+                        return NotFound();
+                    }
+                }
+                else
+                {
+                    // URL cũ dạng /phim/{slug}/{oldEpisodeSlug} -> tìm canonical và 301 Permanent Redirect
+                    var matchedGrp = canonicalGroups.Values.FirstOrDefault(g =>
+                        string.Equals(g.CleanSlug, parsedEpSlug, StringComparison.OrdinalIgnoreCase) ||
+                        g.Episodes.Any(e => string.Equals(e.Slug, episodeSlug, StringComparison.OrdinalIgnoreCase)));
+
+                    if (matchedGrp != null)
+                    {
+                        var targetUrl = SeoUrlHelper.EpisodeUrl(movie.Slug, matchedGrp.CleanSlug, matchedGrp.MinEpisodeId);
+                        Response.Headers.Append("Cache-Control", "public, max-age=86400");
+                        return RedirectPermanent(targetUrl);
+                    }
+                    else
+                    {
+                        return NotFound();
+                    }
+                }
+            }
+
+            ViewBag.SelectedEpisodeId = selectedEpisode?.EpisodeId;
+            ViewBag.SelectedEpisodeName = selectedEpisode?.EpisodeName;
+            ViewBag.CurrentEpisode = selectedEpisode is null ? null :
+                (int.TryParse(Regex.Match(selectedEpisode.EpisodeName, @"\d+").Value, out var number) ? number : (int?)null);
+
             ViewBag.GroupedEpisodes = groupedByNormalized;
             ViewBag.ServerDisplayNames = serverDisplayNames;
             ViewBag.Servers = serverDisplayNames.Keys.ToList();
             ViewBag.DefaultServer = defaultServerKey;
+            ViewBag.EpisodeMinIdMap = episodeToCanonicalMap;
+
+            // 🎯 GỢI Ý PHIM LIÊN QUAN - THUẬT TOÁN "SMART ROTATION" (XOAY TUA DỰA TRÊN MOVIE_ID & DAY_OF_YEAR)
+            var categoryIds = movie.Categories.Select(c => c.CategoryId).ToList();
+            var candidatePool = await _context.Movies
+                .AsNoTracking()
+                .Include(m => m.Categories)
+                .Where(m => (m.IsActive ?? false)
+                            && m.MovieId != movie.MovieId
+                            && m.Categories.Any(c => categoryIds.Contains(c.CategoryId)))
+                .OrderByDescending(m => m.ViewCount ?? 0)
+                .Take(50)
+                .ToListAsync();
+
+            int daySeed = DateTime.UtcNow.DayOfYear;
+            int offset = candidatePool.Count > 8 ? Math.Abs((movie.MovieId * 31 + daySeed) % (candidatePool.Count - 7)) : 0;
+            var relatedMovies = candidatePool.Skip(offset).Take(8).ToList();
+            if (relatedMovies.Count < 8 && candidatePool.Count > relatedMovies.Count)
+            {
+                var remaining = candidatePool.Take(8 - relatedMovies.Count);
+                foreach (var rm in remaining)
+                {
+                    if (!relatedMovies.Any(x => x.MovieId == rm.MovieId)) relatedMovies.Add(rm);
+                }
+            }
             ViewBag.RelatedMovies = relatedMovies;
-            ViewData["Title"] = movie.Name;
+
+            // ⚡ KHỐI "PHIM MỚI CẬP NHẬT HÔM NAY" (CACHE 15 PHÚT TỐI ƯU CRAWL BUDGET)
+            var latestMoviesToday = await _cache.GetOrCreateAsync("seo_latest_movies_today", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
+                return await _context.Movies.AsNoTracking()
+                    .Where(m => m.IsActive == true)
+                    .OrderByDescending(m => m.UpdatedAt ?? m.CreatedAt)
+                    .Take(8)
+                    .Select(m => new Movie
+                    {
+                        MovieId = m.MovieId,
+                        Slug = m.Slug,
+                        Name = m.Name,
+                        OriginalName = m.OriginalName,
+                        PosterUrl = m.PosterUrl,
+                        ThumbUrl = m.ThumbUrl,
+                        Quality = m.Quality,
+                        Year = m.Year,
+                        EpisodeCurrent = m.EpisodeCurrent
+                    })
+                    .ToListAsync();
+            });
+            ViewBag.LatestMoviesToday = latestMoviesToday;
+
+            // 💎 SEO CANONICAL, SPINTAX VÀ SCHEMA.ORG ĐA TẦNG
+            var movieCanonicalPath = SeoUrlHelper.MovieUrl(movie.Slug, movie.MovieId);
+            var movieCanonicalUrl = $"https://moonphim.me{movieCanonicalPath}";
+            var currentCanonicalPath = selectedEpisode != null && episodeToCanonicalMap.TryGetValue(selectedEpisode.EpisodeId, out var epCanon)
+                ? SeoUrlHelper.EpisodeUrl(movie.Slug, epCanon.CleanSlug, epCanon.MinId)
+                : movieCanonicalPath;
+            var currentCanonicalUrl = $"https://moonphim.me{currentCanonicalPath}";
+
+            string spintaxDesc = SeoContentHelper.GenerateEpisodeSpintax(movie, selectedEpisode, allEpisodes, serverDisplayNames);
+            ViewBag.SpintaxDescription = spintaxDesc;
+            ViewBag.CanonicalUrl = currentCanonicalUrl;
+            ViewBag.MovieSchemaJson = SeoSchemaHelper.BuildMovieOrSeriesSchema(movie, movieCanonicalUrl);
+            ViewBag.EpisodeSchemaJson = SeoSchemaHelper.BuildEpisodeAndVideoSchema(movie, selectedEpisode, currentCanonicalUrl, spintaxDesc);
+            ViewBag.BreadcrumbSchemaJson = SeoSchemaHelper.BuildBreadcrumbSchema(movie, selectedEpisode, movieCanonicalUrl, selectedEpisode != null ? currentCanonicalUrl : null);
+
+            ViewData["Title"] = selectedEpisode != null ? $"{movie.Name} - Tập {selectedEpisode.EpisodeName}" : movie.Name;
             ViewData["PageType"] = "Detail";
 
             // 💎 Kiểm tra gói tài khoản (ẩn quảng cáo nếu Premium / Student)
@@ -140,8 +313,8 @@ namespace MovieWeb.Controllers
             bool isSeriesType = movie.Type?.ToLower() == "series" || movie.Type?.ToLower() == "hoathinh";
 
             // 🎞️ Lấy tập đầu tiên để phát (cho cả phim lẻ và phim bộ)
-            var firstEpisode = allEpisodes.FirstOrDefault();
-            string? episode1Url = firstEpisode?.LinkM3u8 ?? movie.TrailerUrl;
+            var firstEpisode = selectedEpisode ?? allEpisodes.FirstOrDefault();
+            string? episode1Url = VSMovSource.GetPlaybackUrl(firstEpisode?.LinkM3u8);
 
             // 📢 Quảng cáo
             var advertisements = await _context.Advertisements
@@ -153,6 +326,17 @@ namespace MovieWeb.Controllers
             ViewBag.ShouldShowAds = shouldShowAds;
             ViewBag.IsSeriesType = isSeriesType;
             ViewBag.Episode1Url = episode1Url;
+
+            // Chỉ giao diện V2 cần cột "Top thịnh hành" (đọc-only, 5 dòng, đúng cột cần hiển thị)
+            if (UiVersion.IsV2(HttpContext))
+            {
+                ViewBag.TrendingMovies = await _context.Movies.AsNoTracking()
+                    .Where(m => (m.IsActive ?? false) && m.MovieId != movie.MovieId)
+                    .OrderByDescending(m => m.ViewCount ?? 0)
+                    .Take(5)
+                    .Select(m => new Movie { Slug = m.Slug, Name = m.Name, PosterUrl = m.PosterUrl, Quality = m.Quality, ViewCount = m.ViewCount })
+                    .ToListAsync();
+            }
 
             return View(movie);
         }
@@ -252,7 +436,7 @@ namespace MovieWeb.Controllers
             };
 
             // ===== PHÂN TRANG (Thay thế Take(40)) =====
-            int pageSize = filters.PageSize > 0 ? filters.PageSize : 20;
+            int pageSize = MovieWeb.Helpers.UiVersion.IsV2(HttpContext) ? 24 : (filters.PageSize > 0 ? filters.PageSize : 20); // V2: 24 = đủ hàng cho lưới 2/3/4/6 cột
             int page = filters.Page > 0 ? filters.Page : 1;
 
             int totalMovies = await query.CountAsync();
@@ -267,7 +451,13 @@ namespace MovieWeb.Controllers
                     Slug = m.Slug,
                     ThumbUrl = m.ThumbUrl,
                     PosterUrl = m.PosterUrl,
-                    Categories = m.Categories.Select(c => new Category { Name = c.Name }).Take(1).ToList()
+                    Year = m.Year,
+                    Quality = m.Quality,
+                    Time = m.Time,
+                    Language = m.Language,
+                    Rating = m.Rating,
+                    EpisodeCurrent = m.EpisodeCurrent,
+                    Categories = m.Categories.Select(c => new Category { Name = c.Name }).Take(2).ToList()
                 })
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -290,7 +480,7 @@ namespace MovieWeb.Controllers
             ViewBag.Countries = countries; // Truyền data
             ViewBag.Categories = categories; // Truyền data
             ViewBag.CurrentPage = page; // Pagination
-            ViewBag.TotalPages = totalPages; // Pagination
+            ViewBag.TotalPages = totalPages; ViewBag.TotalMovies = totalMovies; // Pagination
 
             ViewData["Title"] = string.IsNullOrWhiteSpace(keyword) ? "Tìm kiếm & Lọc phim" : $"Tìm kiếm: {keyword}";
             ViewData["PageType"] = "Search";
@@ -340,12 +530,14 @@ namespace MovieWeb.Controllers
         {
             try
             {
+                await _movieSync.EnsureVSMovEpisodesAsync(movieId);
                 // 1️⃣ Lấy tất cả tập phim của movieId
                 var allEpisodes = await _context.Episodes
                     .Where(e => e.MovieId == movieId)
                     .OrderBy(e => e.EpisodeName)
                     .ToListAsync();
 
+                allEpisodes = allEpisodes.Where(e => VSMovSource.IsSupported(e.LinkM3u8)).ToList();
                 if (!allEpisodes.Any())
                 {
                     return Json(new { success = false, message = "Không tìm thấy tập phim nào." });
@@ -414,7 +606,7 @@ namespace MovieWeb.Controllers
         [Route("the-loai/phim-moi-cap-nhat")]
         public async Task<IActionResult> PhimMoiCapNhat([FromQuery] MovieFilterViewModel filters)
         {
-            int pageSize = filters.PageSize > 0 ? filters.PageSize : 24;
+            int pageSize = MovieWeb.Helpers.UiVersion.IsV2(HttpContext) ? 24 : (filters.PageSize > 0 ? filters.PageSize : 24);
             int page = filters.Page > 0 ? filters.Page : 1;
 
             var query = _context.Movies
@@ -501,7 +693,7 @@ namespace MovieWeb.Controllers
 
             ViewBag.CategoryName = "Phim Mới Cập Nhật";
             ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalPages = totalPages; ViewBag.TotalMovies = totalMovies;
             ViewBag.Countries = countries;
             ViewBag.Categories = categories;
             ViewBag.Filters = filters;
@@ -513,7 +705,7 @@ namespace MovieWeb.Controllers
         [Route("the-loai/hoat-hinh")]
         public async Task<IActionResult> HoatHinh([FromQuery] MovieFilterViewModel filters)
         {
-            int pageSize = filters.PageSize > 0 ? filters.PageSize : 24;
+            int pageSize = MovieWeb.Helpers.UiVersion.IsV2(HttpContext) ? 24 : (filters.PageSize > 0 ? filters.PageSize : 24);
             int page = filters.Page > 0 ? filters.Page : 1;
 
             var query = _context.Movies
@@ -596,7 +788,7 @@ namespace MovieWeb.Controllers
 
             ViewBag.CategoryName = "Phim Hoạt Hình";
             ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalPages = totalPages; ViewBag.TotalMovies = totalMovies;
             ViewBag.Countries = countries;
             ViewBag.Categories = categories;
             ViewBag.Filters = filters;
@@ -612,7 +804,7 @@ namespace MovieWeb.Controllers
         [Route("phim-moi")]
         public async Task<IActionResult> PhimMoi([FromQuery] MovieFilterViewModel filters)
         {
-            int pageSize = filters.PageSize > 0 ? filters.PageSize : 20;
+            int pageSize = MovieWeb.Helpers.UiVersion.IsV2(HttpContext) ? 24 : (filters.PageSize > 0 ? filters.PageSize : 20); // V2: 24 = đủ hàng cho lưới 2/3/4/6 cột
             int page = filters.Page > 0 ? filters.Page : 1;
 
             var query = _context.Movies
@@ -681,7 +873,14 @@ namespace MovieWeb.Controllers
                     Name = m.Name,
                     Slug = m.Slug,
                     ThumbUrl = m.ThumbUrl,
-                    PosterUrl = m.PosterUrl
+                    PosterUrl = m.PosterUrl,
+                    Year = m.Year,
+                    Quality = m.Quality,
+                    Time = m.Time,
+                    Language = m.Language,
+                    Rating = m.Rating,
+                    EpisodeCurrent = m.EpisodeCurrent,
+                    Categories = m.Categories.Select(c => new Category { Name = c.Name }).Take(2).ToList()
                 })
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -703,7 +902,7 @@ namespace MovieWeb.Controllers
             ViewBag.CategorySlug = "phim-moi";
             ViewBag.Filters = filters;
             ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalPages = totalPages; ViewBag.TotalMovies = totalMovies;
             ViewData["Title"] = "Phim Mới Cập Nhật | Phim Mới Vietsub Thuyết Minh";
             ViewBag.SeoDescription = "Tổng hợp danh sách phim mới nhất, phim mới cập nhật vietsub, lồng tiếng chất lượng cao tại MoonPhim.";
 
@@ -716,14 +915,17 @@ namespace MovieWeb.Controllers
         [Route("the-loai/phim-le")]
         public async Task<IActionResult> PhimLe([FromQuery] MovieFilterViewModel filters)
         {
-            int pageSize = filters.PageSize > 0 ? filters.PageSize : 20;
+            int pageSize = MovieWeb.Helpers.UiVersion.IsV2(HttpContext) ? 24 : (filters.PageSize > 0 ? filters.PageSize : 20); // V2: 24 = đủ hàng cho lưới 2/3/4/6 cột
             int page = filters.Page > 0 ? filters.Page : 1;
 
             // 🔸 Query cơ bản
             var query = _context.Movies
                 .Include(m => m.Countries)
                 .Include(m => m.Categories) // 💡 Thêm Include
-                .Where(m => (m.IsActive ?? false) && !string.IsNullOrEmpty(m.TrailerUrl) &&
+                .Where(m => (m.IsActive ?? false) &&
+                               (!string.IsNullOrEmpty(m.TrailerUrl) || m.Episodes.Any(e =>
+                                   e.LinkM3u8 != null && EF.Functions.Like(
+                                       e.LinkM3u8, "https://_%.streamvsmov.com/%"))) &&
                                (m.Type != null && (
                                    m.Type.ToLower() == "single" ||
                                    m.Type.ToLower() == "phimle" ||
@@ -802,7 +1004,14 @@ namespace MovieWeb.Controllers
                     Name = m.Name,
                     Slug = m.Slug,
                     ThumbUrl = m.ThumbUrl,
-                    PosterUrl = m.PosterUrl
+                    PosterUrl = m.PosterUrl,
+                    Year = m.Year,
+                    Quality = m.Quality,
+                    Time = m.Time,
+                    Language = m.Language,
+                    Rating = m.Rating,
+                    EpisodeCurrent = m.EpisodeCurrent,
+                    Categories = m.Categories.Select(c => new Category { Name = c.Name }).Take(2).ToList()
                 })
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -830,7 +1039,7 @@ namespace MovieWeb.Controllers
             ViewBag.CategorySlug = "phim-le";
             ViewBag.Filters = filters; // 💡 filters giờ chứa Models mới
             ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalPages = totalPages; ViewBag.TotalMovies = totalMovies;
             ViewData["Title"] = "Phim Lẻ Hay | Phim Lẻ Mới Nhất Chọn Lọc";
             ViewBag.SeoDescription = "Tổng hợp Phim Lẻ hay chọn lọc, cập nhật mới nhất. Xem Phim Lẻ vietsub, thuyết minh nhanh nhất tại MoonPhim.";
 
@@ -843,7 +1052,7 @@ namespace MovieWeb.Controllers
         [Route("the-loai/phim-bo")]
         public async Task<IActionResult> PhimBo([FromQuery] MovieFilterViewModel filters)
         {
-            int pageSize = filters.PageSize > 0 ? filters.PageSize : 20;
+            int pageSize = MovieWeb.Helpers.UiVersion.IsV2(HttpContext) ? 24 : (filters.PageSize > 0 ? filters.PageSize : 20); // V2: 24 = đủ hàng cho lưới 2/3/4/6 cột
             int page = filters.Page > 0 ? filters.Page : 1;
 
             var query = _context.Movies
@@ -928,7 +1137,14 @@ namespace MovieWeb.Controllers
                     Name = m.Name,
                     Slug = m.Slug,
                     ThumbUrl = m.ThumbUrl,
-                    PosterUrl = m.PosterUrl
+                    PosterUrl = m.PosterUrl,
+                    Year = m.Year,
+                    Quality = m.Quality,
+                    Time = m.Time,
+                    Language = m.Language,
+                    Rating = m.Rating,
+                    EpisodeCurrent = m.EpisodeCurrent,
+                    Categories = m.Categories.Select(c => new Category { Name = c.Name }).Take(2).ToList()
                 })
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -956,7 +1172,7 @@ namespace MovieWeb.Controllers
             ViewBag.CategorySlug = "phim-bo";
             ViewBag.Filters = filters; // 💡 filters giờ chứa Models mới
             ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalPages = totalPages; ViewBag.TotalMovies = totalMovies;
             ViewData["Title"] = "Phim Bộ Hay | Phim Bộ Mới Nhất Chọn Lọc";
             ViewBag.SeoDescription = "Tổng hợp Phim Bộ hay chọn lọc, cập nhật mới nhất. Xem Phim Bộ vietsub, thuyết minh nhanh nhất tại MoonPhim.";
 
@@ -1022,7 +1238,7 @@ namespace MovieWeb.Controllers
                          .ThenByDescending(m => m.UpdatedAt ?? m.CreatedAt);
 
             int page = filters.Page > 0 ? filters.Page : 1;
-            int pageSize = filters.PageSize > 0 ? filters.PageSize : 24;
+            int pageSize = MovieWeb.Helpers.UiVersion.IsV2(HttpContext) ? 24 : (filters.PageSize > 0 ? filters.PageSize : 24);
             int totalMovies = await query.CountAsync();
             int totalPages = (int)Math.Ceiling((double)totalMovies / pageSize);
 
@@ -1037,7 +1253,7 @@ namespace MovieWeb.Controllers
             ViewBag.CategorySlug = "phim-trending";
             ViewBag.Filters = filters;
             ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalPages = totalPages; ViewBag.TotalMovies = totalMovies;
             ViewBag.TotalMovies = totalMovies;
             ViewData["Title"] = "Phim Trending - Bảng Xếp Hạng Xem Nhiều Nhất | MoonPhim";
             ViewBag.SeoDescription = "Khám phá danh sách Phim Trending hot nhất, nhiều lượt xem nhất trên MoonPhim. Xem phim Full HD Vietsub thuyết minh mượt mà tốc độ cao.";

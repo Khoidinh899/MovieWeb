@@ -1,0 +1,14 @@
+@model List<MovieWeb.Models.Entities.Movie>
+@using MovieWeb.Models.ViewModels
+
+@{
+    // Title do controller đặt (V1 cũng vậy); view chỉ thêm meta description như V1.
+    var categoryName = ViewBag.CategoryName as string ?? "Phim bộ";
+    var filters = ViewBag.Filters as MovieFilterViewModel ?? new MovieFilterViewModel();
+}
+
+@section Styles {
+    <meta name="description" content="@(ViewBag.SeoDescription as string ?? "Khám phá phim bộ trên MoonPhim theo thể loại, quốc gia và năm phát hành; xem thông tin phim và danh sách tập.")" />
+}
+
+@await Html.PartialAsync("Partial/_MovieListV2", (categoryName, Model, filters, (int)(ViewBag.CurrentPage ?? 1), (int)(ViewBag.TotalPages ?? 1), "Popup_PhimBo"))

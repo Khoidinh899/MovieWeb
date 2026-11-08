@@ -56,7 +56,6 @@ builder.Configuration.AddEnvironmentVariables();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 Console.WriteLine($"🔍 Environment: {builder.Environment.EnvironmentName}");
-Console.WriteLine($"🗄️ Connection String: {connectionString?[..Math.Min(60, connectionString?.Length ?? 0)]}...");
 Console.WriteLine($"🔑 Turnstile SiteKey: {builder.Configuration["Turnstile:SiteKey"]}");
 Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
@@ -151,7 +150,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 var jwtSecretKey = builder.Configuration["JwtSettings:SecretKey"];
 if (string.IsNullOrWhiteSpace(jwtSecretKey))
 {
-    jwtSecretKey = "LocalDevelopmentSecretKey_MoonPhim_2026_MustBeLongEnoughForHS256!";
+    throw new InvalidOperationException("Missing JwtSettings:SecretKey (JwtSettings__SecretKey). Refusing to start without a JWT signing key.");
 }
 
 var authBuilder = builder.Services.AddAuthentication()
@@ -266,7 +265,6 @@ builder.Services.AddScoped<IStripeService, StripeService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 
 // ===== MOVIE SERVICES =====
-builder.Services.AddScoped<IOPhimService, OPhimService>();
 builder.Services.AddScoped<IVSMovService, VSMovService>();
 builder.Services.AddScoped<IMovieRepository, MovieRepository>();
 builder.Services.AddScoped<ICategorySyncService, CategorySyncService>();
@@ -275,12 +273,17 @@ builder.Services.AddScoped<IActorSyncService, ActorSyncService>();
 builder.Services.AddScoped<IDirectorSyncService, DirectorSyncService>();
 builder.Services.AddScoped<IMovieSyncService, MovieSyncService>();
 
+// ===== UI V2 (Views/V2/**, preview via FeatureFlags:UiV2 or ?ui=v2) =====
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.Razor.RazorViewEngineOptions>(o =>
+    o.ViewLocationExpanders.Insert(0, new MovieWeb.Helpers.UiV2ViewLocationExpander()));
+
 // ===== OTHER SERVICES =====
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
+builder.Services.AddSingleton<Microsoft.AspNetCore.Mvc.ViewEngines.ICompositeViewEngine, MovieWeb.Helpers.UiV2CompositeViewEngine>();
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
@@ -289,9 +292,13 @@ builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 builder.Services.AddHttpClient<IGeminiService, GeminiService>();
 builder.Services.AddHttpClient<ITurnstileService, TurnstileService>();
+builder.Services.AddHttpClient<IIndexNowService, IndexNowService>();
 builder.Services.AddSingleton<IWatchPartyManager, WatchPartyManager>();
 builder.Services.AddScoped<IMovieRequestService, MovieRequestService>();
-builder.Services.AddSingleton<IAnnouncementService, AnnouncementService>();
+builder.Services.AddScoped<ISiteSettingsService, SiteSettingsService>();
+builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
+builder.Services.AddScoped<IBroadcastService, BroadcastService>();
+builder.Services.AddTransient<MovieWeb.Jobs.BroadcastJob>();
 
 builder.Services.AddAntiforgery(options =>
 {
@@ -326,8 +333,7 @@ forwardedHeadersOptions.KnownNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeadersOptions);
 
-// SEO deployments can skip bootstrap mutations; normal payment handlers remain enabled.
-if (!builder.Configuration.GetValue<bool>("Deployment:SkipBootstrap"))
+if (!app.Configuration.GetValue<bool>("Deployment:SkipBootstrap"))
 {
 // ===== AUTO MIGRATE DATABASE =====
 using (var scope = app.Services.CreateScope())
@@ -463,6 +469,7 @@ app.UseRouting();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+MovieWeb.Helpers.UiVersion.UseUiVersionSwitch(app);
 app.UseMiddleware<UserStatusMiddleware>();
 
 // ===== MAP HUBS & ENDPOINTS =====

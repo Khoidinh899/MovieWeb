@@ -48,6 +48,8 @@ namespace MovieWeb.Controllers
                     model.StorageKeyVersion = currentSettings.StorageKeyVersion;
                 }
 
+                model.ShowOncePerUser = (model.FrequencyMode == "once");
+
                 var success = await _announcementService.SaveSettingsAsync(model);
                 if (success)
                 {

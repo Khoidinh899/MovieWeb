@@ -5,27 +5,6 @@ using System.Collections.Generic;
 
 namespace MovieWeb.Models.API
 {
-    public class OPhimResponse
-    {
-        [JsonProperty("status")]
-        public string Status { get; set; }
-
-        [JsonProperty("msg")]
-        public string Message { get; set; }
-
-        [JsonProperty("data")]
-        public OPhimData Data { get; set; }
-    }
-
-    public class OPhimData
-    {
-        [JsonProperty("items")]
-        public List<Movie> Items { get; set; }
-
-        [JsonProperty("params")]
-        public OPhimParams Params { get; set; }
-    }
-
     public class Movie
     {
         [JsonProperty("modified")]
@@ -163,33 +142,6 @@ namespace MovieWeb.Models.API
 
         [JsonProperty("slug")]
         public string Slug { get; set; }
-    }
-
-    public class OPhimParams
-    {
-        [JsonProperty("type_slug")]
-        public string TypeSlug { get; set; }
-
-        [JsonProperty("filterCategory")]
-        public List<string> FilterCategory { get; set; }
-
-        [JsonProperty("filterCountry")]
-        public List<string> FilterCountry { get; set; }
-
-        [JsonProperty("filterYear")]
-        public string FilterYear { get; set; }
-
-        [JsonProperty("filterType")]
-        public string FilterType { get; set; }
-
-        [JsonProperty("sortField")]
-        public string SortField { get; set; }
-
-        [JsonProperty("sortType")]
-        public string SortType { get; set; }
-
-        [JsonProperty("pagination")]
-        public Pagination Pagination { get; set; }
     }
 
     public class Pagination

@@ -32,6 +32,8 @@ namespace MovieWeb.Controllers
         private readonly IMovieSyncService _movieSyncService;
         private readonly IEmailService _emailService;
         private readonly IAnnouncementService _announcementService;
+        private readonly ISiteSettingsService _siteSettingsService;
+        private readonly IBroadcastService _broadcastService;
 
         // === CONSTRUCTOR CHÍNH (DÙNG CHUNG CHO TẤT CẢ FILE) ===
         public AdminController(
@@ -46,7 +48,9 @@ namespace MovieWeb.Controllers
             IVSMovService vsMovService,
             IMovieSyncService movieSyncService,
             IEmailService emailService,
-            IAnnouncementService announcementService
+            IAnnouncementService announcementService,
+            ISiteSettingsService siteSettingsService,
+            IBroadcastService broadcastService
         )
         {
             _userManager = userManager;
@@ -61,6 +65,8 @@ namespace MovieWeb.Controllers
             _movieSyncService = movieSyncService;
             _emailService = emailService;
             _announcementService = announcementService;
+            _siteSettingsService = siteSettingsService;
+            _broadcastService = broadcastService;
         }
 
         // === CÁC HÀM HELPER DÙNG CHUNG ===
@@ -193,7 +199,7 @@ namespace MovieWeb.Controllers
                 var logs = await _context.AdminLogs
                     .Include(l => l.Admin)
                     .OrderByDescending(l => l.CreatedAt)
-                    .Skip((page - 1) * pageSize)
+                    .Skip((Math.Max(page, 1) - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
@@ -210,67 +216,60 @@ namespace MovieWeb.Controllers
                 return RedirectToAction("Dashboard");
             }
         }
-        // GET: /Admin/RunBackfillJob (Thủ công)
-        [HttpGet("run-backfill-job-123xyz")]
-        [AllowAnonymous] // Cho phép gọi mà không cần đăng nhập (vì link đã bí mật)
-        public async Task<IActionResult> RunBackfillJob([FromQuery] int? fromPage, [FromQuery] int? toPage)
+        // =================================================================
+        // VSMov backfill từ trang quản lý phim (POST + CSRF + chỉ Admin)
+        // Đã bỏ RunBackfillJob (không còn dùng). Giới hạn 20 trang mỗi lần,
+        // không cho chạy đồng thời.
+        // =================================================================
+        private const int MaxVSMovBackfillPages = 20;
+        private static readonly SemaphoreSlim VSMovBackfillGate = new(1, 1);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RunVSMovBackfillFromPanel([FromForm] int? fromPage, [FromForm] int? toPage)
         {
-            _logger.LogWarning("!!! === [JOB THỦ CÔNG] BẮT ĐẦU CHẠY BACKFILL === !!!");
+            if (!await IsAdminAsync()) return Forbid();
 
-            try
-            {
-                if (fromPage.HasValue && toPage.HasValue)
-                {
-                    int start = Math.Max(1, fromPage.Value);
-                    int end = Math.Max(start, toPage.Value);
-                    _logger.LogWarning($"...[Backfill] Đang tiến hành cào phim từ trang {start} đến {end} từ VSMov API...");
-                    await _movieSyncService.SyncMoviesFromVSMovApiAsync(start, end);
-                    _logger.LogWarning("...[Backfill] Hoàn tất cào phim từ VSMov API.");
-                }
-
-                _logger.LogInformation("...[Backfill] Đang chạy rà soát tập cho Phim Bộ (Series)...");
-                await _movieSyncService.BackfillAllEpisodesAsync();
-                _logger.LogInformation("...[Backfill] Đã xong Phim Bộ.");
-
-                _logger.LogInformation("...[Backfill] Đang chạy rà soát tập cho Phim Lẻ (Single)...");
-                await _movieSyncService.BackfillSingleMoviesAsync();
-                _logger.LogInformation("...[Backfill] Đã xong Phim Lẻ.");
-
-                _logger.LogWarning("!!! === [JOB THỦ CÔNG] BACKFILL HOÀN TẤT === !!!");
-
-                return Ok("Đã chạy xong các tác vụ Backfill. Hãy kiểm tra log và database.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "!!! === [JOB THỦ CÔNG] LỖI NẶNG KHI CHẠY BACKFILL === !!!");
-                return StatusCode(500, "Lỗi server nghiêm trọng, xem log ngay.");
-            }
+            var (ok, message) = await RunVSMovBackfillCoreAsync(fromPage, toPage);
+            TempData[ok ? "SuccessMessage" : "ErrorMessage"] = message;
+            return RedirectToAction("Movies");
         }
 
-        // =================================================================
-        // GET: /Admin/RunVSMovBackfill (Thủ công - Nguồn dự phòng VSMov)
-        // =================================================================
+        // GET cũ: vẫn hoạt động cho Admin đã đăng nhập (trước đây là AllowAnonymous).
+        // Chưa trả 410 vì chưa đủ bằng chứng không còn bên ngoài nào gọi.
         [HttpGet("run-vsmov-backfill-123xyz")]
-        [AllowAnonymous]
         public async Task<IActionResult> RunVSMovBackfill([FromQuery] int? fromPage, [FromQuery] int? toPage)
         {
-            _logger.LogWarning("!!! === [JOB THỦ CÔNG] BẮT ĐẦU CHẠY VSMOV BACKFILL === !!!");
+            if (!await IsAdminAsync()) return Forbid();
+
+            var (ok, message) = await RunVSMovBackfillCoreAsync(fromPage, toPage);
+            return ok ? Ok(message) : BadRequest(message);
+        }
+
+        private async Task<(bool Ok, string Message)> RunVSMovBackfillCoreAsync(int? fromPage, int? toPage)
+        {
+            int start = fromPage ?? 1;
+            int end = toPage ?? 10;
+            if (start < 1 || end < start || end - start + 1 > MaxVSMovBackfillPages)
+                return (false, $"Khoảng trang không hợp lệ. Tối đa {MaxVSMovBackfillPages} trang mỗi lần, bắt đầu từ trang 1.");
+
+            if (!await VSMovBackfillGate.WaitAsync(0))
+                return (false, "Đang có tác vụ VSMov backfill chạy. Vui lòng thử lại sau.");
 
             try
             {
-                int start = fromPage ?? 1;
-                int end = toPage ?? 10;
-
-                _logger.LogWarning($"[VSMov Backfill] Đang đồng bộ phim từ VSMov, trang {start} đến {end}...");
+                _logger.LogWarning("[VSMov Backfill] Admin chạy đồng bộ trang {Start} đến {End}", start, end);
                 await _movieSyncService.BackfillFromVSMovAsync(start, end);
-
-                _logger.LogWarning("!!! === [JOB THỦ CÔNG] VSMOV BACKFILL HOÀN TẤT === !!!");
-                return Ok($"Đã chạy xong VSMov Backfill (trang {start} đến {end}). Hãy kiểm tra log và database.");
+                return (true, $"Đã chạy xong VSMov Backfill (trang {start} đến {end}).");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "!!! === [JOB THỦ CÔNG] LỖI NẶNG KHI CHẠY VSMOV BACKFILL === !!!");
-                return StatusCode(500, "Lỗi server nghiêm trọng khi chạy VSMov Backfill, xem log ngay.");
+                _logger.LogError(ex, "[VSMov Backfill] Lỗi khi chạy trang {Start} đến {End}", start, end);
+                return (false, "Lỗi server khi chạy VSMov Backfill. Xem log để biết chi tiết.");
+            }
+            finally
+            {
+                VSMovBackfillGate.Release();
             }
         }
     }

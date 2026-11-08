@@ -1,0 +1,191 @@
+@* Bộ lọc danh sách phim V2 (panel mở sẵn theo Stitch). Giữ nguyên tên field (Type, Language, SortBy, Countries, Categories, Years, keyword),
+   class hook .item/.active và id (filterSidebar, filterForm) vì wwwroot/v2/js/pages/filter-sidebar.js dựa vào chúng.
+   Chip: chọn nhiều (Countries/Categories) và chọn một (Type). Select: Năm / Phiên bản / Sắp xếp -> cập nhật input ẩn cùng tên. *@
+@model MovieWeb.Models.ViewModels.MovieFilterViewModel
+@using MovieWeb.Models.Entities
+
+@{
+    var countries = ViewBag.Countries as IEnumerable<Country> ?? new List<Country>();
+    var categories = ViewBag.Categories as IEnumerable<Category> ?? new List<Category>();
+    var currentYear = DateTime.Now.Year;
+
+    var countriesList = (Model?.Countries ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+    var categoriesList = (Model?.Categories ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+    var yearsList = (Model?.Years ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+    bool yearIsCustom = yearsList.Count > 1 || (yearsList.Count == 1 && !(int.TryParse(yearsList[0], out var yv) && yv <= currentYear && yv > currentYear - 15));
+    var sortBy = string.IsNullOrEmpty(Model?.SortBy) ? "updated" : Model!.SortBy;
+
+    // Nhãn "Đang áp dụng": (nhãn, tham số bị bỏ khi bấm x)
+    var applied = new List<(string Label, string Key)>();
+    foreach (var s in countriesList) applied.Add((countries.FirstOrDefault(c => c.Slug == s)?.Name ?? s, "Countries"));
+    foreach (var s in categoriesList) applied.Add((categories.FirstOrDefault(c => c.Slug == s)?.Name ?? s, "Categories"));
+    if (yearsList.Any()) applied.Add(("Năm " + string.Join(", ", yearsList), "Years"));
+    if (!string.IsNullOrEmpty(Model?.Language)) applied.Add((Model.Language, "Language"));
+    if (!string.IsNullOrEmpty(Model?.Type))
+        applied.Add((Model.Type switch { "single" => "Phim lẻ", "series" => "Phim bộ", "hoathinh" => "Hoạt hình", "tvshows" => "TV Shows", _ => Model.Type }, "Type"));
+    if (sortBy != "updated") applied.Add(("Sắp xếp: " + (sortBy switch { "newest" => "Mới nhất", "rating" => "Điểm IMDb", "views" => "Lượt xem", _ => sortBy }), "SortBy"));
+
+    string RemoveUrl(string key)
+    {
+        var q = new List<string>();
+        void Add(string k, string? v) { if (k != key && !string.IsNullOrEmpty(v)) q.Add($"{k}={System.Net.WebUtility.UrlEncode(v)}"); }
+        Add("Type", Model?.Type); Add("Language", Model?.Language); Add("SortBy", Model?.SortBy);
+        Add("Countries", Model?.Countries); Add("Categories", Model?.Categories); Add("Years", Model?.Years);
+        Add("keyword", Context.Request.Query["keyword"]);
+        return Context.Request.Path + (q.Count > 0 ? "?" + string.Join("&", q) : "");
+    }
+
+    const string itemClass = "item cursor-pointer rounded-full bg-surface-container-high px-space-md py-1.5 font-label-md text-label-md text-on-surface-variant transition-all hover:bg-surface-variant hover:text-on-surface [&.active]:bg-primary [&.active]:text-on-primary [&.active]:shadow-sm";
+    const string selectClass = "w-full cursor-pointer appearance-none rounded-lg border-0 bg-surface-container-lowest px-space-md py-2.5 font-body-sm text-body-sm text-on-surface focus:bg-surface-container-low focus:outline-none focus:ring-1 focus:ring-primary";
+}
+
+@* Mobile (<768px): nút "Bộ lọc" mở bottom sheet (trượt từ dưới lên); desktop: panel mở sẵn. CSS: ClientApp-v2/src/v2.css (#filterSidebar), JS: filter-sidebar.js (toggleFilter). *@
+<div class="mb-space-md md:hidden">
+    <button type="button" id="filterToggleBtn" onclick="toggleFilter()" aria-controls="filterSidebar" aria-expanded="false"
+            class="flex w-full items-center justify-between rounded-xl bg-surface-container px-space-md py-space-sm font-label-md text-label-md text-on-surface">
+        <span class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[20px] text-primary">tune</span> Bộ lọc phim
+            @if (applied.Any()) { <span class="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-bold text-on-secondary">@applied.Count</span> }
+        </span>
+        <span class="material-symbols-outlined text-[20px] text-on-surface-variant" id="filterChevron">expand_less</span>
+    </button>
+</div>
+<div id="filterBackdrop" onclick="toggleFilter()" aria-hidden="true"></div>
+<div id="filterSidebar" class="mb-space-xl w-full rounded-xl bg-surface-container p-space-lg shadow-xl" role="dialog" aria-label="Bộ lọc phim">
+    <div class="mb-space-md flex items-center justify-between md:hidden">
+        <span class="mx-auto h-1 w-10 rounded-full bg-outline-variant"></span>
+    </div>
+    <div class="mb-space-sm flex items-center justify-between md:hidden">
+        <span class="font-headline-sm text-headline-sm font-bold text-on-surface">Bộ lọc phim</span>
+        <button type="button" onclick="toggleFilter()" class="flex h-9 w-9 items-center justify-center rounded-full bg-surface-container-high text-on-surface" aria-label="Đóng bộ lọc"><span class="material-symbols-outlined text-[20px]">close</span></button>
+    </div>
+    <form method="get" id="filterForm" class="flex flex-col gap-space-md">
+
+        <div class="flex flex-col gap-space-sm md:flex-row md:items-start">
+            <div class="flex w-36 shrink-0 items-center gap-space-xs pt-1.5 text-on-surface-variant">
+                <span class="material-symbols-outlined text-[18px]">movie</span>
+                <span class="font-headline-sm text-headline-sm">Loại phim:</span>
+            </div>
+            <div class="flex flex-1 flex-wrap items-center gap-space-xs">
+                <div class="@itemClass @(string.IsNullOrEmpty(Model?.Type) ? "active" : "")" onclick="selectFilterSingle(event, 'Type', '')">Tất cả</div>
+                <div class="@itemClass @(Model?.Type == "single" ? "active" : "")" onclick="selectFilterSingle(event, 'Type', 'single')">Phim lẻ</div>
+                <div class="@itemClass @(Model?.Type == "series" ? "active" : "")" onclick="selectFilterSingle(event, 'Type', 'series')">Phim bộ</div>
+                <div class="@itemClass @(Model?.Type == "hoathinh" ? "active" : "")" onclick="selectFilterSingle(event, 'Type', 'hoathinh')">Hoạt hình</div>
+                <div class="@itemClass @(Model?.Type == "tvshows" ? "active" : "")" onclick="selectFilterSingle(event, 'Type', 'tvshows')">TV Shows</div>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-space-sm md:flex-row md:items-start">
+            <div class="flex w-36 shrink-0 items-center gap-space-xs pt-1.5 text-on-surface-variant">
+                <span class="material-symbols-outlined text-[18px]">category</span>
+                <span class="font-headline-sm text-headline-sm">Thể loại:</span>
+            </div>
+            <div class="flex flex-1 flex-col items-start gap-space-xs">
+                <div id="genreChips" data-collapsible class="flex max-h-[72px] flex-wrap items-center gap-space-xs overflow-hidden transition-[max-height] data-[open=true]:max-h-[2000px]" data-open="false">
+                    <div class="@itemClass @(!categoriesList.Any() ? "active" : "")" onclick="clearFilterMulti(event, 'Categories')">Tất cả</div>
+                    @foreach (var category in categories)
+                    {
+                        <div class="@itemClass @(categoriesList.Contains(category.Slug) ? "active" : "")"
+                             onclick="selectFilterMulti(event, 'Categories', '@category.Slug')">@category.Name</div>
+                    }
+                </div>
+                <button type="button" data-collapse-toggle="genreChips" class="font-label-md text-label-md text-primary hover:underline">Xem thêm thể loại</button>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-space-sm md:flex-row md:items-start">
+            <div class="flex w-36 shrink-0 items-center gap-space-xs pt-1.5 text-on-surface-variant">
+                <span class="material-symbols-outlined text-[18px]">public</span>
+                <span class="font-headline-sm text-headline-sm">Quốc gia:</span>
+            </div>
+            <div class="flex flex-1 flex-col items-start gap-space-xs">
+                <div id="countryChips" data-collapsible class="flex max-h-[72px] flex-wrap items-center gap-space-xs overflow-hidden transition-[max-height] data-[open=true]:max-h-[2000px]" data-open="false">
+                    <div class="@itemClass @(!countriesList.Any() ? "active" : "")" onclick="clearFilterMulti(event, 'Countries')">Tất cả</div>
+                    @foreach (var country in countries)
+                    {
+                        <div class="@itemClass @(countriesList.Contains(country.Slug) ? "active" : "")"
+                             onclick="selectFilterMulti(event, 'Countries', '@country.Slug')">@country.Name</div>
+                    }
+                </div>
+                <button type="button" data-collapse-toggle="countryChips" class="font-label-md text-label-md text-primary hover:underline">Xem thêm quốc gia</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-space-md pt-space-xs md:grid-cols-3 xl:grid-cols-4">
+            <div class="flex flex-col gap-1">
+                <label class="font-label-sm text-label-sm text-on-surface-variant" for="yearSelect">Năm phát hành</label>
+                <div class="relative year-input-container">
+                    <select id="yearSelect" class="@selectClass" onchange="setFilterFromSelect(this, 'Years')">
+                        <option value="">Tất cả các năm</option>
+                        @for (int i = 0; i < 15; i++)
+                        {
+                            var y = (currentYear - i).ToString();
+                            <option value="@y" selected="@(yearsList.Count == 1 && yearsList[0] == y)">Năm @y</option>
+                        }
+                        @if (yearIsCustom)
+                        {
+                            <option value="@Model.Years" selected>Năm @Model.Years</option>
+                        }
+                    </select>
+                    <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant">expand_more</span>
+                </div>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="font-label-sm text-label-sm text-on-surface-variant" for="langSelect">Định dạng &amp; Phiên bản</label>
+                <div class="relative">
+                    <select id="langSelect" class="@selectClass" onchange="setFilterFromSelect(this, 'Language')">
+                        <option value="">Tất cả định dạng</option>
+                        <option value="Vietsub" selected="@(Model?.Language == "Vietsub")">Vietsub</option>
+                        <option value="Thuyết Minh" selected="@(Model?.Language == "Thuyết Minh")">Thuyết Minh</option>
+                    </select>
+                    <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant">expand_more</span>
+                </div>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="font-label-sm text-label-sm text-on-surface-variant" for="sortSelect">Sắp xếp theo</label>
+                <div class="relative">
+                    <select id="sortSelect" class="@selectClass" onchange="setFilterFromSelect(this, 'SortBy')">
+                        <option value="updated" selected="@(sortBy == "updated")">Mới cập nhật</option>
+                        <option value="newest" selected="@(sortBy == "newest")">Mới nhất</option>
+                        <option value="rating" selected="@(sortBy == "rating")">Điểm IMDb</option>
+                        <option value="views" selected="@(sortBy == "views")">Lượt xem</option>
+                    </select>
+                    <span class="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant">expand_more</span>
+                </div>
+            </div>
+            <div class="flex items-end gap-space-sm">
+                <button type="submit" class="inline-flex flex-1 items-center justify-center gap-2 px-5 py-2.5 font-label-md text-label-md font-bold v2-btn-3d v2-btn-3d--primary">
+                    <span class="material-symbols-outlined text-[18px]">tune</span> Lọc Phim
+                </button>
+                <a href="@Context.Request.Path" title="Đặt lại" aria-label="Đặt lại bộ lọc" class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-high text-on-surface-variant transition-colors hover:text-on-surface">
+                    <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+                </a>
+            </div>
+        </div>
+
+        @* Input ẩn lưu giá trị gửi đi (giữ nguyên như V1) *@
+        <input type="hidden" name="Type" value="@Model.Type" />
+        <input type="hidden" name="Language" value="@Model.Language" />
+        <input type="hidden" name="SortBy" value="@Model.SortBy" />
+        <input type="hidden" name="Countries" value="@Model.Countries" />
+        <input type="hidden" name="Categories" value="@Model.Categories" />
+        <input type="hidden" name="Years" value="@Model.Years" />
+        @if (!string.IsNullOrEmpty(Context.Request.Query["keyword"]))
+        {
+            <input type="hidden" name="keyword" value="@Context.Request.Query["keyword"]" />
+        }
+
+        @if (applied.Any())
+        {
+            <div class="flex flex-wrap items-center gap-space-xs pt-space-xs font-label-sm text-label-sm">
+                <span class="text-on-surface-variant">Đang áp dụng:</span>
+                @foreach (var a in applied)
+                {
+                    <a href="@RemoveUrl(a.Key)" class="inline-flex items-center gap-1 rounded bg-surface-container-high px-2 py-1 font-semibold text-primary hover:text-on-surface" title="Bỏ bộ lọc này">
+                        @a.Label <span class="material-symbols-outlined text-[14px]">close</span>
+                    </a>
+                }
+                <a href="@Context.Request.Path" class="ml-auto font-semibold text-primary hover:underline">Xóa tất cả bộ lọc</a>
+            </div>
+        }
+    </form>
+</div>

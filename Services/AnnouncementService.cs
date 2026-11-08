@@ -4,7 +4,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using MovieWeb.Models.DTOs;
 using MovieWeb.Services.Interfaces;
@@ -13,65 +12,82 @@ namespace MovieWeb.Services
 {
     public class AnnouncementService : IAnnouncementService
     {
+        private readonly ISiteSettingsService _siteSettings;
         private readonly IWebHostEnvironment _env;
-        private readonly IMemoryCache _cache;
         private readonly ILogger<AnnouncementService> _logger;
-        private static readonly SemaphoreSlim _fileLock = new SemaphoreSlim(1, 1);
-        private const string CacheKey = "SystemAnnouncementSettings";
-        private readonly string _filePath;
+        private const string SettingKey = "announcement.settings";
+        private static readonly SemaphoreSlim _importLock = new(1, 1);
+        private static bool _importedCheckDone = false;
 
-        public AnnouncementService(IWebHostEnvironment env, IMemoryCache cache, ILogger<AnnouncementService> logger)
+        public AnnouncementService(
+            ISiteSettingsService siteSettings,
+            IWebHostEnvironment env,
+            ILogger<AnnouncementService> logger)
         {
+            _siteSettings = siteSettings;
             _env = env;
-            _cache = cache;
             _logger = logger;
-
-            var dataDir = Path.Combine(_env.ContentRootPath, "App_Data");
-            if (!Directory.Exists(dataDir))
-            {
-                Directory.CreateDirectory(dataDir);
-            }
-            _filePath = Path.Combine(dataDir, "announcement_settings.json");
         }
 
         public async Task<AnnouncementSettingsDto> GetSettingsAsync()
         {
-            if (_cache.TryGetValue(CacheKey, out AnnouncementSettingsDto? cachedSettings) && cachedSettings != null)
-            {
-                return cachedSettings;
-            }
+            var settings = await _siteSettings.GetAsync<AnnouncementSettingsDto>(SettingKey);
 
-            AnnouncementSettingsDto settings;
-            if (File.Exists(_filePath))
+            if (settings == null && !_importedCheckDone)
             {
+                await _importLock.WaitAsync();
                 try
                 {
-                    await _fileLock.WaitAsync();
-                    try
+                    // Re-check after acquiring lock
+                    settings = await _siteSettings.GetAsync<AnnouncementSettingsDto>(SettingKey);
+                    if (settings == null)
                     {
-                        var json = await File.ReadAllTextAsync(_filePath);
-                        settings = JsonSerializer.Deserialize<AnnouncementSettingsDto>(json, new JsonSerializerOptions
+                        var dataDir = Path.Combine(_env.ContentRootPath, "App_Data");
+                        var legacyFilePath = Path.Combine(dataDir, "announcement_settings.json");
+
+                        if (File.Exists(legacyFilePath))
                         {
-                            PropertyNameCaseInsensitive = true
-                        }) ?? new AnnouncementSettingsDto();
+                            try
+                            {
+                                var json = await File.ReadAllTextAsync(legacyFilePath);
+                                settings = JsonSerializer.Deserialize<AnnouncementSettingsDto>(json, new JsonSerializerOptions
+                                {
+                                    PropertyNameCaseInsensitive = true
+                                });
+
+                                if (settings != null)
+                                {
+                                    NormalizeSettings(settings);
+                                    await _siteSettings.SetAsync(SettingKey, settings);
+                                    _logger.LogInformation("Imported announcement settings from legacy App_Data/announcement_settings.json into SiteSettings DB.");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Failed to import legacy announcement settings from {Path}.", legacyFilePath);
+                            }
+                        }
+
+                        if (settings == null)
+                        {
+                            settings = new AnnouncementSettingsDto();
+                            NormalizeSettings(settings);
+                        }
                     }
-                    finally
-                    {
-                        _fileLock.Release();
-                    }
+                    _importedCheckDone = true;
                 }
-                catch (Exception ex)
+                finally
                 {
-                    _logger.LogError(ex, "Error reading announcement settings from file, using defaults.");
-                    settings = new AnnouncementSettingsDto();
+                    _importLock.Release();
                 }
             }
-            else
+
+            if (settings == null)
             {
                 settings = new AnnouncementSettingsDto();
             }
 
-            _cache.Set(CacheKey, settings, TimeSpan.FromMinutes(30));
+            NormalizeSettings(settings);
             return settings;
         }
 
@@ -79,32 +95,29 @@ namespace MovieWeb.Services
         {
             if (settings == null) return false;
 
-            settings.UpdatedAt = DateTime.Now;
             try
             {
-                await _fileLock.WaitAsync();
-                try
-                {
-                    var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions
-                    {
-                        WriteIndented = true
-                    });
-                    await File.WriteAllTextAsync(_filePath, json);
-                }
-                finally
-                {
-                    _fileLock.Release();
-                }
-
-                // Cập nhật lại cache ngay lập tức
-                _cache.Set(CacheKey, settings, TimeSpan.FromMinutes(30));
+                settings.UpdatedAt = DateTime.Now;
+                NormalizeSettings(settings);
+                await _siteSettings.SetAsync(SettingKey, settings);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error saving announcement settings to file.");
+                _logger.LogError(ex, "Error saving announcement settings to SiteSettings.");
                 return false;
             }
+        }
+
+        private static void NormalizeSettings(AnnouncementSettingsDto s)
+        {
+            if (string.IsNullOrWhiteSpace(s.FrequencyMode))
+            {
+                s.FrequencyMode = s.ShowOncePerUser ? "once" : "always";
+            }
+            if (s.IntervalHours <= 0) s.IntervalHours = 24;
+            if (s.DelaySeconds < 0) s.DelaySeconds = 1;
+            if (string.IsNullOrWhiteSpace(s.Audience)) s.Audience = "all";
         }
     }
 }

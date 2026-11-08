@@ -1,0 +1,12 @@
+# Review TLS certificate SANs and www login-cookie migration before enabling.
+# Merge with the HTTP listener: redirect to https://moonphim.me$request_uri,
+# preserving the ACME challenge location. Do not replace the live app server block.
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name www.moonphim.me;
+    ssl_certificate /etc/letsencrypt/live/moonphim.me/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/moonphim.me/privkey.pem;
+    return 301 https://moonphim.me$request_uri;
+}
+# The existing HTTPS app block must then use only server_name moonphim.me;

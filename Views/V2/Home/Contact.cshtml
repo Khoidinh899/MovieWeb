@@ -1,0 +1,62 @@
+@{
+    ViewData["Title"] = "Liên hệ - MoonPhim";
+    const string itemCls = "flex items-center gap-space-md rounded-xl bg-surface-container-low p-space-md transition-colors hover:bg-surface-container";
+}
+
+<div class="mx-auto w-full max-w-[1600px] px-margin-mobile pb-space-xl pt-space-lg md:px-margin">
+    <nav class="mb-space-md flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant" aria-label="Breadcrumb">
+        <a class="flex items-center gap-1 transition-colors hover:text-primary" href="/trang-chu"><span class="material-symbols-outlined text-[16px]">home</span> Trang Chủ</a>
+        <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+        <span class="font-headline-sm text-headline-sm text-secondary">Liên Hệ</span>
+    </nav>
+
+    <section class="mb-space-lg rounded-xl bg-gradient-to-br from-surface-container to-surface-container-low p-space-lg shadow-xl md:p-space-xl">
+        <h1 class="font-display-hero-mobile text-display-hero-mobile tracking-tight text-on-surface md:font-display-hero md:text-display-hero">Kết nối với chúng tôi</h1>
+        <p class="mt-space-sm max-w-3xl font-body-lg text-body-lg text-on-surface-variant">
+            Bạn có ý tưởng mới, muốn báo lỗi hoặc yêu cầu gỡ bỏ bản quyền? Chúng tôi luôn sẵn sàng lắng nghe bạn 24/7.
+        </p>
+    </section>
+
+    <div class="grid grid-cols-1 gap-space-lg md:grid-cols-2">
+        <section>
+            <h2 class="mb-space-md flex items-center gap-space-xs font-headline-md text-headline-md font-bold text-on-surface"><span class="material-symbols-outlined text-primary">chat</span> Thông tin liên hệ</h2>
+            <div class="flex flex-col gap-space-sm">
+                <a href="mailto:contact@moonphim.com" class="@itemCls">
+                    <span class="material-symbols-outlined flex h-11 w-11 items-center justify-center rounded-lg bg-surface-container-high text-primary">mail</span>
+                    <div><div class="font-label-sm text-label-sm text-on-surface-variant">Email</div><div class="font-bold text-on-surface">contact@moonphim.com</div></div>
+                </a>
+                <a href="https://t.me/moonphim_support" target="_blank" rel="noopener noreferrer" class="@itemCls">
+                    <span class="material-symbols-outlined flex h-11 w-11 items-center justify-center rounded-lg bg-surface-container-high text-primary">send</span>
+                    <div><div class="font-label-sm text-label-sm text-on-surface-variant">Telegram</div><div class="font-bold text-on-surface">@@moonphim_support</div></div>
+                </a>
+                <a href="https://facebook.com/moonphim" target="_blank" rel="noopener noreferrer" class="@itemCls">
+                    <span class="material-symbols-outlined flex h-11 w-11 items-center justify-center rounded-lg bg-surface-container-high text-primary">thumb_up</span>
+                    <div><div class="font-label-sm text-label-sm text-on-surface-variant">Facebook</div><div class="font-bold text-on-surface">fb.com/moonphim</div></div>
+                </a>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="mb-space-md flex items-center gap-space-xs font-headline-md text-headline-md font-bold text-on-surface"><span class="material-symbols-outlined text-primary">edit_square</span> Gửi tin nhắn nhanh</h2>
+            <form id="quickContactForm" class="flex flex-col gap-space-sm rounded-xl bg-surface-container-low p-space-lg">
+                <input type="text" placeholder="Họ tên của bạn" required class="w-full rounded-lg border-0 bg-surface-container px-space-md py-2.5 text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary" />
+                <input type="email" placeholder="Email liên hệ" required class="w-full rounded-lg border-0 bg-surface-container px-space-md py-2.5 text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary" />
+                <textarea rows="4" placeholder="Nội dung tin nhắn..." required class="w-full rounded-lg border-0 bg-surface-container px-space-md py-2.5 text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary"></textarea>
+                <button type="submit" class="px-space-lg py-space-sm font-label-md text-label-md font-bold v2-btn-3d v2-btn-3d--primary">Gửi tin nhắn ngay</button>
+            </form>
+        </section>
+    </div>
+
+    <section class="mt-space-lg rounded-xl bg-surface-container-low p-space-lg text-center">
+        <h2 class="mb-space-xs flex items-center justify-center gap-space-xs font-headline-md text-headline-md font-bold text-on-surface"><span class="material-symbols-outlined text-primary">location_on</span> Trụ sở chính</h2>
+        <p class="font-body-md text-body-md text-on-surface-variant">Tòa nhà Moon Galaxy, 123 Đường Vũ Trụ, Quận Phim Ảnh, TP. Hồ Chí Minh</p>
+    </section>
+</div>
+
+<script>
+    document.getElementById('quickContactForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        alert('Cảm ơn bạn! Tin nhắn của bạn đã được gửi đi. Chúng tôi sẽ phản hồi sớm nhất có thể.');
+        this.reset();
+    });
+</script>

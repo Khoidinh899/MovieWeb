@@ -183,6 +183,13 @@
                         class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "PaymentHistory" ? "active" : "")">
                         <i class="bi bi-credit-card-2-front me-2"></i> Lịch sử thanh toán
                     </a>
+                    @if (MovieWeb.Helpers.UiVersion.GetRolloutMode(Context) != "off")
+                    {
+                        <a href="/user/giao-dien"
+                            class="list-group-item list-group-item-action @(ViewContext.RouteData.Values["action"]?.ToString() == "Interface" ? "active" : "")">
+                            <i class="bi bi-palette me-2"></i> Giao diện
+                        </a>
+                    }
                 </div>
             </div>
         </div>

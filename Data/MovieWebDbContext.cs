@@ -49,6 +49,13 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
     public virtual DbSet<WatchPartyRoom> WatchPartyRooms { get; set; }
     public virtual DbSet<WatchPartyMember> WatchPartyMembers { get; set; }
 
+    // ===== Đợt 6: giao diện theo user + thông báo admin =====
+    public virtual DbSet<SiteSetting> SiteSettings { get; set; }
+    public virtual DbSet<UserUiPreference> UserUiPreferences { get; set; }
+    public virtual DbSet<UiFeedback> UiFeedbacks { get; set; }
+    public virtual DbSet<NotificationTemplate> NotificationTemplates { get; set; }
+    public virtual DbSet<AdminBroadcast> AdminBroadcasts { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -105,12 +112,12 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
 
             entity.HasIndex(e => e.Status, "IX_RequestsMovie_Status");
             entity.HasIndex(e => e.CreatedAt, "IX_RequestsMovie_CreatedAt");
-            entity.HasIndex(e => e.OphimSlug, "IX_RequestsMovie_Slug");
+            entity.HasIndex(e => e.SourceSlug, "IX_RequestsMovie_Slug");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.MovieTitle).HasColumnName("movie_title").HasMaxLength(255);
             entity.Property(e => e.MovieYear).HasColumnName("movie_year");
-            entity.Property(e => e.OphimSlug).HasColumnName("ophim_slug").HasMaxLength(255);
+            entity.Property(e => e.SourceSlug).HasColumnName("ophim_slug").HasMaxLength(255);
             entity.Property(e => e.RequestCount).HasColumnName("request_count").HasDefaultValue(1);
             entity.Property(e => e.Status).HasColumnName("status").IsRequired().HasMaxLength(50).HasDefaultValue("Chờ đồng bộ");
             entity.Property(e => e.ConversationLog).HasColumnName("conversation_log").HasColumnType("text");
@@ -457,6 +464,11 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Notificat__UserI__1332DBDC");
+
+            entity.HasIndex(e => e.BroadcastId, "IX_Notifications_BroadcastId");
+            entity.HasOne(d => d.Broadcast).WithMany(p => p.Notifications)
+                .HasForeignKey(d => d.BroadcastId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ===== RATINGS =====
@@ -506,7 +518,6 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
         modelBuilder.Ignore<MovieWeb.Models.API.ApiMovie>();
         modelBuilder.Ignore<MovieWeb.Models.API.Category>();
         modelBuilder.Ignore<MovieWeb.Models.API.Country>();
-        modelBuilder.Ignore<MovieWeb.Models.API.OPhimResponse>();
 
         // ===== ADVERTISEMENTS =====
         modelBuilder.Entity<Advertisement>(entity =>
@@ -598,6 +609,79 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
                 .OnDelete(DeleteBehavior.SetNull);
         });
         
+        // ===== Đợt 6: SITE SETTINGS =====
+        modelBuilder.Entity<SiteSetting>(entity =>
+        {
+            entity.ToTable("SiteSettings");
+            entity.HasKey(e => e.Key);
+            entity.Property(e => e.Key).HasMaxLength(100);
+            entity.Property(e => e.Value).HasColumnType("text");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
+        });
+
+        // ===== Đợt 6: USER UI PREFERENCES =====
+        modelBuilder.Entity<UserUiPreference>(entity =>
+        {
+            entity.ToTable("UserUiPreferences");
+            entity.HasKey(e => e.UserId);
+            entity.Property(e => e.UserId).ValueGeneratedNever();
+            entity.Property(e => e.Ui).IsRequired().HasMaxLength(4);
+            entity.Property(e => e.SwitchCount).HasDefaultValue(0);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
+
+            entity.HasOne(d => d.User).WithOne()
+                .HasForeignKey<UserUiPreference>(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ===== Đợt 6: UI FEEDBACKS =====
+        modelBuilder.Entity<UiFeedback>(entity =>
+        {
+            entity.ToTable("UiFeedbacks");
+            entity.HasKey(e => e.UserId);
+            entity.Property(e => e.UserId).ValueGeneratedNever();
+            entity.Property(e => e.Choice).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.Comment).HasMaxLength(1000);
+            entity.Property(e => e.UiAtVote).IsRequired().HasMaxLength(4);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
+
+            entity.HasOne(d => d.User).WithOne()
+                .HasForeignKey<UiFeedback>(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ===== Đợt 6: NOTIFICATION TEMPLATES =====
+        modelBuilder.Entity<NotificationTemplate>(entity =>
+        {
+            entity.ToTable("NotificationTemplates");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(150);
+            entity.Property(e => e.Content).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.StyleJson).HasColumnType("text");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()");
+        });
+
+        // ===== Đợt 6: ADMIN BROADCASTS =====
+        modelBuilder.Entity<AdminBroadcast>(entity =>
+        {
+            entity.ToTable("AdminBroadcasts");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(150);
+            entity.Property(e => e.Content).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.StyleJson).HasColumnType("text");
+            entity.Property(e => e.Url).HasMaxLength(500);
+            entity.Property(e => e.TargetType).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.RecipientCount).HasDefaultValue(0);
+            entity.Property(e => e.SendPush).HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            entity.HasIndex(e => e.CreatedAt, "IX_AdminBroadcasts_CreatedAt");
+        });
+
         OnModelCreatingPartial(modelBuilder);
     }
 

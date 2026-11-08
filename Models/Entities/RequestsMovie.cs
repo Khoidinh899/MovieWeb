@@ -22,7 +22,7 @@ namespace MovieWeb.Models.Entities
 
         [Column("ophim_slug")]
         [MaxLength(255)]
-        public string? OphimSlug { get; set; }
+        public string? SourceSlug { get; set; }
 
         [Column("request_count")]
         [Required]

@@ -1,0 +1,97 @@
+        .dmca-container {
+            max-width: 900px;
+            margin: 40px auto;
+            color: #e2e8f0;
+        }
+        .dmca-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 35px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+        }
+        .dmca-header {
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .dmca-title {
+            color: #38bdf8;
+            font-weight: 700;
+            font-size: 28px;
+        }
+        .dmca-section {
+            margin-bottom: 25px;
+            line-height: 1.7;
+        }
+        .dmca-section h3 {
+            color: #f1f5f9;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .dmca-section h3 i {
+            color: #38bdf8;
+        }
+        .highlight-box {
+            background: #0f172a;
+            border-left: 4px solid #38bdf8;
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin: 15px 0;
+            color: #cbd5e1;
+        }
+        .report-form-card {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 30px;
+            border: 1px solid #1e293b;
+        }
+        .form-label {
+            color: #38bdf8;
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 6px;
+        }
+        .form-control-custom {
+            background: #1e293b;
+            border: 1px solid #3b82f6;
+            color: #ffffff;
+            font-size: 15px;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .form-control-custom::placeholder {
+            color: #94a3b8 !important;
+            opacity: 1;
+            font-style: italic;
+        }
+        .form-control-custom:focus {
+            background: #1e293b;
+            border-color: #38bdf8;
+            color: #fff;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.3);
+        }
+        .form-check-label-custom {
+            color: #38bdf8 !important;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .btn-submit-dmca {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: #fff;
+            font-weight: 600;
+            padding: 12px 28px;
+            border-radius: 8px;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn-submit-dmca:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+            color: #fff;
+        }

@@ -7,3 +7,6 @@
 **/firebase-key.json
 **/*.user
 **/node_modules
+**/firebase-service-account.json
+**/.env
+**/CLAUDE.md

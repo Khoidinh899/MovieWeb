@@ -1,0 +1,22 @@
+/* Chatbot Mooner trong V2: giữ id/class của chatbot.css (V1), chỉ đổi màu sang tối theo token Stitch. */
+#chatbotPopup.chatbot-popup { background-color: #121c2a; border: 1px solid #414753; box-shadow: 0 18px 48px rgba(0, 0, 0, .55); }
+.chatbot-popup .chatbot-popup-header { background: #212a39; color: #d9e3f7; border-bottom: 1px solid #414753; }
+.chatbot-popup .btn { display: inline-block; cursor: pointer; border: 0; font: inherit; }
+.chatbot-popup .chatbot-mode-selector { background: #16202f; border-bottom: 1px solid #414753; }
+.chatbot-popup .chatbot-mode-selector .btn-mode { background: #212a39; color: #c1c6d6; border-radius: 9999px; }
+.chatbot-popup .chatbot-mode-selector .btn-mode.active { background: #3f90ff; color: #002958; }
+.chatbot-popup .chatbot-popup-body { background: #0a1422; }
+.chatbot-popup .chat-messages { list-style: none; margin: 0; padding-left: 0; }
+.chatbot-popup .chat-message.user .message-bubble { background: #3f90ff; color: #002958; }
+.chatbot-popup .chat-message.mooner .message-bubble { background: #212a39; color: #d9e3f7; }
+.chatbot-popup .message-bubble.system-bubble { background: #16202f; color: #c1c6d6; }
+.chatbot-popup #popupTypingIndicator .message-bubble { background: #212a39 !important; color: #c1c6d6; }
+.chatbot-popup .chatbot-popup-footer { background: #121c2a; border-top: 1px solid #414753; }
+.chatbot-popup .chatbot-popup-footer form { display: flex; gap: .5rem; align-items: center; }
+.chatbot-popup #popupMessageInput { flex: 1; min-width: 0; background: #16202f; color: #d9e3f7; border: 1px solid #414753; }
+.chatbot-popup #popupMessageInput::placeholder { color: #8b919f; }
+.chatbot-popup #popupSendButton { background: #3f90ff; color: #002958; display: inline-flex; align-items: center; justify-content: center; }
+/* Mobile: popup nằm trên thanh tab dưới */
+@media (max-width: 768px) {
+  #chatbotPopup.chatbot-popup { right: 10px; left: 10px; width: auto; bottom: 150px; max-height: 60vh; }
+}

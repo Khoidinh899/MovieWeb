@@ -10,7 +10,8 @@
     // ========== CACHE NOTIFICATIONS ==========
     let notificationCache = {
         payment: null,
-        movie: null
+        movie: null,
+        system: null
     };
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -48,27 +49,30 @@
             const notifType = (notificationObject.type || '').toLowerCase();
             const isPaymentNotif = notifType.includes('payment') || notifType.includes('subscription');
             const isMovieNotif = notifType.includes('movie');
+            const isSystemNotif = notifType.includes('system') || notifType === 'systembroadcast';
 
             // ========== INVALIDATE CACHE ==========
             if (isPaymentNotif) notificationCache.payment = null;
             if (isMovieNotif) notificationCache.movie = null;
+            if (isSystemNotif) notificationCache.system = null;
 
             // ========== CỘNG BADGE NGAY LẬP TỨC ==========
             const mainBadges = document.querySelectorAll('.notification-badge'); 
             const paymentBadge = document.getElementById('paymentBadge');
             const movieBadge = document.getElementById('movieBadge');
+            const systemBadge = document.getElementById('systemBadge');
 
             if (mainBadges.length > 0) mainBadges.forEach(incrementBadgeCount);
             
             if (isPaymentNotif && paymentBadge) incrementBadgeCount(paymentBadge);
             if (isMovieNotif && movieBadge) incrementBadgeCount(movieBadge);
-
-            // console.log("✅ [Badge] Updated immediately after SignalR");
+            if (isSystemNotif && systemBadge) incrementBadgeCount(systemBadge);
 
             // ========== THÊM VÀO DANH SÁCH NẾU DROPDOWN ĐANG MỞ ==========
             if (isDropdownOpen) {
                 if ((currentTab === 'payment' && isPaymentNotif) ||
-                    (currentTab === 'movie' && isMovieNotif)) {
+                    (currentTab === 'movie' && isMovieNotif) ||
+                    (currentTab === 'system' && isSystemNotif)) {
                     prependNotificationToList(notificationObject);
                 }
             }
@@ -81,6 +85,14 @@
                 // console.log("🔄 [Badge] Syncing with server...");
                 updateBadges();
             }, 3000);
+        });
+
+        signalRConnection.on("RevokeNotification", function (broadcastId) {
+            notificationCache.system = null;
+            updateBadges();
+            if (isDropdownOpen) {
+                loadNotifications();
+            }
         });
 
         signalRConnection.on("ForceLogout", async function (message) {
@@ -176,17 +188,70 @@
         const unreadClass = isRead ? '' : 'unread';
         const timeAgo = formatDateTime(createdAt);
 
+        let style = null;
+        const rawStyle = notif.style ?? notif.Style;
+        if (rawStyle) {
+            if (typeof rawStyle === 'object') style = rawStyle;
+            else if (typeof rawStyle === 'string') {
+                try { style = JSON.parse(rawStyle); } catch (e) {}
+            }
+        }
+
+        if (!style) {
+            return `
+                <a href="${escapeHtml(url)}"
+                   class="notification-item ${unreadClass} d-flex"
+                   data-id="${id}">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">${escapeHtml(title)}</h6>
+                        <p class="mb-1">${escapeHtml(content)}</p>
+                        <small class="text-muted">
+                            <i class="bi bi-clock me-1"></i>${timeAgo}
+                        </small>
+                    </div>
+                </a>
+            `;
+        }
+
+        const accentColors = {
+            primary: '#0d6efd',
+            secondary: '#6c757d',
+            success: '#198754',
+            danger: '#dc3545',
+            warning: '#fd7e14',
+            info: '#0dcaf0',
+            purple: '#6f42c1',
+            cyan: '#20c997'
+        };
+        const accentColor = accentColors[style.accent] || '#0d6efd';
+        const iconClass = style.icon ? escapeHtml(style.icon) : 'bi-bell-fill';
+        const badgeHtml = style.badge ? `<span class="badge me-1" style="background-color: ${accentColor}; font-size: 10px;">${escapeHtml(style.badge)}</span>` : '';
+        const btnHtml = style.buttonText ? `<span class="btn btn-xs btn-outline-primary py-0 px-2 mt-1" style="color: ${accentColor}; border-color: ${accentColor}; font-size: 11px;">${escapeHtml(style.buttonText)}</span>` : '';
+        const thumbHtml = style.imageUrl ? `<img src="${escapeHtml(style.imageUrl)}" alt="thumb" class="rounded flex-shrink-0" style="width: 44px; height: 44px; object-fit: cover;" onerror="this.style.display='none'">` : '';
+
         return `
             <a href="${escapeHtml(url)}"
-               class="notification-item ${unreadClass} d-flex"
+               class="notification-item ${unreadClass} d-flex align-items-start gap-2"
+               style="border-left: 3px solid ${accentColor} !important;"
                data-id="${id}">
-                <div class="flex-grow-1">
-                    <h6 class="mb-1">${escapeHtml(title)}</h6>
-                    <p class="mb-1">${escapeHtml(content)}</p>
-                    <small class="text-muted">
-                        <i class="bi bi-clock me-1"></i>${timeAgo}
-                    </small>
+                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 mt-1"
+                     style="width: 32px; height: 32px; background: ${accentColor}1A; color: ${accentColor};">
+                    <i class="bi ${iconClass}" style="font-size: 14px;"></i>
                 </div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex align-items-center gap-1 mb-1 flex-wrap">
+                        ${badgeHtml}
+                        <h6 class="mb-0 fw-bold text-truncate" style="font-size: 13px;">${escapeHtml(title)}</h6>
+                    </div>
+                    <p class="mb-1 text-muted text-break" style="font-size: 12px; white-space: pre-line;">${escapeHtml(content)}</p>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <small class="text-muted" style="font-size: 11px;">
+                            <i class="bi bi-clock me-1"></i>${timeAgo}
+                        </small>
+                        ${btnHtml}
+                    </div>
+                </div>
+                ${thumbHtml}
             </a>
         `;
     }
@@ -280,6 +345,7 @@
             // console.log("🔄 [Dropdown] Opening - Prefetching both notification types...");
             prefetchNotifications('payment');
             prefetchNotifications('movie');
+            prefetchNotifications('system');
             loadNotifications();
         }
     }
@@ -402,6 +468,7 @@
                     updateBadgeElement('.notification-badge', data.total);
                     updateBadgeElement('#paymentBadge', data.payment);
                     updateBadgeElement('#movieBadge', data.movie);
+                    updateBadgeElement('#systemBadge', data.system);
                 }
             })
             .catch(error => console.error('❌ Error updating badges:', error));
@@ -430,6 +497,7 @@
                 if (data.success) {
                     notificationCache.payment = null;
                     notificationCache.movie = null;
+                    notificationCache.system = null;
 
                     updateBadges();
                     if (redirectUrl && redirectUrl !== '#') {

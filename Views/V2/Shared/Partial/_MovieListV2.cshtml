@@ -1,0 +1,188 @@
+﻿@* Khung danh sách phim V2 dùng chung (Phim lẻ/bộ/hoạt hình/mới cập nhật, Thể loại, Quốc gia).
+   Model: (Tiêu đề, danh sách phim, bộ lọc, trang hiện tại, tổng số trang, mã placement popup quảng cáo).
+   Logic phân trang và URL giữ như V1 (Page + các tham số lọc). *@
+@using MovieWeb.Models.ViewModels
+@model (string Heading, List<MovieWeb.Models.Entities.Movie> Movies, MovieFilterViewModel Filters, int CurrentPage, int TotalPages, string PopupPlacement)
+
+@functions {
+    // Poster: giống GetPosterUrl của V1 (PhimLe/Search)
+    // Ảnh DỌC của VSMov là thumb_url (ThumbUrl); xem ImageHelper
+    private string GetPosterUrl(MovieWeb.Models.Entities.Movie m) => MovieWeb.Helpers.ImageHelper.Portrait(m.ThumbUrl, m.PosterUrl);
+
+    public string QualityClass(string? quality) => quality?.ToLower() switch
+    {
+        "hd" => "bg-surface-container-highest text-on-surface",
+        "full hd" => "bg-primary-container text-white",
+        "4k" => "bg-secondary text-on-secondary",
+        "cam" => "bg-outline text-background",
+        _ => "bg-surface-container-high text-on-surface-variant"
+    };
+}
+
+@{
+    var movies = Model.Movies;
+    var filters = Model.Filters;
+    int currentPage = Model.CurrentPage;
+    int totalPages = Model.TotalPages;
+    int totalMovies = ViewBag.TotalMovies is int tm ? tm : movies.Count;
+    int range = 2; // Hiện trang đầu, trang cuối và ±2 trang quanh trang hiện tại (như V1)
+
+    var currentFilters = new Dictionary<string, string>();
+    if (!string.IsNullOrEmpty(filters.Type)) currentFilters["Type"] = filters.Type;
+    if (!string.IsNullOrEmpty(filters.Countries)) currentFilters["Countries"] = filters.Countries;
+    if (!string.IsNullOrEmpty(filters.Categories)) currentFilters["Categories"] = filters.Categories;
+    if (!string.IsNullOrEmpty(filters.Language)) currentFilters["Language"] = filters.Language;
+    if (!string.IsNullOrEmpty(filters.Years)) currentFilters["Years"] = filters.Years;
+    if (!string.IsNullOrEmpty(filters.SortBy)) currentFilters["SortBy"] = filters.SortBy;
+
+    string GetUrl(int page)
+    {
+        var queryParams = string.Join("&", currentFilters.Select(kvp => $"{kvp.Key}={System.Net.WebUtility.UrlEncode(kvp.Value)}"));
+        return $"?Page={page}" + (string.IsNullOrEmpty(queryParams) ? "" : "&" + queryParams);
+    }
+}
+
+<div class="relative w-full overflow-hidden">
+    <div class="pointer-events-none absolute -top-32 left-1/4 h-[350px] w-[600px] rounded-full bg-primary/10 blur-[130px]"></div>
+    <div class="pointer-events-none absolute right-12 top-48 h-[300px] w-[450px] rounded-full bg-secondary/5 blur-[120px]"></div>
+
+    <section class="relative mx-auto w-full max-w-[1600px] px-margin-mobile pb-space-md pt-space-lg md:px-margin">
+        <nav class="mb-space-md flex select-none flex-wrap items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant" aria-label="Breadcrumb">
+            <a class="flex items-center gap-1 transition-colors hover:text-primary" href="/trang-chu"><span class="material-symbols-outlined text-[16px]">home</span> Trang Chủ</a>
+            <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+            <span class="font-headline-sm text-headline-sm text-on-surface">@Model.Heading</span>
+        </nav>
+        <div class="flex flex-col justify-between gap-space-lg pb-space-lg lg:flex-row lg:items-end">
+            <div class="max-w-3xl">
+                <div class="mb-space-sm inline-flex items-center gap-space-xs rounded-full bg-surface-container-high px-space-sm py-1">
+                    <span class="h-2 w-2 animate-pulse rounded-full bg-secondary "></span>
+                    <span class="font-label-sm text-label-sm uppercase tracking-widest text-secondary">Kho phim MoonPhim</span>
+                </div>
+                <h2 class="font-display-hero-mobile text-display-hero-mobile leading-tight tracking-tight text-on-surface md:font-display-hero md:text-display-hero">
+                    Khám Phá <span class="text-primary">@Model.Heading</span>
+                </h2>
+                <p class="mt-space-xs max-w-2xl font-body-lg text-body-lg text-on-surface-variant">
+                    Hàng ngàn tác phẩm điện ảnh, cập nhật liên tục, phát trực tuyến hoàn toàn miễn phí.
+                </p>
+            </div>
+            @if (totalMovies > 0)
+            {
+                <div class="flex items-center gap-space-md self-start rounded-xl bg-surface-container-low p-space-sm shadow-sm lg:self-auto">
+                    <div class="flex items-center gap-space-xs border-r border-surface-container-high px-space-sm py-space-xs">
+                        <span class="material-symbols-outlined text-[22px] text-primary">movie</span>
+                        <div>
+                            <p class="font-label-sm text-label-sm text-on-surface-variant">Tổng số lượng</p>
+                            <p class="font-headline-sm text-headline-sm text-on-surface">@totalMovies.ToString("N0") Phim</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-space-xs px-space-sm py-space-xs">
+                        <span class="material-symbols-outlined text-[22px] text-secondary">auto_stories</span>
+                        <div>
+                            <p class="font-label-sm text-label-sm text-on-surface-variant">Trang</p>
+                            <p class="font-headline-sm text-headline-sm text-secondary">@currentPage / @Math.Max(totalPages, 1)</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="relative mx-auto w-full max-w-[1600px] px-margin-mobile md:px-margin">
+        @await Html.PartialAsync("Partial/_FilterSidebarV2", filters)
+
+        <div class="mb-space-md flex items-center justify-between gap-space-sm">
+            <h2 class="flex items-center gap-space-xs font-headline-md text-headline-md font-bold text-on-surface">
+                <span class="material-symbols-outlined text-primary">grid_view</span> Kết Quả @Model.Heading
+                @if (totalMovies > 0)
+                {
+                    <span class="hidden font-body-sm text-body-sm font-normal text-on-surface-variant sm:inline">(Hiển thị @movies.Count trong tổng số @totalMovies.ToString("N0") tác phẩm)</span>
+                }
+            </h2>
+            <div class="hidden items-center gap-space-xs md:flex">
+                <span class="font-label-sm text-label-sm text-on-surface-variant">Xem theo:</span>
+                <button type="button" id="viewGrid" aria-label="Dạng lưới" class="active flex h-8 w-8 items-center justify-center rounded bg-surface-container-high text-on-surface-variant [&.active]:bg-primary-container [&.active]:text-on-primary-container"><span class="material-symbols-outlined text-[18px]">grid_view</span></button>
+                <button type="button" id="viewList" aria-label="Dạng danh sách" class="flex h-8 w-8 items-center justify-center rounded bg-surface-container-high text-on-surface-variant [&.active]:bg-primary-container [&.active]:text-on-primary-container"><span class="material-symbols-outlined text-[18px]">view_agenda</span></button>
+            </div>
+        </div>
+
+        @if (!movies.Any())
+        {
+            <div class="rounded-xl bg-surface-container-low p-8 text-center text-on-surface-variant">
+                Không tìm thấy phim nào phù hợp.
+            </div>
+        }
+        else
+        {
+            <div id="movieGrid" data-v2-img-group class="grid grid-cols-2 gap-space-md sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+                @foreach (var movie in movies)
+                {
+                    @await Html.PartialAsync("Partial/_MovieCardDetailedV2", (movie, GetPosterUrl(movie)))
+                }
+            </div>
+
+            @if (totalPages > 1)
+            {
+                <nav class="mt-10 flex justify-center" aria-label="Phân trang">
+                    <ul class="flex flex-wrap items-center justify-center gap-1 rounded-full bg-surface-container-low px-space-sm py-space-xs font-label-md text-label-md">
+                        @if (currentPage > 1)
+                        {
+                            <li><a class="flex h-9 items-center gap-1 rounded-full px-3 text-on-surface-variant transition-colors hover:text-on-surface" href="@GetUrl(currentPage - 1)"><span class="material-symbols-outlined text-[16px]">arrow_back</span> Trang trước</a></li>
+                        }
+                        @for (int i = 1; i <= totalPages; i++)
+                        {
+                            if (i == 1 || i == totalPages || (i >= currentPage - range && i <= currentPage + range))
+                            {
+                                <li>
+                                    <a class="flex h-9 min-w-9 items-center justify-center rounded-full px-3 @(i == currentPage ? "v2-btn-3d v2-btn-3d--primary min-h-0 font-bold" : "text-on-surface-variant hover:text-on-surface")"
+                                       href="@GetUrl(i)" @(i == currentPage ? "aria-current=page" : "")>@i</a>
+                                </li>
+                            }
+                            else if (i == currentPage - range - 1 || i == currentPage + range + 1)
+                            {
+                                <li><span class="px-2 text-outline">...</span></li>
+                            }
+                        }
+                        @if (currentPage < totalPages)
+                        {
+                            <li><a class="flex h-9 items-center gap-1 rounded-full px-3 text-on-surface-variant transition-colors hover:text-on-surface" href="@GetUrl(currentPage + 1)">Trang sau <span class="material-symbols-outlined text-[16px]">arrow_forward</span></a></li>
+                        }
+                    </ul>
+                </nav>
+            }
+        }
+    </section>
+
+    <section class="relative mx-auto mt-space-xl w-full max-w-[1600px] px-margin-mobile pb-space-xl md:px-margin">
+        <div class="flex flex-col justify-between gap-space-lg overflow-hidden rounded-xl bg-gradient-to-br from-surface-container to-surface-container-high p-space-lg md:flex-row md:items-center md:p-space-xl">
+            <div class="max-w-2xl">
+                <div class="mb-space-xs flex items-center gap-space-xs text-secondary">
+                    <span class="material-symbols-outlined text-[20px]">verified</span>
+                    <span class="font-headline-sm text-headline-sm font-bold">Cam kết trải nghiệm xem phim miễn phí</span>
+                </div>
+                <h2 class="font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-headline-xl">Không thu phí • Không ép buộc đăng ký tài khoản</h2>
+                <p class="mt-space-sm font-body-md text-body-md text-on-surface-variant">MoonPhim là dự án phi thương mại, chia sẻ tình yêu điện ảnh đến cộng đồng người Việt. Bạn có thể xem phim ngay mà không cần trả phí.</p>
+            </div>
+            <div class="flex shrink-0 flex-col gap-space-sm">
+                <div class="flex items-center gap-space-sm rounded-lg bg-surface-container-lowest/60 p-space-sm"><span class="material-symbols-outlined text-primary">dns</span><div><p class="font-headline-sm text-headline-sm text-on-surface">Nhiều server dự phòng</p><p class="font-label-sm text-label-sm text-on-surface-variant">Chọn server khác nếu server hiện tại chậm</p></div></div>
+                <div class="flex items-center gap-space-sm rounded-lg bg-surface-container-lowest/60 p-space-sm"><span class="material-symbols-outlined text-secondary">subtitles</span><div><p class="font-headline-sm text-headline-sm text-on-surface">Vietsub &amp; Thuyết minh</p><p class="font-label-sm text-label-sm text-on-surface-variant">Phụ đề và lồng tiếng đa dạng</p></div></div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+    (function () {
+        var grid = document.getElementById('movieGrid'), g = document.getElementById('viewGrid'), l = document.getElementById('viewList');
+        if (!grid || !g || !l) return;
+        function set(list) {
+            grid.classList.toggle('is-list', list);
+            l.classList.toggle('active', list); g.classList.toggle('active', !list);
+        }
+        g.addEventListener('click', function () { set(false); });
+        l.addEventListener('click', function () { set(true); });
+    })();
+</script>
+
+@* Placement popup quảng cáo của trang này (xử lý bởi movie-list.js) *@
+<script src="~/v2/js/pages/filter-sidebar.js" asp-append-version="true"></script>
+<script src="~/v2/js/pages/movie-list.js" asp-append-version="true" data-placement="@Model.PopupPlacement"></script>

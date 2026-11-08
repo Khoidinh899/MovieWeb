@@ -1,14 +1,17 @@
 using Microsoft.AspNetCore.Mvc;
+using MovieWeb.Services.Interfaces;
 
 namespace MovieWeb.Controllers
 {
     public class RobotsController : Controller
     {
         private readonly IWebHostEnvironment _env;
+        private readonly IIndexNowService _indexNowService;
 
-        public RobotsController(IWebHostEnvironment env)
+        public RobotsController(IWebHostEnvironment env, IIndexNowService indexNowService)
         {
             _env = env;
+            _indexNowService = indexNowService;
         }
 
         [Route("robots.txt")]
@@ -32,6 +35,18 @@ Disallow: /api/
 Sitemap: https://moonphim.me/sitemap.xml";
 
             return Content(fallbackContent, "text/plain");
+        }
+
+        [HttpGet("{key}.txt")]
+        [ResponseCache(Duration = 86400, Location = ResponseCacheLocation.Any)]
+        public IActionResult IndexNowVerification(string key)
+        {
+            var expectedKey = _indexNowService.GetIndexNowKey();
+            if (string.Equals(key, expectedKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return Content(expectedKey, "text/plain");
+            }
+            return NotFound();
         }
     }
 }

@@ -1,0 +1,15 @@
+@model List<MovieWeb.Models.Entities.Movie>
+@using MovieWeb.Models.ViewModels
+@using MovieWeb.Models.Entities
+
+@{
+    var country = ViewBag.Country as Country;
+    var countryName = country?.Name ?? "Quốc gia";
+    var filters = ViewBag.Filters as MovieFilterViewModel ?? new MovieFilterViewModel();
+}
+
+@section Styles {
+    <meta name="description" content="@(ViewBag.SeoDescription as string ?? $"Khám phá phim { countryName } trên MoonPhim theo năm phát hành và danh sách tập cập nhật.")" />
+}
+
+@await Html.PartialAsync("Partial/_MovieListV2", ($"Quốc gia: {countryName}", Model, filters, (int)(ViewBag.CurrentPage ?? 1), (int)(ViewBag.TotalPages ?? 1), "Popup_QuocGia"))

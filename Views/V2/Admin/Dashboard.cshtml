@@ -1,0 +1,107 @@
+﻿@{
+    ViewData["Title"] = "Admin Dashboard";
+    var stats = ViewBag.Stats;
+    var announcement = ViewBag.AnnouncementSettings as MovieWeb.Models.DTOs.AnnouncementSettingsDto;
+    bool isAnnouncementActive = announcement?.IsEnabled ?? false;
+
+    (string Label, object? Value, string Icon, string Tone)[] cards =
+    {
+        ("Tổng Users", stats.TotalUsers, "group", "text-primary"),
+        ("Users Hoạt Động", stats.ActiveUsers, "check_circle", "text-primary"),
+        ("Admin Users", stats.AdminUsers, "admin_panel_settings", "text-secondary"),
+        ("Email Chưa Xác Thực", stats.UnconfirmedEmails, "mark_email_unread", "text-error"),
+    };
+    (string Title, string Text, string Icon, string Tone, string Action)[] modules =
+    {
+        ("Quản Lý Users", "Quản lý tài khoản người dùng, phân quyền và trạng thái", "manage_accounts", "text-primary", Url.Action("Users", "Admin")),
+        ("Quản Lý Phim", "Thêm, sửa, xóa và quản lý danh sách phim", "movie", "text-primary", Url.Action("Movies", "Admin")),
+        ("Quản Lý Yêu Cầu Phim", "Xử lý các yêu cầu phim từ người dùng", "forward_to_inbox", "text-secondary", Url.Action("MovieRequests", "Admin")),
+        ("Quản Lý Subscription", "Theo dõi doanh thu, gói đăng ký và giao dịch", "monitoring", "text-primary", Url.Action("Subscriptions", "Admin")),
+        ("Quản Lý Quảng Cáo", "Thêm, sửa, xóa các quảng cáo giả lập.", "ad_units", "text-secondary", Url.Action("Advertisements", "Admin")),
+        ("Rollout Giao Diện", "Cấu hình triển khai V2, khảo sát và thống kê lựa chọn của user", "tune", "text-primary", Url.Action("UiRollout", "Admin")),
+        ("Thông Báo Hệ Thống", "Thiết kế mẫu, gửi broadcast realtime và quản lý lịch sử thông báo", "notifications", "text-secondary", Url.Action("Notifications", "Admin")),
+    };
+}
+
+<div class="mx-auto w-full max-w-[1600px] px-margin-mobile pb-space-xl pt-space-lg md:px-margin">
+    <nav class="mb-space-md flex items-center gap-space-xs font-body-sm text-body-sm text-on-surface-variant" aria-label="Breadcrumb">
+        <a class="flex items-center gap-1 transition-colors hover:text-primary" href="/trang-chu"><span class="material-symbols-outlined text-[16px]">home</span> Trang Chủ</a>
+        <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+        <span class="font-headline-sm text-headline-sm text-on-surface">Admin</span>
+    </nav>
+
+    <div class="mb-space-lg flex flex-wrap items-end justify-between gap-space-md">
+        <div>
+            <p class="font-label-sm text-label-sm font-bold uppercase tracking-widest text-secondary">Quản trị hệ thống</p>
+            <h1 class="flex items-center gap-space-sm font-headline-xl-mobile text-headline-xl-mobile text-on-surface md:font-headline-xl md:text-headline-xl">
+                <span class="material-symbols-outlined text-[36px] text-primary">speed</span> Admin Dashboard
+            </h1>
+        </div>
+        <div class="flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
+            <span class="material-symbols-outlined text-[18px]">calendar_month</span> @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+        </div>
+    </div>
+
+    <div class="mb-space-lg grid grid-cols-2 gap-space-md lg:grid-cols-4">
+        @foreach (var c in cards)
+        {
+            <div class="rounded-xl bg-surface-container-low p-space-md shadow-sm md:p-space-lg">
+                <div class="flex items-center justify-between gap-space-sm">
+                    <div class="min-w-0">
+                        <p class="font-body-sm text-body-sm text-on-surface-variant">@c.Label</p>
+                        <p class="font-headline-xl-mobile text-headline-xl-mobile font-bold text-on-surface md:font-headline-xl md:text-headline-xl">@c.Value</p>
+                    </div>
+                    <span class="material-symbols-outlined flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-[26px] @c.Tone">@c.Icon</span>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="grid grid-cols-1 gap-space-md sm:grid-cols-2 lg:grid-cols-3">
+        @foreach (var m in modules)
+        {
+            <div class="flex flex-col rounded-xl bg-surface-container-low p-space-lg shadow-sm transition-transform hover:-translate-y-1 ">
+                <div class="mb-space-sm flex items-center gap-space-sm">
+                    <span class="material-symbols-outlined flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-high text-[22px] @m.Tone">@m.Icon</span>
+                    <h2 class="font-headline-md text-headline-md font-bold text-on-surface">@m.Title</h2>
+                </div>
+                <p class="mb-space-md flex-1 font-body-md text-body-md text-on-surface-variant">@m.Text</p>
+                <a href="@m.Action" class="inline-flex items-center justify-center gap-1 rounded-full bg-primary-container px-space-lg py-space-sm font-label-md text-label-md font-bold text-on-primary-container transition-transform hover:scale-[1.02] active:scale-95 ">
+                    <span class="material-symbols-outlined text-[18px]">arrow_circle_right</span> Xem Chi Tiết
+                </a>
+            </div>
+        }
+
+        <div class="flex flex-col rounded-xl bg-surface-container-low p-space-lg shadow-sm transition-transform hover:-translate-y-1 ">
+            <div class="mb-space-sm flex items-center justify-between gap-space-sm">
+                <div class="flex min-w-0 items-center gap-space-sm">
+                    <span class="material-symbols-outlined flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-[22px] text-secondary">campaign</span>
+                    <h2 class="font-headline-md text-headline-md font-bold text-on-surface">Quản Lý Thông Báo Popup</h2>
+                </div>
+                @if (isAnnouncementActive)
+                {
+                    <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-container px-space-sm py-0.5 font-label-sm text-label-sm font-bold text-on-primary-container"><span class="material-symbols-outlined text-[14px]">sensors</span> Đang Bật</span>
+                }
+                else
+                {
+                    <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-container-high px-space-sm py-0.5 font-label-sm text-label-sm text-on-surface-variant"><span class="material-symbols-outlined text-[14px]">pause_circle</span> Đang Ẩn</span>
+                }
+            </div>
+            <p class="mb-space-md flex-1 font-body-md text-body-md text-on-surface-variant">Tùy chỉnh nội dung popup sự kiện, lời chúc, thông báo kỹ thuật và định dạng màu chữ, cỡ chữ.</p>
+            <a href="@Url.Action("Announcements", "Admin")" class="inline-flex items-center justify-center gap-1 rounded-full bg-secondary-container px-space-lg py-space-sm font-label-md text-label-md font-bold text-on-secondary-container transition-transform hover:scale-[1.02] active:scale-95 ">
+                <span class="material-symbols-outlined text-[18px]">tune</span> Cấu Hình &amp; Xem Chi Tiết
+            </a>
+        </div>
+    </div>
+
+    @if (stats.UnconfirmedEmails > 0)
+    {
+        <div class="mt-space-lg flex items-start gap-space-sm rounded-xl bg-surface-container-high p-space-md text-on-surface" role="alert">
+            <span class="material-symbols-outlined text-[28px] text-secondary">warning</span>
+            <div>
+                <strong>Cảnh báo!</strong> Có <strong>@stats.UnconfirmedEmails</strong> tài khoản chưa xác thực email.
+                <a href="@Url.Action("Users", "Admin", new { isActive = false })" class="font-bold text-primary underline">Xem danh sách</a>
+            </div>
+        </div>
+    }
+</div>

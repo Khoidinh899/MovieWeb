@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace MovieWeb.Models.Entities;
@@ -21,5 +21,10 @@ public partial class Notification
 
     public DateTime? CreatedAt { get; set; }
 
+    /// <summary>Set when created by an admin broadcast (Type = "SystemBroadcast").</summary>
+    public int? BroadcastId { get; set; }
+
     public virtual User? User { get; set; }
+
+    public virtual AdminBroadcast? Broadcast { get; set; }
 }

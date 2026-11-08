@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
+using MovieWeb.Helpers;
+using MovieWeb.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -10,6 +13,7 @@ namespace MovieWeb.Controllers.API
     [ApiController]
     public class ApiMovieController : ControllerBase
     {
+        private readonly IMovieSyncService _movieSync;
         private readonly MovieWebDbContext _context;
         private readonly IMemoryCache _cache;
         private readonly ILogger<ApiMovieController> _logger;
@@ -21,8 +25,9 @@ namespace MovieWeb.Controllers.API
         public ApiMovieController(
             MovieWebDbContext context,
             IMemoryCache cache,
-            ILogger<ApiMovieController> logger)
+            ILogger<ApiMovieController> logger, IMovieSyncService movieSync)
         {
+            _movieSync = movieSync;
             _context = context;
             _cache = cache;
             _logger = logger;
@@ -40,6 +45,12 @@ namespace MovieWeb.Controllers.API
             {
                 return Ok(cachedResponse);
             }
+
+            var sourceMovieId = await _context.Movies.AsNoTracking()
+                .Where(m => m.Slug == slug && m.IsActive == true)
+                .Select(m => (int?)m.MovieId).SingleOrDefaultAsync();
+            if (sourceMovieId is null) return NotFound();
+            await _movieSync.EnsureVSMovEpisodesAsync(sourceMovieId.Value);
 
             // Fetch movie with all relations
             var movie = await _context.Movies
@@ -101,7 +112,7 @@ namespace MovieWeb.Controllers.API
                     posterUrl = NormalizeImageUrl(movie.PosterUrl),
                     poster = NormalizeImageUrl(movie.Poster),
                     backdrop = NormalizeImageUrl(movie.Backdrop),
-                    trailerUrl = movie.TrailerUrl,
+                    trailerUrl = VSMovSource.GetPlaybackUrl(movie.TrailerUrl),
                     trailer = movie.Trailer,
                     
                     // Movie Details
@@ -209,7 +220,7 @@ namespace MovieWeb.Controllers.API
             }
 
             // Group by normalized server name
-            var grouped = episodes
+            var grouped = episodes.Where(e => VSMovSource.IsSupported(e.LinkM3u8))
                 .GroupBy(e => NormalizeServerKey(e.ServerName))
                 .Select(g => new
                 {
@@ -379,7 +390,7 @@ namespace MovieWeb.Controllers.API
                 int totalPages = (int)Math.Ceiling(totalMovies / (double)pageSize);
 
                 var movies = await dbQuery
-                    .Skip((page - 1) * pageSize)
+                    .Skip((Math.Max(page, 1) - 1) * pageSize)
                     .Take(pageSize)
                     .Select(m => new
                     {
@@ -437,6 +448,7 @@ namespace MovieWeb.Controllers.API
             }
         }
 
+        [Authorize(Policy = "AdminOnly")]
         [HttpDelete("{slug}/cache")]
         public IActionResult ClearCache(string slug)
         {

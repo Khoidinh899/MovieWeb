@@ -1,0 +1,200 @@
+using System.Reflection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
+using MovieWeb.Controllers;
+using MovieWeb.Data;
+using MovieWeb.Models.Entities;
+using MovieWeb.Services.Interfaces;
+using MovieWeb.Services;
+using MovieWeb.Repositories;
+
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+var pgPort = int.Parse(args[0]);
+var httpPort = int.Parse(args[1]);
+var urlKeys = MovieWeb.Helpers.VSMovSource.ServerUrlKeys(new[] { "lồng tiếng #1", "thuyết minh #1", "vietsub #1", "a b", "a-b" });
+if (urlKeys["lồng tiếng #1"] != "long-tieng-1" || urlKeys["thuyết minh #1"] != "thuyet-minh-1"
+    || urlKeys["a b"] == urlKeys["a-b"]) throw new Exception("Server URL key validation failed");
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    ContentRootPath = @"D:\Doan\webnc\MovieWeb", EnvironmentName = "Development",
+    ApplicationName = typeof(SitemapController).Assembly.FullName
+});
+builder.WebHost.UseUrls($"http://127.0.0.1:{httpPort}");
+builder.Logging.AddFilter(_ => false);
+builder.Services.AddDbContext<MovieWebDbContext>(o => o.UseNpgsql($"Host=127.0.0.1;Port={pgPort};Database=postgres;Username=seo_fixture;Timeout=5;Command Timeout=10"));
+builder.Services.AddMemoryCache();
+builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(AppContext.BaseDirectory, "fixture-keys"))).SetApplicationName("MoonPhimSeoFixture");
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
+builder.Services.AddAuthorization();
+builder.Services.AddScoped<IAnnouncementService>(_ => DispatchProxy.Create<IAnnouncementService, OfflineProxy>());
+builder.Services.AddScoped<IAuthService>(_ => DispatchProxy.Create<IAuthService, OfflineProxy>());
+builder.Services.AddScoped<IMovieSyncService>(_ => DispatchProxy.Create<IMovieSyncService, OfflineProxy>());
+builder.Services.AddScoped<IMovieRepository>(_ => DispatchProxy.Create<IMovieRepository, OfflineProxy>());
+builder.Services.AddControllersWithViews().AddApplicationPart(typeof(SitemapController).Assembly);
+var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<MovieWebDbContext>();
+    await db.Database.EnsureCreatedAsync();
+    if (!await db.Movies.AnyAsync())
+    {
+        var category = new Category { Name = "Hoạt hình", Slug = "hoat-hinh", IsActive = true };
+        var country = new Country { Name = "Hàn Quốc", Slug = "han-quoc", IsActive = true };
+        db.Add(new Category { Name = "Rỗng", Slug = "rong", IsActive = true });
+        for (var i = 1; i <= 32; i++)
+        {
+            var movie = new Movie { Slug = $"seo-phim-{i}", Name = $"Phim SEO {i}", OriginalName = $"Original Film {i}",
+                Description = "<p>Nội dung &amp; câu chuyện phim thử nghiệm.</p>", Type = i % 3 == 0 ? "hoathinh" : i % 2 == 0 ? "series" : "single",
+                Language = "Vietsub", Year = 2024, IsActive = true, Quality = "HD", EpisodeCurrent = "Tập 1", EpisodeTotal = "16",
+                CreatedAt = new DateTime(2024, 1, 1), UpdatedAt = new DateTime(2024, 2, 1),
+                TrailerUrl = "https://a.streamvsmov.com/video/9f3a0de0-0000-4000-8000-000000000001",
+                PosterUrl = "https://vsmov.com/storage/images/test.jpg", Categories = [category], Countries = [country] };
+            movie.Episodes.Add(new Episode { EpisodeName = "1", Slug = "tap-1", ServerName = "Vietsub", LinkM3u8 = movie.TrailerUrl });
+            db.Movies.Add(movie);
+        }
+        db.Movies.Add(new Movie { Slug = "seo-trailer", Name = "Trailer only", IsActive = true, Trailer = "https://youtu.be/abc", Year = 2024 });
+        db.Movies.Add(new Movie { Slug = "seo-invalid", Name = "Invalid", IsActive = true, TrailerUrl = "https://evil.example/player" });
+        db.Movies.Add(new Movie { Slug = "seo-inactive", Name = "Inactive", IsActive = false });
+        await db.SaveChangesAsync();
+    }
+}
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<MovieWebDbContext>();
+    OfflineProxy.ProviderResponse = new MovieWeb.Models.API.VSMovDetailResponse
+    {
+        Status = true,
+        Item = new MovieWeb.Models.API.VSMovItem
+        {
+            Id = 90001, Name = "Sync fixture", Slug = "seo-sync-fixture", OriginName = "Sync Original",
+            Content = "Fixture description", Type = "series", Status = "ongoing", Lang = "Vietsub", Year = 2024,
+            Category = [new() { Id = "fixture-cat", Name = "Fixture category", Slug = "fixture-category" }],
+            Country = [new() { Id = "fixture-country", Name = "Fixture country", Slug = "fixture-country" }],
+            Actor = ["Fixture actor"], Director = ["Fixture director"]
+        },
+        Episodes = [new() { ServerName = "Vietsub", ServerData = [new() { Name = "1", Slug = "tap-1",
+            LinkEmbed = "https://a.streamvsmov.com/video/9f3a0de0-0000-4000-8000-000000000001" }] }]
+    };
+    var sync = new MovieSyncService(db, DispatchProxy.Create<IVSMovService, OfflineProxy>(), NullLogger<MovieSyncService>.Instance,
+        new CategorySyncService(db, NullLogger<CategorySyncService>.Instance),
+        new CountrySyncService(db, NullLogger<CountrySyncService>.Instance),
+        new ActorSyncService(db, NullLogger<ActorSyncService>.Instance),
+        new DirectorSyncService(db, NullLogger<DirectorSyncService>.Instance));
+    var first = await sync.SyncSingleMovieFromVSMovBySlugWithStatusAsync("seo-sync-fixture");
+    if (first.Movie is null) throw new Exception("Fixture sync failed");
+    var savedId = first.Movie.Episodes.Single().EpisodeId;
+    var oldDate = new DateTime(2000, 1, 1);
+    first.Movie.UpdatedAt = oldDate;
+    await db.SaveChangesAsync();
+    var second = await sync.SyncSingleMovieFromVSMovBySlugWithStatusAsync("seo-sync-fixture");
+    if (second.WasUpdatedOrAdded || second.Movie!.UpdatedAt != oldDate) throw new Exception("No-op sync changed lastmod");
+    OfflineProxy.ProviderResponse.Item.Content = "Changed description";
+    OfflineProxy.ProviderResponse.Item.Category.Add(new() { Id = "fixture-cat-2", Name = "Fixture category 2", Slug = "fixture-category-2" });
+    var third = await sync.SyncSingleMovieFromVSMovBySlugWithStatusAsync("seo-sync-fixture");
+    if (!third.WasUpdatedOrAdded || third.Movie!.UpdatedAt <= oldDate) throw new Exception("Changed content did not update lastmod");
+    if (third.Movie.Episodes.Single().EpisodeId != savedId) throw new Exception("Episode ID changed");
+    Console.WriteLine("PASS: VSMov no-op/content-change lastmod and stable EpisodeId");
+}
+// Exercise the real sync service against a separately held PostgreSQL lock.
+{
+    MovieSyncService MakeSync(MovieWebDbContext db, IDirectorSyncService? director = null) => new(db,
+        DispatchProxy.Create<IVSMovService, OfflineProxy>(), NullLogger<MovieSyncService>.Instance,
+        new CategorySyncService(db, NullLogger<CategorySyncService>.Instance),
+        new CountrySyncService(db, NullLogger<CountrySyncService>.Instance),
+        new ActorSyncService(db, NullLogger<ActorSyncService>.Instance),
+        director ?? new DirectorSyncService(db, NullLogger<DirectorSyncService>.Instance));
+    using var writerScope = app.Services.CreateScope();
+    using var syncScope = app.Services.CreateScope();
+    var writer = writerScope.ServiceProvider.GetRequiredService<MovieWebDbContext>();
+    var syncDb = syncScope.ServiceProvider.GetRequiredService<MovieWebDbContext>();
+    var stale = await syncDb.Movies.Include(m => m.Episodes).SingleAsync(m => m.Slug == "seo-sync-fixture");
+    if (stale.Episodes.Count != 1) throw new Exception("Unexpected concurrency fixture");
+    OfflineProxy.ProviderResponse!.Episodes![0].ServerData!.Add(new() { Name = "2", Slug = "tap-2",
+        LinkEmbed = "https://a.streamvsmov.com/video/9f3a0de0-0000-4000-8000-000000000002" });
+    int addedId;
+    Task<(Movie? Movie, bool WasUpdatedOrAdded)> syncing;
+    await using (var tx = await MovieWeb.Helpers.CatalogWriteLock.AcquireAsync(writer))
+    {
+        syncing = MakeSync(syncDb).SyncSingleMovieFromVSMovBySlugWithStatusAsync("seo-sync-fixture");
+        await Task.Delay(100);
+        if (syncing.IsCompleted) throw new Exception("Sync bypassed shared advisory lock");
+        var episode = new Episode { MovieId = stale.MovieId, EpisodeName = "2", Slug = "tap-2", ServerName = "vietsub",
+            LinkM3u8 = "https://a.streamvsmov.com/video/9f3a0de0-0000-4000-8000-000000000002" };
+        writer.Episodes.Add(episode);
+        await writer.SaveChangesAsync();
+        addedId = episode.EpisodeId;
+        await tx.CommitAsync();
+    }
+    var result = await syncing;
+    if (result.Movie!.Episodes.Count != 2 || result.Movie.Episodes.Single(e => e.Slug == "tap-2").EpisodeId != addedId)
+        throw new Exception("Stale tracked graph caused duplicate episode");
+    using var blockedScope = app.Services.CreateScope();
+    var blockedDb = blockedScope.ServiceProvider.GetRequiredService<MovieWebDbContext>();
+    await using (var tx = await MovieWeb.Helpers.CatalogWriteLock.AcquireAsync(writer))
+    {
+        var blocked = await MakeSync(blockedDb).SyncSingleMovieFromVSMovBySlugWithStatusAsync("seo-sync-fixture");
+        if (blocked.Movie is not null) throw new Exception("Busy catalog sync did not defer");
+        await tx.RollbackAsync();
+    }
+    OfflineProxy.ProviderResponse.Item!.Slug = "seo-sync-rollback";
+    OfflineProxy.ProviderResponse.Item.Id = 90003;
+    using var failScope = app.Services.CreateScope();
+    var failDb = failScope.ServiceProvider.GetRequiredService<MovieWebDbContext>();
+    try
+    {
+        await MakeSync(failDb, new ThrowingDirector()).SyncSingleMovieFromVSMovBySlugWithStatusAsync("seo-sync-rollback");
+        throw new Exception("Failure injection unexpectedly succeeded");
+    }
+    catch (InvalidOperationException ex) when (ex.Message == "injected-director-failure") { }
+    if (await failDb.Movies.AnyAsync(m => m.Slug == "seo-sync-rollback") || failDb.ChangeTracker.HasChanges())
+        throw new Exception("Failed sync left partial database/context writes");
+    Console.WriteLine("PASS: real sync advisory lock, stale EF graph, busy deferral and rollback");
+}
+
+if (Environment.GetEnvironmentVariable("SEO_TEST_PERF") == "1")
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<MovieWebDbContext>();
+    await db.Database.ExecuteSqlRawAsync("""
+        INSERT INTO "Movies" ("Slug", "Name", "Type", "IsActive", "Year", "ViewCount", "CreatedAt", "UpdatedAt", "TrailerUrl", "PosterUrl", "Description")
+        SELECT 'perf-fixture-' || g, 'Perf fixture ' || g,
+            CASE WHEN g % 2 = 0 THEN 'series' ELSE 'single' END, true, 2000 + g % 26, g * 3,
+            timestamp '2024-01-01', timestamp '2024-02-01',
+            'https://a.streamvsmov.com/video/9f3a0de0-0000-4000-8000-000000000001',
+            'https://vsmov.com/storage/images/test.jpg', repeat('Fixture description. ', 100)
+        FROM generate_series(1, 4400) g;
+        INSERT INTO "Episodes" ("MovieId", "EpisodeName", "Slug", "ServerName", "LinkM3u8")
+        SELECT m."MovieId", g::text, 'tap-' || g, 'Vietsub', m."TrailerUrl"
+        FROM "Movies" m CROSS JOIN generate_series(1, 10) g WHERE m."Slug" LIKE 'perf-fixture-%';
+        ANALYZE "Movies";
+        ANALYZE "Episodes";
+        """);
+    Console.WriteLine("PERF_FIXTURE_READY 4400 extra movies and 44000 episodes");
+}
+app.UseStaticFiles();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllerRoute("catalog", "trang-chu", new { controller = "TrangChu", action = "TrangChu" });
+app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
+Console.WriteLine($"SEO_TEST_READY http://127.0.0.1:{httpPort}");
+await app.RunAsync();
+
+public class OfflineProxy : DispatchProxy
+{
+    public static MovieWeb.Models.API.VSMovDetailResponse? ProviderResponse;
+    protected override object? Invoke(MethodInfo? method, object?[]? args)
+    {
+        if (method?.Name == "GetMovieDetailAsync") return Task.FromResult(ProviderResponse);
+        if (method?.Name == "GetSettingsAsync") return Task.FromResult(new MovieWeb.Models.DTOs.AnnouncementSettingsDto { IsEnabled = false });
+        if (method?.Name == "GetCurrentUserAsync") return Task.FromResult<User?>(null);
+        if (method?.Name == "EnsureVSMovEpisodesAsync") return Task.CompletedTask;
+        throw new InvalidOperationException("Unexpected external dependency: " + method?.Name);
+    }
+}
+
+public sealed class ThrowingDirector : IDirectorSyncService
+{
+    public Task<List<Director>> SyncDirectorsAsync(List<string> values) => throw new InvalidOperationException("injected-director-failure");
+}

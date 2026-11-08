@@ -192,7 +192,26 @@
             // 1. Bấm nút Chọn Tập (.episode-list-item)
             const epBtn = e.target.closest('.episode-list-item');
             if (epBtn) {
+                // Preserve normal link actions such as open in a new tab.
+                if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button > 0) return;
                 e.preventDefault();
+                const episodeHref = epBtn.getAttribute('href');
+                if (episodeHref && episodeHref.startsWith('/phim/')) {
+                    const target = new URL(episodeHref, window.location.origin);
+                    if (window.location.pathname !== target.pathname || window.location.search !== target.search) {
+                        // Replace keeps the existing player/history lifecycle; reload uses this URL.
+                        window.history.replaceState(window.history.state, '', target.pathname + target.search);
+                        const movieName = document.querySelector('[data-episode-movie-name]')?.dataset.episodeMovieName;
+                        if (movieName) {
+                            const title = `${movieName} - Tập ${epBtn.dataset.episodeName} | MoonPhim`;
+                            document.title = title;
+                            document.querySelectorAll('meta[property="og:title"], meta[name="twitter:title"]').forEach(meta => meta.content = title);
+                        }
+                        const canonical = `https://moonphim.me${target.pathname}`;
+                        document.querySelectorAll('link[rel="canonical"]').forEach(link => link.href = canonical);
+                        document.querySelectorAll('meta[property="og:url"]').forEach(meta => meta.content = canonical);
+                    }
+                }
                 e.stopPropagation();
 
                 document.querySelectorAll('.episode-list-item').forEach(el => el.classList.remove('active'));
@@ -247,7 +266,7 @@
 
                 // Ưu tiên tập 1 của server đang active
                 const activeGroup = document.querySelector('.episode-group[style*="display: block"]') || document.querySelector('.episode-group');
-                const firstEp = activeGroup ? activeGroup.querySelector('.episode-list-item') : document.querySelector('.episode-list-item');
+                const firstEp = activeGroup ? (activeGroup.querySelector('.episode-list-item.active') || activeGroup.querySelector('.episode-list-item')) : document.querySelector('.episode-list-item');
 
                 if (firstEp && firstEp.dataset.url) {
                     firstEp.click();

@@ -3,6 +3,7 @@ using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
 using MovieWeb.Services.Interfaces;
 using System.IO;
+using System.Text.Json;
 
 namespace MovieWeb.Services
 {
@@ -29,7 +30,23 @@ namespace MovieWeb.Services
                 string credentialPath = Path.Combine(Directory.GetCurrentDirectory(), "firebase-service-account.json");
                 if (!File.Exists(credentialPath))
                 {
-                    _logger.LogWarning("⚠️ Firebase Service Account file not found at '{Path}'. FCM push notifications will be simulated.", credentialPath);
+                    _logger.LogWarning("⚠️ Firebase Service Account file not found at '{Path}'. FCM push notifications are unavailable.", credentialPath);
+                    return false;
+                }
+
+                using var credentialDocument = JsonDocument.Parse(File.ReadAllText(credentialPath));
+                var root = credentialDocument.RootElement;
+                // Firebase Admin requires a service account, not an OAuth client or web config.
+                string[] requiredFields = ["project_id", "client_email", "private_key"];
+                if (root.ValueKind != JsonValueKind.Object
+                    || !root.TryGetProperty("type", out var credentialType)
+                    || credentialType.ValueKind != JsonValueKind.String
+                    || credentialType.GetString() != "service_account"
+                    || requiredFields.Any(field => !root.TryGetProperty(field, out var value)
+                        || value.ValueKind != JsonValueKind.String
+                        || string.IsNullOrWhiteSpace(value.GetString())))
+                {
+                    _logger.LogWarning("Firebase service account configuration is incomplete. FCM push notifications are unavailable.");
                     return false;
                 }
 
@@ -55,12 +72,12 @@ namespace MovieWeb.Services
                 return false;
             }
 
-            _logger.LogInformation("Sending push notification: Title='{Title}', Content='{Content}', Token='{Token}', Type='{Type}'", title, content, fcmToken, type);
+            _logger.LogDebug("Sending FCM push notification of type {Type}.", type);
 
             if (!_isFirebaseInitialized)
             {
-                _logger.LogWarning("FCM is not initialized (missing credentials). Logged notification only.");
-                return true; // Return true as simulation success
+                _logger.LogWarning("FCM is unavailable. Push notification was not sent.");
+                return false;
             }
 
             try
@@ -86,7 +103,7 @@ namespace MovieWeb.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending FCM message to token: {Token}", fcmToken);
+                _logger.LogError("Error sending FCM message ({ErrorType}).", ex.GetType().Name);
                 return false;
             }
         }

@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace MovieWeb.Helpers;
@@ -8,6 +11,26 @@ public static partial class VSMovSource
 
     public static string NormalizeServer(string? name) =>
         Whitespace().Replace((name ?? "VSMov").Trim(), " ").ToLowerInvariant();
+
+    public static Dictionary<string, string> ServerUrlKeys(IEnumerable<string> servers)
+    {
+        string Slug(string name)
+        {
+            var decomposed = NormalizeServer(name).Replace('đ', 'd').Normalize(NormalizationForm.FormD);
+            var plain = new string(decomposed.Where(c => CharUnicodeInfo.GetUnicodeCategory(c)
+                != UnicodeCategory.NonSpacingMark).ToArray());
+            return Regex.Replace(plain, "[^a-z0-9]+", "-").Trim('-') is { Length: > 0 } key ? key : "server";
+        }
+
+        var names = servers.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var result = names.ToDictionary(name => name, Slug, StringComparer.Ordinal);
+        // Distinct labels may lose the same accents/punctuation; never map them to one server.
+        var collisions = result.GroupBy(pair => pair.Value).Where(group => group.Count() > 1)
+            .SelectMany(group => group.Select(pair => pair.Key)).ToList();
+        foreach (var name in collisions)
+            result[name] += "-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(name))).ToLowerInvariant();
+        return result;
+    }
 
     public static bool IsSupported(string? source) => GetPlaybackUrl(source) is not null;
 

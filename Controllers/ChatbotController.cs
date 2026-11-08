@@ -314,7 +314,7 @@ namespace MovieWeb.Controllers
             var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
             var requests = await query
-                .Skip((page - 1) * pageSize)
+                .Skip((Math.Max(page, 1) - 1) * pageSize)
                 .Take(pageSize)
                 .Select(ur => new
                 {

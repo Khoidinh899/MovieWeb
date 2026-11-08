@@ -1,3 +1,4 @@
+using MovieWeb.Helpers;
 // Extensions/MovieExtensions.cs
 using MovieWeb.Models.API;
 using MovieWeb.Models.Entities;
@@ -25,7 +26,7 @@ namespace MovieWeb.Extensions
                 Status = dbMovie.Status ?? "",
                 PosterUrl = dbMovie.PosterUrl ?? "",
                 ThumbUrl = dbMovie.ThumbUrl ?? "",
-                TrailerUrl = dbMovie.TrailerUrl ?? "",
+                TrailerUrl = VSMovSource.GetPlaybackUrl(dbMovie.TrailerUrl) ?? "",
                 Time = dbMovie.Time ?? "",
                 EpisodeCurrent = dbMovie.EpisodeCurrent ?? "",
                 EpisodeTotal = dbMovie.EpisodeTotal ?? "",

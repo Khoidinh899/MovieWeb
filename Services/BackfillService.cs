@@ -38,13 +38,13 @@ namespace MovieWeb.Services
                 
                 // Lấy các services cần thiết
                 var context = scope.ServiceProvider.GetRequiredService<MovieWebDbContext>();
-                var oPhimService = scope.ServiceProvider.GetRequiredService<IOPhimService>();
+                var vsMovService = scope.ServiceProvider.GetRequiredService<IVSMovService>();
                 var categorySyncService = scope.ServiceProvider.GetRequiredService<ICategorySyncService>();
                 var countrySyncService = scope.ServiceProvider.GetRequiredService<ICountrySyncService>();
                 var actorSyncService = scope.ServiceProvider.GetRequiredService<IActorSyncService>();
                 var directorSyncService = scope.ServiceProvider.GetRequiredService<IDirectorSyncService>();
                 
-                await BackfillMetadataAsync(context, oPhimService, categorySyncService, countrySyncService, actorSyncService, directorSyncService);
+                await BackfillMetadataAsync(context, vsMovService, categorySyncService, countrySyncService, actorSyncService, directorSyncService);
                 
                 _logger.LogInformation(">>> TÁC VỤ BACKFILL METADATA ĐÃ HOÀN TẤT. Service sẽ dừng lại.");
             }
@@ -59,7 +59,7 @@ namespace MovieWeb.Services
         /// </summary>
         private async Task BackfillMetadataAsync(
             MovieWebDbContext context,
-            IOPhimService oPhimService,
+            IVSMovService vsMovService,
             ICategorySyncService categorySyncService,
             ICountrySyncService countrySyncService,
             IActorSyncService actorSyncService,
@@ -95,7 +95,7 @@ namespace MovieWeb.Services
                     _logger.LogInformation($"🎬 [{processedCount}/{allMovies.Count}] Đang xử lý: {movie.Name}");
 
                     // Gọi API để lấy chi tiết phim
-                    var apiResponse = await oPhimService.GetMovieDetailAsync(movie.Slug);
+                    var apiResponse = await vsMovService.GetMovieDetailAsync(movie.Slug);
                     var apiItem = apiResponse?.Item;
 
                     if (apiItem == null)

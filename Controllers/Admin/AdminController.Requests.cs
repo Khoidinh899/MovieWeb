@@ -50,7 +50,7 @@ namespace MovieWeb.Controllers
                 var totalRequests = await query.CountAsync(); // Total này là total *sau khi lọc*
                 var requests = await query
                     .OrderByDescending(r => r.CreatedAt)
-                    .Skip((page - 1) * pageSize)
+                    .Skip((Math.Max(page, 1) - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
@@ -277,7 +277,7 @@ namespace MovieWeb.Controllers
         // ===================================================================
 
         /// <summary>
-        /// Action mới: Tự động tìm và sync phim từ OPhim API
+        /// Action mới: Tự động tìm và sync phim từ VSMov API
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -305,7 +305,7 @@ namespace MovieWeb.Controllers
                 _logger.LogInformation("🤖 [AUTO SYNC] Bắt đầu tìm phim: {Title} ({Year})", request.MovieTitle, request.MovieYear);
 
                 // 2. Tìm kiếm thông minh trên VSMov API (Kết hợp cả Slug lẫn Từ khóa/Keyword)
-                string? finalSlug = request.OphimSlug;
+                string? finalSlug = request.SourceSlug;
 
                 // Cách 1: Nếu đã có slug trong request -> thử kiểm tra chi tiết phim
                 if (!string.IsNullOrEmpty(finalSlug))
@@ -393,7 +393,7 @@ namespace MovieWeb.Controllers
         }
 
         /// <summary>
-        /// Helper: Thực hiện sync phim từ OPhim vào DB
+        /// Helper: Thực hiện sync phim từ VSMov vào DB
         /// </summary>
         private async Task<IActionResult> ExecuteAutoSyncAsync(int requestId, string slug)
         {
@@ -417,7 +417,7 @@ namespace MovieWeb.Controllers
                     _logger.LogInformation("✅ [AUTO SYNC] Phim đã tồn tại (ID: {MovieId}), chỉ cập nhật request", existingMovie.MovieId);
 
                     // Phim đã có → chỉ cập nhật request
-                    request.OphimSlug = slug;
+                    request.SourceSlug = slug;
                     request.MovieId = existingMovie.MovieId;
                     request.Status = RequestStatus.NeedsVerification;
                     request.AdminNote = $"Tự động tìm thấy phim đã có: {existingMovie.Name}";
@@ -448,8 +448,8 @@ namespace MovieWeb.Controllers
 
                 _logger.LogInformation("📦 [AUTO SYNC] Đã lấy chi tiết: {Name}", movieDetail.Item.Name);
 
-                // 3. Cập nhật OphimSlug vào request trước khi sync
-                request.OphimSlug = slug;
+                // 3. Cập nhật SourceSlug vào request trước khi sync
+                request.SourceSlug = slug;
                 request.AdminNote = $"Đang tự động đồng bộ: {movieDetail.Item.Name}...";
                 await _context.SaveChangesAsync();
 

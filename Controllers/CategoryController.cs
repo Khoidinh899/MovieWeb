@@ -125,7 +125,14 @@ namespace MovieWeb.Controllers
                     Name = m.Name,
                     Slug = m.Slug,
                     ThumbUrl = m.ThumbUrl,
-                    PosterUrl = m.PosterUrl
+                    PosterUrl = m.PosterUrl,
+                    Year = m.Year,
+                    Quality = m.Quality,
+                    Time = m.Time,
+                    Language = m.Language,
+                    Rating = m.Rating,
+                    EpisodeCurrent = m.EpisodeCurrent,
+                    Categories = m.Categories.Select(c => new Category { Name = c.Name }).Take(2).ToList()
                 })
                 .Skip((page - 1) * PAGE_SIZE)
                 .Take(PAGE_SIZE)
@@ -150,7 +157,7 @@ namespace MovieWeb.Controllers
             ViewBag.Categories = categories; // Danh sách full thể loại
             ViewBag.CategorySlug = slug; 
             ViewBag.CurrentPage = page;
-            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalPages = totalPages; ViewBag.TotalMovies = totalMovies;
 
             // ✅ SEO
             ViewData["Title"] = $"Phim {category.Name} Hay | Tuyển tập Phim {category.Name} Mới Nhất";

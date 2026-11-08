@@ -7,18 +7,23 @@
     // ⭐ ĐỔI: Ưu tiên PosterUrl (dọc) thay vì ThumbUrl (ngang)
     var bgImage = !string.IsNullOrEmpty(Model.PosterUrl)
         ? (Model.PosterUrl.StartsWith("http") ? Model.PosterUrl : "https://vsmov.com/storage/images/" + Model.PosterUrl.TrimStart('/'))
-        : (!string.IsNullOrEmpty(Model.ThumbUrl) 
+        : (!string.IsNullOrEmpty(Model.ThumbUrl)
             ? (Model.ThumbUrl.StartsWith("http") ? Model.ThumbUrl : "https://vsmov.com/storage/images/" + Model.ThumbUrl.TrimStart('/'))
             : "/images/default-poster.jpg");
-            
+
     var grouped = ViewBag.GroupedEpisodes as Dictionary<string, List<MovieWeb.Models.Entities.Episode>>;
+    var serverUrlKeys = ViewBag.ServerUrlKeys as Dictionary<string, string> ?? new();
     var serverDisplay = ViewBag.ServerDisplayNames as Dictionary<string, string>;
     var servers = ViewBag.Servers as List<string>;
     string defaultServer = ViewBag.DefaultServer as string ?? "";
 
     var shouldShowAds = ViewBag.ShouldShowAds ?? true;
     var isSeriesMovie = ViewBag.IsSeriesType ?? false;
+    int? selectedEpisodeId = ViewBag.SelectedEpisodeId as int?;
+    string? selectedEpisodeName = ViewBag.SelectedEpisodeName as string;
     var episode1Url = ViewBag.Episode1Url as string ?? "";
+    var episodeMinMap = ViewBag.EpisodeMinIdMap as Dictionary<int, (string CleanSlug, int MinId)> ?? new();
+    var latestMoviesToday = ViewBag.LatestMoviesToday as List<MovieWeb.Models.Entities.Movie>;
 
     // ✅ Hiển thị danh sách tập cho tất cả các phim có tập phim
     bool shouldShowEpisodeList = grouped != null && grouped.Any();
@@ -32,10 +37,11 @@
 
     // 1. Chuẩn bị Mô tả (Description)
     ViewData["SeoTitle"] = SeoMetadata.MovieTitle(Model.Name, Model.OriginalName, Model.Year, Model.Language);
+    if (selectedEpisodeName is not null)
+        ViewData["SeoTitle"] = $"{Model.Name} - Tập {selectedEpisodeName} | {Model.Language} | MoonPhim";
     var seoDescription = SeoMetadata.Description(Model.Description, Model.Content,
         $"Thông tin phim {Model.Name}{(Model.Year.HasValue ? $" ({Model.Year})" : "")}, tên gốc {Model.OriginalName ?? Model.Name}. Xem nội dung và danh sách tập trên MoonPhim.");
 
-    
     // 2. Chuẩn bị Ảnh (Image)
     var seoImage = (Model.PosterUrl?.StartsWith("http") == true
                    ? Model.PosterUrl
@@ -81,48 +87,19 @@
     @* ===== CANONICAL URL (Tránh duplicate content) ===== *@
 
 
-    @* ===== SCHEMA.ORG JSON-LD (RICH SNIPPETS & BREADCRUMB) ===== *@
-    @{
-        var movieSchema = new Dictionary<string, object?>
-        {
-            ["@context"] = "https://schema.org",
-            ["@type"] = "Movie",
-            ["name"] = Model.Name,
-            ["url"] = seoUrl,
-            ["image"] = seoImage,
-            ["description"] = seoDescription
-        };
-        if (!string.IsNullOrWhiteSpace(Model.OriginalName)) movieSchema["alternateName"] = Model.OriginalName;
-        if (Model.Actors.Any()) movieSchema["actor"] = Model.Actors.Take(10)
-            .Select(a => new Dictionary<string, object> { ["@type"] = "Person", ["name"] = a.Name }).ToArray();
-        if (Model.Directors.Any()) movieSchema["director"] = Model.Directors.Take(5)
-            .Select(d => new Dictionary<string, object> { ["@type"] = "Person", ["name"] = d.Name }).ToArray();
-        if (Model.Categories.Any()) movieSchema["genre"] = Model.Categories.Select(c => c.Name).ToArray();
-        if (Model.Countries.Any()) movieSchema["countryOfOrigin"] = Model.Countries
-            .Select(c => new Dictionary<string, object> { ["@type"] = "Country", ["name"] = c.Name }).ToArray();
-        // Database import dates and picture quality are not movie release dates or age ratings.
-        var schemaJson = System.Text.Json.JsonSerializer.Serialize(movieSchema);
-        var breadcrumbSchema = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
-        {
-            ["@context"] = "https://schema.org",
-            ["@type"] = "BreadcrumbList",
-            ["itemListElement"] = new[]
-            {
-                new { @type = "ListItem", position = 1, name = "Trang chủ", item = "https://moonphim.me/" },
-                new { @type = "ListItem", position = 2, name = Model.Name, item = seoUrl }
-            }.Select(item => new Dictionary<string, object>
-            {
-                ["@type"] = item.type, ["position"] = item.position, ["name"] = item.name, ["item"] = item.item
-            }).ToArray()
-        });
+    @* ===== SCHEMA.ORG JSON-LD (RICH SNIPPETS & BREADCRUMB ĐA TẦNG) ===== *@
+    @if (ViewBag.MovieSchemaJson != null)
+    {
+        @Html.Raw("<script type=\"application/ld+json\">\n" + ViewBag.MovieSchemaJson + "\n</script>")
     }
-    <script type="application/ld+json">
-        @Html.Raw(schemaJson)
-    </script>
-    <script type="application/ld+json">
-        @Html.Raw(breadcrumbSchema)
-    </script>
-
+    @if (ViewBag.EpisodeSchemaJson != null)
+    {
+        @Html.Raw("<script type=\"application/ld+json\">\n" + ViewBag.EpisodeSchemaJson + "\n</script>")
+    }
+    @if (ViewBag.BreadcrumbSchemaJson != null)
+    {
+        @Html.Raw("<script type=\"application/ld+json\">\n" + ViewBag.BreadcrumbSchemaJson + "\n</script>")
+    }
     @* --- KẾT THÚC KHỐI SEO --- *@
 }
 
@@ -132,7 +109,7 @@
 <!-- ✅ THÊM: Data attributes -->
 <div data-movie-id="@Model.MovieId" style="display: none;"></div>
 <!-- ✅ THÊM: Data attributes cho JavaScript -->
-<div data-movie-id="@Model.MovieId" data-episode-number="@ViewBag.CurrentEpisode" style="display: none;"></div>
+<div data-movie-id="@Model.MovieId" data-selected-episode-id="@(selectedEpisodeId?.ToString())" data-episode-movie-name="@Model.Name" data-episode-number="@ViewBag.CurrentEpisode" style="display: none;"></div>
 
 <div class="detail-wrapper">
     <div class="detail-header" style="background-image: url('@bgImage');">
@@ -148,7 +125,7 @@
         </div>
 
             <div class="movie-info">
-                <h1>@Model.Name</h1>
+                <h1>@Model.Name@(selectedEpisodeName is null ? "" : $" - Tập {selectedEpisodeName}")</h1>
                 @if (!string.IsNullOrEmpty(Model.OriginalName))
                 {
                     <p class="original-title">@Model.OriginalName</p>
@@ -242,6 +219,19 @@
     </div>
     *@
 
+    
+    @if (!string.IsNullOrWhiteSpace(ViewBag.SpintaxDescription as string))
+    {
+        <div class="seo-spintax-container container" style="margin-top: 15px; margin-bottom: 20px;">
+            <div class="seo-spintax-box" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-left: 4px solid #e50914; border-radius: 8px; padding: 14px 18px; font-size: 0.95rem; line-height: 1.6; color: #ccc;">
+                <div style="font-weight: 600; color: #fff; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-circle-play" style="color: #e50914;"></i> Thông tin tập phim & Tóm tắt phát sóng
+                </div>
+                <p style="margin: 0;">@ViewBag.SpintaxDescription</p>
+            </div>
+        </div>
+    }
+    
     @if (shouldShowEpisodeList)
     {
         <section class="episode-section container" style="margin-top:25px;">
@@ -282,11 +272,12 @@
                         @{ var isFirstEpInGroup = true; }
                         @foreach (var ep in sortedEpisodes)
                         {
-                            var isEpActive = string.Equals(key, defaultServer, StringComparison.OrdinalIgnoreCase) && isFirstEpInGroup;
-                            <a href="javascript:void(0)"
+                            var isEpActive = string.Equals(key, defaultServer, StringComparison.OrdinalIgnoreCase) && (selectedEpisodeId.HasValue ? ep.EpisodeId == selectedEpisodeId.Value : isFirstEpInGroup);
+                            <a href="@(episodeMinMap.TryGetValue(ep.EpisodeId, out var cInfo) ? SeoUrlHelper.EpisodeUrl(Model.Slug, cInfo.CleanSlug, cInfo.MinId) : $"/phim/{Model.Slug}/tap-{ep.Slug}-{ep.EpisodeId}")"
+                               data-episode-id="@ep.EpisodeId"
                                class="episode-list-item @(isEpActive ? "active" : "")"
                                data-index="@episodeIndex"
-                               data-url="@ep.LinkM3u8"
+                               data-url="@VSMovSource.GetPlaybackUrl(ep.LinkM3u8)"
                                data-episode-name="@ep.EpisodeName">
                                 Tập @ep.EpisodeName
                             </a>
@@ -345,7 +336,7 @@
             <div class="related-grid">
                 @foreach (var movie in relatedMovies)
                 {
-                    <a href="/phim/@movie.Slug" class="related-card">
+                    <a href="@SeoUrlHelper.MovieUrl(movie.Slug, movie.MovieId)" class="related-card">
                         <div class="poster">
                             <img src="@(movie.PosterUrl?.StartsWith("http") == true
                                    ? movie.PosterUrl
@@ -363,6 +354,31 @@
         </section>
     }
 
+    @if (latestMoviesToday?.Any() == true)
+    {
+        <section class="latest-today container" style="margin-top: 30px;">
+            <h3><i class="fa-solid fa-fire" style="color: #facc15;"></i> Phim Mới Cập Nhật Hôm Nay</h3>
+            <div class="related-grid">
+                @foreach (var m in latestMoviesToday)
+                {
+                    <a href="@SeoUrlHelper.MovieUrl(m.Slug, m.MovieId)" class="related-card">
+                        <div class="poster">
+                            <img src="@(m.PosterUrl?.StartsWith("http") == true
+                                   ? m.PosterUrl
+                                   : "https://vsmov.com/storage/images/" + m.PosterUrl)"
+                                 alt="@m.Name" loading="lazy" />
+                            <span class="badge">@(m.EpisodeCurrent ?? m.Quality ?? "HD")</span>
+                        </div>
+                        <div class="info">
+                            <p class="title">@m.Name</p>
+                            <small>@m.Year</small>
+                        </div>
+                    </a>
+                }
+            </div>
+        </section>
+    }
+    
     <section class="comment-section container">
         <h3><i class="fa-solid fa-comments"></i> Bình luận</h3>
 
@@ -442,6 +458,7 @@
     <script src="~/js/favorite-handler.js" asp-append-version="true"></script>
 
     <script>
+        (() => {
         const movieId = @Model.MovieId;
         const isLoggedIn = @Html.Raw(User.Identity.IsAuthenticated.ToString().ToLower());
         @* console.log('Movie ID:', movieId);
@@ -468,11 +485,11 @@
         window.shouldShowAds = @Json.Serialize(shouldShowAds);
         window.isSeriesType = @Json.Serialize(isSeriesMovie);
         window.trailerUrl = "@Html.Raw(Model.Trailer ?? "")";
-        window.movieMainUrl = "@Html.Raw(Model.TrailerUrl ?? "")";
+        window.movieMainUrl = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(VSMovSource.GetPlaybackUrl(Model.TrailerUrl) ?? ""));
         window.episode1Url = "@Html.Raw(episode1Url)";
 
         // ==== 💡 THAY ĐỔI 1: THÊM HÀM SHOWNOTIFICATION VÀO ĐÂY ====
-        function showNotification(message, type = 'info') {
+        window.showNotification = function (message, type = 'info') {
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
             // Style này giống bên Admin
@@ -491,6 +508,9 @@
         }
 
         window.initMovieDetailPage = function () {
+            const page = document.getElementById('videoContainer');
+            if (!page || page.dataset.detailInitialized === 'true') return;
+            page.dataset.detailInitialized = 'true';
             // Tự động lưu thông tin phim đang xem vào bộ nhớ máy (dành cho Tab Đang Xem)
             try {
                 localStorage.setItem('moon_current_watching', JSON.stringify({
@@ -827,5 +847,6 @@
         } else {
             window.initMovieDetailPage();
         }
+        })();
     </script>
 }

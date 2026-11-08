@@ -30,7 +30,7 @@ namespace MovieWeb.Services
                 var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
                 var favorites = await query
-                    .Skip((page - 1) * pageSize)
+                    .Skip((Math.Max(page, 1) - 1) * pageSize)
                     .Take(pageSize)
                     .Select(f => new FavoriteMovieDto
                     {
@@ -40,6 +40,7 @@ namespace MovieWeb.Services
                         Name = f.Movie.Name,
                         OriginalName = f.Movie.OriginalName,
                         PosterUrl = f.Movie.PosterUrl,
+                        ThumbUrl = f.Movie.ThumbUrl,
                         Type = f.Movie.Type,
                         Status = f.Movie.Status,
                         EpisodeCurrent = f.Movie.EpisodeCurrent,

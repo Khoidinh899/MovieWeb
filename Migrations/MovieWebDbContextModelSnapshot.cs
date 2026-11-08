@@ -233,6 +233,69 @@ namespace MovieWeb.Migrations
                     b.ToTable("Actors");
                 });
 
+            modelBuilder.Entity("MovieWeb.Models.Entities.AdminBroadcast", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RecipientCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<bool>("SendPush")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("StyleJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("Url")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "CreatedAt" }, "IX_AdminBroadcasts_CreatedAt");
+
+                    b.ToTable("AdminBroadcasts", (string)null);
+                });
+
             modelBuilder.Entity("MovieWeb.Models.Entities.AdminLog", b =>
                 {
                     b.Property<int>("LogId")
@@ -806,6 +869,9 @@ namespace MovieWeb.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NotificationId"));
 
+                    b.Property<int?>("BroadcastId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("text");
@@ -841,9 +907,55 @@ namespace MovieWeb.Migrations
                     b.HasKey("NotificationId")
                         .HasName("PK__Notifica__20CF2E1229953B40");
 
+                    b.HasIndex(new[] { "BroadcastId" }, "IX_Notifications_BroadcastId");
+
                     b.HasIndex(new[] { "UserId" }, "IX_Notifications_UserId");
 
                     b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("MovieWeb.Models.Entities.NotificationTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("StyleJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("NotificationTemplates", (string)null);
                 });
 
             modelBuilder.Entity("MovieWeb.Models.Entities.Rating", b =>
@@ -926,16 +1038,16 @@ namespace MovieWeb.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("movie_year");
 
-                    b.Property<string>("OphimSlug")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("ophim_slug");
-
                     b.Property<int>("RequestCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(1)
                         .HasColumnName("request_count");
+
+                    b.Property<string>("SourceSlug")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("ophim_slug");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -952,7 +1064,7 @@ namespace MovieWeb.Migrations
 
                     b.HasIndex(new[] { "CreatedAt" }, "IX_RequestsMovie_CreatedAt");
 
-                    b.HasIndex(new[] { "OphimSlug" }, "IX_RequestsMovie_Slug");
+                    b.HasIndex(new[] { "SourceSlug" }, "IX_RequestsMovie_Slug");
 
                     b.HasIndex(new[] { "Status" }, "IX_RequestsMovie_Status");
 
@@ -989,6 +1101,25 @@ namespace MovieWeb.Migrations
                         .IsUnique();
 
                     b.ToTable("Roles", (string)null);
+                });
+
+            modelBuilder.Entity("MovieWeb.Models.Entities.SiteSetting", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("text");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("SiteSettings", (string)null);
                 });
 
             modelBuilder.Entity("MovieWeb.Models.Entities.SubscriptionPlan", b =>
@@ -1186,6 +1317,40 @@ namespace MovieWeb.Migrations
                     b.HasIndex(new[] { "UserId", "Status" }, "IX_Transactions_User_Status");
 
                     b.ToTable("Transactions");
+                });
+
+            modelBuilder.Entity("MovieWeb.Models.Entities.UiFeedback", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Choice")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("UiAtVote")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("UiFeedbacks", (string)null);
                 });
 
             modelBuilder.Entity("MovieWeb.Models.Entities.User", b =>
@@ -1502,6 +1667,36 @@ namespace MovieWeb.Migrations
                     b.HasIndex(new[] { "UserId", "Status" }, "IX_UserSubscriptions_User_Status");
 
                     b.ToTable("UserSubscriptions", (string)null);
+                });
+
+            modelBuilder.Entity("MovieWeb.Models.Entities.UserUiPreference", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<int>("SwitchCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Ui")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("UserUiPreferences", (string)null);
                 });
 
             modelBuilder.Entity("MovieWeb.Models.Entities.WatchHistory", b =>
@@ -1916,11 +2111,18 @@ namespace MovieWeb.Migrations
 
             modelBuilder.Entity("MovieWeb.Models.Entities.Notification", b =>
                 {
+                    b.HasOne("MovieWeb.Models.Entities.AdminBroadcast", "Broadcast")
+                        .WithMany("Notifications")
+                        .HasForeignKey("BroadcastId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("MovieWeb.Models.Entities.User", "User")
                         .WithMany("Notifications")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("FK__Notificat__UserI__1332DBDC");
+
+                    b.Navigation("Broadcast");
 
                     b.Navigation("User");
                 });
@@ -1983,6 +2185,17 @@ namespace MovieWeb.Migrations
                     b.Navigation("UserSubscription");
                 });
 
+            modelBuilder.Entity("MovieWeb.Models.Entities.UiFeedback", b =>
+                {
+                    b.HasOne("MovieWeb.Models.Entities.User", "User")
+                        .WithOne()
+                        .HasForeignKey("MovieWeb.Models.Entities.UiFeedback", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("MovieWeb.Models.Entities.User", b =>
                 {
                     b.HasOne("MovieWeb.Models.Entities.Role", "Role")
@@ -2032,6 +2245,17 @@ namespace MovieWeb.Migrations
                         .HasConstraintName("FK__UserSubscriptions__UserId");
 
                     b.Navigation("SubscriptionPlan");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MovieWeb.Models.Entities.UserUiPreference", b =>
+                {
+                    b.HasOne("MovieWeb.Models.Entities.User", "User")
+                        .WithOne()
+                        .HasForeignKey("MovieWeb.Models.Entities.UserUiPreference", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -2099,6 +2323,11 @@ namespace MovieWeb.Migrations
                     b.Navigation("HostUser");
 
                     b.Navigation("Movie");
+                });
+
+            modelBuilder.Entity("MovieWeb.Models.Entities.AdminBroadcast", b =>
+                {
+                    b.Navigation("Notifications");
                 });
 
             modelBuilder.Entity("MovieWeb.Models.Entities.Comment", b =>

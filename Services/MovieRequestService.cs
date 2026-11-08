@@ -62,19 +62,19 @@ namespace MovieWeb.Services
                     };
                 }
 
-                // ===== KỊCH BẢN 2: CHECK API OPHIM =====
-                var ophimResult = await CheckMovieOnOPhimAsync(movieTitle);
+                // ===== KỊCH BẢN 2: CHECK API VSMOV =====
+                var vsMovResult = await CheckMovieOnVSMovAsync(movieTitle);
 
-                if (ophimResult.Found)
+                if (vsMovResult.Found)
                 {
-                    _logger.LogInformation($"Movie '{movieTitle}' found on OPhim (slug: {ophimResult.Slug})");
+                    _logger.LogInformation($"Movie '{movieTitle}' found on VSMov (slug: {vsMovResult.Slug})");
 
                     // Tạo hoặc cập nhật request
                     var request = await CreateOrUpdateRequestAsync(
                         userId,
                         movieTitle,
                         movieYear,
-                        ophimResult.Slug,
+                        vsMovResult.Slug,
                         RequestStatus.Pending, // "Chờ đồng bộ"
                         conversationLog
                     );
@@ -155,7 +155,7 @@ namespace MovieWeb.Services
             return await query.OrderByDescending(m => m.Year == movieYear).FirstOrDefaultAsync();
         }
 
-        private async Task<OPhimSearchResult> CheckMovieOnOPhimAsync(string movieTitle)
+        private async Task<VSMovSearchResult> CheckMovieOnVSMovAsync(string movieTitle)
         {
             try
             {
@@ -164,7 +164,7 @@ namespace MovieWeb.Services
                 if (searchResult?.Items != null && searchResult.Items.Count > 0)
                 {
                     var firstMovie = searchResult.Items.First();
-                    return new OPhimSearchResult
+                    return new VSMovSearchResult
                     {
                         Found = true,
                         Slug = firstMovie.Slug,
@@ -172,16 +172,16 @@ namespace MovieWeb.Services
                     };
                 }
 
-                return new OPhimSearchResult { Found = false };
+                return new VSMovSearchResult { Found = false };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error searching movie on VSMov: {movieTitle}");
-                return new OPhimSearchResult { Found = false };
+                return new VSMovSearchResult { Found = false };
             }
         }
 
-        private async Task<RequestsMovie> CreateOrUpdateRequestAsync(int userId, string movieTitle, int? movieYear, string? ophimSlug, string status, string conversationLog)
+        private async Task<RequestsMovie> CreateOrUpdateRequestAsync(int userId, string movieTitle, int? movieYear, string? sourceSlug, string status, string conversationLog)
         {
             // Kiểm tra xem đã có request tương tự chưa
             var existingRequest = await _context.RequestsMovies
@@ -198,7 +198,7 @@ namespace MovieWeb.Services
                 // Cập nhật request hiện có
                 existingRequest.RequestCount++;
                 existingRequest.Status = status;
-                existingRequest.OphimSlug = ophimSlug ?? existingRequest.OphimSlug;
+                existingRequest.SourceSlug = sourceSlug ?? existingRequest.SourceSlug;
                 existingRequest.ConversationLog = conversationLog;
 
                 // Kiểm tra user đã request chưa
@@ -229,7 +229,7 @@ namespace MovieWeb.Services
             {
                 MovieTitle = movieTitle,
                 MovieYear = movieYear,
-                OphimSlug = ophimSlug,
+                SourceSlug = sourceSlug,
                 RequestCount = 1,
                 Status = status,
                 ConversationLog = conversationLog,
@@ -306,7 +306,7 @@ namespace MovieWeb.Services
         ManualVerification  // Kịch bản 3 & 4: Cần xác minh
     }
 
-    public class OPhimSearchResult
+    public class VSMovSearchResult
     {
         public bool Found { get; set; }
         public string? Slug { get; set; }

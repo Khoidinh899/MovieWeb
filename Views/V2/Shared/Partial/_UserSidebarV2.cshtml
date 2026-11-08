@@ -1,0 +1,75 @@
+@* Cột trái trang cá nhân V2 (Stitch): thẻ avatar + điều hướng. Dùng chung cho Profile/Edit/ChangePassword/Notifications/Favorite/History/PaymentsHistory.
+   Giữ id profileAvatar và onclick openAvatarModal() (profile.js). Model: (avatar, họ tên, username, tên vai trò, loại gói, isAdmin). *@
+@model (string? Avatar, string FullName, string Username, string RoleName, string? SubscriptionType, bool IsAdmin)
+@{
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    (string Href, string Icon, string Label, string Action)[] items =
+    {
+        ("/user/profile", "person", "Thông tin cá nhân", "Profile"),
+        ("/user/edit", "edit", "Chỉnh sửa thông tin", "Edit"),
+        ("/user/change-password", "key", "Đổi mật khẩu", "ChangePassword"),
+        ("/user/notifications", "notifications", "Thông báo", "Notifications"),
+        ("/user/favorite", "favorite", "Yêu thích", "Favorite"),
+        ("/user/history", "history", "Lịch sử xem", "History"),
+        ("/user/payment-history", "credit_card", "Lịch sử thanh toán", "PaymentHistory"),
+    };
+    var sub = (Model.SubscriptionType ?? "free").ToLowerInvariant();
+}
+<aside class="flex flex-col gap-space-md">
+    <div class="rounded-xl bg-gradient-to-b from-surface-container to-surface-container-low p-space-lg text-center shadow-xl">
+        <div class="relative mx-auto mb-space-sm h-24 w-24">
+            <img src="@(string.IsNullOrEmpty(Model.Avatar) ? "/images/nouser.png" : Model.Avatar)" alt="Avatar" id="profileAvatar"
+                 class="h-24 w-24 rounded-full object-cover ring-2 ring-primary-container/60"
+                 onerror="this.onerror=null; this.src='/images/nouser.png';" />
+            <button type="button" onclick="openAvatarModal()" aria-label="Đổi ảnh đại diện"
+                    class="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-lg transition-transform hover:scale-110 ">
+                <span class="material-symbols-outlined text-[16px]">photo_camera</span>
+            </button>
+        </div>
+        <h2 class="font-headline-md text-headline-md text-on-surface">@Model.FullName</h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">@@@Model.Username</p>
+        <div class="mt-space-sm flex flex-wrap items-center justify-center gap-space-xs">
+            <span class="rounded-full px-space-sm py-0.5 font-label-sm text-label-sm font-bold @(Model.IsAdmin ? "bg-error-container text-on-error-container" : "bg-surface-container-high text-on-surface-variant")">@Model.RoleName</span>
+            @if (sub == "premium")
+            {
+                <span class="rounded-full bg-secondary px-space-sm py-0.5 font-label-sm text-label-sm font-bold uppercase text-on-secondary">MoonPro</span>
+            }
+            else if (sub == "student")
+            {
+                <span class="rounded-full bg-primary px-space-sm py-0.5 font-label-sm text-label-sm font-bold uppercase text-on-primary">MoonStu</span>
+            }
+            else
+            {
+                <span class="rounded-full bg-surface-container-highest px-space-sm py-0.5 font-label-sm text-label-sm font-bold uppercase text-secondary">Free</span>
+            }
+        </div>
+    </div>
+
+    <nav class="flex flex-col gap-1 rounded-xl bg-surface-container-low p-space-sm shadow-sm" aria-label="Menu tài khoản">
+        @foreach (var it in items)
+        {
+            var active = action == it.Action;
+            <a href="@it.Href" @(active ? "aria-current=page" : "")
+               class="flex items-center gap-space-sm rounded-lg px-space-md py-space-sm font-label-md text-label-md transition-colors @(active ? "bg-primary-container text-on-primary-container" : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface")">
+                <span class="material-symbols-outlined text-[20px]">@it.Icon</span> @it.Label
+            </a>
+        }
+        @if (MovieWeb.Helpers.UiVersion.GetRolloutMode(Context) != "off")
+        {
+            var activeInterface = action == "Interface";
+            <a href="/user/giao-dien" @(activeInterface ? "aria-current=page" : "")
+               class="flex items-center gap-space-sm rounded-lg px-space-md py-space-sm font-label-md text-label-md transition-colors @(activeInterface ? "bg-primary-container text-on-primary-container" : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface")">
+                <span class="material-symbols-outlined text-[20px]">palette</span> Giao diện
+            </a>
+            <div class="px-space-md pt-space-xs mt-1 border-t border-surface-container-high/60">
+                <form action="/user/giao-dien" method="post" class="inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ui" value="v1" />
+                    <button type="submit" class="text-xs text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1 py-1">
+                        <span class="material-symbols-outlined text-[15px]">undo</span> Quay lại giao diện cũ
+                    </button>
+                </form>
+            </div>
+        }
+    </nav>
+</aside>

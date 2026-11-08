@@ -1,0 +1,80 @@
+﻿@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="monetag" content="1bd43555dd0c57f4ee0258b218db6891">
+
+    <!-- Web App & PWA iOS Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MoonPhim" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="MoonPhim" />
+    <meta name="theme-color" content="#0a0e27" />
+
+    <!-- Google AdSense Auto Ads Script -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8229451063311920"
+            crossorigin="anonymous"></script>
+
+
+    <title>@ViewData["Title"] - MoonPhim</title>
+    <!-- Resource Preconnect & DNS-Prefetch for Fast Asset Loading -->
+    <link rel="preconnect" href="https://vsmov.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
+    <link rel="dns-prefetch" href="https://challenges.cloudflare.com">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="~/images/apple-touch-icon.png" asp-append-version="true">
+    <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png" asp-append-version="true">
+    <link rel="icon" type="image/png" sizes="32x32" href="~/favicon-32x32.png" asp-append-version="true">
+    <link rel="icon" type="image/png" sizes="16x16" href="~/favicon-16x16.png" asp-append-version="true">
+    <link rel="manifest" href="~/manifest.json" asp-append-version="true">
+    <link rel="manifest" href="~/site.webmanifest" asp-append-version="true">
+
+    @* ===== V2 STYLES (Tailwind build: ClientApp-v2 -> wwwroot/v2/css/v2.css). Không nạp Bootstrap/CSS V1. ===== *@
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/v2/css/v2.css" asp-append-version="true" />
+    @* Mobile tab bar keeps the V1 design: reuse its V1 stylesheet + Bootstrap Icons (as in V1) *@
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="~/css/mobile-bottom-nav.css" asp-append-version="true" />
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+
+<body class="v2 bg-background text-on-background font-body antialiased"
+    data-is-premium="@(ViewBag.IsPremium ?? false).ToString().ToLower()"
+    data-is-series-type="@(ViewBag.IsSeriesType ?? false).ToString().ToLower()"
+    data-user-logged-in="@User.Identity.IsAuthenticated.ToString().ToLower()">
+
+    @{
+        var token = antiforgery.GetAndStoreTokens(Context).RequestToken;
+    }
+    <input type="hidden" id="RequestVerificationToken" value="@token" />
+
+    @* Layout trang pháp lý V2: head quảng cáo/SEO chép từ Views/Shared/_UserLayout.cshtml (AdSense + monetag meta, KHÔNG có script Monetag, không canonical/keywords) *@
+    @await Html.PartialAsync("Partial/_HeaderV2")
+
+    <main role="main" id="v2-main">
+        @RenderBody()
+    </main>
+
+    @await Html.PartialAsync("Partial/_FooterV2")
+    @await Html.PartialAsync("Partial/_MobileBottomNavV2")
+
+    @* Bootstrap JS only (no Bootstrap CSS): keeps V1 scripts working; state classes styled in ClientApp-v2/src/v2.css *@
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/v2/js/v2.js" asp-append-version="true"></script>
+    <script src="~/v2/js/mobile-nav-v2.js" asp-append-version="true"></script>
+    @* Add V1 scripts here as their markup is ported (same ids): auth.js, search.js, notification.js, chatbot.js... *@
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+
+</html>
