@@ -389,18 +389,6 @@
             </div>
         }
 
-        
-        @if (!string.IsNullOrWhiteSpace(ViewBag.SpintaxDescription as string))
-        {
-            <div class="mb-space-lg rounded-2xl border border-outline-variant/30 bg-surface-container/40 p-space-md text-[14px] leading-relaxed text-on-surface-variant backdrop-blur-md">
-                <div class="mb-space-xs flex items-center gap-2 font-semibold text-primary">
-                    <span class="material-symbols-outlined text-[20px]">smart_display</span>
-                    <span>Thông tin tập phim & Tóm tắt phát sóng</span>
-                </div>
-                <p class="m-0">@ViewBag.SpintaxDescription</p>
-            </div>
-        }
-    
         @if (shouldShowEpisodeList)
         {
             <div class="mb-space-xl">
