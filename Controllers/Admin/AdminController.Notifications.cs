@@ -199,22 +199,30 @@ namespace MovieWeb.Controllers
 
             var users = await _context.Users
                 .AsNoTracking()
+                // FullName là [NotMapped] (FirstName + LastName) nên không dịch sang SQL được: lọc trên từng cột.
                 .Where(u => u.IsActive != false &&
                            (EF.Functions.ILike(u.UserName!, $"%{q}%") ||
                             EF.Functions.ILike(u.Email!, $"%{q}%") ||
-                            EF.Functions.ILike(u.FullName!, $"%{q}%")))
+                            EF.Functions.ILike(u.FirstName ?? "", $"%{q}%") ||
+                            EF.Functions.ILike(u.LastName ?? "", $"%{q}%") ||
+                            EF.Functions.ILike((u.FirstName ?? "") + " " + (u.LastName ?? ""), $"%{q}%")))
+                .OrderBy(u => u.UserName)
                 .Take(20)
-                .Select(u => new
+                .Select(u => new { u.Id, u.UserName, u.FirstName, u.LastName, u.Email, u.Avatar })
+                .ToListAsync();
+
+            return Json(users.Select(u =>
+            {
+                var fullName = $"{u.FirstName} {u.LastName}".Trim();
+                return new
                 {
                     id = u.Id,
                     username = u.UserName,
-                    fullName = u.FullName ?? u.UserName,
+                    fullName = string.IsNullOrEmpty(fullName) ? u.UserName : fullName,
                     email = u.Email,
                     avatar = u.Avatar ?? "/images/nouser.png"
-                })
-                .ToListAsync();
-
-            return Json(users);
+                };
+            }));
         }
 
         // --- IMAGE UPLOAD ---
