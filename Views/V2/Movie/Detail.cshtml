@@ -138,7 +138,7 @@
     <!-- Hero -->
     <section class="relative w-full overflow-hidden bg-surface-container-lowest">
         <div class="absolute inset-0 z-0">
-            <div class="h-full w-full scale-105 bg-cover bg-center opacity-40" style="background-image: url('@MovieWeb.Helpers.ImageHelper.Webp(bgImage, 1280)');"></div>
+            <div class="h-full w-full scale-105 bg-cover bg-center opacity-40" style="background-image: url('@bgImage');"></div>
             <div class="absolute inset-0 bg-gradient-to-t from-surface via-surface/85 to-transparent"></div>
             <div class="absolute inset-0 bg-gradient-to-r from-surface via-surface/75 to-transparent"></div>
             <div class="pointer-events-none absolute -top-32 right-1/4 h-96 w-96 rounded-full bg-primary-container/20 blur-3xl"></div>
@@ -323,7 +323,7 @@
     <section class="w-full px-margin-mobile py-space-xl md:px-margin" id="xem-ngay">
         <div id="playerFrame" class="relative mx-auto mb-space-lg w-full max-w-[min(1200px,calc((100svh-140px)*1.7778))] overflow-hidden rounded-xl bg-surface-container-lowest shadow-2xl">
             <div id="playerPlaceholder" class="relative flex aspect-video w-full items-center justify-center">
-                <div class="absolute inset-0 bg-cover bg-center brightness-90" style="background-image: url('@MovieWeb.Helpers.ImageHelper.Webp(bgImage, 1280)');"></div>
+                <div class="absolute inset-0 bg-cover bg-center brightness-90" style="background-image: url('@bgImage');"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-surface-dim via-transparent to-surface-dim/40"></div>
                 <div class="relative z-10 flex flex-col items-center gap-space-sm text-center">
                     <button type="button" id="placeholderPlay" aria-label="Phát phim" class="v2-btn-3d v2-btn-3d--primary v2-btn-3d--icon h-20 w-20">
