@@ -482,7 +482,7 @@ namespace MovieWeb.Controllers
             };
 
             ViewBag.UserProfile = userProfile;
-            return View("Interface", model);
+            return View("~/Views/User/Interface.cshtml", model);
         }
 
         [HttpPost("giao-dien")]
