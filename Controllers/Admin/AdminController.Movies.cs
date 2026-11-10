@@ -442,9 +442,36 @@ namespace MovieWeb.Controllers
                     return Json(new { success = false, message = "Không tìm thấy phim" });
                 }
 
+                model.Slug = (model.Slug ?? "").Trim().ToLowerInvariant();
+                if (!System.Text.RegularExpressions.Regex.IsMatch(model.Slug, "^[a-z0-9]+(-[a-z0-9]+)*$") || model.Slug.Length > 200)
+                {
+                    return Json(new { success = false, message = "Đường dẫn URL chỉ gồm chữ thường không dấu, số và dấu gạch ngang (vd: ten-phim-2024)" });
+                }
+
                 if (await _context.Movies.AnyAsync(m => m.Slug == model.Slug && m.MovieId != model.MovieId))
                 {
                     return Json(new { success = false, message = "Slug đã được sử dụng bởi phim khác" });
+                }
+
+                // ==== ĐỔI ĐƯỜNG DẪN URL (SLUG) ====
+                var oldSlug = movie.Slug;
+                var slugChanged = !string.Equals(oldSlug, model.Slug, StringComparison.Ordinal);
+                if (slugChanged)
+                {
+                    // Giữ slug nguồn VSMov để đồng bộ tập vẫn tìm đúng phim (không tạo phim trùng).
+                    movie.SourceSlug ??= oldSlug;
+                    if (movie.SourceSlug == model.Slug) movie.SourceSlug = null; // đổi về đúng slug gốc
+
+                    // /phim/{slug cũ} → 301 sang slug mới.
+                    var existingRedirect = await _context.MovieSlugRedirects.FindAsync(oldSlug);
+                    if (existingRedirect == null)
+                        _context.MovieSlugRedirects.Add(new MovieWeb.Models.Entities.MovieSlugRedirect { OldSlug = oldSlug, MovieId = movie.MovieId, CreatedAt = DateTime.UtcNow });
+                    else
+                        existingRedirect.MovieId = movie.MovieId;
+
+                    // Slug mới không còn là URL "cũ" của ai (tránh vòng chuyển hướng).
+                    var claimed = await _context.MovieSlugRedirects.FindAsync(model.Slug);
+                    if (claimed != null) _context.MovieSlugRedirects.Remove(claimed);
                 }
 
                 // ==== LƯU LẠI APIID CŨ ====
@@ -615,6 +642,12 @@ namespace MovieWeb.Controllers
                         service => service.SyncMovieFromApiBySlug(movie.ApiId, movie.MovieId));
                 }
                 // ==== KẾT THÚC ====
+
+                if (slugChanged)
+                {
+                    foreach (var key in new[] { $"movie_detail_{oldSlug}", $"movie_detail_{model.Slug}", "sitemap_xml", "sitemap_index_xml" })
+                        _cache.Remove(key);
+                }
 
                 await LogAdminActionAsync("UPDATE_MOVIE", $"Updated movie: {movie.Name}", movie.MovieId.ToString());
                 _logger.LogInformation("Admin updated movie: {MovieName}", movie.Name);

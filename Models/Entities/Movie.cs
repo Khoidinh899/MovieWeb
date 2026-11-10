@@ -11,6 +11,9 @@ public partial class Movie
 
     public string Slug { get; set; } = null!;
 
+    /// <summary>Slug gốc bên VSMov khi admin đã đổi URL (Slug). Null = Slug chính là slug nguồn. Dùng cho đồng bộ tập phim.</summary>
+    public string? SourceSlug { get; set; }
+
     public string Name { get; set; } = null!;
 
     public string? OriginalName { get; set; }

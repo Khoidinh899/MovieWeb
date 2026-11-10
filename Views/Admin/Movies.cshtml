@@ -442,9 +442,13 @@
 
                         <!-- Slug -->
                         <div class="col-md-6">
-                            <label class="form-label">Slug <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="slug" name="Slug" required>
-                            <small class="text-muted">URL thân thiện (vd: phim-hay-2025)</small>
+                            <label class="form-label">Đường dẫn URL (slug) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">/phim/</span>
+                                <input type="text" class="form-control" id="slug" name="Slug" required pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="200"
+                                       onblur="this.value = generateSlug(this.value)">
+                            </div>
+                            <small class="text-muted">Chữ thường không dấu, số, gạch ngang (vd: phim-hay-2025). Đổi URL thì link cũ tự chuyển hướng 301 sang link mới.</small>
                         </div>
 
                         <!-- Năm -->

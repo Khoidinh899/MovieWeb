@@ -49,7 +49,16 @@ namespace MovieWeb.Controllers.API
             var sourceMovieId = await _context.Movies.AsNoTracking()
                 .Where(m => m.Slug == slug && m.IsActive == true)
                 .Select(m => (int?)m.MovieId).SingleOrDefaultAsync();
-            if (sourceMovieId is null) return NotFound();
+            if (sourceMovieId is null)
+            {
+                // Slug cũ sau khi admin đổi URL phim: app mobile vẫn mở được phim (dữ liệu trả về mang slug mới).
+                var renamedTo = await _context.MovieSlugRedirects.AsNoTracking()
+                    .Where(r => r.OldSlug == slug && r.Movie.IsActive == true)
+                    .Select(r => new { r.Movie.Slug, r.MovieId }).FirstOrDefaultAsync();
+                if (renamedTo is null) return NotFound();
+                slug = renamedTo.Slug;
+                sourceMovieId = renamedTo.MovieId;
+            }
             await _movieSync.EnsureVSMovEpisodesAsync(sourceMovieId.Value);
 
             // Fetch movie with all relations

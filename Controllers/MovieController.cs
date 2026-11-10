@@ -69,7 +69,19 @@ namespace MovieWeb.Controllers
             }
 
             if (movie == null)
+            {
+                // URL cũ sau khi admin đổi slug phim → 301 sang URL mới (giữ thứ hạng Google, link chia sẻ cũ vẫn chạy).
+                var renamedTo = await _context.MovieSlugRedirects.AsNoTracking()
+                    .Where(r => r.OldSlug == slug && (r.Movie.IsActive ?? false))
+                    .Select(r => r.Movie.Slug).FirstOrDefaultAsync();
+                if (renamedTo != null)
+                {
+                    var target = string.IsNullOrEmpty(episodeSlug) ? $"/phim/{renamedTo}" : $"/phim/{renamedTo}/{episodeSlug}";
+                    Response.Headers.Append("Cache-Control", "public, max-age=86400");
+                    return RedirectPermanent(target + Request.QueryString);
+                }
                 return NotFound();
+            }
 
             await _movieSync.EnsureVSMovEpisodesAsync(movie.MovieId);
 

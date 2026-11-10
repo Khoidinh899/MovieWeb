@@ -119,7 +119,7 @@ namespace MovieWeb.Jobs
                 // Tìm lại phim trong DB (vì MovieSyncService vừa thêm nó vào)
                 var movieInDb = await _context.Movies
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(m => m.Slug == request.SourceSlug);
+                    .FirstOrDefaultAsync(m => m.SourceSlug == request.SourceSlug || (m.SourceSlug == null && m.Slug == request.SourceSlug));
 
                 if (movieInDb != null)
                 {

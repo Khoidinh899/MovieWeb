@@ -28,6 +28,7 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
     public virtual DbSet<Director> Directors { get; set; }
     public virtual DbSet<Favorite> Favorites { get; set; }
     public virtual DbSet<Movie> Movies { get; set; }
+    public virtual DbSet<MovieSlugRedirect> MovieSlugRedirects { get; set; }
     public virtual DbSet<Episode> Episodes { get; set; }
     public virtual DbSet<Notification> Notifications { get; set; }
     
@@ -391,6 +392,8 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
             entity.HasKey(e => e.MovieId).HasName("PK__Movies__4BD2941AB82DFE56");
             entity.HasIndex(e => e.Rating, "IX_Movies_Rating").IsDescending();
             entity.HasIndex(e => e.Slug, "IX_Movies_Slug");
+            entity.Property(e => e.SourceSlug).HasMaxLength(255);
+            entity.HasIndex(e => e.SourceSlug, "IX_Movies_SourceSlug");
             entity.HasIndex(e => e.Type, "IX_Movies_Type");
             entity.HasIndex(e => e.ViewCount, "IX_Movies_ViewCount").IsDescending();
             entity.HasIndex(e => e.Year, "IX_Movies_Year");
@@ -621,6 +624,18 @@ public partial class MovieWebDbContext : IdentityDbContext<User, Role, int,
         });
 
         // ===== Đợt 6: USER UI PREFERENCES =====
+        modelBuilder.Entity<MovieSlugRedirect>(entity =>
+        {
+            entity.ToTable("MovieSlugRedirects");
+            entity.HasKey(e => e.OldSlug);
+            entity.Property(e => e.OldSlug).HasMaxLength(255);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            entity.HasIndex(e => e.MovieId);
+            entity.HasOne(d => d.Movie).WithMany()
+                .HasForeignKey(d => d.MovieId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<WebPushSubscription>(entity =>
         {
             entity.ToTable("WebPushSubscriptions");

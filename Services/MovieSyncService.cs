@@ -38,8 +38,9 @@ public sealed class MovieSyncService(
         var sources = await context.Episodes.Where(e => e.MovieId == movieId)
             .Select(e => e.LinkM3u8).ToListAsync();
         if (sources.Any(VSMovSource.IsSupported) && sources.Where(s => s is not null).All(VSMovSource.IsSupported)) return;
+        // Slug nguồn VSMov: khác Slug khi admin đã đổi URL phim.
         var slug = await context.Movies.Where(m => m.MovieId == movieId)
-            .Select(m => m.Slug).SingleOrDefaultAsync();
+            .Select(m => m.SourceSlug ?? m.Slug).SingleOrDefaultAsync();
         if (!string.IsNullOrWhiteSpace(slug)) await SyncAsync(slug, movieId);
     }
 
@@ -84,7 +85,7 @@ public sealed class MovieSyncService(
     {
         var slugs = await context.Movies.Where(m => m.IsActive == true &&
             (series ? m.Type == "series" || m.Type == "hoathinh" : m.Type != "series" && m.Type != "hoathinh"))
-            .OrderBy(m => m.MovieId).Select(m => m.Slug).ToListAsync();
+            .OrderBy(m => m.MovieId).Select(m => m.SourceSlug ?? m.Slug).ToListAsync();
         foreach (var slug in slugs) await SyncAsync(slug);
     }
 
@@ -134,8 +135,16 @@ public sealed class MovieSyncService(
         {
         var movie = await context.Movies.Include(m => m.Episodes).Include(m => m.Categories)
             .Include(m => m.Countries).Include(m => m.Actors).Include(m => m.Directors)
-            .SingleOrDefaultAsync(m => movieId.HasValue ? m.MovieId == movieId : m.Slug == slug);
+            .SingleOrDefaultAsync(m => movieId.HasValue ? m.MovieId == movieId
+                : m.SourceSlug == slug || (m.SourceSlug == null && m.Slug == slug));
         var isNew = movie is null;
+        // Slug nguồn mới trùng URL mà admin đã đặt cho một phim khác: không tạo phim (Slug là duy nhất).
+        if (isNew && await context.Movies.AnyAsync(m => m.Slug == (detail.Slug ?? slug)))
+        {
+            logger.LogWarning("Skip creating VSMov movie {Slug}: slug is used as a custom URL by another movie", detail.Slug ?? slug);
+            await transaction.RollbackAsync();
+            return (null, false);
+        }
         movie ??= new DbMovie { Slug = detail.Slug ?? slug, IsActive = true, CreatedAt = DateTime.Now };
         if (isNew) context.Movies.Add(movie);
 

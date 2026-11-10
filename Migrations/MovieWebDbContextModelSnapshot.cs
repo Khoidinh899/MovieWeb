@@ -804,6 +804,10 @@ namespace MovieWeb.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("SourceSlug")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
                     b.Property<string>("Status")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
@@ -848,6 +852,8 @@ namespace MovieWeb.Migrations
 
                     b.HasIndex(new[] { "Slug" }, "IX_Movies_Slug");
 
+                    b.HasIndex(new[] { "SourceSlug" }, "IX_Movies_SourceSlug");
+
                     b.HasIndex(new[] { "Type" }, "IX_Movies_Type");
 
                     b.HasIndex(new[] { "ViewCount" }, "IX_Movies_ViewCount")
@@ -859,6 +865,27 @@ namespace MovieWeb.Migrations
                         .IsUnique();
 
                     b.ToTable("Movies");
+                });
+
+            modelBuilder.Entity("MovieWeb.Models.Entities.MovieSlugRedirect", b =>
+                {
+                    b.Property<string>("OldSlug")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<int>("MovieId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("OldSlug");
+
+                    b.HasIndex("MovieId");
+
+                    b.ToTable("MovieSlugRedirects", (string)null);
                 });
 
             modelBuilder.Entity("MovieWeb.Models.Entities.Notification", b =>
@@ -2155,6 +2182,17 @@ namespace MovieWeb.Migrations
                     b.Navigation("Movie");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MovieWeb.Models.Entities.MovieSlugRedirect", b =>
+                {
+                    b.HasOne("MovieWeb.Models.Entities.Movie", "Movie")
+                        .WithMany()
+                        .HasForeignKey("MovieId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Movie");
                 });
 
             modelBuilder.Entity("MovieWeb.Models.Entities.Notification", b =>
