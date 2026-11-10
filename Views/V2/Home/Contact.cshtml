@@ -21,9 +21,9 @@
         <section>
             <h2 class="mb-space-md flex items-center gap-space-xs font-headline-md text-headline-md font-bold text-on-surface"><span class="material-symbols-outlined text-primary">chat</span> Thông tin liên hệ</h2>
             <div class="flex flex-col gap-space-sm">
-                <a href="mailto:contact@moonphim.com" class="@itemCls">
+                <a href="mailto:contact@moonphim.me" class="@itemCls">
                     <span class="material-symbols-outlined flex h-11 w-11 items-center justify-center rounded-lg bg-surface-container-high text-primary">mail</span>
-                    <div><div class="font-label-sm text-label-sm text-on-surface-variant">Email</div><div class="font-bold text-on-surface">contact@moonphim.com</div></div>
+                    <div><div class="font-label-sm text-label-sm text-on-surface-variant">Email</div><div class="font-bold text-on-surface">contact@moonphim.me</div></div>
                 </a>
                 <a href="https://t.me/moonphim_support" target="_blank" rel="noopener noreferrer" class="@itemCls">
                     <span class="material-symbols-outlined flex h-11 w-11 items-center justify-center rounded-lg bg-surface-container-high text-primary">send</span>
@@ -38,10 +38,12 @@
 
         <section>
             <h2 class="mb-space-md flex items-center gap-space-xs font-headline-md text-headline-md font-bold text-on-surface"><span class="material-symbols-outlined text-primary">edit_square</span> Gửi tin nhắn nhanh</h2>
-            <form id="quickContactForm" class="flex flex-col gap-space-sm rounded-xl bg-surface-container-low p-space-lg">
-                <input type="text" placeholder="Họ tên của bạn" required class="w-full rounded-lg border-0 bg-surface-container px-space-md py-2.5 text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary" />
-                <input type="email" placeholder="Email liên hệ" required class="w-full rounded-lg border-0 bg-surface-container px-space-md py-2.5 text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary" />
-                <textarea rows="4" placeholder="Nội dung tin nhắn..." required class="w-full rounded-lg border-0 bg-surface-container px-space-md py-2.5 text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary"></textarea>
+            <form id="quickContactForm" method="post" action="/contact/send" class="flex flex-col gap-space-sm rounded-xl bg-surface-container-low p-space-lg">
+                @Html.AntiForgeryToken()
+                <input type="text" name="Website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+                <input type="text" name="Name" maxlength="100" placeholder="Họ tên của bạn" required class="w-full rounded-lg border-0 bg-surface-container px-space-md py-2.5 text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary" />
+                <input type="email" name="Email" maxlength="200" placeholder="Email liên hệ" required class="w-full rounded-lg border-0 bg-surface-container px-space-md py-2.5 text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary" />
+                <textarea rows="4" name="Message" maxlength="3000" placeholder="Nội dung tin nhắn..." required class="w-full rounded-lg border-0 bg-surface-container px-space-md py-2.5 text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary"></textarea>
                 <button type="submit" class="px-space-lg py-space-sm font-label-md text-label-md font-bold v2-btn-3d v2-btn-3d--primary">Gửi tin nhắn ngay</button>
             </form>
         </section>
@@ -53,10 +55,4 @@
     </section>
 </div>
 
-<script>
-    document.getElementById('quickContactForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        alert('Cảm ơn bạn! Tin nhắn của bạn đã được gửi đi. Chúng tôi sẽ phản hồi sớm nhất có thể.');
-        this.reset();
-    });
-</script>
+<script src="~/js/contact-form.js" asp-append-version="true"></script>

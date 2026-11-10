@@ -21,13 +21,13 @@
                         <div class="col-md-6">
                             <h2 class="info-section-title"><i class="bi bi-chat-dots"></i> Thông tin liên hệ</h2>
                             
-                            <a href="mailto:contact@moonphim.com" class="contact-item">
+                            <a href="mailto:contact@moonphim.me" class="contact-item">
                                 <div class="contact-icon">
                                     <i class="bi bi-envelope-fill"></i>
                                 </div>
                                 <div>
                                     <div class="info-label">Email</div>
-                                    <div class="fw-bold">contact@moonphim.com</div>
+                                    <div class="fw-bold">contact@moonphim.me</div>
                                 </div>
                             </a>
 
@@ -54,15 +54,17 @@
 
                         <div class="col-md-6">
                             <h2 class="info-section-title"><i class="bi bi-pencil-square"></i> Gửi tin nhắn nhanh</h2>
-                            <form id="quickContactForm">
+                            <form id="quickContactForm" method="post" action="/contact/send">
+                @Html.AntiForgeryToken()
+                <input type="text" name="Website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
                                 <div class="mb-3">
-                                    <input type="text" class="form-control bg-dark border-secondary text-white" placeholder="Họ tên của bạn" required>
+                                    <input type="text" class="form-control bg-dark border-secondary text-white" name="Name" maxlength="100" placeholder="Họ tên của bạn" required>
                                 </div>
                                 <div class="mb-3">
-                                    <input type="email" class="form-control bg-dark border-secondary text-white" placeholder="Email liên hệ" required>
+                                    <input type="email" class="form-control bg-dark border-secondary text-white" name="Email" maxlength="200" placeholder="Email liên hệ" required>
                                 </div>
                                 <div class="mb-3">
-                                    <textarea class="form-control bg-dark border-secondary text-white" rows="4" placeholder="Nội dung tin nhắn..." required></textarea>
+                                    <textarea class="form-control bg-dark border-secondary text-white" rows="4" name="Message" maxlength="3000" placeholder="Nội dung tin nhắn..." required></textarea>
                                 </div>
                                 <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" style="background: #38bdf8; border: none; color: #0f172a;">
                                     Gửi tin nhắn ngay
@@ -83,10 +85,4 @@
     </div>
 </div>
 
-<script>
-    document.getElementById('quickContactForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        alert('Cảm ơn bạn! Tin nhắn của bạn đã được gửi đi. Chúng tôi sẽ phản hồi sớm nhất có thể.');
-        this.reset();
-    });
-</script>
+<script src="~/js/contact-form.js" asp-append-version="true"></script>
