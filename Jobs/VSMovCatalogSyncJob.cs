@@ -1,4 +1,5 @@
 // Jobs/VSMovCatalogSyncJob.cs
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MovieWeb.Services;
 using System;
@@ -16,17 +17,23 @@ namespace MovieWeb.Jobs
         private readonly IMovieSyncService _movieSyncService;
         private readonly IMemoryCache _cache;
         private readonly ILogger<VSMovCatalogSyncJob> _logger;
+        private readonly MovieWeb.Services.Interfaces.IIndexNowService _indexNow;
+        private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _env;
 
         public VSMovCatalogSyncJob(
             IVSMovService vsMovService,
             IMovieSyncService movieSyncService,
             IMemoryCache cache,
-            ILogger<VSMovCatalogSyncJob> logger)
+            ILogger<VSMovCatalogSyncJob> logger,
+            MovieWeb.Services.Interfaces.IIndexNowService indexNow,
+            Microsoft.AspNetCore.Hosting.IWebHostEnvironment env)
         {
             _vsMovService = vsMovService;
             _movieSyncService = movieSyncService;
             _cache = cache;
             _logger = logger;
+            _indexNow = indexNow;
+            _env = env;
         }
 
         [AutomaticRetry(Attempts = 3)]
@@ -42,6 +49,8 @@ namespace MovieWeb.Jobs
             int totalProcessed = 0;
             int consecutiveAlreadyUpToDate = 0;
             bool stopSyncEarly = false;
+            // URL phim vừa thêm/cập nhật tập: gửi IndexNow (Bing, Yandex…) để được thu thập sớm.
+            var changedMovieUrls = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
 
             for (int page = 1; page <= maxPages; page++)
             {
@@ -71,6 +80,8 @@ namespace MovieWeb.Jobs
 
                             if (wasUpdatedOrAdded)
                             {
+                                if (movie != null && (movie.IsActive ?? false))
+                                    changedMovieUrls.Add("https://moonphim.me" + MovieWeb.Helpers.SeoUrlHelper.MovieUrl(movie.Slug, movie.MovieId));
                                 consecutiveAlreadyUpToDate = 0; // Reset đếm trùng liên tiếp vì vừa có phim/tập mới
                                 _logger.LogInformation($"✅ [VSMov Job] Đã cập nhật/thêm mới: '{item.Name}' ({item.Slug})");
                             }
@@ -104,6 +115,20 @@ namespace MovieWeb.Jobs
 
             // Tự động xóa cache sitemap để Google Search Console luôn nhận phim mới nhất
             _cache.Remove("sitemap_xml");
+            _cache.Remove("sitemap_index_xml");
+
+            if (changedMovieUrls.Count > 0 && !_env.IsDevelopment())
+            {
+                try
+                {
+                    var ok = await _indexNow.SubmitUrlsAsync(changedMovieUrls);
+                    _logger.LogInformation("📡 [VSMov Job] IndexNow {Status} cho {Count} phim mới/cập nhật.", ok ? "đã gửi" : "không thành công", changedMovieUrls.Count);
+                }
+                catch (Exception exIndex)
+                {
+                    _logger.LogWarning(exIndex, "IndexNow submit failed");
+                }
+            }
             _logger.LogInformation("🔄 [VSMov Job] Đã làm mới sitemap cache cho các phim mới cào.");
 
             _logger.LogInformation($"🎉 [VSMov Job] Báo cáo hoàn thành: Đã cào {totalProcessed} phim. Kết thúc job.");
