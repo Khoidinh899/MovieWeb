@@ -34,6 +34,25 @@ public static partial class VSMovSource
 
     public static bool IsSupported(string? source) => GetPlaybackUrl(source) is not null;
 
+    /// <summary>Server chứa link admin nhập tay trong form sửa phim. Đồng bộ VSMov không ghi đè/xóa server này.</summary>
+    public const string ManualServerName = "MoonPhim HD";
+
+    public static bool IsManualServer(string? serverName) =>
+        NormalizeServer(serverName) == NormalizeServer(ManualServerName);
+
+    /// <summary>Link admin nhập tay: chỉ nhận URL https tuyệt đối (m3u8, mp4 hoặc trang nhúng).</summary>
+    public static bool IsSafeManualUrl(string? source) =>
+        Uri.TryCreate(source, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps
+        && string.IsNullOrEmpty(uri.UserInfo) && source!.Length <= 1000;
+
+    /// <summary>Tập phát được: nguồn VSMov hợp lệ, hoặc link nhập tay trên server MoonPhim HD.</summary>
+    public static bool IsPlayable(string? source, string? serverName) =>
+        IsSupported(source) || (IsManualServer(serverName) && IsSafeManualUrl(source));
+
+    /// <summary>URL đưa vào player cho một tập: nguồn VSMov đã kiểm tra, hoặc link nhập tay của server MoonPhim HD.</summary>
+    public static string? GetEpisodePlaybackUrl(string? source, string? serverName) =>
+        GetPlaybackUrl(source) ?? (IsManualServer(serverName) && IsSafeManualUrl(source) ? source!.Trim() : null);
+
     public static string? GetPlaybackUrl(string? source)
     {
         if (!Uri.TryCreate(source, UriKind.Absolute, out var uri)

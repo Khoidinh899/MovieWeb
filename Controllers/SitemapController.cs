@@ -186,7 +186,7 @@ public class SitemapController : Controller
             .Select(m => new
             {
                 m.MovieId, m.Slug, m.UpdatedAt, m.CreatedAt, m.TrailerUrl, m.Trailer,
-                Sources = m.Episodes.Select(e => e.LinkM3u8).ToList(),
+                Sources = m.Episodes.Select(e => new { e.LinkM3u8, e.ServerName }).ToList(),
                 Categories = m.Categories.Where(c => c.IsActive == true).Select(c => c.Slug).ToList(),
                 Countries = m.Countries.Where(c => c.IsActive == true).Select(c => c.Slug).ToList()
             })
@@ -200,7 +200,7 @@ public class SitemapController : Controller
         var trailers = 0;
         foreach (var movie in movies)
         {
-            var hasPlayback = movie.Sources.Any(VSMovSource.IsSupported) || VSMovSource.IsSupported(movie.TrailerUrl);
+            var hasPlayback = movie.Sources.Any(e => VSMovSource.IsPlayable(e.LinkM3u8, e.ServerName)) || VSMovSource.IsSupported(movie.TrailerUrl);
             var hasTrailer = SeoMetadata.IsTrailer(movie.Trailer) || SeoMetadata.IsTrailer(movie.TrailerUrl);
             if (!hasPlayback && !hasTrailer) continue;
             if (hasPlayback) playable++; else trailers++;

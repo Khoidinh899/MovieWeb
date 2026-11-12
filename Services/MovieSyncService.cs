@@ -35,9 +35,12 @@ public sealed class MovieSyncService(
 
     public async Task EnsureVSMovEpisodesAsync(int movieId)
     {
-        var sources = await context.Episodes.Where(e => e.MovieId == movieId)
+        // Bỏ qua tập trên server MoonPhim HD (link admin nhập tay): không phải nguồn VSMov, không cần đồng bộ lại.
+        var sources = await context.Episodes.Where(e => e.MovieId == movieId && e.ServerName != VSMovSource.ManualServerName)
             .Select(e => e.LinkM3u8).ToListAsync();
         if (sources.Any(VSMovSource.IsSupported) && sources.Where(s => s is not null).All(VSMovSource.IsSupported)) return;
+        // Phim chỉ có link nhập tay (không có nguồn VSMov nào): không gọi VSMov mỗi lần mở phim.
+        if (sources.Count == 0 && await context.Episodes.AnyAsync(e => e.MovieId == movieId && e.ServerName == VSMovSource.ManualServerName)) return;
         // Slug nguồn VSMov: khác Slug khi admin đã đổi URL phim.
         var slug = await context.Movies.Where(m => m.MovieId == movieId)
             .Select(m => m.SourceSlug ?? m.Slug).SingleOrDefaultAsync();
@@ -170,7 +173,8 @@ public sealed class MovieSyncService(
         if (detail.Actor is not null) movie.Actors = await actors.SyncActorsAsync(detail.Actor);
         if (detail.Director is not null) movie.Directors = await directors.SyncDirectorsAsync(detail.Director);
 
-        var remaining = movie.Episodes.ToList();
+        // Tập trên server MoonPhim HD do admin nhập tay: đồng bộ VSMov không ghép, không ghi đè, không xóa link.
+        var remaining = movie.Episodes.Where(e => !VSMovSource.IsManualServer(e.ServerName)).ToList();
         foreach (var source in sourceEpisodes)
         {
             var item = source.Episode;

@@ -229,7 +229,7 @@ namespace MovieWeb.Controllers.API
             }
 
             // Group by normalized server name
-            var grouped = episodes.Where(e => VSMovSource.IsSupported(e.LinkM3u8))
+            var grouped = episodes.Where(e => VSMovSource.IsPlayable(e.LinkM3u8, e.ServerName))
                 .GroupBy(e => NormalizeServerKey(e.ServerName))
                 .Select(g => new
                 {
@@ -243,7 +243,9 @@ namespace MovieWeb.Controllers.API
                         linkM3u8 = e.LinkM3u8
                     }).ToList()
                 })
-                .OrderBy(s => s.serverName)
+                // Link admin thay tay (MoonPhim HD) đứng đầu để app chọn mặc định.
+                .OrderByDescending(s => VSMovSource.IsManualServer(s.serverName))
+                .ThenBy(s => s.serverName)
                 .ToList();
 
             return grouped;

@@ -638,6 +638,15 @@
         }
         // ==== KẾT THÚC THAY ĐỔI 3 ====
 
+        // Gán giá trị cho <select>; giá trị từ VSMov không có trong danh sách (vd "Vietsub + Thuyết Minh", "FHD")
+        // thì thêm option, tránh select rỗng làm mất dữ liệu khi bấm Lưu.
+        function setSelectValue(id, value) {
+            const select = document.getElementById(id);
+            if (!select || value == null) return;
+            if (![...select.options].some(o => o.value === value)) select.add(new Option(value, value));
+            select.value = value;
+        }
+
         function generateSlug(text) {
             if (!text) return '';
             
@@ -717,10 +726,10 @@
                     document.getElementById('originalName').value = data.originalName || '';
                     document.getElementById('slug').value = data.slug || '';
                     document.getElementById('year').value = data.year || '';
-                    document.getElementById('type').value = data.type || 'single';
-                    document.getElementById('status').value = data.status || 'completed';
-                    document.getElementById('quality').value = data.quality || 'HD';
-                    document.getElementById('language').value = data.language || 'Vietsub';
+                    setSelectValue('type', data.type || 'single');
+                    setSelectValue('status', data.status || 'completed');
+                    setSelectValue('quality', data.quality || 'HD');
+                    setSelectValue('language', data.language || 'Vietsub');
                     document.getElementById('time').value = data.time || '';
                     document.getElementById('episodeCurrent').value = data.episodeCurrent || '';
                     document.getElementById('episodeTotal').value = data.episodeTotal || '';

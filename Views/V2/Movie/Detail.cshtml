@@ -418,7 +418,7 @@
                                    data-episode-id="@ep.EpisodeId"
                                    class="episode-list-item @(isEpActive ? "active" : "")"
                                    data-index="@episodeIndex"
-                                   data-url="@VSMovSource.GetPlaybackUrl(ep.LinkM3u8)"
+                                   data-url="@VSMovSource.GetEpisodePlaybackUrl(ep.LinkM3u8, ep.ServerName)"
                                    data-episode-name="@ep.EpisodeName">
                                     Tập @ep.EpisodeName
                                 </a>

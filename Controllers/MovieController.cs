@@ -95,7 +95,7 @@ namespace MovieWeb.Controllers
                 .OrderBy(e => e.EpisodeName)
                 .ToListAsync();
 
-            allEpisodes = allEpisodes.Where(e => VSMovSource.IsSupported(e.LinkM3u8)).ToList();
+            allEpisodes = allEpisodes.Where(e => VSMovSource.IsPlayable(e.LinkM3u8, e.ServerName)).ToList();
 
             // 🧩 Gom nhóm canonical episode để lấy MIN(EpisodeId) cho từng tập (chống trùng lặp nhiều server)
             var canonicalGroups = allEpisodes
@@ -154,7 +154,12 @@ namespace MovieWeb.Controllers
 
             // ⚙️ Server mặc định
             string defaultServerKey = "";
-            if (serverDisplayNames.Keys.Any(k => serverDisplayNames[k].Contains("Vietsub", StringComparison.OrdinalIgnoreCase)))
+            if (serverDisplayNames.Values.Any(VSMovSource.IsManualServer))
+            {
+                // Link admin thay tay trong form sửa phim luôn được phát trước.
+                defaultServerKey = serverDisplayNames.First(x => VSMovSource.IsManualServer(x.Value)).Key;
+            }
+            else if (serverDisplayNames.Keys.Any(k => serverDisplayNames[k].Contains("Vietsub", StringComparison.OrdinalIgnoreCase)))
             {
                 defaultServerKey = serverDisplayNames.First(x => x.Value.Contains("Vietsub", StringComparison.OrdinalIgnoreCase)).Key;
             }
@@ -325,8 +330,11 @@ namespace MovieWeb.Controllers
             bool isSeriesType = movie.Type?.ToLower() == "series" || movie.Type?.ToLower() == "hoathinh";
 
             // 🎞️ Lấy tập đầu tiên để phát (cho cả phim lẻ và phim bộ)
-            var firstEpisode = selectedEpisode ?? allEpisodes.FirstOrDefault();
-            string? episode1Url = VSMovSource.GetPlaybackUrl(firstEpisode?.LinkM3u8);
+            // Ưu tiên tập của server mặc định (MoonPhim HD nếu admin đã thay link) thay vì tập đầu theo tên.
+            var firstEpisode = selectedEpisode
+                ?? allEpisodes.FirstOrDefault(e => NormalizeKey(e.ServerName) == defaultServerKey)
+                ?? allEpisodes.FirstOrDefault();
+            string? episode1Url = VSMovSource.GetEpisodePlaybackUrl(firstEpisode?.LinkM3u8, firstEpisode?.ServerName);
 
             // 📢 Quảng cáo
             var advertisements = await _context.Advertisements
@@ -549,7 +557,7 @@ namespace MovieWeb.Controllers
                     .OrderBy(e => e.EpisodeName)
                     .ToListAsync();
 
-                allEpisodes = allEpisodes.Where(e => VSMovSource.IsSupported(e.LinkM3u8)).ToList();
+                allEpisodes = allEpisodes.Where(e => VSMovSource.IsPlayable(e.LinkM3u8, e.ServerName)).ToList();
                 if (!allEpisodes.Any())
                 {
                     return Json(new { success = false, message = "Không tìm thấy tập phim nào." });

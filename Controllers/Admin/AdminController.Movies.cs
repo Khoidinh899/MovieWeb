@@ -159,6 +159,10 @@ namespace MovieWeb.Controllers
                     return Json(new { success = false, message = "Không tìm thấy phim" });
                 }
 
+                var manualLink = await _context.Episodes.AsNoTracking()
+                    .Where(e => e.MovieId == movie.MovieId && e.ServerName == VSMovSource.ManualServerName && e.LinkM3u8 != null)
+                    .Select(e => e.LinkM3u8).FirstOrDefaultAsync();
+
                 return Json(new
                 {
                     success = true,
@@ -173,7 +177,7 @@ namespace MovieWeb.Controllers
                         status = movie.Status,
                         posterUrl = movie.PosterUrl,
                         thumbUrl = movie.ThumbUrl,
-                        trailerUrl = movie.TrailerUrl,
+                        trailerUrl = manualLink ?? movie.TrailerUrl,
                         time = movie.Time,
                         episodeCurrent = movie.EpisodeCurrent,
                         episodeTotal = movie.EpisodeTotal,
@@ -277,6 +281,14 @@ namespace MovieWeb.Controllers
 
                 _context.Movies.Add(movie);
                 await _context.SaveChangesAsync(); // 👈 Lưu để lấy movie.MovieId
+
+                // Phim lẻ thủ công: tạo tập phát được từ link (player đọc bảng Episodes, không đọc TrailerUrl).
+                if (!shouldSyncEpisodes && !string.IsNullOrWhiteSpace(model.TrailerUrl))
+                {
+                    var linkError = await ApplyManualPlaybackLinkAsync(movie, model.TrailerUrl);
+                    if (linkError == null) await _context.SaveChangesAsync();
+                    else successMessage = "Tạo phim thành công, nhưng link phát không hợp lệ: " + linkError;
+                }
 
                 // ==== GỌI HANGFIRE JOB ====
                 // Job này sẽ chạy ngầm và lưu vào bảng "Episodes"
@@ -410,6 +422,49 @@ namespace MovieWeb.Controllers
             }
         }
 
+        /// <summary>
+        /// Link phát admin nhập ở ô "Link trình chiếu phim" (phim lẻ): lưu vào tập trên server MoonPhim HD.
+        /// Player đọc link ở bảng Episodes (không đọc Movies.TrailerUrl); đồng bộ VSMov không ghi đè server này.
+        /// Trả về thông báo lỗi nếu link không hợp lệ, null nếu ổn.
+        /// </summary>
+        private async Task<string?> ApplyManualPlaybackLinkAsync(MovieWeb.Models.Entities.Movie movie, string? link)
+        {
+            link = (link ?? "").Trim();
+            var episodes = await _context.Episodes.Where(e => e.MovieId == movie.MovieId).ToListAsync();
+            var manual = episodes.Where(e => VSMovSource.IsManualServer(e.ServerName)).ToList();
+
+            if (link.Length == 0)
+            {
+                // Xóa link tay: quay lại phát nguồn VSMov (giữ dòng tập vì Watch Party có thể tham chiếu EpisodeId).
+                foreach (var ep in manual) ep.LinkM3u8 = null;
+                return null;
+            }
+            if (!VSMovSource.IsSafeManualUrl(link))
+                return "Link phát phải là URL https đầy đủ (vd: https://.../index.m3u8)";
+
+            // Ô hiển thị sẵn link VSMov đang phát: lưu lại mà không đổi thì không tạo server mới.
+            if (manual.Count == 0 && episodes.Any(e => e.LinkM3u8 == link)) return null;
+
+            var source = episodes.Where(e => !VSMovSource.IsManualServer(e.ServerName))
+                .OrderBy(e => e.EpisodeId).FirstOrDefault();
+            if (manual.Count == 0)
+            {
+                _context.Episodes.Add(new MovieWeb.Models.Entities.Episode
+                {
+                    MovieId = movie.MovieId,
+                    ServerName = VSMovSource.ManualServerName,
+                    EpisodeName = source?.EpisodeName ?? "Full",
+                    Slug = source?.Slug ?? "full",
+                    LinkM3u8 = link
+                });
+            }
+            else
+            {
+                manual[0].LinkM3u8 = link;
+            }
+            return null;
+        }
+
         // POST: /Admin/UpdateMovie
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -522,6 +577,8 @@ namespace MovieWeb.Controllers
                     // Phim lẻ hoặc phim thủ công (hoặc admin xóa ApiSlug)
                     movie.ApiId = null;
                     movie.TrailerUrl = model.TrailerUrl;
+                    var linkError = await ApplyManualPlaybackLinkAsync(movie, model.TrailerUrl);
+                    if (linkError != null) return Json(new { success = false, message = linkError });
                 }
                 // ==== KẾT THÚC LOGIC ====
 
@@ -643,11 +700,9 @@ namespace MovieWeb.Controllers
                 }
                 // ==== KẾT THÚC ====
 
-                if (slugChanged)
-                {
-                    foreach (var key in new[] { $"movie_detail_{oldSlug}", $"movie_detail_{model.Slug}", "sitemap_xml", "sitemap_index_xml" })
-                        _cache.Remove(key);
-                }
+                // Mọi thay đổi có hiệu lực ngay: xóa cache chi tiết phim (API app) và sitemap.
+                foreach (var key in new[] { $"movie_detail_{oldSlug}", $"movie_detail_{model.Slug}", "sitemap_xml", "sitemap_index_xml" })
+                    _cache.Remove(key);
 
                 await LogAdminActionAsync("UPDATE_MOVIE", $"Updated movie: {movie.Name}", movie.MovieId.ToString());
                 _logger.LogInformation("Admin updated movie: {MovieName}", movie.Name);
