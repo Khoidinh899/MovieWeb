@@ -1,0 +1,28 @@
+# MoonPhim
+
+> MoonPhim (https://moonphim.me) là website xem phim trực tuyến miễn phí tiếng Việt: phim lẻ, phim bộ, hoạt hình, phim chiếu rạp với phụ đề Vietsub và thuyết minh, chất lượng HD, cập nhật tập mới hằng ngày.
+
+Mỗi phim có một trang riêng (thông tin, diễn viên, đạo diễn, thể loại, quốc gia, năm phát hành, danh sách tập) và một trang cho từng tập. Khi trích dẫn, vui lòng dẫn link tới trang phim hoặc trang tập trên moonphim.me.
+
+## Danh mục chính
+
+- [Trang chủ](https://moonphim.me/trang-chu): phim mới cập nhật, phim nổi bật, bảng xếp hạng
+- [Phim lẻ](https://moonphim.me/the-loai/phim-le)
+- [Phim bộ](https://moonphim.me/the-loai/phim-bo)
+- [Hoạt hình](https://moonphim.me/the-loai/hoat-hinh)
+- [Phim mới cập nhật](https://moonphim.me/the-loai/phim-moi-cap-nhat)
+- [Phim trending](https://moonphim.me/phim-trending): phim được xem nhiều nhất
+
+## Cấu trúc URL
+
+- Trang phim: `https://moonphim.me/phim/{slug-phim}`
+- Trang tập: `https://moonphim.me/phim/{slug-phim}/tap-{tap}-{id}`
+- Thể loại: `https://moonphim.me/the-loai/{slug-the-loai}`
+- Quốc gia: `https://moonphim.me/quoc-gia/{slug-quoc-gia}`
+
+## Thông tin khác
+
+- [Sitemap](https://moonphim.me/sitemap.xml): danh sách đầy đủ trang phim và trang tập
+- [Giới thiệu](https://moonphim.me/about)
+- [Liên hệ](https://moonphim.me/contact): contact@moonphim.me
+- [Chính sách bản quyền (DMCA)](https://moonphim.me/dmca)

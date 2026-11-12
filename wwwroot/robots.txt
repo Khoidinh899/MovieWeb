@@ -1,40 +1,74 @@
-# robots.txt for MoonPhim.me
-# Created: 20/11/2025
+# robots.txt for MoonPhim.me — cập nhật 12/11/2026
+#
+# Một bộ luật chung cho MỌI công cụ tìm kiếm và bot tìm kiếm AI (GEO).
+# Lưu ý: bot nào có nhóm "User-agent" riêng sẽ CHỈ đọc nhóm đó và bỏ qua nhóm "*",
+# nên các bot dưới đây được liệt kê chung một nhóm để cùng dùng đúng một bộ luật.
 
-# Allow all bots
+# Công cụ tìm kiếm
 User-agent: *
-Allow: /
-
-# Block pages that don't need indexing
-Disallow: /Admin/
-Disallow: /api/
-Disallow: /Account/Login
-Disallow: /Account/Register
-Disallow: /*.json$
-Disallow: /*?*returnUrl=
-Disallow: /Payment/
-
-# Allow Googlebot to access public APIs
 User-agent: Googlebot
+User-agent: Googlebot-Image
+User-agent: Googlebot-Video
+User-agent: Bingbot
+User-agent: MSNBot
+User-agent: coccocbot-web
+User-agent: coccocbot-image
+User-agent: DuckDuckBot
+User-agent: YandexBot
+User-agent: Applebot
+User-agent: Yeti
+User-agent: Slurp
+# Bot tìm kiếm AI (GEO): trích dẫn và dẫn link MoonPhim trong câu trả lời
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: DuckAssistBot
+User-agent: MistralAI-User
+# Mặc định được thu thập mọi trang (không cần "Allow: /"; đặt Allow trước Disallow để bot đọc kiểu "luật đầu tiên khớp" cũng hiểu đúng)
+# API JSON: chặn thu thập, trừ các API trang phim cần để dựng nội dung (đều có X-Robots-Tag: noindex)
 Allow: /api/ads/
 Allow: /api/comments/
 Allow: /api/episodes/
+Disallow: /api/
+# Trang riêng tư / không có giá trị tìm kiếm
+Disallow: /Admin/
+Disallow: /admin/
+Disallow: /hangfire
+Disallow: /Auth/
+Disallow: /auth/
+Disallow: /Account/
+Disallow: /account/
+Disallow: /user/
+Disallow: /User/
+Disallow: /Payment/
+Disallow: /payment/
+Disallow: /nang-cap
+Disallow: /Home/Error
+Disallow: /signin-google
+Disallow: /notificationHub
+Disallow: /watchPartyHub
+# Link đăng nhập kèm trang quay lại (sinh vô số URL trùng)
+Disallow: /*?*returnUrl=
+Disallow: /*?*ReturnUrl=
+# Trang kết quả tìm kiếm và tổ hợp bộ lọc vô hạn (đã noindex)
+Disallow: /tim-kiem?
+Disallow: /*?*Categories=
+Disallow: /*?*Countries=
+Disallow: /*?*Years=
+Disallow: /*?*Language=
+Disallow: /*?*SortBy=
+Disallow: /*?*Type=
+Disallow: /*?*pageSize=
+Disallow: /*.json$
 
-# Block bad bots
+# Công cụ SEO thương mại (không phải công cụ tìm kiếm): chặn để giảm tải máy chủ
 User-agent: AhrefsBot
-Disallow: /
-
 User-agent: SemrushBot
-Disallow: /
-
 User-agent: DotBot
-Disallow: /
-
 User-agent: MJ12bot
 Disallow: /
 
-# Sitemap
 Sitemap: https://moonphim.me/sitemap.xml
-
-# Crawl delay (optional - reduce server load)
-Crawl-delay: 1
