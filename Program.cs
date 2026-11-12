@@ -447,6 +447,35 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// ===== SEO: một trang chỉ có một URL =====
+// 301 bỏ "/" cuối và gộp route MVC mặc định (/TrangChu, /Home/Index) về route công khai; API JSON không vào chỉ mục Google.
+app.Use(async (context, next) =>
+{
+    var request = context.Request;
+    var path = request.Path.Value ?? "";
+    if ((HttpMethods.IsGet(request.Method) || HttpMethods.IsHead(request.Method))
+        && !path.StartsWith("/hangfire", StringComparison.OrdinalIgnoreCase))
+    {
+        var target = path.Length > 1 && path.EndsWith('/') ? path.TrimEnd('/') : path;
+        if (target.Length == 0) target = "/";
+        target = MovieWeb.Helpers.SeoMetadata.AliasPath(target) ?? target;
+        if (target != path)
+        {
+            context.Response.Redirect(target + request.QueryString, permanent: true);
+            return;
+        }
+    }
+    if (path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.OnStarting(() =>
+        {
+            context.Response.Headers["X-Robots-Tag"] = "noindex";
+            return Task.CompletedTask;
+        });
+    }
+    await next();
+});
+
 var staticFileProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
 staticFileProvider.Mappings[".apk"] = "application/vnd.android.package-archive";
 staticFileProvider.Mappings[".webmanifest"] = "application/manifest+json";

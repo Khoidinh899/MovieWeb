@@ -16,6 +16,11 @@
     <meta name="theme-color" content="#0a0e27" />
 
     <title>@ViewData["Title"] - MoonPhim</title>
+    <link rel="canonical" href="@MovieWeb.Helpers.SeoMetadata.Canonical(Context.Request)" />
+    @if (MovieWeb.Helpers.SeoMetadata.NoIndex(Context.Request))
+    {
+        <meta name="robots" content="noindex, follow" />
+    }
     <link rel="apple-touch-icon" sizes="180x180" href="~/images/apple-touch-icon.png" asp-append-version="true">
     <link rel="apple-touch-icon" sizes="180x180" href="~/apple-touch-icon.png" asp-append-version="true">
     <link rel="icon" type="image/png" sizes="32x32" href="~/favicon-32x32.png" asp-append-version="true">

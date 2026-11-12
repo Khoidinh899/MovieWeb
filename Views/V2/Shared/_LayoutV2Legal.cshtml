@@ -21,6 +21,11 @@
 
 
     <title>@ViewData["Title"] - MoonPhim</title>
+    <link rel="canonical" href="@MovieWeb.Helpers.SeoMetadata.Canonical(Context.Request)" />
+    @if (MovieWeb.Helpers.SeoMetadata.NoIndex(Context.Request))
+    {
+        <meta name="robots" content="noindex, follow" />
+    }
     <!-- Resource Preconnect & DNS-Prefetch for Fast Asset Loading -->
     <link rel="preconnect" href="https://vsmov.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>

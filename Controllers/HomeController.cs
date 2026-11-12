@@ -38,6 +38,8 @@ namespace MovieWeb.Controllers
         public IActionResult Error(int? statusCode = null)
         {
             ViewBag.StatusCode = statusCode;
+            // Trang lỗi phải trả đúng mã lỗi (không phải 200) để Google không coi là trang thật trùng lặp / "404 mềm".
+            if (statusCode is >= 400 and <= 599) Response.StatusCode = statusCode.Value;
             ViewBag.ErrorMessage = HttpContext.Items["ErrorMessage"]?.ToString();
             
             return View("~/Views/Shared/Error.cshtml", new MovieWeb.Controllers.ErrorViewModel
