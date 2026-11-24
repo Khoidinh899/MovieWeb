@@ -45,6 +45,11 @@
                             <a href="#" id="showForgotPassword" class="text-muted small">Quên mật khẩu?</a>
                         </div>
 
+                        <!-- Cloudflare Turnstile (đăng nhập) -->
+                        <div class="mb-3 d-flex justify-content-center" style="min-height: 65px;">
+                            <div id="turnstile-login-container" data-sitekey="@Configuration["Turnstile:SiteKey"]"></div>
+                        </div>
+
                         <button type="submit" class="btn btn-primary w-100 mb-3 auth-btn">
                             <span id="loginBtnText">Đăng nhập</span>
                             <span id="loginLoader" class="spinner-border spinner-border-sm d-none ms-2"></span>

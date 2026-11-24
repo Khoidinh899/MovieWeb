@@ -82,5 +82,7 @@
             this.firstElementChild.textContent = show ? 'visibility_off' : 'visibility';
         });
     </script>
+    @* Cloudflare Turnstile (layout V2 không nạp sẵn) *@
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
     <script src="~/v2/js/pages/auth.js" asp-append-version="true"></script>
 }

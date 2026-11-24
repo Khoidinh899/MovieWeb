@@ -193,6 +193,18 @@ namespace MovieWeb.Controllers
         {
             ViewData["ReturnUrl"] = returnUrl;
 
+            // Chống bot dò/spam đăng nhập: bắt buộc Cloudflare Turnstile như form đăng ký (app mobile dùng /api/auth/login, không qua đây).
+            var turnstileResponse = Request.Form["cf-turnstile-response"].ToString();
+            if (!await _turnstileService.VerifyTokenAsync(turnstileResponse, Request.HttpContext.Connection.RemoteIpAddress?.ToString()))
+            {
+                _logger.LogWarning("CAPTCHA verification failed for login");
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, captchaFailed = true, message = "Xác thực CAPTCHA không thành công. Vui lòng thử lại." });
+                }
+                return BadRequest(new { success = false, message = "Xác thực CAPTCHA không thành công." });
+            }
+
             if (!ModelState.IsValid)
             {
                 // AJAX request

@@ -69,6 +69,42 @@ window.onloadTurnstileCallback = function () {
     }
 };
 
+// Turnstile cho form đăng nhập (server bắt buộc cf-turnstile-response ở POST /Auth/Login)
+window.renderLoginTurnstile = function () {
+    function doRender() {
+        const container = document.getElementById('turnstile-login-container');
+        if (!container) return true;
+        if (container.getAttribute('data-widget-id')) return true;
+        if (!window.turnstile) return false;
+        try {
+            const widgetId = turnstile.render('#turnstile-login-container', {
+                sitekey: container.getAttribute('data-sitekey'),
+                theme: 'dark'
+            });
+            if (widgetId) container.setAttribute('data-widget-id', widgetId);
+            return true;
+        } catch (e) {
+            console.warn('Turnstile login render warning:', e);
+            return true;
+        }
+    }
+    if (!doRender()) {
+        let attempts = 0;
+        const interval = setInterval(() => {
+            attempts++;
+            if (doRender() || attempts > 40) clearInterval(interval);
+        }, 250);
+    }
+};
+
+window.resetTurnstileWidget = function (containerId) {
+    const container = document.getElementById(containerId);
+    const widgetId = container && container.getAttribute('data-widget-id');
+    if (window.turnstile && widgetId) {
+        try { turnstile.reset(widgetId); } catch (e) { }
+    }
+};
+
     function switchToRegister() {
         fadeOut(loginForm, () => {
             hideAllForms();
@@ -127,6 +163,7 @@ window.onloadTurnstileCallback = function () {
             document.querySelector('.modal-title').textContent = 'Đăng nhập';
             document.getElementById('emailVerificationAlert')?.classList.add('d-none');
             fadeIn(loginForm);
+            window.renderLoginTurnstile();
         });
     }
 
@@ -190,6 +227,7 @@ window.onloadTurnstileCallback = function () {
             });
         }
         document.getElementById('authModal').addEventListener('hidden.bs.modal', resetModalState);
+        document.getElementById('authModal').addEventListener('shown.bs.modal', () => window.renderLoginTurnstile());
     }
 
     function resetModalState() {
@@ -276,6 +314,8 @@ window.onloadTurnstileCallback = function () {
                 }, 500);
             } else {
                 showAlert(result.message, 'danger');
+                // Token Turnstile chỉ dùng được một lần: lấy token mới cho lần thử sau
+                window.resetTurnstileWidget('turnstile-login-container');
 
                 if (result.message && result.message.includes('chưa được xác thực')) {
                     const email = document.getElementById('loginEmail').value;
@@ -293,6 +333,7 @@ window.onloadTurnstileCallback = function () {
         } catch (error) {
             console.error('Login error:', error);
             showAlert('Có lỗi xảy ra khi đăng nhập', 'danger');
+            window.resetTurnstileWidget('turnstile-login-container');
         } finally {
             setLoadingState('login', false);
         }
@@ -358,17 +399,13 @@ window.onloadTurnstileCallback = function () {
                 }
 
                 showAlert(errorMessage || 'Đăng ký thất bại, vui lòng kiểm tra lại!', 'danger');
-                if (window.turnstile) {
-                    try { turnstile.reset(); } catch (e) { }
-                }
+                window.resetTurnstileWidget('turnstile-container');
             }
 
         } catch (error) {
             console.error('Register error:', error);
             showAlert('Có lỗi xảy ra khi đăng ký: ' + (error.message || 'Vui lòng thử lại sau!'), 'danger');
-            if (window.turnstile) {
-                try { turnstile.reset(); } catch (e) { }
-            }
+            window.resetTurnstileWidget('turnstile-container');
         } finally {
             setLoadingState('register', false);
         }

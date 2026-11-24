@@ -38,15 +38,21 @@
         if (!container || container.dataset.rendered === '1' || !window.turnstile) return false;
         var sitekey = container.dataset.sitekey;
         if (!sitekey) return false;
-        window.turnstile.render('#turnstile-container', { sitekey: sitekey });
+        container.dataset.widgetId = window.turnstile.render('#turnstile-container', { sitekey: sitekey, theme: 'dark' }) || '';
         container.dataset.rendered = '1';
         return true;
+    }
+    // Token Turnstile chỉ dùng một lần: lấy token mới sau mỗi lần gửi thất bại
+    function resetTurnstile() {
+        var container = document.getElementById('turnstile-container');
+        if (!container || !window.turnstile || !container.dataset.widgetId) return;
+        try { window.turnstile.reset(container.dataset.widgetId); } catch (e) { }
     }
     if (!renderTurnstile()) {
         var attempts = 0;
         var timer = setInterval(function () {
             attempts++;
-            if (renderTurnstile() || attempts > 40) clearInterval(timer);
+            if (renderTurnstile() || attempts > 80) clearInterval(timer);
         }, 250);
     }
 
@@ -73,12 +79,14 @@
                     return;
                 }
                 showAlert(result.message, 'danger');
+                resetTurnstile();
                 if (result.message && result.message.indexOf('chưa được xác thực') !== -1) {
                     document.getElementById('resendBox')?.classList.remove('hidden');
                 }
             } catch (err) {
                 console.error('Login error:', err);
                 showAlert('Có lỗi xảy ra khi đăng nhập', 'danger');
+                resetTurnstile();
             } finally {
                 setLoading(loginBtn, loginLabel, false);
             }
@@ -137,9 +145,11 @@
                     var message = result ? result.message : 'Đăng ký thất bại';
                     if (result && result.errors && result.errors.length > 0) message = result.errors.join(', ');
                     showAlert(message || 'Đăng ký thất bại, vui lòng kiểm tra lại!', 'danger');
+                    resetTurnstile();
                 }
             } catch (err) {
                 showAlert('Có lỗi xảy ra khi đăng ký: ' + (err.message || 'Vui lòng thử lại sau!'), 'danger');
+                resetTurnstile();
             } finally {
                 setLoading(regBtn, regLabel, false);
             }
