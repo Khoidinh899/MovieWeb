@@ -20,6 +20,10 @@ namespace MovieWeb.Models.Entities
         [NotMapped]
         public string FullName => $"{FirstName} {LastName}".Trim();
 
+        /// <summary>Biệt danh khi bình luận (ẩn danh hoặc chưa có họ tên). Null = hệ thống tự sinh theo UserId.</summary>
+        [System.ComponentModel.DataAnnotations.MaxLength(30)]
+        public string? CommentNickname { get; set; }
+
         [StringLength(200)]
         public string? Address { get; set; }
 

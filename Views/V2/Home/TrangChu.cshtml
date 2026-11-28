@@ -2,11 +2,12 @@
 @using MovieWeb.Models.Entities;
 @model MovieWeb.Models.Entities.HomeViewModel
 @{
+    ViewData["HasOgTags"] = true; // trang tự khai báo og:* (layout không in og mặc định)
     ViewData["Title"] = "MoonPhim - Xem Phim Online, Phim Mới, Phim Hay Miễn Phí";
     ViewData["IsHomePage"] = true; //gắn cờ đánh dấu đây là trang chủ
 
     // 1. Chuẩn bị Mô tả (Description)
-    var seoDescription = "Khám phá phim mới trên MoonPhim: phim bộ, phim lẻ và hoạt hình. Tìm theo tên phim, thể loại, quốc gia và năm phát hành; theo dõi danh sách tập cập nhật.";
+    var seoDescription = "Xem phim online miễn phí Vietsub, thuyết minh HD trên MoonPhim: phim bộ, phim lẻ, hoạt hình mới cập nhật mỗi ngày.";
 
     // 2. Chuẩn bị Ảnh (Image) - Lấy ảnh phim hot đầu tiên
     var seoImage = "/images/mooner_logo_large.png"; // Dùng ảnh logo làm dự phòng
@@ -80,6 +81,8 @@
        768-991px: cao = màn hình trừ header.
        <768px: cao = màn hình trừ header và tab bar (85px như mobile-bottom-nav.css); ảnh 16:9 hiện đủ ở trên, chữ ở dưới.
        Các slide xếp chồng bằng grid (cùng ô). *@
+    @* Một H1 duy nhất cho trang chủ (tiêu đề từng slide là H2) *@
+    <h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">MoonPhim - Xem phim online miễn phí Vietsub, thuyết minh HD</h1>
     <section id="heroSlider" class="relative w-full overflow-hidden bg-background max-lg:mt-[var(--v2-header-h,72px)]" aria-roledescription="carousel" aria-label="Phim nổi bật">
         <div class="relative grid w-full min-h-[calc(100svh-var(--v2-header-h,72px)-85px-env(safe-area-inset-bottom,0px))] md:min-h-[calc(100svh-var(--v2-header-h,72px))] lg:h-screen lg:min-h-[600px]">
             @for (int i = 0; i < heroMovies.Count; i++)
@@ -89,7 +92,7 @@
                 <div class="home-hero-slide relative col-start-1 row-start-1 flex flex-col md:flex-row md:items-center" aria-hidden="@(i == 0 ? "false" : "true")">
                     <div class="relative aspect-video w-full shrink-0 overflow-hidden md:absolute md:inset-0 md:aspect-auto md:h-full">
                         @* Ảnh lớn tràn khung: dùng ảnh gốc như V1 (WebP 1280 bị phóng to trên màn lớn → mờ) *@
-                        <img src="@bgUrl" alt="" class="absolute inset-0 h-full w-full object-cover object-center opacity-60 saturate-[.8]" decoding="async"
+                        <img src="@bgUrl" alt="Ảnh nền phim @hero.Name" class="absolute inset-0 h-full w-full object-cover object-center opacity-60 saturate-[.8]" decoding="async"
                              onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
                         <div class="absolute inset-0 hidden bg-gradient-to-r from-background/95 via-background/60 to-background/10 md:block"></div>
                         <div class="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-background to-transparent md:h-40"></div>
@@ -107,7 +110,7 @@
                                     <span class="rounded-full bg-surface-container-high/90 px-2.5 py-1 text-secondary">@hero.Language</span>
                                 }
                             </div>
-                            <h1 class="font-display-hero-mobile text-display-hero-mobile font-extrabold tracking-tight text-white drop-shadow-2xl md:font-display-hero md:text-display-hero">@hero.Name</h1>
+                            <h2 class="font-display-hero-mobile text-display-hero-mobile font-extrabold tracking-tight text-white drop-shadow-2xl md:font-display-hero md:text-display-hero">@hero.Name</h2>
                             @if (!string.IsNullOrEmpty(hero.OriginalName))
                             {
                                 <p class="font-label-md text-sm text-primary">@hero.OriginalName</p>
@@ -134,7 +137,7 @@
                         <a href="/phim/@hero.Slug" class="hidden justify-self-center md:block" tabindex="-1" aria-hidden="true">
                             <span class="v2-glass-frame block w-[300px] p-2 transition-transform duration-300 hover:-translate-y-2 hover:scale-[1.03] md:w-[340px] lg:w-[520px] xl:w-[640px] 2xl:w-[760px]">
                                 <span class="relative block aspect-video overflow-hidden rounded-[18px] bg-surface-container-lowest">
-                                    <img src="@ImageHelper.Webp(GetHeroUrl(hero), 200)" alt="" aria-hidden="true" class="absolute inset-0 h-full w-full scale-125 object-cover blur-xl brightness-75" decoding="async" />
+                                    <img src="@ImageHelper.Webp(GetHeroUrl(hero), 200)" alt="Ảnh mờ phim @hero.Name" aria-hidden="true" class="absolute inset-0 h-full w-full scale-125 object-cover blur-xl brightness-75" decoding="async" />
                                     <img src="@GetHeroUrl(hero)" alt="@hero.Name" decoding="async" class="relative h-full w-full object-contain"
                                          onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
                                 </span>

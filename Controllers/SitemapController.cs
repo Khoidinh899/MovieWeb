@@ -85,7 +85,11 @@ public class SitemapController : Controller
     [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)]
     public async Task<IActionResult> Episodes(int page, CancellationToken cancellationToken)
     {
-        if (page < 1 || !_configuration.GetValue<bool>("FeatureFlags:SitemapEpisodes")) return NotFound();
+        if (page < 1) return NotFound();
+        // SEO v3: trang tập không còn trong sitemap (canonical về trang phim). File cũ Google còn nhớ trả sitemap rỗng hợp lệ, không 404.
+        if (!_configuration.GetValue<bool>("FeatureFlags:SitemapEpisodes"))
+            return Content(new XDocument(new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement(XNamespace.Get("http://www.sitemaps.org/schemas/sitemap/0.9") + "urlset")).ToString(), "application/xml");
         var key = $"sitemap_episodes_{page}";
         if (_cache.TryGetValue(key, out string? cachedPage) && cachedPage is not null)
             return Content(cachedPage, "application/xml");

@@ -1,8 +1,11 @@
 ﻿@using MovieWeb.Helpers
 @model MovieWeb.Models.Entities.Movie
 @{
+    ViewData["HasOgTags"] = true; // trang tự khai báo og:* (layout không in og mặc định)
+    ViewData["HasTwitterCard"] = true;
     ViewData["Title"] = $"{Model.Name} (Phim {Model.Year}) Vietsub Thuyết Minh HD - MoonPhim (Moon Phim)";
     var relatedMovies = ViewBag.RelatedMovies as List<MovieWeb.Models.Entities.Movie>;
+    var seo = ViewBag.SeoContent as MovieWeb.Helpers.MovieSeoContent; // SEO v3: giới thiệu + hỏi đáp + liên kết riêng từng phim
 
     // Nền/khung player: ảnh NGANG (VSMov poster_url = PosterUrl); poster dọc dùng ImageHelper.Portrait
     var bgImage = !string.IsNullOrEmpty(Model.PosterUrl)
@@ -115,6 +118,10 @@
     @if (ViewBag.BreadcrumbSchemaJson != null)
     {
         @Html.Raw("<script type=\"application/ld+json\">\n" + ViewBag.BreadcrumbSchemaJson + "\n</script>")
+    }
+    @if (seo?.FaqSchemaJson != null)
+    {
+        @Html.Raw("<script type=\"application/ld+json\">\n" + seo.FaqSchemaJson + "\n</script>")
     }
     @* --- KẾT THÚC KHỐI SEO --- *@
 }
@@ -349,7 +356,17 @@
         </div>
 
         
-        @if (!string.IsNullOrWhiteSpace(ViewBag.SpintaxDescription as string))
+        @if (!string.IsNullOrWhiteSpace(seo?.Intro))
+        {
+            <div class="mb-space-lg rounded-2xl border border-outline-variant/30 bg-surface-container/40 p-space-md text-[14px] leading-relaxed text-on-surface-variant backdrop-blur-md">
+                <h2 class="mb-space-xs flex items-center gap-2 text-[14px] font-semibold text-primary">
+                    <span class="material-symbols-outlined text-[20px]" aria-hidden="true">smart_display</span>
+                    <span>Giới thiệu phim @Model.Name</span>
+                </h2>
+                <p class="m-0">@seo.Intro</p>
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(ViewBag.SpintaxDescription as string))
         {
             <div class="mb-space-lg rounded-2xl border border-outline-variant/30 bg-surface-container/40 p-space-md text-[14px] leading-relaxed text-on-surface-variant backdrop-blur-md">
                 <div class="mb-space-xs flex items-center gap-2 font-semibold text-primary">
@@ -495,6 +512,76 @@
             </div>
         }
 
+        @if (seo?.OtherParts.Any() == true)
+        {
+            <div class="related mb-space-xl">
+                <div class="mb-space-md flex items-center justify-between">
+                    <h2 class="font-headline-lg text-headline-lg font-bold text-on-surface">Các Phần Khác Của @seo.SeriesBaseName</h2>
+                </div>
+                <div data-v2-img-group class="-mx-margin-mobile flex snap-x gap-space-md overflow-x-auto px-margin-mobile pb-space-xs md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 lg:grid-cols-6">
+                    @foreach (var card in seo.OtherParts)
+                    {
+                        <a href="@SeoUrlHelper.MovieUrl(card.Slug, card.MovieId)" class="group flex w-[140px] shrink-0 snap-start flex-col md:w-auto md:shrink">
+                            <div class="relative aspect-[2/3] overflow-hidden rounded-xl bg-surface-container shadow-md transition-all group-hover:shadow-primary-container/20">
+                                <img src="@ImageHelper.Webp(ImageHelper.Portrait(card.ThumbUrl, card.PosterUrl), 400)" srcset="@ImageHelper.WebpSrcSet(ImageHelper.Portrait(card.ThumbUrl, card.PosterUrl), 200, 400)" sizes="(min-width: 1024px) 16vw, 140px" alt="@card.Name" loading="lazy" class="v2-img h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 "
+                                     onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
+                                @if (!string.IsNullOrEmpty(card.Quality))
+                                {
+                                    <div class="absolute left-2 top-2 rounded-full bg-surface-container-high/90 px-2 py-0.5 font-label-sm text-label-sm font-bold text-primary">@card.Quality</div>
+                                }
+                            </div>
+                            <span class="mt-2 truncate font-headline-sm text-headline-sm font-bold text-on-surface transition-colors group-hover:text-primary">@card.Name</span>
+                            <span class="truncate font-label-sm text-label-sm text-on-surface-variant">@(card.Year.HasValue ? card.Year.ToString() : "")@(string.IsNullOrEmpty(card.EpisodeCurrent) ? "" : " • " + card.EpisodeCurrent)</span>
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (seo?.SameActorMovies.Any() == true)
+        {
+            <div class="related mb-space-xl">
+                <div class="mb-space-md flex items-center justify-between">
+                    <h2 class="font-headline-lg text-headline-lg font-bold text-on-surface">Phim Khác Của @seo.SameActorNames</h2>
+                </div>
+                <div data-v2-img-group class="-mx-margin-mobile flex snap-x gap-space-md overflow-x-auto px-margin-mobile pb-space-xs md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 lg:grid-cols-6">
+                    @foreach (var card in seo.SameActorMovies)
+                    {
+                        <a href="@SeoUrlHelper.MovieUrl(card.Slug, card.MovieId)" class="group flex w-[140px] shrink-0 snap-start flex-col md:w-auto md:shrink">
+                            <div class="relative aspect-[2/3] overflow-hidden rounded-xl bg-surface-container shadow-md transition-all group-hover:shadow-primary-container/20">
+                                <img src="@ImageHelper.Webp(ImageHelper.Portrait(card.ThumbUrl, card.PosterUrl), 400)" srcset="@ImageHelper.WebpSrcSet(ImageHelper.Portrait(card.ThumbUrl, card.PosterUrl), 200, 400)" sizes="(min-width: 1024px) 16vw, 140px" alt="@card.Name" loading="lazy" class="v2-img h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 "
+                                     onerror="this.onerror=null; this.src='/images/default-poster.jpg';" />
+                                @if (!string.IsNullOrEmpty(card.Quality))
+                                {
+                                    <div class="absolute left-2 top-2 rounded-full bg-surface-container-high/90 px-2 py-0.5 font-label-sm text-label-sm font-bold text-primary">@card.Quality</div>
+                                }
+                            </div>
+                            <span class="mt-2 truncate font-headline-sm text-headline-sm font-bold text-on-surface transition-colors group-hover:text-primary">@card.Name</span>
+                            <span class="truncate font-label-sm text-label-sm text-on-surface-variant">@(card.Year.HasValue ? card.Year.ToString() : "")@(string.IsNullOrEmpty(card.EpisodeCurrent) ? "" : " • " + card.EpisodeCurrent)</span>
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (seo?.Faq.Any() == true)
+        {
+            <div class="mb-space-xl rounded-xl bg-surface-container-low p-space-lg shadow-xl">
+                <h2 class="mb-space-md flex items-center gap-space-xs font-headline-md text-headline-md font-bold text-on-surface">
+                    <span class="material-symbols-outlined text-primary" aria-hidden="true">help</span> Câu Hỏi Thường Gặp Về @Model.Name
+                </h2>
+                <div class="flex flex-col gap-space-sm">
+                    @foreach (var item in seo.Faq)
+                    {
+                        <details class="group rounded-lg bg-surface-container p-space-md">
+                            <summary class="cursor-pointer font-semibold text-on-surface">@item.Question</summary>
+                            <p class="mt-2 font-body-sm text-body-sm text-on-surface-variant">@item.Answer</p>
+                        </details>
+                    }
+                </div>
+            </div>
+        }
+
         <!-- Bình luận + cột phải -->
         <div class="grid grid-cols-1 gap-space-xl lg:grid-cols-12">
             <div class="comment-section flex flex-col gap-space-lg lg:col-span-8" id="binh-luan">
@@ -502,11 +589,16 @@
                     <span class="material-symbols-outlined text-[24px] text-primary">forum</span> Bình Luận &amp; Đánh Giá
                 </h2>
                 <div class="comment-box rounded-xl bg-surface-container-low p-space-md shadow-sm">
-                    <div class="mb-space-sm flex flex-wrap items-center gap-space-sm">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-container font-bold text-on-primary-container">
-                            @if (User.Identity?.IsAuthenticated == true) { @Initials(User.Identity.Name) } else { <span class="material-symbols-outlined">person</span> }
+                    <div id="commentIdentity" data-logged-in="@(User.Identity?.IsAuthenticated == true ? "true" : "false")" class="mb-space-sm flex flex-wrap items-center gap-space-sm">
+                        <div id="commentAvatarInitial" class="flex h-10 w-10 items-center justify-center rounded-full bg-primary-container font-bold text-on-primary-container">
+                            @if (User.Identity?.IsAuthenticated == true) { <span>…</span> } else { <span class="material-symbols-outlined">person</span> }
                         </div>
-                        <span class="font-headline-sm text-headline-sm font-semibold text-on-surface">@(User.Identity?.IsAuthenticated == true ? User.Identity.Name : "Khách")</span>
+                        @* Không hiện email đăng nhập: tên hiển thị (họ tên / biệt danh) do comment-identity.js điền *@
+                        <span id="commentDisplayName" class="font-headline-sm text-headline-sm font-semibold text-on-surface">@(User.Identity?.IsAuthenticated == true ? "" : "Khách")</span>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <button type="button" id="commentNicknameEdit" class="font-label-sm text-label-sm text-primary hover:underline" title="Biệt danh dùng khi bình luận ẩn danh">Đổi biệt danh</button>
+                        }
                         <div class="ml-auto flex items-center gap-1" title="Chọn điểm số">
                             <span class="mr-1 font-label-md text-label-md text-on-surface-variant">Đánh giá:</span>
                             <div class="rating-stars flex items-center">
@@ -514,16 +606,45 @@
                             </div>
                         </div>
                     </div>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <div id="commentNicknameForm" class="mb-space-sm items-center gap-space-xs" style="display:none">
+                            <input id="commentNicknameInput" type="text" maxlength="30" placeholder="Biệt danh của bạn"
+                                   class="min-w-0 flex-1 rounded-lg border-0 bg-surface px-space-sm py-1 font-body-sm text-body-sm text-on-surface focus:ring-1 focus:ring-primary" />
+                            <button type="button" id="commentNicknameSave" class="px-space-sm py-1 font-label-md text-label-md font-bold v2-btn-3d v2-btn-3d--primary">Lưu</button>
+                            <button type="button" id="commentNicknameCancel" class="px-space-sm py-1 font-label-md text-label-md text-on-surface-variant">Hủy</button>
+                        </div>
+                        <p id="commentIdentityHint" class="mb-space-xs font-label-sm text-label-sm text-secondary" style="display:none"></p>
+                    }
                     <textarea id="commentContent" maxlength="1000" rows="3" placeholder="Chia sẻ cảm nghĩ của bạn về bộ phim… (Không tiết lộ kết thúc cốt truyện)"
                               class="w-full rounded-lg border-0 bg-surface p-space-sm font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:ring-1 focus:ring-primary"></textarea>
                     <div class="comment-bottom mt-space-sm flex items-center justify-between gap-space-sm">
-                        <label class="spoiler flex items-center gap-1 font-label-sm text-label-sm text-outline"><input type="checkbox" class="rounded border-outline-variant bg-surface text-primary-container"> Tiết lộ nội dung?</label>
+                        <div class="flex flex-wrap items-center gap-space-sm">
+                            <label class="spoiler flex items-center gap-1 font-label-sm text-label-sm text-outline"><input type="checkbox" class="rounded border-outline-variant bg-surface text-primary-container"> Tiết lộ nội dung?</label>
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <label class="flex cursor-pointer items-center gap-1 font-label-sm text-label-sm text-outline" title="Mọi người chỉ thấy biệt danh của bạn"><input type="checkbox" id="commentAnonymous" class="rounded border-outline-variant bg-surface text-primary-container"> Ẩn danh</label>
+                            }
+                        </div>
                         <button type="button" class="btn-send inline-flex items-center gap-1 px-space-md py-space-xs font-label-md text-label-md font-bold v2-btn-3d v2-btn-3d--primary">
                             <i class="fa-solid fa-paper-plane"></i> Gửi Bình Luận
                         </button>
                     </div>
                 </div>
-                <div id="comment-list"></div>
+                <div id="comment-list">
+                    @* In sẵn vài bình luận mới nhất cho Google; JS loadComments() thay bằng danh sách đầy đủ *@
+                    @if (seo?.RecentComments.Any() == true)
+                    {
+                        @foreach (var rc in seo.RecentComments)
+                        {
+                            <div class="comment-item mb-3">
+                                <strong class="text-on-surface">@rc.UserName</strong>
+                                <small class="ml-2 font-label-sm text-label-sm text-on-surface-variant">@(rc.CreatedAt?.ToLocalTime().ToString("HH:mm dd/MM/yyyy"))@(rc.Rating is > 0 ? $" • ★ {rc.Rating}/5" : "")</small>
+                                <p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">@rc.Content</p>
+                            </div>
+                        }
+                    }
+                </div>
             </div>
 
             <aside class="flex flex-col gap-space-lg lg:col-span-4">
@@ -613,6 +734,7 @@
     
     <!-- ✅ SAU ĐÓ MỚI LOAD favorite-handler.js -->
     <script src="~/js/favorite-handler.js" asp-append-version="true"></script>
+    <script src="~/js/comment-identity.js" asp-append-version="true"></script>
 
     <script>
         (() => {
@@ -624,6 +746,9 @@
         let selectedRating = 0;
         
         function renderUserBadge(comment) {
+            if (comment.isAnonymous) {
+                return '<span class="subscription-tag free"><i class="bi bi-incognito"></i> Ẩn danh</span>';
+            }
             if (comment.isAdmin) {
                 return '<span class="subscription-tag admin-tag"><i class="bi bi-shield-check"></i> Quản Trị Viên</span>';
             }
@@ -785,6 +910,7 @@
                 formData.append("movieId", movieId);
                 formData.append("content", content);
                 formData.append("rating", selectedRating);
+                formData.append("isAnonymous", window.MoonCommentIdentity && window.MoonCommentIdentity.isAnonymous() ? "true" : "false");
 
                 try {
                     const res = await fetch("/api/comment/add", {
@@ -830,12 +956,13 @@
 
                     return `
                     <div class="${itemClass} d-flex mb-3" id="comment-${c.commentId}">
-                        <img src="${c.avatar || '/images/nouser.png'}" alt="${c.userName}"
+                        <img src="${c.avatar || '/images/nouser.png'}" alt="${escapeHtml(c.userName || 'Ẩn danh')}"
                             class="rounded-circle me-2" style="width:45px;height:45px;object-fit:cover;">
 
                         <div class="flex-grow-1">
                             <div class="d-flex align-items-center mb-1">
-                                <strong>${c.userName || 'Ẩn danh'}</strong>
+                                <strong>${escapeHtml(c.userName || 'Ẩn danh')}</strong>
+                                ${c.realIdentity ? `<small class="ms-2" style="color:#f59e0b" title="Chỉ quản trị viên thấy">(${escapeHtml(c.realIdentity)})</small>` : ''}
                                 
                                 ${renderUserBadge(c)} 
                                 
@@ -860,7 +987,8 @@
                                                 style="width:35px;height:35px;object-fit:cover;">
                                             <div>
                                                 <div class="d-flex align-items-center">
-                                                    <strong>${r.userName}</strong>
+                                                    <strong>${escapeHtml(r.userName || 'Ẩn danh')}</strong>
+                                                    ${r.realIdentity ? `<small class="ms-2" style="color:#f59e0b" title="Chỉ quản trị viên thấy">(${escapeHtml(r.realIdentity)})</small>` : ''}
                                                     
                                                     ${renderUserBadge(r)} 
                                                     
@@ -947,6 +1075,7 @@
             formData.append("parentId", parentId);
             formData.append("movieId", movieId);
             formData.append("content", content);
+            formData.append("isAnonymous", window.MoonCommentIdentity && window.MoonCommentIdentity.isAnonymous() ? "true" : "false");
 
             try {
                 const res = await fetch("/api/comment/reply", {
@@ -996,6 +1125,7 @@
                 }
             };
 
+            window.reloadMovieComments = loadComments;
             loadComments();
         };
 

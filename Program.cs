@@ -453,6 +453,12 @@ app.Use(async (context, next) =>
 {
     var request = context.Request;
     var path = request.Path.Value ?? "";
+    // Một host duy nhất: www.moonphim.me → moonphim.me (301, giữ đường dẫn + query). Trước đây www trả 200 → hàng nghìn trang trùng.
+    if (request.Host.Host.Equals("www.moonphim.me", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.Redirect("https://moonphim.me" + request.PathBase + path + request.QueryString, permanent: true);
+        return;
+    }
     if ((HttpMethods.IsGet(request.Method) || HttpMethods.IsHead(request.Method))
         && !path.StartsWith("/hangfire", StringComparison.OrdinalIgnoreCase))
     {

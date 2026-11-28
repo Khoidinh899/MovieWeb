@@ -1,8 +1,11 @@
 @using MovieWeb.Helpers
 @model MovieWeb.Models.Entities.Movie
 @{
+    ViewData["HasOgTags"] = true; // trang tự khai báo og:* (layout không in og mặc định)
+    ViewData["HasTwitterCard"] = true;
     ViewData["Title"] = $"{Model.Name} (Phim {Model.Year}) Vietsub Thuyết Minh HD - MoonPhim (Moon Phim)";
     var relatedMovies = ViewBag.RelatedMovies as List<MovieWeb.Models.Entities.Movie>;
+    var seo = ViewBag.SeoContent as MovieWeb.Helpers.MovieSeoContent; // SEO v3: giới thiệu + hỏi đáp + liên kết riêng từng phim
 
     // ⭐ ĐỔI: Ưu tiên PosterUrl (dọc) thay vì ThumbUrl (ngang)
     var bgImage = !string.IsNullOrEmpty(Model.PosterUrl)
@@ -99,6 +102,10 @@
     @if (ViewBag.BreadcrumbSchemaJson != null)
     {
         @Html.Raw("<script type=\"application/ld+json\">\n" + ViewBag.BreadcrumbSchemaJson + "\n</script>")
+    }
+    @if (seo?.FaqSchemaJson != null)
+    {
+        @Html.Raw("<script type=\"application/ld+json\">\n" + seo.FaqSchemaJson + "\n</script>")
     }
     @* --- KẾT THÚC KHỐI SEO --- *@
 }
@@ -220,7 +227,18 @@
     *@
 
     
-    @if (!string.IsNullOrWhiteSpace(ViewBag.SpintaxDescription as string))
+    @if (!string.IsNullOrWhiteSpace(seo?.Intro))
+    {
+        <div class="seo-spintax-container container" style="margin-top: 15px; margin-bottom: 20px;">
+            <div class="seo-spintax-box" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-left: 4px solid #e50914; border-radius: 8px; padding: 14px 18px; font-size: 0.95rem; line-height: 1.6; color: #ccc;">
+                <h2 style="font-size: 1rem; font-weight: 600; color: #fff; margin: 0 0 6px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-circle-play" style="color: #e50914;" aria-hidden="true"></i> Giới thiệu phim @Model.Name
+                </h2>
+                <p style="margin: 0;">@seo.Intro</p>
+            </div>
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(ViewBag.SpintaxDescription as string))
     {
         <div class="seo-spintax-container container" style="margin-top: 15px; margin-bottom: 20px;">
             <div class="seo-spintax-box" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-left: 4px solid #e50914; border-radius: 8px; padding: 14px 18px; font-size: 0.95rem; line-height: 1.6; color: #ccc;">
@@ -354,6 +372,70 @@
         </section>
     }
 
+    @if (seo?.OtherParts.Any() == true)
+    {
+        <section class="related container">
+            <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Các phần khác của @seo.SeriesBaseName</h2>
+            <div class="related-grid">
+                @foreach (var card in seo.OtherParts)
+                {
+                    <a href="@SeoUrlHelper.MovieUrl(card.Slug, card.MovieId)" class="related-card">
+                        <div class="poster">
+                            <img src="@(card.PosterUrl?.StartsWith("http") == true
+                                   ? card.PosterUrl
+                                   : "https://vsmov.com/storage/images/" + card.PosterUrl)"
+                                 alt="@card.Name" loading="lazy" />
+                            <span class="badge">@card.Quality</span>
+                        </div>
+                        <div class="info">
+                            <p class="title">@card.Name</p>
+                            <small>@card.Year</small>
+                        </div>
+                    </a>
+                }
+            </div>
+        </section>
+    }
+
+    @if (seo?.SameActorMovies.Any() == true)
+    {
+        <section class="related container">
+            <h2 style="font-size: 1.25rem;"><i class="fa-solid fa-user-group" aria-hidden="true"></i> Phim khác của @seo.SameActorNames</h2>
+            <div class="related-grid">
+                @foreach (var card in seo.SameActorMovies)
+                {
+                    <a href="@SeoUrlHelper.MovieUrl(card.Slug, card.MovieId)" class="related-card">
+                        <div class="poster">
+                            <img src="@(card.PosterUrl?.StartsWith("http") == true
+                                   ? card.PosterUrl
+                                   : "https://vsmov.com/storage/images/" + card.PosterUrl)"
+                                 alt="@card.Name" loading="lazy" />
+                            <span class="badge">@card.Quality</span>
+                        </div>
+                        <div class="info">
+                            <p class="title">@card.Name</p>
+                            <small>@card.Year</small>
+                        </div>
+                    </a>
+                }
+            </div>
+        </section>
+    }
+
+    @if (seo?.Faq.Any() == true)
+    {
+        <section class="container" style="margin-top: 30px;">
+            <h2 style="font-size: 1.25rem; color: #fff;"><i class="fa-solid fa-circle-question" style="color: #e50914;" aria-hidden="true"></i> Câu hỏi thường gặp về @Model.Name</h2>
+            @foreach (var item in seo.Faq)
+            {
+                <details style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; color: #ccc;">
+                    <summary style="cursor: pointer; font-weight: 600; color: #fff;">@item.Question</summary>
+                    <p style="margin: 8px 0 0;">@item.Answer</p>
+                </details>
+            }
+        </section>
+    }
+
     @if (latestMoviesToday?.Any() == true)
     {
         <section class="latest-today container" style="margin-top: 30px;">
@@ -389,13 +471,45 @@
 
         <div class="tab-content active" id="tab-comments">
             <div class="comment-box">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    @* Tên hiển thị (họ tên / biệt danh) thay cho email, do comment-identity.js điền *@
+                    <div id="commentIdentity" data-logged-in="true" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                        <span id="commentAvatarInitial" style="width:32px;height:32px;border-radius:50%;background:#2563eb;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">…</span>
+                        <strong id="commentDisplayName" style="color:#fff;"></strong>
+                        <a href="#" id="commentNicknameEdit" style="color:#facc15;font-size:13px;">Đổi biệt danh</a>
+                    </div>
+                    <div id="commentNicknameForm" style="display:none;align-items:center;gap:6px;margin-bottom:8px;">
+                        <input id="commentNicknameInput" type="text" maxlength="30" placeholder="Biệt danh của bạn" style="flex:1;min-width:0;background:#111;border:1px solid #333;border-radius:6px;color:#fff;padding:4px 8px;" />
+                        <button type="button" id="commentNicknameSave" class="btn btn-sm btn-warning">Lưu</button>
+                        <button type="button" id="commentNicknameCancel" class="btn btn-sm btn-secondary">Hủy</button>
+                    </div>
+                    <p id="commentIdentityHint" style="display:none;color:#facc15;font-size:13px;margin:0 0 6px;"></p>
+                }
                 <textarea id="commentContent" placeholder="Viết bình luận..." maxlength="1000"></textarea>
                 <div class="comment-bottom">
                     <label class="spoiler"><input type="checkbox"> Tiết lộ nội dung?</label>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <label class="spoiler" title="Mọi người chỉ thấy biệt danh của bạn"><input type="checkbox" id="commentAnonymous"> Ẩn danh</label>
+                    }
                     <button class="btn-send"><i class="fa-solid fa-paper-plane"></i> Gửi</button>
                 </div>
             </div>
-            <div id="comment-list"></div>
+            <div id="comment-list">
+                @* In sẵn vài bình luận mới nhất cho Google; JS loadComments() thay bằng danh sách đầy đủ *@
+                @if (seo?.RecentComments.Any() == true)
+                {
+                    @foreach (var rc in seo.RecentComments)
+                    {
+                        <div class="comment-item mb-3">
+                            <strong class="">@rc.UserName</strong>
+                            <small class="text-muted ms-2">@(rc.CreatedAt?.ToLocalTime().ToString("HH:mm dd/MM/yyyy"))@(rc.Rating is > 0 ? $" • ★ {rc.Rating}/5" : "")</small>
+                            <p class="">@rc.Content</p>
+                        </div>
+                    }
+                }
+            </div>
         </div>
 
         <div class="tab-content" id="tab-rating">
@@ -456,6 +570,7 @@
     
     <!-- ✅ SAU ĐÓ MỚI LOAD favorite-handler.js -->
     <script src="~/js/favorite-handler.js" asp-append-version="true"></script>
+    <script src="~/js/comment-identity.js" asp-append-version="true"></script>
 
     <script>
         (() => {
@@ -467,6 +582,9 @@
         let selectedRating = 0;
         
         function renderUserBadge(comment) {
+            if (comment.isAnonymous) {
+                return '<span class="subscription-tag free"><i class="bi bi-incognito"></i> Ẩn danh</span>';
+            }
             if (comment.isAdmin) {
                 return '<span class="subscription-tag admin-tag"><i class="bi bi-shield-check"></i> Quản Trị Viên</span>';
             }
@@ -628,6 +746,7 @@
                 formData.append("movieId", movieId);
                 formData.append("content", content);
                 formData.append("rating", selectedRating);
+                formData.append("isAnonymous", window.MoonCommentIdentity && window.MoonCommentIdentity.isAnonymous() ? "true" : "false");
 
                 try {
                     const res = await fetch("/api/comment/add", {
@@ -673,12 +792,13 @@
 
                     return `
                     <div class="${itemClass} d-flex mb-3" id="comment-${c.commentId}">
-                        <img src="${c.avatar || '/images/nouser.png'}" alt="${c.userName}"
+                        <img src="${c.avatar || '/images/nouser.png'}" alt="${escapeHtml(c.userName || 'Ẩn danh')}"
                             class="rounded-circle me-2" style="width:45px;height:45px;object-fit:cover;">
 
                         <div class="flex-grow-1">
                             <div class="d-flex align-items-center mb-1">
-                                <strong>${c.userName || 'Ẩn danh'}</strong>
+                                <strong>${escapeHtml(c.userName || 'Ẩn danh')}</strong>
+                                ${c.realIdentity ? `<small class="ms-2" style="color:#f59e0b" title="Chỉ quản trị viên thấy">(${escapeHtml(c.realIdentity)})</small>` : ''}
                                 
                                 ${renderUserBadge(c)} 
                                 
@@ -703,7 +823,8 @@
                                                 style="width:35px;height:35px;object-fit:cover;">
                                             <div>
                                                 <div class="d-flex align-items-center">
-                                                    <strong>${r.userName}</strong>
+                                                    <strong>${escapeHtml(r.userName || 'Ẩn danh')}</strong>
+                                                    ${r.realIdentity ? `<small class="ms-2" style="color:#f59e0b" title="Chỉ quản trị viên thấy">(${escapeHtml(r.realIdentity)})</small>` : ''}
                                                     
                                                     ${renderUserBadge(r)} 
                                                     
@@ -790,6 +911,7 @@
             formData.append("parentId", parentId);
             formData.append("movieId", movieId);
             formData.append("content", content);
+            formData.append("isAnonymous", window.MoonCommentIdentity && window.MoonCommentIdentity.isAnonymous() ? "true" : "false");
 
             try {
                 const res = await fetch("/api/comment/reply", {
@@ -839,6 +961,7 @@
                 }
             };
 
+            window.reloadMovieComments = loadComments;
             loadComments();
         };
 

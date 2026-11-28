@@ -2,11 +2,12 @@
 @using MovieWeb.Models.Entities;
 @model MovieWeb.Models.Entities.HomeViewModel
 @{
+    ViewData["HasOgTags"] = true; // trang tự khai báo og:* (layout không in og mặc định)
     ViewData["Title"] = "MoonPhim - Xem Phim Online, Phim Mới, Phim Hay Miễn Phí";
     ViewData["IsHomePage"] = true; //gắn cờ đánh dấu đây là trang chủ
 
     // 1. Chuẩn bị Mô tả (Description)
-    var seoDescription = "Khám phá phim mới trên MoonPhim: phim bộ, phim lẻ và hoạt hình. Tìm theo tên phim, thể loại, quốc gia và năm phát hành; theo dõi danh sách tập cập nhật.";
+    var seoDescription = "Xem phim online miễn phí Vietsub, thuyết minh HD trên MoonPhim: phim bộ, phim lẻ, hoạt hình mới cập nhật mỗi ngày.";
 
     // 2. Chuẩn bị Ảnh (Image) - Lấy ảnh phim hot đầu tiên
     var seoImage = "/images/mooner_logo_large.png"; // Dùng ảnh logo làm dự phòng
@@ -55,6 +56,8 @@
 }
 
 <div style="width: 100%; padding: 0;">
+    @* Một H1 duy nhất cho trang chủ (tiêu đề từng slide là H2) *@
+    <h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">MoonPhim - Xem phim online miễn phí Vietsub, thuyết minh HD</h1>
     <div class="hero-carousel mb-5">
         <div id="movieCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
             <div class="carousel-indicators">
@@ -76,7 +79,7 @@
                                 <div class="row h-100 align-items-center">
                                     <div class="col-lg-6">
                                         <div class="hero-content">
-                                            <h1 class="hero-title">@movie.Name</h1>
+                                            <h2 class="hero-title">@movie.Name</h2>
                                             <p class="hero-subtitle mb-3">@movie.OriginalName</p>
 
                                             <div class="hero-meta mb-4">

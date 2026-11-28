@@ -19,6 +19,9 @@ public partial class Comment
 
     public bool? IsActive { get; set; }
 
+    /// <summary>Bình luận ẩn danh: người khác chỉ thấy biệt danh, admin vẫn thấy người gốc.</summary>
+    public bool? IsAnonymous { get; set; }
+
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }

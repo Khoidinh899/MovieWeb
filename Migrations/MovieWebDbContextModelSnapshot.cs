@@ -475,6 +475,9 @@ namespace MovieWeb.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
 
+                    b.Property<bool?>("IsAnonymous")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("MovieId")
                         .HasColumnType("integer");
 
@@ -1403,6 +1406,10 @@ namespace MovieWeb.Migrations
                     b.Property<string>("Bio")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<string>("CommentNickname")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()

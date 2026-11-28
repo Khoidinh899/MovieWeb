@@ -7,6 +7,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.SignalR;
 using MovieWeb.Hubs;
 using MovieWeb.Services.Interfaces;
+using MovieWeb.Helpers;
 
 namespace MovieWeb.Controllers
 {
@@ -36,7 +37,7 @@ namespace MovieWeb.Controllers
         // ============================================================
         [Authorize]
         [HttpPost("add")]
-        public async Task<IActionResult> Add([FromForm] int movieId, [FromForm] string content, [FromForm] int? rating)
+        public async Task<IActionResult> Add([FromForm] int movieId, [FromForm] string content, [FromForm] int? rating, [FromForm] bool isAnonymous = false)
         {
             try
             {
@@ -66,7 +67,8 @@ namespace MovieWeb.Controllers
                     Content = content.Trim(),
                     Rating = (rating.HasValue && rating > 0) ? rating : null,
                     CreatedAt = DateTime.Now,
-                    IsActive = true
+                    IsActive = true,
+                    IsAnonymous = isAnonymous
                 };
 
                 _context.Comments.Add(comment);
@@ -84,16 +86,16 @@ namespace MovieWeb.Controllers
                         content = comment.Content,
                         createdAt = comment.CreatedAt,
                         rating = comment.Rating,
-                        userName = user?.UserName ?? "Ẩn danh",
-                        avatar = string.IsNullOrEmpty(user?.Avatar)
-                            ? "/images/nouser.png"
-                            : user.Avatar
+                        userName = CommentIdentity.PublicName(user, isAnonymous),
+                        avatar = CommentIdentity.PublicAvatar(user, isAnonymous),
+                        isAnonymous
                     }
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { success = false, message = "Lỗi máy chủ: " + ex.Message });
+                _logger.LogError(ex, "Error adding comment");
+                return StatusCode(500, new { success = false, message = "Lỗi máy chủ, vui lòng thử lại." });
             }
         }
 
@@ -104,11 +106,8 @@ namespace MovieWeb.Controllers
         [HttpGet("list-json")]
         public async Task<IActionResult> ListJson(int movieId)
         {
-            var currentUserName = User.Identity?.Name ?? "";
-            var isCurrentUserAdmin = string.Equals(currentUserName, "admin", StringComparison.OrdinalIgnoreCase);
-
-            var currentUserIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var currentUserId = currentUserIdClaim != null ? int.Parse(currentUserIdClaim) : (int?)null;
+            var isCurrentUserAdmin = User.IsInRole("Admin");
+            var currentUserId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedId) ? parsedId : (int?)null;
 
             var comments = await _context.Comments
                 .Include(c => c.User)
@@ -116,34 +115,33 @@ namespace MovieWeb.Controllers
                 .OrderBy(c => c.CreatedAt)
                 .ToListAsync();
 
-            var commentTree = comments
-                .Where(c => c.ParentCommentId == null)
-                .Select(c => new
+            // Không bao giờ trả email/username đăng nhập ra ngoài; admin nhận thêm danh tính gốc (realIdentity).
+            object ToView(Comment c, bool withReplies)
+            {
+                var anonymous = c.IsAnonymous == true;
+                return new
                 {
                     commentId = c.CommentId,
                     content = c.Content,
                     createdAt = c.CreatedAt,
                     rating = c.Rating,
-                    userName = c.User?.UserName ?? "Ẩn danh",
-                    avatar = !string.IsNullOrEmpty(c.User?.Avatar) ? c.User.Avatar : "/images/nouser.png",
-                    subscriptionType = c.User.SubscriptionType,
-                    isAdmin = (c.User?.UserName?.ToLower() == "admin"),
-                    canDelete = isCurrentUserAdmin || string.Equals(currentUserName, c.User?.UserName, StringComparison.OrdinalIgnoreCase),
-                    replies = comments
-                        .Where(r => r.ParentCommentId == c.CommentId)
-                        .Select(r => new
-                        {
-                            commentId = r.CommentId,
-                            content = r.Content,
-                            createdAt = r.CreatedAt,
-                            userName = r.User?.UserName ?? "Ẩn danh",
-                            avatar = !string.IsNullOrEmpty(r.User?.Avatar) ? r.User.Avatar : "/images/nouser.png",
-                            subscriptionType = r.User.SubscriptionType,
-                            isAdmin = (r.User?.UserName?.ToLower() == "admin"),
-                            canDelete = isCurrentUserAdmin || string.Equals(currentUserName, r.User?.UserName, StringComparison.OrdinalIgnoreCase)
-                        })
-                        .ToList()
-                })
+                    userName = CommentIdentity.PublicName(c.User, anonymous),
+                    avatar = CommentIdentity.PublicAvatar(c.User, anonymous),
+                    subscriptionType = anonymous ? null : c.User?.SubscriptionType,
+                    isAdmin = !anonymous && c.User?.RoleId == 1,
+                    isAnonymous = anonymous,
+                    isMine = currentUserId.HasValue && c.UserId == currentUserId,
+                    realIdentity = isCurrentUserAdmin ? CommentIdentity.RealIdentity(c.User) : null,
+                    canDelete = isCurrentUserAdmin || (currentUserId.HasValue && c.UserId == currentUserId),
+                    replies = withReplies
+                        ? comments.Where(r => r.ParentCommentId == c.CommentId).Select(r => ToView(r, false)).ToList()
+                        : null
+                };
+            }
+
+            var commentTree = comments
+                .Where(c => c.ParentCommentId == null)
+                .Select(c => ToView(c, true))
                 .ToList();
 
             return Ok(new { success = true, comments = commentTree });
@@ -154,7 +152,7 @@ namespace MovieWeb.Controllers
         // ============================================================
         [Authorize]
         [HttpPost("reply")]
-        public async Task<IActionResult> Reply([FromForm] int parentId, [FromForm] int movieId, [FromForm] string content)
+        public async Task<IActionResult> Reply([FromForm] int parentId, [FromForm] int movieId, [FromForm] string content, [FromForm] bool isAnonymous = false)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
                            ?? User.FindFirstValue("UserId")
@@ -189,7 +187,8 @@ namespace MovieWeb.Controllers
                 ParentCommentId = parentId,
                 Content = content.Trim(),
                 CreatedAt = DateTime.Now,
-                IsActive = true
+                IsActive = true,
+                IsAnonymous = isAnonymous
             };
 
             _context.Comments.Add(reply);
@@ -204,7 +203,7 @@ namespace MovieWeb.Controllers
 
                 if (userId != receiverId)
                 {
-                    var senderName = currentUser?.UserName ?? "Ai đó";
+                    var senderName = currentUser is null ? "Ai đó" : CommentIdentity.PublicName(currentUser, isAnonymous);
                     var movieName = parentComment.Movie?.Name ?? "phim";
                     var notificationTitle = "💬 Phản hồi mới";
                     var notificationContent = $"{senderName} đã trả lời bình luận của bạn trong phim \"{movieName}\"";
@@ -249,10 +248,47 @@ namespace MovieWeb.Controllers
                     reply.CommentId,
                     reply.Content,
                     reply.CreatedAt,
-                    userName = currentUser?.UserName,
-                    avatar = !string.IsNullOrEmpty(currentUser?.Avatar) ? currentUser.Avatar : "/images/nouser.png"
+                    userName = CommentIdentity.PublicName(currentUser, isAnonymous),
+                    avatar = CommentIdentity.PublicAvatar(currentUser, isAnonymous),
+                    isAnonymous
                 }
             });
+        }
+
+        // ============================================================
+        // 🎭 DANH TÍNH KHI BÌNH LUẬN (tên hiển thị / biệt danh ẩn danh)
+        // ============================================================
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> Me()
+        {
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+                return Unauthorized(new { success = false });
+            var user = await _context.Users.FindAsync(userId);
+            if (user is null) return Unauthorized(new { success = false });
+            return Ok(new
+            {
+                success = true,
+                displayName = CommentIdentity.PublicName(user, false),
+                nickname = CommentIdentity.Nickname(user),
+                hasFullName = !string.IsNullOrWhiteSpace(user.FullName),
+                avatar = CommentIdentity.PublicAvatar(user, false)
+            });
+        }
+
+        [Authorize]
+        [HttpPost("nickname")]
+        public async Task<IActionResult> SetNickname([FromForm] string? nickname)
+        {
+            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+                return Unauthorized(new { success = false, message = "Bạn chưa đăng nhập." });
+            var error = CommentIdentity.ValidateNickname(nickname);
+            if (error is not null) return BadRequest(new { success = false, message = error });
+            var user = await _context.Users.FindAsync(userId);
+            if (user is null) return Unauthorized(new { success = false, message = "Bạn chưa đăng nhập." });
+            user.CommentNickname = nickname!.Trim();
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true, message = "Đã đổi biệt danh.", nickname = user.CommentNickname });
         }
 
         // ============================================================
@@ -270,8 +306,8 @@ namespace MovieWeb.Controllers
             if (comment == null)
                 return NotFound(new { success = false, message = "Không tìm thấy bình luận cần xóa." });
 
-            var isAdmin = string.Equals(userName, "admin", StringComparison.OrdinalIgnoreCase);
-            var isOwner = string.Equals(userName, (await _context.Users.FindAsync(comment.UserId))?.UserName, StringComparison.OrdinalIgnoreCase);
+            var isAdmin = User.IsInRole("Admin");
+            var isOwner = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var currentId) && comment.UserId == currentId;
 
             if (!isAdmin && !isOwner)
                 return Forbid("Chỉ admin hoặc chủ bình luận mới được phép xóa.");

@@ -2,6 +2,8 @@
 @using MovieWeb.Models.ViewModels
 
 @{
+    ViewData["HasOgTags"] = true; // trang tự khai báo og:* (layout không in og mặc định)
+    ViewData["HasTwitterCard"] = true;
     var categoryName = "Phim Mới Cập Nhật";
     var filters = ViewBag.Filters as MovieFilterViewModel ?? new MovieFilterViewModel();
 

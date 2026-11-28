@@ -300,17 +300,18 @@ namespace MovieWeb.Controllers
             // 💎 SEO CANONICAL, SPINTAX VÀ SCHEMA.ORG ĐA TẦNG
             var movieCanonicalPath = SeoUrlHelper.MovieUrl(movie.Slug, movie.MovieId);
             var movieCanonicalUrl = $"https://moonphim.me{movieCanonicalPath}";
-            var currentCanonicalPath = selectedEpisode != null && episodeToCanonicalMap.TryGetValue(selectedEpisode.EpisodeId, out var epCanon)
-                ? SeoUrlHelper.EpisodeUrl(movie.Slug, epCanon.CleanSlug, epCanon.MinId)
-                : movieCanonicalPath;
-            var currentCanonicalUrl = $"https://moonphim.me{currentCanonicalPath}";
+            // SEO v3: trang tập chỉ để xem, canonical luôn là trang phim (tránh hàng chục nghìn trang trùng 95%).
+            var currentCanonicalUrl = movieCanonicalUrl;
 
             string spintaxDesc = SeoContentHelper.GenerateEpisodeSpintax(movie, selectedEpisode, allEpisodes, serverDisplayNames);
             ViewBag.SpintaxDescription = spintaxDesc;
             ViewBag.CanonicalUrl = currentCanonicalUrl;
             ViewBag.MovieSchemaJson = SeoSchemaHelper.BuildMovieOrSeriesSchema(movie, movieCanonicalUrl);
-            ViewBag.EpisodeSchemaJson = SeoSchemaHelper.BuildEpisodeAndVideoSchema(movie, selectedEpisode, currentCanonicalUrl, spintaxDesc);
-            ViewBag.BreadcrumbSchemaJson = SeoSchemaHelper.BuildBreadcrumbSchema(movie, selectedEpisode, movieCanonicalUrl, selectedEpisode != null ? currentCanonicalUrl : null);
+            ViewBag.EpisodeSchemaJson = selectedEpisode == null
+                ? SeoSchemaHelper.BuildEpisodeAndVideoSchema(movie, null, movieCanonicalUrl, spintaxDesc)
+                : null;
+            ViewBag.BreadcrumbSchemaJson = SeoSchemaHelper.BuildBreadcrumbSchema(movie, null, movieCanonicalUrl, null);
+            ViewBag.SeoContent = await BuildMovieSeoContentAsync(movie, canonicalGroups.Count, serverDisplayNames.Values, movieCanonicalUrl);
 
             ViewData["Title"] = selectedEpisode != null ? $"{movie.Name} - Tập {selectedEpisode.EpisodeName}" : movie.Name;
             ViewData["PageType"] = "Detail";
@@ -359,6 +360,60 @@ namespace MovieWeb.Controllers
             }
 
             return View(movie);
+        }
+
+        /// <summary>
+        /// SEO v3 – nội dung riêng cho trang phim: đoạn giới thiệu + hỏi đáp từ dữ liệu thật, các phần khác của loạt phim,
+        /// phim cùng diễn viên, vài bình luận mới nhất (in sẵn HTML). Liên kết cache 6 giờ, bình luận 2 phút.
+        /// </summary>
+        private async Task<MovieSeoContent> BuildMovieSeoContentAsync(Movie movie, int episodeCount, IEnumerable<string> serverNames, string canonicalUrl)
+        {
+            var links = await _cache.GetOrCreateAsync($"seo_movie_links_{movie.MovieId}", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6);
+                static Movie Card(Movie m) => new()
+                {
+                    MovieId = m.MovieId, Slug = m.Slug, Name = m.Name, OriginalName = m.OriginalName, PosterUrl = m.PosterUrl,
+                    ThumbUrl = m.ThumbUrl, Quality = m.Quality, Year = m.Year, EpisodeCurrent = m.EpisodeCurrent, Rating = m.Rating
+                };
+
+                var otherParts = new List<Movie>();
+                var baseName = MovieSeoContentBuilder.SeriesBaseName(movie.Name);
+                if (baseName != null)
+                {
+                    var candidates = await _context.Movies.AsNoTracking()
+                        .Where(m => (m.IsActive ?? false) && m.MovieId != movie.MovieId && m.Name.StartsWith(baseName))
+                        .OrderBy(m => m.Name).Take(30).ToListAsync();
+                    otherParts = candidates
+                        .Where(m => string.Equals(MovieSeoContentBuilder.SeriesBaseName(m.Name), baseName, StringComparison.OrdinalIgnoreCase))
+                        .Select(Card).Take(12).ToList();
+                }
+
+                var sameActor = new List<Movie>();
+                var actorIds = movie.Actors.Take(3).Select(a => a.ActorId).ToList();
+                if (actorIds.Count > 0)
+                {
+                    var excluded = otherParts.Select(m => m.MovieId).Append(movie.MovieId).ToList();
+                    sameActor = (await _context.Movies.AsNoTracking()
+                            .Where(m => (m.IsActive ?? false) && !excluded.Contains(m.MovieId) && m.Actors.Any(a => actorIds.Contains(a.ActorId)))
+                            .OrderByDescending(m => m.ViewCount ?? 0).Take(6).ToListAsync())
+                        .Select(Card).ToList();
+                }
+                return (OtherParts: otherParts, SameActor: sameActor);
+            });
+
+            var comments = await _cache.GetOrCreateAsync($"seo_movie_comments_{movie.MovieId}", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2);
+                var rows = await _context.Comments.AsNoTracking()
+                    .Include(c => c.User)
+                    .Where(c => c.MovieId == movie.MovieId && c.IsActive == true && c.ParentCommentId == null)
+                    .OrderByDescending(c => c.CreatedAt).Take(5).ToListAsync();
+                return rows.Select(c => new MovieCommentSnippet(
+                    CommentIdentity.PublicName(c.User, c.IsAnonymous == true), c.Content, c.CreatedAt, c.Rating)).ToList();
+            });
+
+            return MovieSeoContentBuilder.Build(movie, episodeCount, serverNames, links.OtherParts, links.SameActor, comments ?? [], canonicalUrl);
         }
 
         // ============================================================
@@ -521,19 +576,21 @@ namespace MovieWeb.Controllers
         public async Task<IActionResult> GetComments(int movieId)
         {
             // ... (LOGIC GIỮ NGUYÊN) ...
-            var comments = await _context.Comments
+            var rows = await _context.Comments
                .Include(c => c.User)
                .Where(c => c.MovieId == movieId && (c.IsActive ?? true))
                .OrderByDescending(c => c.CreatedAt)
-               .Select(c => new
+               .ToListAsync();
+            // UserName giữ tên trường cũ (app mobile) nhưng là tên hiển thị công khai, không còn là email đăng nhập.
+            var comments = rows.Select(c => new
                {
                    c.CommentId,
                    c.Content,
                    c.CreatedAt,
                    c.Rating,
-                   UserName = c.User.UserName
+                   UserName = MovieWeb.Helpers.CommentIdentity.PublicName(c.User, c.IsAnonymous == true)
                })
-               .ToListAsync();
+               .ToList();
 
             double average = comments.Any(c => c.Rating.HasValue)
                 ? comments.Where(c => c.Rating.HasValue).Average(c => c.Rating.Value)

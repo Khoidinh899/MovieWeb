@@ -17,25 +17,18 @@ public static partial class SeoMetadata
         // Một trang chỉ có một URL chuẩn: bỏ "/" cuối, gộp các route MVC mặc định về route công khai.
         if (path.Length > 1) path = path.TrimEnd('/');
         path = AliasPath(path) ?? path;
-        if (path == "/phim-moi") path = "/the-loai/phim-moi-cap-nhat";
-        if (path == "/the-loai/phim-moi") path = "/the-loai/phim-moi-cap-nhat";
-        if (path == "/the-loai/phim-trending") path = "/phim-trending";
-        var url = BaseUrl + path;
-        // Episode and tracking parameters do not create a different movie page.
-        if (request.Path.StartsWithSegments("/phim")) return url;
-        foreach (var item in request.Query.OrderBy(q => q.Key, StringComparer.Ordinal))
+        // SEO v3: mỗi phim chỉ một URL chính tắc. Trang tập /phim/{slug}/tap-... (để xem phim) trỏ canonical về /phim/{slug}.
+        if (path.StartsWith("/phim/", StringComparison.OrdinalIgnoreCase))
         {
-            if (IsTracking(item.Key)) continue;
-            if (item.Key.Equals("page", StringComparison.OrdinalIgnoreCase)
-                && int.TryParse(item.Value.ToString(), out var page))
-            {
-                if (page <= 1) continue;
-                url = QueryHelpers.AddQueryString(url, "page", page.ToString(CultureInfo.InvariantCulture));
-                continue;
-            }
-            foreach (var value in item.Value)
-                url = QueryHelpers.AddQueryString(url, item.Key, value ?? "");
+            var slugEnd = path.IndexOf('/', "/phim/".Length);
+            if (slugEnd > 0) path = path[..slugEnd];
+            return BaseUrl + path;
         }
+        var url = BaseUrl + path;
+        // Chỉ tham số phân trang tạo trang riêng; mọi tham số khác (bộ lọc, sắp xếp, ?url=, tracking…) không phải URL chính tắc.
+        var pageValue = request.Query["page"].ToString();
+        if (int.TryParse(pageValue, out var page) && page > 1)
+            url = QueryHelpers.AddQueryString(url, "page", page.ToString(CultureInfo.InvariantCulture));
         return url;
     }
 
@@ -47,6 +40,8 @@ public static partial class SeoMetadata
     {
         "/home" or "/home/index" => "/",
         "/trangchu" or "/trangchu/index" => "/trang-chu",
+        "/phim-moi" or "/the-loai/phim-moi" => "/the-loai/phim-moi-cap-nhat",
+        "/the-loai/phim-trending" => "/phim-trending",
         _ => null
     };
 

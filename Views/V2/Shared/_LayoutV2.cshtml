@@ -48,6 +48,12 @@
     {
         <meta name="robots" content="noindex, follow" />
     }
+    else
+    {
+        @* Site một ngôn ngữ (tiếng Việt): hreflang tự tham chiếu + x-default *@
+        <link rel="alternate" hreflang="vi" href="@MovieWeb.Helpers.SeoMetadata.Canonical(Context.Request)" />
+        <link rel="alternate" hreflang="x-default" href="@MovieWeb.Helpers.SeoMetadata.Canonical(Context.Request)" />
+    }
 
     <!-- Schema.org WebSite & Brand Organization Markup (MoonPhim / Moon Phim) -->
     <script type="application/ld+json">
@@ -102,9 +108,29 @@
     <meta name="theme-color" content="#1c2a39" />
     <meta name="author" content="MoonPhim (Moon Phim)" />
 
-    <meta property="og:site_name" content="MoonPhim" />
-    <meta property="og:image" content="@defaultSeoImage" />
-    <meta property="og:locale" content="vi_VN" />
+    @{
+        // Thẻ OG/Twitter mặc định chỉ in khi trang chưa tự khai báo (ViewData["HasOgTags"] do trang đặt). Trước đây og:image logo
+        // bị lặp cùng og:image của trang, og:site_name lặp, và trang không có twitter:card.
+        var pageHasOgTags = ViewData["HasOgTags"] as bool? == true;
+        var pageHasTwitterCard = ViewData["HasTwitterCard"] as bool? == true;
+    }
+    @if (!pageHasOgTags)
+    {
+        <meta property="og:site_name" content="MoonPhim" />
+    }
+    @if (!pageHasOgTags)
+    {
+        <meta property="og:image" content="@defaultSeoImage" />
+    }
+    @if (!pageHasOgTags)
+    {
+        <meta property="og:locale" content="vi_VN" />
+    }
+    @if (!pageHasTwitterCard)
+    {
+        @* Twitter/X tự lấy tiêu đề, mô tả, ảnh từ thẻ og: khi không có twitter:title/description/image *@
+        <meta name="twitter:card" content="summary_large_image" />
+    }
     @* --- KẾT THÚC KHỐI SEO MẶC ĐỊNH --- *@
 
     @await RenderSectionAsync("Styles", required: false)
